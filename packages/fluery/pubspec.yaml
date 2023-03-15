@@ -4,10 +4,13 @@ version: 1.0.0
 # repository: https://github.com/my_org/my_repo
 
 environment:
-  sdk: '>=2.19.2 <3.0.0'
+  sdk: ">=2.19.2 <3.0.0"
+  flutter: ">=1.17.0"
 
-# dependencies:
-#   path: ^1.8.0
+dependencies:
+  equatable: ^2.0.5
+  flutter:
+    sdk: flutter
 
 dev_dependencies:
   lints: ^2.0.0
