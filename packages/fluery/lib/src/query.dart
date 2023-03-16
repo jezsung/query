@@ -31,7 +31,7 @@ class QueryState<Data> extends Equatable {
     Data? data,
     Object? error,
   }) {
-    return QueryState(
+    return QueryState<Data>(
       status: status ?? this.status,
       data: data ?? this.data,
       error: error ?? this.error,
