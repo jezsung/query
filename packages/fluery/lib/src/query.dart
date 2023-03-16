@@ -68,56 +68,62 @@ class Query<Data> extends ValueNotifier<QueryState<Data>> {
       isFetchRunning = true;
     }
 
-    final QueryFetcher<Data> effectiveFetcher;
-    final Duration effectiveStaleDuration;
+    Future<void> execute() async {
+      final QueryFetcher<Data> effectiveFetcher;
+      final Duration effectiveStaleDuration;
+
+      try {
+        effectiveFetcher = fetcher ?? observers.first.fetcher;
+      } on StateError {
+        throw FlueryError('fetcher is not found on $runtimeType');
+      }
+
+      if (staleDuration != null) {
+        effectiveStaleDuration = staleDuration;
+      } else if (observers.isNotEmpty) {
+        effectiveStaleDuration = observers.fold(
+          observers.first.staleDuration,
+          (duration, observer) => observer.staleDuration < duration
+              ? observer.staleDuration
+              : duration,
+        );
+      } else {
+        effectiveStaleDuration = Duration.zero;
+      }
+
+      final cacheState = cacheStorage.get(key);
+      final shouldFetch = cacheState?.isStale(effectiveStaleDuration) ?? true;
+      if (!shouldFetch) {
+        value = value.copyWith(
+          status: QueryStatus.success,
+          data: cacheState!.data,
+        );
+        return;
+      }
+
+      value = value.copyWith(status: QueryStatus.loading);
+      try {
+        final data = await effectiveFetcher(key);
+        cacheStorage.set(key, data);
+        value = value.copyWith(
+          status: QueryStatus.success,
+          data: data,
+        );
+      } catch (error) {
+        value = value.copyWith(
+          status: QueryStatus.failure,
+          error: error,
+        );
+      }
+    }
 
     try {
-      effectiveFetcher = fetcher ?? observers.first.fetcher;
-    } on StateError {
-      isFetchRunning = false;
-      throw FlueryError('fetcher is not found on $runtimeType');
-    }
-
-    if (staleDuration != null) {
-      effectiveStaleDuration = staleDuration;
-    } else if (observers.isNotEmpty) {
-      effectiveStaleDuration = observers.fold(
-        observers.first.staleDuration,
-        (duration, observer) => observer.staleDuration < duration
-            ? observer.staleDuration
-            : duration,
-      );
-    } else {
-      effectiveStaleDuration = Duration.zero;
-    }
-
-    final cacheState = cacheStorage.get(key);
-    final shouldFetch = cacheState?.isStale(effectiveStaleDuration) ?? true;
-    if (!shouldFetch) {
-      value = value.copyWith(
-        status: QueryStatus.success,
-        data: cacheState!.data,
-      );
-      isFetchRunning = false;
-      return;
-    }
-
-    value = value.copyWith(status: QueryStatus.loading);
-    try {
-      final data = await effectiveFetcher(key);
-      cacheStorage.set(key, data);
-      value = value.copyWith(
-        status: QueryStatus.success,
-        data: data,
-      );
+      await execute();
     } catch (error) {
-      value = value.copyWith(
-        status: QueryStatus.failure,
-        error: error,
-      );
+      rethrow;
+    } finally {
+      isFetchRunning = false;
     }
-
-    isFetchRunning = false;
   }
 
   void addObserver(QueryObserver<Data> observer) {
