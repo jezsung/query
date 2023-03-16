@@ -1,7 +1,8 @@
-import 'package:fluery/fluery.dart';
+import 'package:fluery/src/query.dart';
+import 'package:fluery/src/query_client.dart';
+import 'package:fluery/src/query_client_provider.dart';
 import 'package:fluery/src/query_observer.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
 
 typedef QueryWidgetBuilder<Data> = Widget Function(
   BuildContext context,
