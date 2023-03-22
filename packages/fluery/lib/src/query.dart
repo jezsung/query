@@ -1,7 +1,5 @@
 import 'package:equatable/equatable.dart';
-import 'package:fluery/src/fluery_error.dart';
 import 'package:fluery/src/query_cache_storage.dart';
-import 'package:fluery/src/query_observer.dart';
 import 'package:flutter/foundation.dart';
 
 typedef QueryKey = String;
@@ -53,14 +51,13 @@ class Query<Data> extends ValueNotifier<QueryState<Data>> {
   }) : super(QueryState<Data>(status: QueryStatus.idle));
 
   final QueryKey key;
-  final List<QueryObserver<Data>> observers = [];
   final QueryCacheStorage cacheStorage;
 
   bool isFetchRunning = false;
 
   Future<void> fetch({
-    QueryFetcher<Data>? fetcher,
-    Duration? staleDuration,
+    required QueryFetcher<Data> fetcher,
+    required Duration staleDuration,
   }) async {
     if (isFetchRunning) {
       return;
@@ -69,30 +66,8 @@ class Query<Data> extends ValueNotifier<QueryState<Data>> {
     }
 
     Future<void> execute() async {
-      final QueryFetcher<Data> effectiveFetcher;
-      final Duration effectiveStaleDuration;
-
-      try {
-        effectiveFetcher = fetcher ?? observers.first.fetcher;
-      } on StateError {
-        throw FlueryError('fetcher is not found on $runtimeType');
-      }
-
-      if (staleDuration != null) {
-        effectiveStaleDuration = staleDuration;
-      } else if (observers.isNotEmpty) {
-        effectiveStaleDuration = observers.fold(
-          observers.first.staleDuration,
-          (duration, observer) => observer.staleDuration < duration
-              ? observer.staleDuration
-              : duration,
-        );
-      } else {
-        effectiveStaleDuration = Duration.zero;
-      }
-
       final cacheState = cacheStorage.get(key);
-      final shouldFetch = cacheState?.isStale(effectiveStaleDuration) ?? true;
+      final shouldFetch = cacheState?.isStale(staleDuration) ?? true;
       if (!shouldFetch) {
         value = value.copyWith(
           status: QueryStatus.success,
@@ -103,7 +78,7 @@ class Query<Data> extends ValueNotifier<QueryState<Data>> {
 
       value = value.copyWith(status: QueryStatus.loading);
       try {
-        final data = await effectiveFetcher(key);
+        final data = await fetcher(key);
         cacheStorage.set(key, data);
         value = value.copyWith(
           status: QueryStatus.success,
@@ -124,19 +99,5 @@ class Query<Data> extends ValueNotifier<QueryState<Data>> {
     } finally {
       isFetchRunning = false;
     }
-  }
-
-  void addObserver(QueryObserver<Data> observer) {
-    observers.add(observer);
-  }
-
-  void removeObserver(QueryObserver<Data> observer) {
-    observers.remove(observer);
-  }
-
-  @mustCallSuper
-  @override
-  void dispose() {
-    super.dispose();
   }
 }
