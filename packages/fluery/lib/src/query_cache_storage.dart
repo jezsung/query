@@ -15,7 +15,7 @@ class QueryCacheState<Data> {
 }
 
 abstract class QueryCacheStorage {
-  QueryCacheState? get(QueryKey key);
+  QueryCacheState<Data>? get<Data>(QueryKey key);
 
   void set<Data>(QueryKey key, Data data);
 }
@@ -24,8 +24,8 @@ class MemoryQueryCacheStorage extends QueryCacheStorage {
   final Map<QueryKey, QueryCacheState> queryCacheStates = {};
 
   @override
-  QueryCacheState? get(QueryKey key) {
-    return queryCacheStates[key];
+  QueryCacheState<Data>? get<Data>(QueryKey key) {
+    return queryCacheStates[key] as QueryCacheState<Data>?;
   }
 
   @override
