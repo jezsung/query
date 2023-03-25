@@ -50,6 +50,17 @@ class HomePage extends StatelessWidget {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
+                    builder: (context) => const InfiniteQueryExamplePage(),
+                  ),
+                );
+              },
+              child: const Text('Infinite Query Example'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
                     builder: (context) => const MutationExamplePage(),
                   ),
                 );
@@ -105,7 +116,7 @@ class _QueryExamplePageState extends State<QueryExamplePage> {
       body: Center(
         child: QueryBuilder<String>(
           controller: _controller,
-          queryKey: 'example',
+          id: 'example',
           fetcher: (key) async {
             await Future.delayed(const Duration(seconds: 3));
             // throw 'Fetching Failure';
@@ -163,7 +174,7 @@ class QueryExample2Page extends StatelessWidget {
       appBar: AppBar(),
       body: Center(
         child: QueryBuilder(
-          queryKey: 'example',
+          id: 'example',
           fetcher: (key) async {
             await Future.delayed(const Duration(seconds: 3));
             // throw 'Fetching Failure';
@@ -206,6 +217,91 @@ class QueryExample2Page extends StatelessWidget {
             }
           },
         ),
+      ),
+    );
+  }
+}
+
+class InfiniteQueryExamplePage extends StatefulWidget {
+  const InfiniteQueryExamplePage({super.key});
+
+  static final examplePages = [
+    {
+      'data': 'Hello1',
+      'nextCursor': 1,
+    },
+    {
+      'data': 'Hello2',
+      'nextCursor': 2,
+    },
+    {
+      'data': 'Hello3',
+      'nextCursor': 3,
+    },
+    {
+      'data': 'Hello4',
+    },
+  ];
+
+  @override
+  State<InfiniteQueryExamplePage> createState() =>
+      _InfiniteQueryExamplePageState();
+}
+
+class _InfiniteQueryExamplePageState extends State<InfiniteQueryExamplePage> {
+  late final InfiniteQueryController<Map<String, dynamic>, int> _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = InfiniteQueryController<Map<String, dynamic>, int>();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(),
+      body: InfiniteQueryBuilder<Map<String, dynamic>, int>(
+        controller: _controller,
+        id: 'infinite-query-example',
+        fetcher: (id, params) async {
+          await Future.delayed(const Duration(seconds: 2));
+          if (params == null) {
+            return InfiniteQueryExamplePage.examplePages[0];
+          }
+          return InfiniteQueryExamplePage.examplePages[params];
+        },
+        nextPageParamsBuilder: (pages) {
+          return pages.isNotEmpty ? pages.last['nextCursor'] : null;
+        },
+        builder: (context, state, child) {
+          return ListView.builder(
+            itemCount: state.pages.length,
+            itemBuilder: (context, i) {
+              final data = state.pages[i]['data'];
+              if (i == state.pages.length - 1 && state.hasNextPage) {
+                return Column(
+                  children: [
+                    Text(data),
+                    ElevatedButton(
+                      onPressed: () {
+                        _controller.fetchNextPage();
+                      },
+                      child: const Text('Load More'),
+                    ),
+                  ],
+                );
+              }
+              return Text(data);
+            },
+          );
+        },
       ),
     );
   }

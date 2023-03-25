@@ -1,4 +1,4 @@
-import 'package:fluery/src/query.dart';
+import 'package:fluery/src/base_query.dart';
 
 class QueryCacheState<Data> {
   QueryCacheState({
@@ -15,22 +15,22 @@ class QueryCacheState<Data> {
 }
 
 abstract class QueryCacheStorage {
-  QueryCacheState<Data>? get<Data>(QueryKey key);
+  QueryCacheState<Data>? get<Data>(QueryIdentifier id);
 
-  void set<Data>(QueryKey key, Data data);
+  void set<Data>(QueryIdentifier id, Data data);
 }
 
 class MemoryQueryCacheStorage extends QueryCacheStorage {
-  final Map<QueryKey, QueryCacheState> queryCacheStates = {};
+  final Map<QueryIdentifier, QueryCacheState> queryCacheStates = {};
 
   @override
-  QueryCacheState<Data>? get<Data>(QueryKey key) {
-    return queryCacheStates[key] as QueryCacheState<Data>?;
+  QueryCacheState<Data>? get<Data>(QueryIdentifier id) {
+    return queryCacheStates[id] as QueryCacheState<Data>?;
   }
 
   @override
-  void set<Data>(QueryKey key, Data data) {
-    queryCacheStates[key] = QueryCacheState(
+  void set<Data>(QueryIdentifier id, Data data) {
+    queryCacheStates[id] = QueryCacheState<Data>(
       data: data,
       updatedAt: DateTime.now(),
     );
