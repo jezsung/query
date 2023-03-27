@@ -42,9 +42,7 @@ class _QueryClientProviderState extends State<QueryClientProvider> {
   @override
   void initState() {
     super.initState();
-    _queryClient = QueryClient(
-      cacheStorage: widget.cacheStorage ?? MemoryQueryCacheStorage(),
-    );
+    _queryClient = QueryClient(cacheStorage: widget.cacheStorage);
   }
 
   @override

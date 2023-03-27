@@ -126,6 +126,7 @@ class _QueryExamplePageState extends State<QueryExamplePage> {
           builder: (context, state, child) {
             switch (state.status) {
               case QueryStatus.idle:
+                return const Text('idle');
               case QueryStatus.loading:
                 return const CircularProgressIndicator();
               case QueryStatus.success:
@@ -249,12 +250,12 @@ class InfiniteQueryExamplePage extends StatefulWidget {
 }
 
 class _InfiniteQueryExamplePageState extends State<InfiniteQueryExamplePage> {
-  late final InfiniteQueryController<Map<String, dynamic>, int> _controller;
+  late final PaginatedQueryController<Map<String, dynamic>, int> _controller;
 
   @override
   void initState() {
     super.initState();
-    _controller = InfiniteQueryController<Map<String, dynamic>, int>();
+    _controller = PaginatedQueryController<Map<String, dynamic>, int>();
   }
 
   @override
@@ -267,7 +268,7 @@ class _InfiniteQueryExamplePageState extends State<InfiniteQueryExamplePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(),
-      body: InfiniteQueryBuilder<Map<String, dynamic>, int>(
+      body: PaginatedQueryBuilder<Map<String, dynamic>, int>(
         controller: _controller,
         id: 'infinite-query-example',
         fetcher: (id, params) async {

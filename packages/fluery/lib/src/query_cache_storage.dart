@@ -1,38 +1,21 @@
+import 'package:fluery/fluery.dart';
 import 'package:fluery/src/base_query.dart';
+import 'package:flutter/foundation.dart';
 
-class QueryCacheState<Data> {
-  QueryCacheState({
-    required this.data,
-    required this.updatedAt,
-  });
+abstract class QueryCacheStorage with BaseQueryObserver {
+  Map<String, dynamic>? get(QueryIdentifier id);
 
-  final Data data;
-  final DateTime updatedAt;
+  void set(QueryIdentifier id, Object data);
 
-  bool isStale(Duration staleDuration) {
-    return updatedAt.isBefore(DateTime.now().subtract(staleDuration));
-  }
-}
-
-abstract class QueryCacheStorage {
-  QueryCacheState<Data>? get<Data>(QueryIdentifier id);
-
-  void set<Data>(QueryIdentifier id, Data data);
-}
-
-class MemoryQueryCacheStorage extends QueryCacheStorage {
-  final Map<QueryIdentifier, QueryCacheState> queryCacheStates = {};
-
+  @nonVirtual
   @override
-  QueryCacheState<Data>? get<Data>(QueryIdentifier id) {
-    return queryCacheStates[id] as QueryCacheState<Data>?;
-  }
-
-  @override
-  void set<Data>(QueryIdentifier id, Data data) {
-    queryCacheStates[id] = QueryCacheState<Data>(
-      data: data,
-      updatedAt: DateTime.now(),
-    );
+  void onNotified(BaseQuery query, BaseQueryEvent event) {
+    if (event is QueryStateUpdated) {
+      try {
+        set(query.id, event.state);
+      } catch (e) {
+        // A non-serializable object will not be cached in a persistent storage.
+      }
+    }
   }
 }

@@ -1,5 +1,4 @@
 import 'package:equatable/equatable.dart';
-import 'package:fluery/src/query_cache_storage.dart';
 import 'package:flutter/foundation.dart';
 
 typedef QueryIdentifier = String;
@@ -12,66 +11,74 @@ enum QueryStatus {
 }
 
 abstract class BaseQueryState extends Equatable {
-  const BaseQueryState({
-    this.status = QueryStatus.idle,
-    this.error,
-  });
+  const BaseQueryState(this.status);
 
   final QueryStatus status;
-  final Object? error;
 
   @mustCallSuper
   @override
-  List<Object?> get props => [
-        status,
-        error,
-      ];
+  List<Object?> get props => [status];
 }
 
-abstract class BaseQuery<
-    Query extends BaseQuery<Query, Controller, State>,
-    Controller extends BaseQueryController<Query, Controller, State>,
-    State extends BaseQueryState> {
-  BaseQuery({
-    required this.id,
-    required this.cacheStorage,
-  });
+abstract class BaseQueryEvent extends Equatable {}
+
+class QueryStateUpdated<State extends BaseQueryState> extends BaseQueryEvent {
+  QueryStateUpdated(this.state);
+
+  final State state;
+
+  @override
+  List<Object?> get props => [state];
+}
+
+class QueryObserverAdded<Observer extends BaseQueryObserver>
+    extends BaseQueryEvent {
+  QueryObserverAdded(this.observer);
+
+  final Observer observer;
+
+  @override
+  List<Object?> get props => [observer];
+}
+
+class QueryObserverRemoved<Observer extends BaseQueryObserver>
+    extends BaseQueryEvent {
+  QueryObserverRemoved(this.observer);
+
+  final Observer observer;
+
+  @override
+  List<Object?> get props => [observer];
+}
+
+abstract class BaseQueryObserver<Query extends BaseQuery> {
+  void onNotified(Query query, BaseQueryEvent event);
+}
+
+abstract class BaseQuery {
+  BaseQuery(this.id);
 
   final QueryIdentifier id;
-  final QueryCacheStorage cacheStorage;
 
-  final Set<Controller> controllers = {};
+  final Set<BaseQueryObserver> observers = {};
 
-  late State state;
+  void addObserver<Observer extends BaseQueryObserver>(Observer observer) {
+    if (observers.contains(observer)) return;
 
-  Future<void> fetch();
-
-  subscribe(Controller controller) {
-    controllers.add(controller);
-    controller.query = this as Query;
-    notify(state);
+    observers.add(observer);
+    notify(QueryObserverAdded<Observer>(observer));
   }
 
-  unsubscribe(Controller controller) {
-    controllers.remove(controller);
+  void removeObserver<Observer extends BaseQueryObserver>(Observer observer) {
+    if (!observers.contains(observer)) return;
+
+    notify(QueryObserverRemoved<Observer>(observer));
+    observers.remove(observer);
   }
 
-  notify(State state) {
-    for (final controller in controllers) {
-      controller.onNotified(state);
+  notify(BaseQueryEvent event) {
+    for (final observer in observers) {
+      observer.onNotified(this, event);
     }
-  }
-}
-
-abstract class BaseQueryController<
-    Query extends BaseQuery<Query, Controller, State>,
-    Controller extends BaseQueryController<Query, Controller, State>,
-    State extends BaseQueryState> extends ValueNotifier<State> {
-  BaseQueryController(super.value);
-
-  late Query query;
-
-  onNotified(State state) {
-    value = state;
   }
 }

@@ -4,13 +4,31 @@ import 'package:fluery/src/query_manager.dart';
 
 class QueryClient {
   QueryClient({
-    required this.cacheStorage,
+    this.cacheStorage,
   }) : manager = QueryManager(cacheStorage: cacheStorage);
 
-  final QueryCacheStorage cacheStorage;
   final QueryManager manager;
+  final QueryCacheStorage? cacheStorage;
 
   Future<void> refetch(QueryIdentifier id) async {
-    await manager.get(id)?.fetch();
+    final query = manager.buildQuery(id);
+    final controllers = query.controllers;
+
+    if (controllers.isEmpty) {
+      return;
+    }
+
+    final fetcher = controllers.first.fetcher;
+    final staleDuration = controllers.fold(
+      controllers.first.staleDuration,
+      (duration, controller) => controller.staleDuration < duration
+          ? controller.staleDuration
+          : duration,
+    );
+
+    await query.fetch(
+      fetcher: fetcher,
+      staleDuration: staleDuration,
+    );
   }
 }

@@ -1,8 +1,8 @@
 import 'package:fluery/src/base_query.dart';
-import 'package:fluery/src/query_cache_storage.dart';
+import 'package:fluery/src/fluery_error.dart';
 import 'package:fluery/src/query_client_provider.dart';
 import 'package:fluery/src/query_manager.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 
 typedef QueryFetcher<Data> = Future<Data> Function(QueryIdentifier id);
 
@@ -13,53 +13,71 @@ typedef QueryWidgetBuilder<Data> = Widget Function(
 );
 
 class QueryState<Data> extends BaseQueryState {
-  QueryState({
+  const QueryState({
     QueryStatus status = QueryStatus.idle,
     this.data,
-    Object? error,
-  }) : super(
-          status: status,
-          error: error,
-        );
+    this.dataUpdatedAt,
+    this.error,
+    this.errorUpdatedAt,
+  }) : super(status);
 
   final Data? data;
+  final Object? error;
+  final DateTime? dataUpdatedAt;
+  final DateTime? errorUpdatedAt;
 
   QueryState<Data> copyWith({
     QueryStatus? status,
     Data? data,
     Object? error,
+    DateTime? dataUpdatedAt,
+    DateTime? errorUpdatedAt,
   }) {
     return QueryState<Data>(
       status: status ?? this.status,
       data: data ?? this.data,
       error: error ?? this.error,
+      dataUpdatedAt: dataUpdatedAt ?? this.dataUpdatedAt,
+      errorUpdatedAt: errorUpdatedAt ?? this.errorUpdatedAt,
     );
   }
 
+  factory QueryState.fromJson(Map<String, dynamic> json) {
+    // Not implemented yet.
+    return QueryState();
+  }
+
   @override
-  List<Object?> get props => super.props + [data];
+  List<Object?> get props =>
+      super.props +
+      [
+        data,
+        error,
+        dataUpdatedAt,
+        errorUpdatedAt,
+      ];
 }
 
-class Query<Data>
-    extends BaseQuery<Query<Data>, QueryController<Data>, QueryState<Data>> {
+class Query<Data> extends BaseQuery {
   Query({
     required QueryIdentifier id,
-    required QueryCacheStorage cacheStorage,
-  }) : super(
-          id: id,
-          cacheStorage: cacheStorage,
-        ) {
-    state = QueryState<Data>();
+    QueryState<Data>? initialState,
+  }) : super(id) {
+    state = initialState ?? QueryState<Data>();
   }
+
+  late QueryState<Data> state;
 
   bool _isFetching = false;
 
-  @override
+  Set<QueryController<Data>> get controllers =>
+      observers.whereType<QueryController<Data>>().toSet();
+
   Future<void> fetch({
-    QueryFetcher? fetcher,
-    Duration? staleDuration,
+    required QueryFetcher fetcher,
+    required Duration staleDuration,
   }) async {
-    if (controllers.isEmpty) {
+    if (observers.isEmpty) {
       return;
     }
 
@@ -70,37 +88,35 @@ class Query<Data>
     }
 
     Future<void> execute() async {
-      final effectiveFetcher = fetcher ?? controllers.first.fetcher;
-      final effectiveStaleDuration = staleDuration ??
-          controllers.fold<Duration>(
-            controllers.first.staleDuration,
-            (duration, controller) => controller.staleDuration < duration
-                ? controller.staleDuration
-                : duration,
-          );
-
-      final cacheState = cacheStorage.get<Data>(id);
-      final shouldFetch = cacheState?.isStale(effectiveStaleDuration) ?? true;
-      if (!shouldFetch) {
-        notify(state = state.copyWith(
-          status: QueryStatus.success,
-          data: cacheState!.data,
-        ));
+      final isDataStale = state.dataUpdatedAt
+              ?.isBefore(DateTime.now().subtract(staleDuration)) ??
+          true;
+      if (!isDataStale) {
         return;
       }
 
-      notify(state = state.copyWith(status: QueryStatus.loading));
+      notify(QueryStateUpdated<QueryState<Data>>(
+        state = state.copyWith(
+          status: QueryStatus.loading,
+        ),
+      ));
+
       try {
-        final data = await effectiveFetcher(id);
-        cacheStorage.set<Data>(id, data);
-        notify(state = state.copyWith(
-          status: QueryStatus.success,
-          data: data,
+        final data = await fetcher(id);
+        notify(QueryStateUpdated<QueryState<Data>>(
+          state = state.copyWith(
+            status: QueryStatus.success,
+            data: data,
+            dataUpdatedAt: DateTime.now(),
+          ),
         ));
       } catch (e) {
-        notify(state = state.copyWith(
-          status: QueryStatus.failure,
-          error: e,
+        notify(QueryStateUpdated<QueryState<Data>>(
+          state = state.copyWith(
+            status: QueryStatus.failure,
+            error: e,
+            errorUpdatedAt: DateTime.now(),
+          ),
         ));
       }
     }
@@ -115,9 +131,11 @@ class Query<Data>
   }
 }
 
-class QueryController<Data> extends BaseQueryController<Query<Data>,
-    QueryController<Data>, QueryState<Data>> {
+class QueryController<Data> extends ValueNotifier<QueryState<Data>>
+    with BaseQueryObserver<Query<Data>> {
   QueryController() : super(QueryState<Data>());
+
+  Query? _query;
 
   late QueryIdentifier _id;
   late QueryFetcher<Data> _fetcher;
@@ -128,10 +146,29 @@ class QueryController<Data> extends BaseQueryController<Query<Data>,
   Duration get staleDuration => _staleDuration;
 
   Future<void> fetch() async {
-    await query.fetch(
-      fetcher: fetcher,
-      staleDuration: staleDuration,
+    if (_query == null) {
+      throw FlueryError('query is null');
+    }
+    await _query!.fetch(
+      fetcher: _fetcher,
+      staleDuration: _staleDuration,
     );
+  }
+
+  @override
+  void onNotified(Query<Data> query, BaseQueryEvent event) {
+    if (event is QueryStateUpdated<QueryState<Data>>) {
+      value = event.state;
+    } else if (event is QueryObserverAdded<QueryController<Data>>) {
+      if (event.observer == this) {
+        _query = query;
+        value = query.state;
+      }
+    } else if (event is QueryObserverRemoved<QueryController<Data>>) {
+      if (event.observer == this) {
+        _query = null;
+      }
+    }
   }
 }
 
@@ -180,7 +217,7 @@ class _QueryBuilderState<Data> extends State<QueryBuilder<Data>> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     _queryManager = QueryClientProvider.of(context).manager;
-    _queryManager.subscribeToQuery(_controller.id, _controller);
+    _queryManager.addControllerToQuery(_controller.id, _controller);
   }
 
   @override
@@ -192,8 +229,8 @@ class _QueryBuilderState<Data> extends State<QueryBuilder<Data>> {
 
     if (widget.controller != oldWidget.controller ||
         widget.id != oldWidget.id) {
-      _queryManager.unsubscribe(oldWidget.id, _controller);
-      _queryManager.subscribeToQuery(widget.id, _controller);
+      _queryManager.removeControllerFromQuery(oldWidget.id, _controller);
+      _queryManager.addControllerToQuery(widget.id, _controller);
     }
 
     if (widget.id != oldWidget.id ||
@@ -206,7 +243,7 @@ class _QueryBuilderState<Data> extends State<QueryBuilder<Data>> {
 
   @override
   void dispose() {
-    _queryManager.unsubscribe(_controller.id, _controller);
+    _queryManager.removeControllerFromQuery(_controller.id, _controller);
     __controller.dispose();
     super.dispose();
   }
