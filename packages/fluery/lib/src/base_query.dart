@@ -1,23 +1,9 @@
 import 'package:equatable/equatable.dart';
-import 'package:flutter/foundation.dart';
 
 typedef QueryIdentifier = String;
 
-enum QueryStatus {
-  idle,
-  loading,
-  success,
-  failure,
-}
-
 abstract class BaseQueryState extends Equatable {
-  const BaseQueryState(this.status);
-
-  final QueryStatus status;
-
-  @mustCallSuper
-  @override
-  List<Object?> get props => [status];
+  const BaseQueryState();
 }
 
 abstract class BaseQueryEvent extends Equatable {}

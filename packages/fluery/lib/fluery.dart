@@ -3,7 +3,7 @@ library fluery;
 export 'src/base_query.dart';
 export 'src/mutation_builder.dart';
 export 'src/mutation_controller.dart';
-export 'src/paginated_query_builder.dart';
+export 'src/paged_query_builder.dart';
 export 'src/query_builder.dart';
 export 'src/query_cache_storage.dart';
 export 'src/query_client.dart';

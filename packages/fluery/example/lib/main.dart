@@ -122,12 +122,21 @@ class _QueryExamplePageState extends State<QueryExamplePage> {
             // throw 'Fetching Failure';
             return 'Fetching Success!';
           },
-          staleDuration: const Duration(seconds: 3),
+          initialData: 'Initial Data',
+          initialDataUpdatedAt:
+              DateTime.now().subtract(const Duration(seconds: 3)),
+          staleDuration: const Duration(seconds: 10),
           builder: (context, state, child) {
             switch (state.status) {
               case QueryStatus.idle:
+                if (state.hasData) {
+                  return Text(state.data!);
+                }
                 return const Text('idle');
               case QueryStatus.loading:
+                if (state.hasData) {
+                  return Text(state.data!);
+                }
                 return const CircularProgressIndicator();
               case QueryStatus.success:
                 final String data = state.data!;
@@ -250,12 +259,12 @@ class InfiniteQueryExamplePage extends StatefulWidget {
 }
 
 class _InfiniteQueryExamplePageState extends State<InfiniteQueryExamplePage> {
-  late final PaginatedQueryController<Map<String, dynamic>, int> _controller;
+  late final PagedQueryController<Map<String, dynamic>, int> _controller;
 
   @override
   void initState() {
     super.initState();
-    _controller = PaginatedQueryController<Map<String, dynamic>, int>();
+    _controller = PagedQueryController<Map<String, dynamic>, int>();
   }
 
   @override
@@ -268,7 +277,7 @@ class _InfiniteQueryExamplePageState extends State<InfiniteQueryExamplePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(),
-      body: PaginatedQueryBuilder<Map<String, dynamic>, int>(
+      body: PagedQueryBuilder<Map<String, dynamic>, int>(
         controller: _controller,
         id: 'infinite-query-example',
         fetcher: (id, params) async {
@@ -281,25 +290,45 @@ class _InfiniteQueryExamplePageState extends State<InfiniteQueryExamplePage> {
         nextPageParamsBuilder: (pages) {
           return pages.isNotEmpty ? pages.last['nextCursor'] : null;
         },
+        initialData: const [
+          {
+            'data': 'Hello1',
+            'nextCursor': 1,
+          },
+        ],
+        staleDuration: const Duration(seconds: 5),
         builder: (context, state, child) {
+          if (state.status == PagedQueryStatus.loading) {
+            return const Center(
+              child: CircularProgressIndicator(),
+            );
+          }
+
           return ListView.builder(
             itemCount: state.pages.length,
             itemBuilder: (context, i) {
               final data = state.pages[i]['data'];
-              if (i == state.pages.length - 1 && state.hasNextPage) {
-                return Column(
-                  children: [
-                    Text(data),
+              return Column(
+                children: [
+                  Text(data),
+                  if (i == state.pages.length - 1 &&
+                      state.status == PagedQueryStatus.success &&
+                      state.hasNextPage)
                     ElevatedButton(
                       onPressed: () {
                         _controller.fetchNextPage();
                       },
                       child: const Text('Load More'),
                     ),
-                  ],
-                );
-              }
-              return Text(data);
+                  if (i == state.pages.length - 1 && state.isFetchingNextPage)
+                    Container(
+                      alignment: Alignment.center,
+                      padding: const EdgeInsets.all(4),
+                      height: 32,
+                      child: const CircularProgressIndicator(),
+                    )
+                ],
+              );
             },
           );
         },
