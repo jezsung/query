@@ -298,7 +298,7 @@ class _InfiniteQueryExamplePageState extends State<InfiniteQueryExamplePage> {
         ],
         staleDuration: const Duration(seconds: 5),
         builder: (context, state, child) {
-          if (state.status == PagedQueryStatus.loading) {
+          if (state.status == QueryStatus.loading) {
             return const Center(
               child: CircularProgressIndicator(),
             );
@@ -312,7 +312,7 @@ class _InfiniteQueryExamplePageState extends State<InfiniteQueryExamplePage> {
                 children: [
                   Text(data),
                   if (i == state.pages.length - 1 &&
-                      state.status == PagedQueryStatus.success &&
+                      state.status == QueryStatus.success &&
                       state.hasNextPage)
                     ElevatedButton(
                       onPressed: () {

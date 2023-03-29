@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'package:fluery/fluery.dart';
 import 'package:fluery/src/base_query.dart';
 import 'package:fluery/src/query_client_provider.dart';
 import 'package:flutter/widgets.dart';
@@ -20,17 +21,9 @@ typedef PagedQueryWidgetBuilder<Data> = Widget Function(
   Widget? child,
 );
 
-enum PagedQueryStatus {
-  idle,
-  loading,
-  loadingMore,
-  success,
-  failure,
-}
-
 class PagedQueryState<Data> extends BaseQueryState {
   const PagedQueryState({
-    this.status = PagedQueryStatus.idle,
+    this.status = QueryStatus.idle,
     this.pages = const [],
     this.isFetchingNextPage = false,
     this.isFetchingPreviousPage = false,
@@ -41,7 +34,7 @@ class PagedQueryState<Data> extends BaseQueryState {
     this.errorUpdatedAt,
   });
 
-  final PagedQueryStatus status;
+  final QueryStatus status;
   final Pages<Data> pages;
   final bool isFetchingNextPage;
   final bool isFetchingPreviousPage;
@@ -56,7 +49,7 @@ class PagedQueryState<Data> extends BaseQueryState {
   bool get hasError => error != null;
 
   PagedQueryState<Data> copyWith({
-    PagedQueryStatus? status,
+    QueryStatus? status,
     Pages<Data>? pages,
     bool? isFetchingNextPage,
     bool? isFetchingPreviousPage,
@@ -140,7 +133,7 @@ class PagedQuery<Data, Params> extends BaseQuery {
 
       notify(QueryStateUpdated(
         state = state.copyWith(
-          status: PagedQueryStatus.loading,
+          status: QueryStatus.loading,
         ),
       ));
 
@@ -150,7 +143,7 @@ class PagedQuery<Data, Params> extends BaseQuery {
 
         notify(QueryStateUpdated(
           state = state.copyWith(
-            status: PagedQueryStatus.success,
+            status: QueryStatus.success,
             pages: pages,
             hasNextPage: nextPageParamsBuilder?.call(pages) != null,
             hasPreviousPage: previousPageParamsBuilder?.call(pages) != null,
@@ -160,7 +153,7 @@ class PagedQuery<Data, Params> extends BaseQuery {
       } catch (e) {
         notify(QueryStateUpdated(
           state = state.copyWith(
-            status: PagedQueryStatus.failure,
+            status: QueryStatus.failure,
             error: e,
             errorUpdatedAt: DateTime.now(),
           ),
@@ -197,7 +190,7 @@ class PagedQuery<Data, Params> extends BaseQuery {
     Future<void> execute() async {
       notify(QueryStateUpdated(
         state = state.copyWith(
-          status: PagedQueryStatus.loadingMore,
+          status: QueryStatus.loading,
           isFetchingNextPage: true,
         ),
       ));
@@ -209,7 +202,7 @@ class PagedQuery<Data, Params> extends BaseQuery {
 
         notify(QueryStateUpdated(
           state = state.copyWith(
-            status: PagedQueryStatus.success,
+            status: QueryStatus.success,
             pages: pages,
             isFetchingNextPage: false,
             hasNextPage: nextPageParamsBuilder?.call(pages) != null,
@@ -219,7 +212,7 @@ class PagedQuery<Data, Params> extends BaseQuery {
       } catch (e) {
         notify(QueryStateUpdated(
           state = state.copyWith(
-            status: PagedQueryStatus.failure,
+            status: QueryStatus.failure,
             isFetchingNextPage: false,
             error: e,
             errorUpdatedAt: DateTime.now(),
@@ -257,7 +250,7 @@ class PagedQuery<Data, Params> extends BaseQuery {
     Future<void> execute() async {
       notify(QueryStateUpdated(
         state = state.copyWith(
-          status: PagedQueryStatus.loadingMore,
+          status: QueryStatus.loading,
           isFetchingPreviousPage: true,
         ),
       ));
@@ -269,7 +262,7 @@ class PagedQuery<Data, Params> extends BaseQuery {
 
         notify(QueryStateUpdated(
           state = state.copyWith(
-            status: PagedQueryStatus.success,
+            status: QueryStatus.success,
             pages: pages,
             isFetchingPreviousPage: false,
             hasPreviousPage: previousPageParamsBuilder?.call(pages) != null,
@@ -279,7 +272,7 @@ class PagedQuery<Data, Params> extends BaseQuery {
       } catch (e) {
         notify(QueryStateUpdated(
           state = state.copyWith(
-            status: PagedQueryStatus.failure,
+            status: QueryStatus.failure,
             isFetchingPreviousPage: false,
             error: e,
             errorUpdatedAt: DateTime.now(),
@@ -310,7 +303,7 @@ class PagedQuery<Data, Params> extends BaseQuery {
     if (!state.hasData || isDataUpToDate) {
       notify(QueryStateUpdated(
         state = state.copyWith(
-          status: PagedQueryStatus.success,
+          status: QueryStatus.success,
           pages: pages,
           hasNextPage: nextPageParamsBuilder?.call(pages) != null,
           hasPreviousPage: previousPageParamsBuilder?.call(pages) != null,
