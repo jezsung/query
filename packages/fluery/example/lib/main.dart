@@ -294,15 +294,26 @@ class _InfiniteQueryExamplePageState extends State<InfiniteQueryExamplePage> {
         nextPageParamsBuilder: (pages) {
           return pages.isNotEmpty ? pages.last['nextCursor'] : null;
         },
-        initialData: const [
-          {
-            'data': 'Hello1',
-            'nextCursor': 1,
-          },
+        // initialData: const [
+        //   {
+        //     'data': 'Hello1',
+        //     'nextCursor': 1,
+        //   },
+        // ],
+        placeholderData: const [
+          {'data': 'Placeholder!'}
         ],
         staleDuration: const Duration(seconds: 5),
         builder: (context, state, child) {
           if (state.status == QueryStatus.loading) {
+            if (state.hasData) {
+              return ListView.builder(
+                itemCount: state.pages.length,
+                itemBuilder: (context, i) {
+                  return Text(state.pages[i]['data']);
+                },
+              );
+            }
             return const Center(
               child: CircularProgressIndicator(),
             );

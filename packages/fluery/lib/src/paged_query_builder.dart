@@ -325,6 +325,7 @@ class PagedQueryController<Data, Params>
   late PagedQueryFetcher<Data, Params> _fetcher;
   late PagedQueryParamsBuilder<Data, Params>? _nextPageParamsBuilder;
   late PagedQueryParamsBuilder<Data, Params>? _previousPageParamsBuilder;
+  late Pages<Data>? _placeholderData;
   late Duration _staleDuration;
 
   QueryIdentifier get id => _id;
@@ -333,7 +334,17 @@ class PagedQueryController<Data, Params>
       _nextPageParamsBuilder;
   PagedQueryParamsBuilder<Data, Params>? get previousPageParamsBuilder =>
       _previousPageParamsBuilder;
+  Pages<Data>? get placeholderData => _placeholderData;
   Duration get staleDuration => _staleDuration;
+
+  @override
+  PagedQueryState<Data> get value {
+    if (!super.value.hasData && super.value.status == QueryStatus.loading) {
+      return super.value.copyWith(pages: _placeholderData);
+    }
+
+    return super.value;
+  }
 
   Future<void> fetch() async {
     await _query?.fetch(
@@ -387,6 +398,7 @@ class PagedQueryBuilder<Data, Params> extends StatefulWidget {
     this.previousPageParamsBuilder,
     this.initialData,
     this.initialDataUpdatedAt,
+    this.placeholderData,
     this.staleDuration = Duration.zero,
     required this.builder,
     this.child,
@@ -399,6 +411,7 @@ class PagedQueryBuilder<Data, Params> extends StatefulWidget {
   final PagedQueryParamsBuilder<Data, Params>? previousPageParamsBuilder;
   final Pages<Data>? initialData;
   final DateTime? initialDataUpdatedAt;
+  final Pages<Data>? placeholderData;
   final Duration staleDuration;
   final PagedQueryWidgetBuilder builder;
   final Widget? child;
@@ -426,6 +439,7 @@ class _PagedQueryBuilderState<Data, Params>
     _effectiveController._nextPageParamsBuilder = widget.nextPageParamsBuilder;
     _effectiveController._previousPageParamsBuilder =
         widget.previousPageParamsBuilder;
+    _effectiveController._placeholderData = widget.placeholderData;
     _effectiveController._staleDuration = widget.staleDuration;
 
     WidgetsBinding.instance.addPostFrameCallback((timeStamp) async {
@@ -475,6 +489,7 @@ class _PagedQueryBuilderState<Data, Params>
     _effectiveController._nextPageParamsBuilder = widget.nextPageParamsBuilder;
     _effectiveController._previousPageParamsBuilder =
         widget.previousPageParamsBuilder;
+    _effectiveController._placeholderData = widget.placeholderData;
     _effectiveController._staleDuration = widget.staleDuration;
 
     if (oldWidget.controller != null && widget.controller == null) {
