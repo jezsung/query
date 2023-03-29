@@ -28,22 +28,6 @@ enum PagedQueryStatus {
   failure,
 }
 
-class Page<Data, Params> extends Equatable {
-  Page({
-    required this.data,
-    required this.params,
-  });
-
-  final Data data;
-  final Params? params;
-
-  @override
-  List<Object?> get props => [
-        data,
-        params,
-      ];
-}
-
 class PagedQueryState<Data> extends BaseQueryState {
   const PagedQueryState({
     this.status = PagedQueryStatus.idle,
