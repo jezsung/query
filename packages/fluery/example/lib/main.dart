@@ -122,9 +122,9 @@ class _QueryExamplePageState extends State<QueryExamplePage> {
             // throw 'Fetching Failure';
             return 'Fetching Success!';
           },
-          initialData: 'Initial Data',
-          initialDataUpdatedAt:
-              DateTime.now().subtract(const Duration(seconds: 3)),
+          // initialData: 'Initial Data',
+          // initialDataUpdatedAt:
+          //     DateTime.now().subtract(const Duration(seconds: 3)),
           staleDuration: const Duration(seconds: 10),
           builder: (context, state, child) {
             switch (state.status) {
@@ -190,11 +190,15 @@ class QueryExample2Page extends StatelessWidget {
             // throw 'Fetching Failure';
             return 'Fetching Success!';
           },
+          placeholderData: 'Placeholder Data!',
           staleDuration: const Duration(seconds: 10),
           builder: (context, state, child) {
             switch (state.status) {
               case QueryStatus.idle:
               case QueryStatus.loading:
+                if (state.hasData) {
+                  return Text(state.data!);
+                }
                 return const CircularProgressIndicator();
               case QueryStatus.success:
                 final String data = state.data!;

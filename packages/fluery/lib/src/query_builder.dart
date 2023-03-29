@@ -168,11 +168,22 @@ class QueryController<Data> extends ValueNotifier<QueryState<Data>>
 
   late QueryIdentifier _id;
   late QueryFetcher<Data> _fetcher;
+  late Data? _placeholderData;
   late Duration _staleDuration;
 
   QueryIdentifier get id => _id;
   QueryFetcher<Data> get fetcher => _fetcher;
+  Data? get placeholderData => _placeholderData;
   Duration get staleDuration => _staleDuration;
+
+  @override
+  QueryState<Data> get value {
+    if (!super.value.hasData && super.value.status == QueryStatus.loading) {
+      return super.value.copyWith(data: _placeholderData);
+    }
+
+    return super.value;
+  }
 
   Future<void> fetch() async {
     if (_query == null) {
@@ -209,6 +220,7 @@ class QueryBuilder<Data> extends StatefulWidget {
     required this.fetcher,
     this.initialData,
     this.initialDataUpdatedAt,
+    this.placeholderData,
     this.staleDuration = Duration.zero,
     required this.builder,
     this.child,
@@ -219,6 +231,7 @@ class QueryBuilder<Data> extends StatefulWidget {
   final QueryFetcher<Data> fetcher;
   final Data? initialData;
   final DateTime? initialDataUpdatedAt;
+  final Data? placeholderData;
   final Duration staleDuration;
   final QueryWidgetBuilder<Data> builder;
   final Widget? child;
@@ -240,6 +253,7 @@ class _QueryBuilderState<Data> extends State<QueryBuilder<Data>> {
     super.initState();
     _effectiveController._id = widget.id;
     _effectiveController._fetcher = widget.fetcher;
+    _effectiveController._placeholderData = widget.placeholderData;
     _effectiveController._staleDuration = widget.staleDuration;
 
     WidgetsBinding.instance.addPostFrameCallback((timeStamp) async {
@@ -278,6 +292,7 @@ class _QueryBuilderState<Data> extends State<QueryBuilder<Data>> {
 
     _effectiveController._id = widget.id;
     _effectiveController._fetcher = widget.fetcher;
+    _effectiveController._placeholderData = widget.placeholderData;
     _effectiveController._staleDuration = widget.staleDuration;
 
     if (oldWidget.controller != null && widget.controller == null) {
