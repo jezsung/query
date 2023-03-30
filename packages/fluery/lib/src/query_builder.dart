@@ -1,6 +1,7 @@
 import 'package:fluery/src/base_query.dart';
-import 'package:fluery/src/fluery_error.dart';
 import 'package:fluery/src/query_client_provider.dart';
+import 'package:fluery/src/utils/is_outdated.dart';
+import 'package:fluery/src/utils/retry_resolver.dart';
 import 'package:flutter/widgets.dart';
 
 typedef QueryFetcher<Data> = Future<Data> Function(QueryIdentifier id);
@@ -14,6 +15,7 @@ typedef QueryWidgetBuilder<Data> = Widget Function(
 enum QueryStatus {
   idle,
   loading,
+  retrying,
   success,
   failure,
 }
@@ -23,12 +25,14 @@ class QueryState<Data> extends BaseQueryState {
     this.status = QueryStatus.idle,
     this.data,
     this.dataUpdatedAt,
+    this.retried = 0,
     this.error,
     this.errorUpdatedAt,
   });
 
   final QueryStatus status;
   final Data? data;
+  final int retried;
   final Object? error;
   final DateTime? dataUpdatedAt;
   final DateTime? errorUpdatedAt;
@@ -40,6 +44,7 @@ class QueryState<Data> extends BaseQueryState {
   QueryState<Data> copyWith({
     QueryStatus? status,
     Data? data,
+    int? retried,
     Object? error,
     DateTime? dataUpdatedAt,
     DateTime? errorUpdatedAt,
@@ -47,6 +52,7 @@ class QueryState<Data> extends BaseQueryState {
     return QueryState<Data>(
       status: status ?? this.status,
       data: data ?? this.data,
+      retried: retried ?? this.retried,
       error: error ?? this.error,
       dataUpdatedAt: dataUpdatedAt ?? this.dataUpdatedAt,
       errorUpdatedAt: errorUpdatedAt ?? this.errorUpdatedAt,
@@ -62,6 +68,7 @@ class QueryState<Data> extends BaseQueryState {
   List<Object?> get props => [
         status,
         data,
+        retried,
         error,
         dataUpdatedAt,
         errorUpdatedAt,
@@ -79,15 +86,28 @@ class Query<Data> extends BaseQuery {
   late QueryState<Data> state;
 
   bool _isFetching = false;
+  RetryResolver<Data>? _retryResolver;
 
   Set<QueryController<Data>> get controllers =>
       observers.whereType<QueryController<Data>>().toSet();
 
   Future<void> fetch({
-    required QueryFetcher fetcher,
+    required QueryFetcher<Data> fetcher,
     required Duration staleDuration,
+    required int retryCount,
+    required Duration retryDelayDuration,
   }) async {
+    assert(staleDuration >= Duration.zero);
+    assert(retryCount > 0);
+    assert(retryDelayDuration >= Duration.zero);
+
     if (observers.isEmpty) {
+      return;
+    }
+
+    if (state.status == QueryStatus.success &&
+        state.dataUpdatedAt != null &&
+        !isOutdated(state.dataUpdatedAt!, staleDuration)) {
       return;
     }
 
@@ -98,21 +118,16 @@ class Query<Data> extends BaseQuery {
     }
 
     Future<void> execute() async {
-      final isDataStale = state.dataUpdatedAt
-              ?.isBefore(DateTime.now().subtract(staleDuration)) ??
-          true;
-      if (!isDataStale) {
-        return;
-      }
-
       notify(QueryStateUpdated<QueryState<Data>>(
         state = state.copyWith(
           status: QueryStatus.loading,
+          retried: 0,
         ),
       ));
 
       try {
         final data = await fetcher(id);
+
         notify(QueryStateUpdated<QueryState<Data>>(
           state = state.copyWith(
             status: QueryStatus.success,
@@ -120,14 +135,62 @@ class Query<Data> extends BaseQuery {
             dataUpdatedAt: DateTime.now(),
           ),
         ));
-      } catch (e) {
-        notify(QueryStateUpdated<QueryState<Data>>(
-          state = state.copyWith(
-            status: QueryStatus.failure,
-            error: e,
-            errorUpdatedAt: DateTime.now(),
-          ),
-        ));
+      } catch (error) {
+        final shouldRetry = retryCount >= 1;
+
+        if (shouldRetry) {
+          notify(QueryStateUpdated<QueryState<Data>>(
+            state = state.copyWith(
+              status: QueryStatus.retrying,
+              error: error,
+              errorUpdatedAt: DateTime.now(),
+            ),
+          ));
+
+          _retryResolver = RetryResolver<Data>(
+            () => fetcher(id),
+            maxCount: retryCount,
+            delayDuration: retryDelayDuration,
+            onError: (error, retried) {
+              if (retried < retryCount) {
+                notify(QueryStateUpdated<QueryState<Data>>(
+                  state = state.copyWith(
+                    retried: retried,
+                    error: error,
+                    errorUpdatedAt: DateTime.now(),
+                  ),
+                ));
+              } else {
+                notify(QueryStateUpdated<QueryState<Data>>(
+                  state = state.copyWith(
+                    status: QueryStatus.failure,
+                    retried: retried,
+                    error: error,
+                    errorUpdatedAt: DateTime.now(),
+                  ),
+                ));
+              }
+            },
+          );
+
+          final data = await _retryResolver!.call();
+
+          notify(QueryStateUpdated<QueryState<Data>>(
+            state = state.copyWith(
+              status: QueryStatus.success,
+              data: data,
+              dataUpdatedAt: DateTime.now(),
+            ),
+          ));
+        } else {
+          notify(QueryStateUpdated<QueryState<Data>>(
+            state = state.copyWith(
+              status: QueryStatus.failure,
+              error: error,
+              errorUpdatedAt: DateTime.now(),
+            ),
+          ));
+        }
       }
     }
 
@@ -170,11 +233,15 @@ class QueryController<Data> extends ValueNotifier<QueryState<Data>>
   late QueryFetcher<Data> _fetcher;
   late Data? _placeholderData;
   late Duration _staleDuration;
+  late int _retryCount;
+  late Duration _retryDelayDuration;
 
   QueryIdentifier get id => _id;
   QueryFetcher<Data> get fetcher => _fetcher;
   Data? get placeholderData => _placeholderData;
   Duration get staleDuration => _staleDuration;
+  int get retryCount => _retryCount;
+  Duration get retryDelayDuration => _retryDelayDuration;
 
   @override
   QueryState<Data> get value {
@@ -186,12 +253,11 @@ class QueryController<Data> extends ValueNotifier<QueryState<Data>>
   }
 
   Future<void> fetch() async {
-    if (_query == null) {
-      throw FlueryError('query is null');
-    }
     await _query!.fetch(
       fetcher: _fetcher,
       staleDuration: _staleDuration,
+      retryCount: _retryCount,
+      retryDelayDuration: _retryDelayDuration,
     );
   }
 
@@ -222,6 +288,8 @@ class QueryBuilder<Data> extends StatefulWidget {
     this.initialDataUpdatedAt,
     this.placeholderData,
     this.staleDuration = Duration.zero,
+    this.retryCount = 0,
+    this.retryDelayDuration = const Duration(seconds: 3),
     required this.builder,
     this.child,
   });
@@ -233,6 +301,8 @@ class QueryBuilder<Data> extends StatefulWidget {
   final DateTime? initialDataUpdatedAt;
   final Data? placeholderData;
   final Duration staleDuration;
+  final int retryCount;
+  final Duration retryDelayDuration;
   final QueryWidgetBuilder<Data> builder;
   final Widget? child;
 
@@ -255,9 +325,13 @@ class _QueryBuilderState<Data> extends State<QueryBuilder<Data>> {
     _effectiveController._fetcher = widget.fetcher;
     _effectiveController._placeholderData = widget.placeholderData;
     _effectiveController._staleDuration = widget.staleDuration;
+    _effectiveController._retryCount = widget.retryCount;
+    _effectiveController._retryDelayDuration = widget.retryDelayDuration;
 
-    WidgetsBinding.instance.addPostFrameCallback((timeStamp) async {
-      await _effectiveController.fetch();
+    WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
+      if (_query.state.status == QueryStatus.idle) {
+        _effectiveController.fetch();
+      }
     });
   }
 
@@ -294,6 +368,8 @@ class _QueryBuilderState<Data> extends State<QueryBuilder<Data>> {
     _effectiveController._fetcher = widget.fetcher;
     _effectiveController._placeholderData = widget.placeholderData;
     _effectiveController._staleDuration = widget.staleDuration;
+    _effectiveController._retryCount = widget.retryCount;
+    _effectiveController._retryDelayDuration = widget.retryDelayDuration;
 
     if (oldWidget.controller != null && widget.controller == null) {
       _query.addObserver<QueryController<Data>>(_controller);

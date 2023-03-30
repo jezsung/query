@@ -25,10 +25,25 @@ class QueryClient {
           ? controller.staleDuration
           : duration,
     );
+    final retryCount = controllers.fold(
+      controllers.first.retryCount,
+      (retryCount, controller) => controller.retryCount > retryCount
+          ? controller.retryCount
+          : retryCount,
+    );
+    final retryDelayDuration = controllers.fold(
+      controllers.first.retryDelayDuration,
+      (retryDelayDuration, controller) =>
+          controller.retryDelayDuration > retryDelayDuration
+              ? controller.retryDelayDuration
+              : retryDelayDuration,
+    );
 
     await query.fetch(
       fetcher: fetcher,
       staleDuration: staleDuration,
+      retryCount: retryCount,
+      retryDelayDuration: retryDelayDuration,
     );
   }
 }

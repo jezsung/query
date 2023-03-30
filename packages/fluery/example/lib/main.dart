@@ -119,13 +119,12 @@ class _QueryExamplePageState extends State<QueryExamplePage> {
           id: 'example',
           fetcher: (key) async {
             await Future.delayed(const Duration(seconds: 3));
-            // throw 'Fetching Failure';
+            throw 'Fetching Failure';
             return 'Fetching Success!';
           },
-          // initialData: 'Initial Data',
-          // initialDataUpdatedAt:
-          //     DateTime.now().subtract(const Duration(seconds: 3)),
           staleDuration: const Duration(seconds: 10),
+          retryCount: 3,
+          retryDelayDuration: const Duration(seconds: 1),
           builder: (context, state, child) {
             switch (state.status) {
               case QueryStatus.idle:
@@ -138,6 +137,15 @@ class _QueryExamplePageState extends State<QueryExamplePage> {
                   return Text(state.data!);
                 }
                 return const CircularProgressIndicator();
+              case QueryStatus.retrying:
+                final retried = state.retried;
+                return Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text('$retried'),
+                    const CircularProgressIndicator(),
+                  ],
+                );
               case QueryStatus.success:
                 final String data = state.data!;
                 return Column(
@@ -196,6 +204,7 @@ class QueryExample2Page extends StatelessWidget {
             switch (state.status) {
               case QueryStatus.idle:
               case QueryStatus.loading:
+              case QueryStatus.retrying:
                 if (state.hasData) {
                   return Text(state.data!);
                 }
