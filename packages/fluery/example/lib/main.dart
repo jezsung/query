@@ -122,10 +122,11 @@ class _QueryExamplePageState extends State<QueryExamplePage> {
             // throw 'Fetching Failure';
             return 'Fetching Success!';
           },
-          staleDuration: const Duration(seconds: 3),
+          staleDuration: const Duration(seconds: 0),
           retryCount: 3,
           retryDelayDuration: const Duration(seconds: 1),
           refetchOnInit: RefetchMode.stale,
+          refetchIntervalDuration: const Duration(seconds: 5),
           builder: (context, state, child) {
             switch (state.status) {
               case QueryStatus.idle:

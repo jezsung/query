@@ -1,6 +1,7 @@
 import 'package:fluery/src/base_query.dart';
 import 'package:fluery/src/query_client_provider.dart';
 import 'package:fluery/src/utils/is_outdated.dart';
+import 'package:fluery/src/utils/periodic_timer.dart';
 import 'package:fluery/src/utils/retry_resolver.dart';
 import 'package:flutter/widgets.dart';
 
@@ -94,19 +95,73 @@ class Query<Data> extends BaseQuery {
 
   bool _isFetching = false;
   RetryResolver<Data>? _retryResolver;
+  PeriodicTimer? _periodicTimer;
 
-  Set<QueryController<Data>> get controllers =>
-      observers.whereType<QueryController<Data>>().toSet();
+  Set<QueryController<Data>> get controllers {
+    return observers.whereType<QueryController<Data>>().toSet();
+  }
+
+  QueryFetcher<Data> get fetcher {
+    return controllers.first.fetcher;
+  }
+
+  Duration get staleDuration {
+    return controllers.fold(
+      controllers.first.staleDuration,
+      (staleDuration, controller) => controller.staleDuration < staleDuration
+          ? controller.staleDuration
+          : staleDuration,
+    );
+  }
+
+  int get retryCount {
+    return controllers.fold(
+      controllers.first.retryCount,
+      (retryCount, controller) => controller.retryCount > retryCount
+          ? controller.retryCount
+          : retryCount,
+    );
+  }
+
+  Duration get retryDelayDuration {
+    return controllers.fold(
+      controllers.first.retryDelayDuration,
+      (retryDelayDuration, controller) =>
+          controller.retryDelayDuration > retryDelayDuration
+              ? controller.retryDelayDuration
+              : retryDelayDuration,
+    );
+  }
+
+  Duration? get refetchIntervalDuration {
+    return controllers.fold(
+      controllers.first.refetchIntervalDuration,
+      (duration, controller) {
+        if (controller.refetchIntervalDuration == null) {
+          return duration;
+        }
+        if (duration == null) {
+          return controller.refetchIntervalDuration;
+        }
+
+        return controller.refetchIntervalDuration! < duration
+            ? controller.refetchIntervalDuration
+            : duration;
+      },
+    );
+  }
 
   Future<void> fetch({
-    required QueryFetcher<Data> fetcher,
-    required Duration staleDuration,
-    required int retryCount,
-    required Duration retryDelayDuration,
+    QueryFetcher<Data>? fetcher,
+    Duration? staleDuration,
+    int? retryCount,
+    Duration? retryDelayDuration,
   }) async {
-    assert(staleDuration >= Duration.zero);
-    assert(retryCount > 0);
-    assert(retryDelayDuration >= Duration.zero);
+    final effectiveFetcher = fetcher ?? this.fetcher;
+    final effectiveStaleDuration = staleDuration ?? this.staleDuration;
+    final effectiveRetryCount = retryCount ?? this.retryCount;
+    final effectiveRetryDelayDuration =
+        retryDelayDuration ?? this.retryDelayDuration;
 
     if (observers.isEmpty) {
       return;
@@ -114,7 +169,7 @@ class Query<Data> extends BaseQuery {
 
     if (state.status == QueryStatus.success &&
         state.dataUpdatedAt != null &&
-        !isOutdated(state.dataUpdatedAt!, staleDuration)) {
+        !isOutdated(state.dataUpdatedAt!, effectiveStaleDuration)) {
       return;
     }
 
@@ -133,7 +188,7 @@ class Query<Data> extends BaseQuery {
       ));
 
       try {
-        final data = await fetcher(id);
+        final data = await effectiveFetcher(id);
 
         notify(QueryStateUpdated<QueryState<Data>>(
           state = state.copyWith(
@@ -143,7 +198,7 @@ class Query<Data> extends BaseQuery {
           ),
         ));
       } catch (error) {
-        final shouldRetry = retryCount >= 1;
+        final shouldRetry = effectiveRetryCount >= 1;
 
         if (shouldRetry) {
           notify(QueryStateUpdated<QueryState<Data>>(
@@ -155,11 +210,11 @@ class Query<Data> extends BaseQuery {
           ));
 
           _retryResolver = RetryResolver<Data>(
-            () => fetcher(id),
-            maxCount: retryCount,
-            delayDuration: retryDelayDuration,
+            () => effectiveFetcher(id),
+            maxCount: effectiveRetryCount,
+            delayDuration: effectiveRetryDelayDuration,
             onError: (error, retried) {
-              if (retried < retryCount) {
+              if (retried < effectiveRetryCount) {
                 notify(QueryStateUpdated<QueryState<Data>>(
                   state = state.copyWith(
                     retried: retried,
@@ -228,6 +283,17 @@ class Query<Data> extends BaseQuery {
       ));
     }
   }
+
+  void setRefetchInterval() {
+    if (refetchIntervalDuration == null) {
+      _periodicTimer?.stop();
+      return;
+    }
+
+    _periodicTimer ??= PeriodicTimer(fetch, refetchIntervalDuration!);
+    _periodicTimer!.setInterval(refetchIntervalDuration!);
+    _periodicTimer!.start();
+  }
 }
 
 class QueryController<Data> extends ValueNotifier<QueryState<Data>>
@@ -242,6 +308,7 @@ class QueryController<Data> extends ValueNotifier<QueryState<Data>>
   late Duration _staleDuration;
   late int _retryCount;
   late Duration _retryDelayDuration;
+  late Duration? _refetchIntervalDuration;
 
   QueryIdentifier get id => _id;
   QueryFetcher<Data> get fetcher => _fetcher;
@@ -249,6 +316,7 @@ class QueryController<Data> extends ValueNotifier<QueryState<Data>>
   Duration get staleDuration => _staleDuration;
   int get retryCount => _retryCount;
   Duration get retryDelayDuration => _retryDelayDuration;
+  Duration? get refetchIntervalDuration => _refetchIntervalDuration;
 
   @override
   QueryState<Data> get value {
@@ -303,6 +371,7 @@ class QueryBuilder<Data> extends StatefulWidget {
     this.retryDelayDuration = const Duration(seconds: 3),
     this.refetchOnInit = RefetchMode.stale,
     this.refetchOnResumed = RefetchMode.stale,
+    this.refetchIntervalDuration,
     required this.builder,
     this.child,
   });
@@ -318,7 +387,7 @@ class QueryBuilder<Data> extends StatefulWidget {
   final Duration retryDelayDuration;
   final RefetchMode refetchOnInit;
   final RefetchMode refetchOnResumed;
-
+  final Duration? refetchIntervalDuration;
   final QueryWidgetBuilder<Data> builder;
   final Widget? child;
 
@@ -346,12 +415,18 @@ class _QueryBuilderState<Data> extends State<QueryBuilder<Data>>
     _effectiveController._staleDuration = widget.staleDuration;
     _effectiveController._retryCount = widget.retryCount;
     _effectiveController._retryDelayDuration = widget.retryDelayDuration;
+    _effectiveController._refetchIntervalDuration =
+        widget.refetchIntervalDuration;
 
-    WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
+    WidgetsBinding.instance.addPostFrameCallback((timeStamp) async {
       if (_query.state.status == QueryStatus.idle) {
-        _effectiveController.fetch();
+        await _effectiveController.fetch();
       } else {
-        _refetch(widget.refetchOnInit);
+        await _refetch(widget.refetchOnInit);
+      }
+
+      if (widget.refetchIntervalDuration != null) {
+        _query.setRefetchInterval();
       }
     });
   }
@@ -391,6 +466,8 @@ class _QueryBuilderState<Data> extends State<QueryBuilder<Data>>
     _effectiveController._staleDuration = widget.staleDuration;
     _effectiveController._retryCount = widget.retryCount;
     _effectiveController._retryDelayDuration = widget.retryDelayDuration;
+    _effectiveController._refetchIntervalDuration =
+        widget.refetchIntervalDuration;
 
     if (oldWidget.controller != null && widget.controller == null) {
       _query.addObserver<QueryController<Data>>(_controller);
@@ -406,6 +483,10 @@ class _QueryBuilderState<Data> extends State<QueryBuilder<Data>>
         _effectiveController.fetch();
       });
     }
+
+    if (widget.refetchIntervalDuration != oldWidget.refetchIntervalDuration) {
+      _query.setRefetchInterval();
+    }
   }
 
   @override
@@ -418,8 +499,8 @@ class _QueryBuilderState<Data> extends State<QueryBuilder<Data>>
   @override
   void dispose() {
     _query.removeObserver<QueryController<Data>>(_effectiveController);
+    _query.setRefetchInterval();
     _controller.dispose();
-
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
