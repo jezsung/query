@@ -12,6 +12,13 @@ typedef QueryWidgetBuilder<Data> = Widget Function(
   Widget? child,
 );
 
+enum RefetchMode {
+  never,
+  stale,
+  failure,
+  always,
+}
+
 enum QueryStatus {
   idle,
   loading,
@@ -252,12 +259,16 @@ class QueryController<Data> extends ValueNotifier<QueryState<Data>>
     return super.value;
   }
 
-  Future<void> fetch() async {
+  Future<void> fetch({
+    Duration? staleDuration,
+    int? retryCount,
+    Duration? retryDelayDuration,
+  }) async {
     await _query!.fetch(
       fetcher: _fetcher,
-      staleDuration: _staleDuration,
-      retryCount: _retryCount,
-      retryDelayDuration: _retryDelayDuration,
+      staleDuration: staleDuration ?? _staleDuration,
+      retryCount: retryCount ?? _retryCount,
+      retryDelayDuration: retryDelayDuration ?? _retryDelayDuration,
     );
   }
 
@@ -290,6 +301,8 @@ class QueryBuilder<Data> extends StatefulWidget {
     this.staleDuration = Duration.zero,
     this.retryCount = 0,
     this.retryDelayDuration = const Duration(seconds: 3),
+    this.refetchOnInit = RefetchMode.stale,
+    this.refetchOnResumed = RefetchMode.stale,
     required this.builder,
     this.child,
   });
@@ -303,6 +316,9 @@ class QueryBuilder<Data> extends StatefulWidget {
   final Duration staleDuration;
   final int retryCount;
   final Duration retryDelayDuration;
+  final RefetchMode refetchOnInit;
+  final RefetchMode refetchOnResumed;
+
   final QueryWidgetBuilder<Data> builder;
   final Widget? child;
 
@@ -310,7 +326,8 @@ class QueryBuilder<Data> extends StatefulWidget {
   State<QueryBuilder> createState() => _QueryBuilderState<Data>();
 }
 
-class _QueryBuilderState<Data> extends State<QueryBuilder<Data>> {
+class _QueryBuilderState<Data> extends State<QueryBuilder<Data>>
+    with WidgetsBindingObserver {
   final QueryController<Data> _controller = QueryController<Data>();
 
   late Query<Data> _query;
@@ -321,6 +338,8 @@ class _QueryBuilderState<Data> extends State<QueryBuilder<Data>> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
+
     _effectiveController._id = widget.id;
     _effectiveController._fetcher = widget.fetcher;
     _effectiveController._placeholderData = widget.placeholderData;
@@ -331,6 +350,8 @@ class _QueryBuilderState<Data> extends State<QueryBuilder<Data>> {
     WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
       if (_query.state.status == QueryStatus.idle) {
         _effectiveController.fetch();
+      } else {
+        _refetch(widget.refetchOnInit);
       }
     });
   }
@@ -381,9 +402,16 @@ class _QueryBuilderState<Data> extends State<QueryBuilder<Data>> {
 
     if (widget.id != oldWidget.id ||
         widget.staleDuration != oldWidget.staleDuration) {
-      WidgetsBinding.instance.addPostFrameCallback((timeStamp) async {
-        await _effectiveController.fetch();
+      WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
+        _effectiveController.fetch();
       });
+    }
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _refetch(widget.refetchOnResumed);
     }
   }
 
@@ -391,7 +419,27 @@ class _QueryBuilderState<Data> extends State<QueryBuilder<Data>> {
   void dispose() {
     _query.removeObserver<QueryController<Data>>(_effectiveController);
     _controller.dispose();
+
+    WidgetsBinding.instance.removeObserver(this);
     super.dispose();
+  }
+
+  Future<void> _refetch(RefetchMode mode) async {
+    switch (mode) {
+      case RefetchMode.never:
+        break;
+      case RefetchMode.stale:
+        await _effectiveController.fetch();
+        break;
+      case RefetchMode.failure:
+        if (_query.state.status == QueryStatus.failure) {
+          await _effectiveController.fetch();
+        }
+        break;
+      case RefetchMode.always:
+        await _effectiveController.fetch(staleDuration: Duration.zero);
+        break;
+    }
   }
 
   @override

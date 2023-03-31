@@ -119,12 +119,13 @@ class _QueryExamplePageState extends State<QueryExamplePage> {
           id: 'example',
           fetcher: (key) async {
             await Future.delayed(const Duration(seconds: 3));
-            throw 'Fetching Failure';
+            // throw 'Fetching Failure';
             return 'Fetching Success!';
           },
-          staleDuration: const Duration(seconds: 10),
+          staleDuration: const Duration(seconds: 3),
           retryCount: 3,
           retryDelayDuration: const Duration(seconds: 1),
+          refetchOnInit: RefetchMode.stale,
           builder: (context, state, child) {
             switch (state.status) {
               case QueryStatus.idle:
