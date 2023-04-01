@@ -469,6 +469,10 @@ class _QueryBuilderState<Data> extends State<QueryBuilder<Data>>
     _effectiveController._refetchIntervalDuration =
         widget.refetchIntervalDuration;
 
+    _query = QueryClientProvider.of(context)
+        .manager
+        .buildQuery(_effectiveController.id);
+
     if (oldWidget.controller != null && widget.controller == null) {
       _query.addObserver<QueryController<Data>>(_controller);
     } else if (oldWidget.controller == null && widget.controller != null) {
