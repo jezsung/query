@@ -420,7 +420,7 @@ class _QueryBuilderState<Data> extends State<QueryBuilder<Data>>
 
     WidgetsBinding.instance.addPostFrameCallback((timeStamp) async {
       if (_query.state.status == QueryStatus.idle) {
-        await _effectiveController.fetch();
+        await _fetch();
       } else {
         await _refetch(widget.refetchOnInit);
       }
@@ -484,7 +484,7 @@ class _QueryBuilderState<Data> extends State<QueryBuilder<Data>>
     if (widget.id != oldWidget.id ||
         widget.staleDuration != oldWidget.staleDuration) {
       WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
-        _effectiveController.fetch();
+        _fetch();
       });
     }
 
@@ -509,20 +509,31 @@ class _QueryBuilderState<Data> extends State<QueryBuilder<Data>>
     super.dispose();
   }
 
+  Future<void> _fetch({
+    bool ignoreStaleness = false,
+  }) async {
+    await _query.fetch(
+      fetcher: _effectiveController.fetcher,
+      staleDuration: _effectiveController.staleDuration,
+      retryCount: _effectiveController.retryCount,
+      retryDelayDuration: _effectiveController.retryDelayDuration,
+    );
+  }
+
   Future<void> _refetch(RefetchMode mode) async {
     switch (mode) {
       case RefetchMode.never:
         break;
       case RefetchMode.stale:
-        await _effectiveController.fetch();
+        await _fetch();
         break;
       case RefetchMode.failure:
         if (_query.state.status == QueryStatus.failure) {
-          await _effectiveController.fetch();
+          await _fetch(ignoreStaleness: true);
         }
         break;
       case RefetchMode.always:
-        await _effectiveController.fetch(staleDuration: Duration.zero);
+        await _fetch(ignoreStaleness: true);
         break;
     }
   }
