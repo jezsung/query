@@ -429,16 +429,8 @@ class _QueryBuilderState<Data> extends State<QueryBuilder<Data>>
     _effectiveController._refetchIntervalDuration =
         widget.refetchIntervalDuration;
 
-    WidgetsBinding.instance.addPostFrameCallback((timeStamp) async {
-      if (_query.state.status == QueryStatus.idle) {
-        await _fetch();
-      } else {
-        await _refetch(widget.refetchOnInit);
-      }
-
-      if (widget.refetchIntervalDuration != null) {
-        _query.setRefetchInterval();
-      }
+    WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
+      _initQuery();
     });
   }
 
@@ -500,15 +492,16 @@ class _QueryBuilderState<Data> extends State<QueryBuilder<Data>>
       _query.addObserver<QueryController<Data>>(widget.controller!);
     }
 
-    if (widget.id != oldWidget.id ||
-        widget.staleDuration != oldWidget.staleDuration) {
+    if (widget.id != oldWidget.id) {
       WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
-        _fetch();
+        _initQuery();
       });
+      return;
     }
 
     if (widget.refetchIntervalDuration != oldWidget.refetchIntervalDuration) {
       _query.setRefetchInterval();
+      return;
     }
   }
 
@@ -526,6 +519,18 @@ class _QueryBuilderState<Data> extends State<QueryBuilder<Data>>
     _controller.dispose();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
+  }
+
+  Future<void> _initQuery() async {
+    if (_query.state.status == QueryStatus.idle) {
+      await _fetch();
+    } else {
+      await _refetch(widget.refetchOnInit);
+    }
+
+    if (widget.refetchIntervalDuration != null) {
+      _query.setRefetchInterval();
+    }
   }
 
   Future<void> _fetch({
