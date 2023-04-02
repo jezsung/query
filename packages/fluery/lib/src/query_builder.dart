@@ -304,6 +304,8 @@ class QueryController<Data> extends ValueNotifier<QueryState<Data>>
 
   late QueryIdentifier _id;
   late QueryFetcher<Data> _fetcher;
+  late Data? _initialData;
+  late DateTime? _initialDataUpdatedAt;
   late Data? _placeholderData;
   late Duration _staleDuration;
   late int _retryCount;
@@ -312,6 +314,8 @@ class QueryController<Data> extends ValueNotifier<QueryState<Data>>
 
   QueryIdentifier get id => _id;
   QueryFetcher<Data> get fetcher => _fetcher;
+  Data? get initialData => _initialData;
+  DateTime? get initialDataUpdatedAt => _initialDataUpdatedAt;
   Data? get placeholderData => _placeholderData;
   Duration get staleDuration => _staleDuration;
   int get retryCount => _retryCount;
@@ -348,6 +352,13 @@ class QueryController<Data> extends ValueNotifier<QueryState<Data>>
       if (event.observer == this) {
         _query = query;
         value = query.state;
+        if (_initialData != null) {
+          query.setInitialData(
+            // ignore: null_check_on_nullable_type_parameter
+            data: _initialData!,
+            updatedAt: initialDataUpdatedAt,
+          );
+        }
       }
     } else if (event is QueryObserverRemoved<QueryController<Data>>) {
       if (event.observer == this) {
@@ -439,25 +450,29 @@ class _QueryBuilderState<Data> extends State<QueryBuilder<Data>>
         .buildQuery(_effectiveController.id);
 
     _query.addObserver<QueryController<Data>>(_effectiveController);
-
-    if (widget.initialData != null) {
-      _query.setInitialData(
-        // ignore: null_check_on_nullable_type_parameter
-        data: widget.initialData!,
-        updatedAt: widget.initialDataUpdatedAt,
-      );
-    }
   }
 
   @override
   void didUpdateWidget(covariant QueryBuilder<Data> oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.controller != null && widget.controller == null) {
-      _query.removeObserver<QueryController<Data>>(oldWidget.controller!);
-    } else if (oldWidget.controller == null && widget.controller != null) {
+    final hasController = widget.controller != null;
+    final hadController = oldWidget.controller != null;
+    final hasHadSameController = widget.controller != null &&
+        oldWidget.controller != null &&
+        widget.controller == oldWidget.controller;
+    final hasHadNoController =
+        widget.controller == null && oldWidget.controller == null;
+
+    if (hasController && !hadController) {
       _query.removeObserver<QueryController<Data>>(_controller);
-    } else if (oldWidget.controller != widget.controller) {
+    } else if (!hasController && hadController) {
       _query.removeObserver<QueryController<Data>>(oldWidget.controller!);
+    } else if (hasController && hadController && !hasHadSameController) {
+      _query.removeObserver<QueryController<Data>>(oldWidget.controller!);
+    } else if (hasHadNoController && widget.id != oldWidget.id) {
+      _query.removeObserver<QueryController<Data>>(_controller);
+    } else if (hasHadSameController && widget.id != oldWidget.id) {
+      _query.removeObserver<QueryController<Data>>(widget.controller!);
     }
 
     _effectiveController._id = widget.id;
@@ -469,15 +484,19 @@ class _QueryBuilderState<Data> extends State<QueryBuilder<Data>>
     _effectiveController._refetchIntervalDuration =
         widget.refetchIntervalDuration;
 
-    _query = QueryClientProvider.of(context)
-        .manager
-        .buildQuery(_effectiveController.id);
+    if (widget.id != oldWidget.id) {
+      _query = QueryClientProvider.of(context).manager.buildQuery(widget.id);
+    }
 
-    if (oldWidget.controller != null && widget.controller == null) {
-      _query.addObserver<QueryController<Data>>(_controller);
-    } else if (oldWidget.controller == null && widget.controller != null) {
+    if (hasController && !hadController) {
       _query.addObserver<QueryController<Data>>(widget.controller!);
-    } else if (oldWidget.controller != widget.controller) {
+    } else if (!hasController && hadController) {
+      _query.addObserver<QueryController<Data>>(_controller);
+    } else if (hasController && hadController && !hasHadSameController) {
+      _query.addObserver<QueryController<Data>>(widget.controller!);
+    } else if (hasHadNoController && widget.id != oldWidget.id) {
+      _query.addObserver<QueryController<Data>>(_controller);
+    } else if (hasHadSameController && widget.id != oldWidget.id) {
       _query.addObserver<QueryController<Data>>(widget.controller!);
     }
 
@@ -513,10 +532,10 @@ class _QueryBuilderState<Data> extends State<QueryBuilder<Data>>
     bool ignoreStaleness = false,
   }) async {
     await _query.fetch(
-      fetcher: _effectiveController.fetcher,
-      staleDuration: _effectiveController.staleDuration,
-      retryCount: _effectiveController.retryCount,
-      retryDelayDuration: _effectiveController.retryDelayDuration,
+      fetcher: widget.fetcher,
+      staleDuration: widget.staleDuration,
+      retryCount: widget.retryCount,
+      retryDelayDuration: widget.retryDelayDuration,
     );
   }
 
