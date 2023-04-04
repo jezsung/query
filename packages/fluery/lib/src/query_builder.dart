@@ -296,7 +296,7 @@ class Query<Data> extends BaseQuery {
     }
   }
 
-  void setRefetchInterval() {
+  void onRefetchIntervalChanged() {
     if (refetchIntervalDuration == null) {
       _periodicTimer?.stop();
       return;
@@ -333,6 +333,11 @@ class QueryController<Data> extends ValueNotifier<QueryState<Data>>
   int get retryCount => _retryCount;
   Duration get retryDelayDuration => _retryDelayDuration;
   Duration? get refetchIntervalDuration => _refetchIntervalDuration;
+
+  set refetchIntervalDuration(Duration? value) {
+    _refetchIntervalDuration = value;
+    _query?.onRefetchIntervalChanged();
+  }
 
   @override
   QueryState<Data> get value {
@@ -371,10 +376,12 @@ class QueryController<Data> extends ValueNotifier<QueryState<Data>>
             updatedAt: initialDataUpdatedAt,
           );
         }
+        query.onRefetchIntervalChanged();
       }
     } else if (event is QueryObserverRemoved<QueryController<Data>>) {
       if (event.observer == this) {
         _query = null;
+        query.onRefetchIntervalChanged();
       }
     }
   }
@@ -514,11 +521,6 @@ class _QueryBuilderState<Data> extends State<QueryBuilder<Data>>
       });
       return;
     }
-
-    if (widget.refetchIntervalDuration != oldWidget.refetchIntervalDuration) {
-      _query.setRefetchInterval();
-      return;
-    }
   }
 
   @override
@@ -531,7 +533,6 @@ class _QueryBuilderState<Data> extends State<QueryBuilder<Data>>
   @override
   void dispose() {
     _query.removeObserver<QueryController<Data>>(_effectiveController);
-    _query.setRefetchInterval();
     _controller.dispose();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
@@ -542,10 +543,6 @@ class _QueryBuilderState<Data> extends State<QueryBuilder<Data>>
       await _fetch();
     } else {
       await _refetch(widget.refetchOnInit);
-    }
-
-    if (widget.refetchIntervalDuration != null) {
-      _query.setRefetchInterval();
     }
   }
 
