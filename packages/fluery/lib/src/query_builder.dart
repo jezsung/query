@@ -551,7 +551,7 @@ class _QueryBuilderState<Data> extends State<QueryBuilder<Data>>
   }) async {
     await _query.fetch(
       fetcher: widget.fetcher,
-      staleDuration: widget.staleDuration,
+      staleDuration: ignoreStaleness ? Duration.zero : widget.staleDuration,
       retryCount: widget.retryCount,
       retryDelayDuration: widget.retryDelayDuration,
     );
