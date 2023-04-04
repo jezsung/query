@@ -316,6 +316,7 @@ class QueryController<Data> extends ValueNotifier<QueryState<Data>>
 
   late QueryIdentifier _id;
   late QueryFetcher<Data> _fetcher;
+  late bool _enabled;
   late Data? _initialData;
   late DateTime? _initialDataUpdatedAt;
   late Data? _placeholderData;
@@ -326,6 +327,7 @@ class QueryController<Data> extends ValueNotifier<QueryState<Data>>
 
   QueryIdentifier get id => _id;
   QueryFetcher<Data> get fetcher => _fetcher;
+  bool get enabled => _enabled;
   Data? get initialData => _initialData;
   DateTime? get initialDataUpdatedAt => _initialDataUpdatedAt;
   Data? get placeholderData => _placeholderData;
@@ -341,6 +343,10 @@ class QueryController<Data> extends ValueNotifier<QueryState<Data>>
 
   @override
   QueryState<Data> get value {
+    if (_enabled && super.value.status == QueryStatus.idle) {
+      return super.value.copyWith(status: QueryStatus.loading);
+    }
+
     if (!super.value.hasData && super.value.status == QueryStatus.loading) {
       return super.value.copyWith(data: _placeholderData);
     }
@@ -443,6 +449,7 @@ class _QueryBuilderState<Data> extends State<QueryBuilder<Data>>
 
     _effectiveController._id = widget.id;
     _effectiveController._fetcher = widget.fetcher;
+    _effectiveController._enabled = widget.enabled;
     _effectiveController._initialData = widget.initialData;
     _effectiveController._initialDataUpdatedAt = widget.initialDataUpdatedAt;
     _effectiveController._placeholderData = widget.placeholderData;
@@ -492,6 +499,7 @@ class _QueryBuilderState<Data> extends State<QueryBuilder<Data>>
 
     _effectiveController._id = widget.id;
     _effectiveController._fetcher = widget.fetcher;
+    _effectiveController._enabled = widget.enabled;
     _effectiveController._initialData = widget.initialData;
     _effectiveController._initialDataUpdatedAt = widget.initialDataUpdatedAt;
     _effectiveController._placeholderData = widget.placeholderData;
