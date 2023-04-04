@@ -1,7 +1,6 @@
-import 'package:equatable/equatable.dart';
-import 'package:fluery/fluery.dart';
 import 'package:fluery/src/base_query.dart';
 import 'package:fluery/src/query_client_provider.dart';
+import 'package:fluery/src/query_status.dart';
 import 'package:flutter/widgets.dart';
 
 typedef Pages<Data> = List<Data>;

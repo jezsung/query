@@ -1,5 +1,6 @@
 import 'package:fluery/src/base_query.dart';
 import 'package:fluery/src/query_client_provider.dart';
+import 'package:fluery/src/query_status.dart';
 import 'package:fluery/src/utils/is_outdated.dart';
 import 'package:fluery/src/utils/periodic_timer.dart';
 import 'package:fluery/src/utils/retry_resolver.dart';
@@ -18,14 +19,6 @@ enum RefetchMode {
   stale,
   failure,
   always,
-}
-
-enum QueryStatus {
-  idle,
-  loading,
-  retrying,
-  success,
-  failure,
 }
 
 class QueryState<Data> extends BaseQueryState {
