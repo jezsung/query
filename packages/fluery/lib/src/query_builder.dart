@@ -422,6 +422,8 @@ class _QueryBuilderState<Data> extends State<QueryBuilder<Data>>
 
     _effectiveController._id = widget.id;
     _effectiveController._fetcher = widget.fetcher;
+    _effectiveController._initialData = widget.initialData;
+    _effectiveController._initialDataUpdatedAt = widget.initialDataUpdatedAt;
     _effectiveController._placeholderData = widget.placeholderData;
     _effectiveController._staleDuration = widget.staleDuration;
     _effectiveController._retryCount = widget.retryCount;
@@ -469,6 +471,8 @@ class _QueryBuilderState<Data> extends State<QueryBuilder<Data>>
 
     _effectiveController._id = widget.id;
     _effectiveController._fetcher = widget.fetcher;
+    _effectiveController._initialData = widget.initialData;
+    _effectiveController._initialDataUpdatedAt = widget.initialDataUpdatedAt;
     _effectiveController._placeholderData = widget.placeholderData;
     _effectiveController._staleDuration = widget.staleDuration;
     _effectiveController._retryCount = widget.retryCount;
