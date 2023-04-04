@@ -1,6 +1,6 @@
 enum QueryStatus {
   idle,
-  loading,
+  fetching,
   retrying,
   success,
   failure,

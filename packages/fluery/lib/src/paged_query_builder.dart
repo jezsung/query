@@ -132,7 +132,7 @@ class PagedQuery<Data, Params> extends BaseQuery {
 
       notify(QueryStateUpdated(
         state = state.copyWith(
-          status: QueryStatus.loading,
+          status: QueryStatus.fetching,
         ),
       ));
 
@@ -189,7 +189,7 @@ class PagedQuery<Data, Params> extends BaseQuery {
     Future<void> execute() async {
       notify(QueryStateUpdated(
         state = state.copyWith(
-          status: QueryStatus.loading,
+          status: QueryStatus.fetching,
           isFetchingNextPage: true,
         ),
       ));
@@ -249,7 +249,7 @@ class PagedQuery<Data, Params> extends BaseQuery {
     Future<void> execute() async {
       notify(QueryStateUpdated(
         state = state.copyWith(
-          status: QueryStatus.loading,
+          status: QueryStatus.fetching,
           isFetchingPreviousPage: true,
         ),
       ));
@@ -338,7 +338,7 @@ class PagedQueryController<Data, Params>
 
   @override
   PagedQueryState<Data> get value {
-    if (!super.value.hasData && super.value.status == QueryStatus.loading) {
+    if (!super.value.hasData && super.value.status == QueryStatus.fetching) {
       return super.value.copyWith(pages: _placeholderData);
     }
 

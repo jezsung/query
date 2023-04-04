@@ -187,7 +187,7 @@ class Query<Data> extends BaseQuery {
     Future<void> execute() async {
       notify(QueryStateUpdated<QueryState<Data>>(
         state = state.copyWith(
-          status: QueryStatus.loading,
+          status: QueryStatus.fetching,
           retried: 0,
         ),
       ));
@@ -337,10 +337,10 @@ class QueryController<Data> extends ValueNotifier<QueryState<Data>>
   @override
   QueryState<Data> get value {
     if (_enabled && super.value.status == QueryStatus.idle) {
-      return super.value.copyWith(status: QueryStatus.loading);
+      return super.value.copyWith(status: QueryStatus.fetching);
     }
 
-    if (!super.value.hasData && super.value.status == QueryStatus.loading) {
+    if (!super.value.hasData && super.value.status == QueryStatus.fetching) {
       return super.value.copyWith(data: _placeholderData);
     }
 

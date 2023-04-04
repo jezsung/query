@@ -134,7 +134,7 @@ class _QueryExamplePageState extends State<QueryExamplePage> {
                   return Text(state.data!);
                 }
                 return const Text('idle');
-              case QueryStatus.loading:
+              case QueryStatus.fetching:
                 if (state.hasData) {
                   return Text(state.data!);
                 }
@@ -205,7 +205,7 @@ class QueryExample2Page extends StatelessWidget {
           builder: (context, state, child) {
             switch (state.status) {
               case QueryStatus.idle:
-              case QueryStatus.loading:
+              case QueryStatus.fetching:
               case QueryStatus.retrying:
                 if (state.hasData) {
                   return Text(state.data!);
@@ -316,7 +316,7 @@ class _InfiniteQueryExamplePageState extends State<InfiniteQueryExamplePage> {
         ],
         staleDuration: const Duration(seconds: 5),
         builder: (context, state, child) {
-          if (state.status == QueryStatus.loading) {
+          if (state.status == QueryStatus.fetching) {
             if (state.hasData) {
               return ListView.builder(
                 itemCount: state.pages.length,
