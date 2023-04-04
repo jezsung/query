@@ -101,6 +101,10 @@ class Query<Data> extends BaseQuery {
     return observers.whereType<QueryController<Data>>().toSet();
   }
 
+  bool get active {
+    return controllers.isNotEmpty;
+  }
+
   QueryFetcher<Data> get fetcher {
     return controllers.first.fetcher;
   }
