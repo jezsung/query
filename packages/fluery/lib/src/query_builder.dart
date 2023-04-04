@@ -393,6 +393,7 @@ class QueryBuilder<Data> extends StatefulWidget {
     this.controller,
     required this.id,
     required this.fetcher,
+    this.enabled = true,
     this.initialData,
     this.initialDataUpdatedAt,
     this.placeholderData,
@@ -409,6 +410,7 @@ class QueryBuilder<Data> extends StatefulWidget {
   final QueryController<Data>? controller;
   final QueryIdentifier id;
   final QueryFetcher<Data> fetcher;
+  final bool enabled;
   final Data? initialData;
   final DateTime? initialDataUpdatedAt;
   final Data? placeholderData;
@@ -521,6 +523,13 @@ class _QueryBuilderState<Data> extends State<QueryBuilder<Data>>
       });
       return;
     }
+
+    if (widget.enabled && !oldWidget.enabled) {
+      WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
+        _initQuery();
+      });
+      return;
+    }
   }
 
   @override
@@ -549,6 +558,8 @@ class _QueryBuilderState<Data> extends State<QueryBuilder<Data>>
   Future<void> _fetch({
     bool ignoreStaleness = false,
   }) async {
+    if (!widget.enabled) return;
+
     await _query.fetch(
       fetcher: widget.fetcher,
       staleDuration: ignoreStaleness ? Duration.zero : widget.staleDuration,
