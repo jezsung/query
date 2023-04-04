@@ -105,12 +105,16 @@ class Query<Data> extends BaseQuery {
     return controllers.isNotEmpty;
   }
 
-  QueryFetcher<Data> get fetcher {
+  QueryFetcher<Data>? get fetcher {
+    if (!active) return null;
+
     return controllers.first.fetcher;
   }
 
-  Duration get staleDuration {
-    return controllers.fold(
+  Duration? get staleDuration {
+    if (!active) return null;
+
+    return controllers.fold<Duration>(
       controllers.first.staleDuration,
       (staleDuration, controller) => controller.staleDuration < staleDuration
           ? controller.staleDuration
@@ -118,8 +122,10 @@ class Query<Data> extends BaseQuery {
     );
   }
 
-  int get retryCount {
-    return controllers.fold(
+  int? get retryCount {
+    if (!active) return null;
+
+    return controllers.fold<int>(
       controllers.first.retryCount,
       (retryCount, controller) => controller.retryCount > retryCount
           ? controller.retryCount
@@ -127,8 +133,10 @@ class Query<Data> extends BaseQuery {
     );
   }
 
-  Duration get retryDelayDuration {
-    return controllers.fold(
+  Duration? get retryDelayDuration {
+    if (!active) return null;
+
+    return controllers.fold<Duration>(
       controllers.first.retryDelayDuration,
       (retryDelayDuration, controller) =>
           controller.retryDelayDuration > retryDelayDuration
@@ -138,7 +146,9 @@ class Query<Data> extends BaseQuery {
   }
 
   Duration? get refetchIntervalDuration {
-    return controllers.fold(
+    if (!active) return null;
+
+    return controllers.fold<Duration?>(
       controllers.first.refetchIntervalDuration,
       (duration, controller) {
         if (controller.refetchIntervalDuration == null) {
@@ -161,15 +171,13 @@ class Query<Data> extends BaseQuery {
     int? retryCount,
     Duration? retryDelayDuration,
   }) async {
-    final effectiveFetcher = fetcher ?? this.fetcher;
-    final effectiveStaleDuration = staleDuration ?? this.staleDuration;
-    final effectiveRetryCount = retryCount ?? this.retryCount;
-    final effectiveRetryDelayDuration =
-        retryDelayDuration ?? this.retryDelayDuration;
+    if (!active) return;
 
-    if (observers.isEmpty) {
-      return;
-    }
+    final effectiveFetcher = fetcher ?? this.fetcher!;
+    final effectiveStaleDuration = staleDuration ?? this.staleDuration!;
+    final effectiveRetryCount = retryCount ?? this.retryCount!;
+    final effectiveRetryDelayDuration =
+        retryDelayDuration ?? this.retryDelayDuration!;
 
     if (state.status == QueryStatus.success &&
         state.dataUpdatedAt != null &&
