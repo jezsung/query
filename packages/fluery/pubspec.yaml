@@ -8,11 +8,13 @@ environment:
   flutter: ">=1.17.0"
 
 dependencies:
-  async: ^2.11.0
+  async: ^2.10.0
   equatable: ^2.0.5
   flutter:
     sdk: flutter
 
 dev_dependencies:
+  flutter_test:
+    sdk: flutter
   lints: ^2.0.0
   test: ^1.21.0
