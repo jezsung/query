@@ -1,7 +1,6 @@
 import 'package:fluery/src/base_query.dart';
 import 'package:fluery/src/query_client_provider.dart';
 import 'package:fluery/src/query_status.dart';
-import 'package:fluery/src/utils/is_outdated.dart';
 import 'package:fluery/src/utils/periodic_timer.dart';
 import 'package:fluery/src/utils/retry_resolver.dart';
 import 'package:flutter/widgets.dart';
@@ -164,19 +163,30 @@ class Query<Data> extends BaseQuery {
     Duration? retryDelayDuration,
   }) async {
     if (!active) return;
+
     if (state.status.isLoading) return;
 
+    final isDataFresh = () {
+      final hadFetched = state.hasData && state.dataUpdatedAt != null;
+
+      // If this query has never been fetched, the data should be considered stale.
+      if (!hadFetched) return false;
+
+      final effectiveStaleDuration = staleDuration ?? this.staleDuration!;
+
+      final isFresh = DateTime.now().isBefore(
+        state.dataUpdatedAt!.add(effectiveStaleDuration),
+      );
+
+      return isFresh;
+    }();
+
+    if (isDataFresh) return;
+
     final effectiveFetcher = fetcher ?? this.fetcher!;
-    final effectiveStaleDuration = staleDuration ?? this.staleDuration!;
     final effectiveRetryCount = retryCount ?? this.retryCount!;
     final effectiveRetryDelayDuration =
         retryDelayDuration ?? this.retryDelayDuration!;
-
-    if (state.status == QueryStatus.success &&
-        state.dataUpdatedAt != null &&
-        !isOutdated(state.dataUpdatedAt!, effectiveStaleDuration)) {
-      return;
-    }
 
     notify(QueryStateUpdated<QueryState<Data>>(
       state = state.copyWith(
