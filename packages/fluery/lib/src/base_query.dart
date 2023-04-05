@@ -58,8 +58,10 @@ abstract class BaseQuery {
   void removeObserver<Observer extends BaseQueryObserver>(Observer observer) {
     if (!observers.contains(observer)) return;
 
-    notify(QueryObserverRemoved<Observer>(observer));
     observers.remove(observer);
+    final event = QueryObserverRemoved<Observer>(observer);
+    observer.onNotified(this, event);
+    notify(event);
   }
 
   notify(BaseQueryEvent event) {
