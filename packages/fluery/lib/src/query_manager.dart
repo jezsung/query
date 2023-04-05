@@ -64,4 +64,12 @@ class QueryManager {
   ) {
     return _queries[id] as PagedQuery<Data, Params>?;
   }
+
+  void dispose() {
+    for (final query in _queries.values) {
+      if (query is Query) {
+        query.dispose();
+      }
+    }
+  }
 }

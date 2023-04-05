@@ -14,4 +14,8 @@ class QueryClient {
     final query = manager.buildQuery(id);
     await query.fetch();
   }
+
+  void dispose() {
+    manager.dispose();
+  }
 }

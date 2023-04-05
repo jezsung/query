@@ -46,6 +46,12 @@ class _QueryClientProviderState extends State<QueryClientProvider> {
   }
 
   @override
+  void dispose() {
+    _queryClient.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return _QueryClientScope(
       queryClient: _queryClient,

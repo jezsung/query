@@ -1,8 +1,11 @@
+import 'dart:async';
+
 import 'package:fluery/src/base_query.dart';
 import 'package:fluery/src/query_client_provider.dart';
 import 'package:fluery/src/query_status.dart';
 import 'package:fluery/src/utils/periodic_timer.dart';
 import 'package:fluery/src/utils/retry_resolver.dart';
+import 'package:fluery/src/utils/zoned_timer_interceptor.dart';
 import 'package:flutter/widgets.dart';
 
 typedef QueryFetcher<Data> = Future<Data> Function(QueryIdentifier id);
@@ -85,6 +88,7 @@ class Query<Data> extends BaseQuery {
 
   late QueryState<Data> state;
 
+  final ZonedTimerInterceptor _zonedTimerInterceptor = ZonedTimerInterceptor();
   RetryResolver<Data>? _retryResolver;
   PeriodicTimer? _periodicTimer;
 
@@ -196,7 +200,9 @@ class Query<Data> extends BaseQuery {
     ));
 
     try {
-      final data = await effectiveFetcher(id);
+      final data = await _zonedTimerInterceptor.run(
+        () => effectiveFetcher(id),
+      );
 
       notify(QueryStateUpdated<QueryState<Data>>(
         state = state.copyWith(
@@ -218,7 +224,7 @@ class Query<Data> extends BaseQuery {
         ));
 
         _retryResolver = RetryResolver<Data>(
-          () => effectiveFetcher(id),
+          () => _zonedTimerInterceptor.run(() => effectiveFetcher(id)),
           maxCount: effectiveRetryCount,
           delayDuration: effectiveRetryDelayDuration,
           onError: (error, retried) {
@@ -292,6 +298,10 @@ class Query<Data> extends BaseQuery {
     _periodicTimer ??= PeriodicTimer(fetch, refetchIntervalDuration!);
     _periodicTimer!.setInterval(refetchIntervalDuration!);
     _periodicTimer!.start();
+  }
+
+  void dispose() {
+    _zonedTimerInterceptor.cancel();
   }
 }
 
