@@ -86,7 +86,6 @@ class Query<Data> extends BaseQuery {
 
   late QueryState<Data> state;
 
-  bool _isFetching = false;
   RetryResolver<Data>? _retryResolver;
   PeriodicTimer? _periodicTimer;
 
@@ -165,6 +164,7 @@ class Query<Data> extends BaseQuery {
     Duration? retryDelayDuration,
   }) async {
     if (!active) return;
+    if (state.status.isLoading) return;
 
     final effectiveFetcher = fetcher ?? this.fetcher!;
     final effectiveStaleDuration = staleDuration ?? this.staleDuration!;
@@ -178,22 +178,62 @@ class Query<Data> extends BaseQuery {
       return;
     }
 
-    if (_isFetching) {
-      return;
-    } else {
-      _isFetching = true;
-    }
+    notify(QueryStateUpdated<QueryState<Data>>(
+      state = state.copyWith(
+        status: QueryStatus.fetching,
+        retried: 0,
+      ),
+    ));
 
-    Future<void> execute() async {
+    try {
+      final data = await effectiveFetcher(id);
+
       notify(QueryStateUpdated<QueryState<Data>>(
         state = state.copyWith(
-          status: QueryStatus.fetching,
-          retried: 0,
+          status: QueryStatus.success,
+          data: data,
+          dataUpdatedAt: DateTime.now(),
         ),
       ));
+    } catch (error) {
+      final shouldRetry = effectiveRetryCount >= 1;
 
-      try {
-        final data = await effectiveFetcher(id);
+      if (shouldRetry) {
+        notify(QueryStateUpdated<QueryState<Data>>(
+          state = state.copyWith(
+            status: QueryStatus.retrying,
+            error: error,
+            errorUpdatedAt: DateTime.now(),
+          ),
+        ));
+
+        _retryResolver = RetryResolver<Data>(
+          () => effectiveFetcher(id),
+          maxCount: effectiveRetryCount,
+          delayDuration: effectiveRetryDelayDuration,
+          onError: (error, retried) {
+            if (retried < effectiveRetryCount) {
+              notify(QueryStateUpdated<QueryState<Data>>(
+                state = state.copyWith(
+                  retried: retried,
+                  error: error,
+                  errorUpdatedAt: DateTime.now(),
+                ),
+              ));
+            } else {
+              notify(QueryStateUpdated<QueryState<Data>>(
+                state = state.copyWith(
+                  status: QueryStatus.failure,
+                  retried: retried,
+                  error: error,
+                  errorUpdatedAt: DateTime.now(),
+                ),
+              ));
+            }
+          },
+        );
+
+        final data = await _retryResolver!.call();
 
         notify(QueryStateUpdated<QueryState<Data>>(
           state = state.copyWith(
@@ -202,71 +242,15 @@ class Query<Data> extends BaseQuery {
             dataUpdatedAt: DateTime.now(),
           ),
         ));
-      } catch (error) {
-        final shouldRetry = effectiveRetryCount >= 1;
-
-        if (shouldRetry) {
-          notify(QueryStateUpdated<QueryState<Data>>(
-            state = state.copyWith(
-              status: QueryStatus.retrying,
-              error: error,
-              errorUpdatedAt: DateTime.now(),
-            ),
-          ));
-
-          _retryResolver = RetryResolver<Data>(
-            () => effectiveFetcher(id),
-            maxCount: effectiveRetryCount,
-            delayDuration: effectiveRetryDelayDuration,
-            onError: (error, retried) {
-              if (retried < effectiveRetryCount) {
-                notify(QueryStateUpdated<QueryState<Data>>(
-                  state = state.copyWith(
-                    retried: retried,
-                    error: error,
-                    errorUpdatedAt: DateTime.now(),
-                  ),
-                ));
-              } else {
-                notify(QueryStateUpdated<QueryState<Data>>(
-                  state = state.copyWith(
-                    status: QueryStatus.failure,
-                    retried: retried,
-                    error: error,
-                    errorUpdatedAt: DateTime.now(),
-                  ),
-                ));
-              }
-            },
-          );
-
-          final data = await _retryResolver!.call();
-
-          notify(QueryStateUpdated<QueryState<Data>>(
-            state = state.copyWith(
-              status: QueryStatus.success,
-              data: data,
-              dataUpdatedAt: DateTime.now(),
-            ),
-          ));
-        } else {
-          notify(QueryStateUpdated<QueryState<Data>>(
-            state = state.copyWith(
-              status: QueryStatus.failure,
-              error: error,
-              errorUpdatedAt: DateTime.now(),
-            ),
-          ));
-        }
+      } else {
+        notify(QueryStateUpdated<QueryState<Data>>(
+          state = state.copyWith(
+            status: QueryStatus.failure,
+            error: error,
+            errorUpdatedAt: DateTime.now(),
+          ),
+        ));
       }
-    }
-
-    try {
-      await execute();
-    } catch (error) {
-      rethrow;
-    } finally {
-      _isFetching = false;
     }
   }
 
