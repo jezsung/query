@@ -88,4 +88,25 @@ void main() {
       expect(find.text('failure'), findsOneWidget);
     },
   );
+
+  testWidgets(
+    'should start with an idle status when it is not enabled',
+    (tester) async {
+      await tester.pumpWithQueryClientProvider(
+        QueryBuilder<String>(
+          id: 'id',
+          fetcher: (id) async {
+            await Future.delayed(const Duration(seconds: 3));
+            return 'data';
+          },
+          enabled: false,
+          builder: (context, state, child) {
+            return Text(state.status.name);
+          },
+        ),
+      );
+
+      expect(find.text('idle'), findsOneWidget);
+    },
+  );
 }
