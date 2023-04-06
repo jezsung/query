@@ -189,4 +189,46 @@ void main() {
       expect(find.text('data: initial data'), findsOneWidget);
     },
   );
+
+  testWidgets(
+    'should show placeholder data when it has no previous data and it is fetching',
+    (tester) async {
+      await tester.pumpWithQueryClientProvider(
+        QueryBuilder<String>(
+          id: 'id',
+          fetcher: (id) async {
+            await Future.delayed(const Duration(seconds: 3));
+            return 'data';
+          },
+          enabled: true,
+          initialData: null,
+          initialDataUpdatedAt: null,
+          placeholderData: 'placeholder data',
+          staleDuration: Duration.zero,
+          retryCount: 0,
+          retryDelayDuration: Duration.zero,
+          refetchOnInit: RefetchMode.stale,
+          refetchOnResumed: RefetchMode.stale,
+          refetchIntervalDuration: null,
+          builder: (context, state, child) {
+            return Column(
+              children: [
+                Text('status: ${state.status.name}'),
+                Text('data: ${state.data}'),
+              ],
+            );
+          },
+          child: null,
+        ),
+      );
+
+      expect(find.text('status: fetching'), findsOneWidget);
+      expect(find.text('data: placeholder data'), findsOneWidget);
+
+      await tester.pump(const Duration(seconds: 3));
+
+      expect(find.text('status: success'), findsOneWidget);
+      expect(find.text('data: data'), findsOneWidget);
+    },
+  );
 }
