@@ -36,28 +36,25 @@ void main() {
             return 'data';
           },
           builder: (context, state, child) {
-            switch (state.status) {
-              case QueryStatus.idle:
-                return const Text('idle');
-              case QueryStatus.fetching:
-                return const Text('fetching');
-              case QueryStatus.retrying:
-                return const Text('retrying');
-              case QueryStatus.success:
-                return const Text('success');
-              case QueryStatus.failure:
-                return const Text('failure');
-            }
+            return Column(
+              children: [
+                Text('status: ${state.status.name}'),
+                Text('data: ${state.data}'),
+                Text('error: ${state.error}'),
+              ],
+            );
           },
         ),
       );
 
-      expect(find.text('fetching'), findsOneWidget);
+      expect(find.text('status: fetching'), findsOneWidget);
+      expect(find.text('data: null'), findsOneWidget);
+      expect(find.text('error: null'), findsOneWidget);
     },
   );
 
   testWidgets(
-    'should end with a success status and populated data when fetching is complete',
+    'should end with a success status',
     (tester) async {
       await tester.pumpWithQueryClientProvider(
         QueryBuilder<String>(
@@ -82,6 +79,7 @@ void main() {
 
       expect(find.text('status: success'), findsOneWidget);
       expect(find.text('data: data'), findsOneWidget);
+      expect(find.text('error: null'), findsOneWidget);
     },
   );
 }
