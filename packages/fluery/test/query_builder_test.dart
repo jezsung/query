@@ -35,9 +35,20 @@ void main() {
             await Future.delayed(const Duration(seconds: 3));
             return 'data';
           },
+          enabled: true,
+          initialData: null,
+          initialDataUpdatedAt: null,
+          placeholderData: null,
+          staleDuration: Duration.zero,
+          retryCount: 0,
+          retryDelayDuration: Duration.zero,
+          refetchOnInit: RefetchMode.stale,
+          refetchOnResumed: RefetchMode.stale,
+          refetchIntervalDuration: null,
           builder: (context, state, child) {
             return Text(state.status.name);
           },
+          child: null,
         ),
       );
 
@@ -55,9 +66,20 @@ void main() {
             await Future.delayed(const Duration(seconds: 3));
             return 'data';
           },
+          enabled: true,
+          initialData: null,
+          initialDataUpdatedAt: null,
+          placeholderData: null,
+          staleDuration: Duration.zero,
+          retryCount: 0,
+          retryDelayDuration: Duration.zero,
+          refetchOnInit: RefetchMode.stale,
+          refetchOnResumed: RefetchMode.stale,
+          refetchIntervalDuration: null,
           builder: (context, state, child) {
             return Text(state.status.name);
           },
+          child: null,
         ),
       );
 
@@ -77,9 +99,20 @@ void main() {
             await Future.delayed(const Duration(seconds: 3));
             throw 'error';
           },
+          enabled: true,
+          initialData: null,
+          initialDataUpdatedAt: null,
+          placeholderData: null,
+          staleDuration: Duration.zero,
+          retryCount: 0,
+          retryDelayDuration: Duration.zero,
+          refetchOnInit: RefetchMode.stale,
+          refetchOnResumed: RefetchMode.stale,
+          refetchIntervalDuration: null,
           builder: (context, state, child) {
             return Text(state.status.name);
           },
+          child: null,
         ),
       );
 
@@ -100,9 +133,19 @@ void main() {
             return 'data';
           },
           enabled: false,
+          initialData: null,
+          initialDataUpdatedAt: null,
+          placeholderData: null,
+          staleDuration: Duration.zero,
+          retryCount: 0,
+          retryDelayDuration: Duration.zero,
+          refetchOnInit: RefetchMode.stale,
+          refetchOnResumed: RefetchMode.stale,
+          refetchIntervalDuration: null,
           builder: (context, state, child) {
             return Text(state.status.name);
           },
+          child: null,
         ),
       );
 
@@ -120,7 +163,16 @@ void main() {
             await Future.delayed(const Duration(seconds: 3));
             return 'data';
           },
+          enabled: true,
           initialData: 'initial data',
+          initialDataUpdatedAt: null,
+          placeholderData: null,
+          staleDuration: Duration.zero,
+          retryCount: 0,
+          retryDelayDuration: Duration.zero,
+          refetchOnInit: RefetchMode.stale,
+          refetchOnResumed: RefetchMode.stale,
+          refetchIntervalDuration: null,
           builder: (context, state, child) {
             return Column(
               children: [
@@ -129,6 +181,7 @@ void main() {
               ],
             );
           },
+          child: null,
         ),
       );
 
