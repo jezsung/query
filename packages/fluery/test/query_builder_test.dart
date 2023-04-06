@@ -109,4 +109,31 @@ void main() {
       expect(find.text('idle'), findsOneWidget);
     },
   );
+
+  testWidgets(
+    'should start with a success status and populated data when the initial data is provided',
+    (tester) async {
+      await tester.pumpWithQueryClientProvider(
+        QueryBuilder<String>(
+          id: 'id',
+          fetcher: (id) async {
+            await Future.delayed(const Duration(seconds: 3));
+            return 'data';
+          },
+          initialData: 'initial data',
+          builder: (context, state, child) {
+            return Column(
+              children: [
+                Text('status: ${state.status.name}'),
+                Text('data: ${state.data}'),
+              ],
+            );
+          },
+        ),
+      );
+
+      expect(find.text('status: success'), findsOneWidget);
+      expect(find.text('data: initial data'), findsOneWidget);
+    },
+  );
 }
