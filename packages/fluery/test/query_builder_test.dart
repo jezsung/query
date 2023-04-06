@@ -55,4 +55,33 @@ void main() {
       expect(find.text('fetching'), findsOneWidget);
     },
   );
+
+  testWidgets(
+    'should end with a success status and populated data when fetching is complete',
+    (tester) async {
+      await tester.pumpWithQueryClientProvider(
+        QueryBuilder<String>(
+          id: 'id',
+          fetcher: (id) async {
+            await Future.delayed(const Duration(seconds: 3));
+            return 'data';
+          },
+          builder: (context, state, child) {
+            return Column(
+              children: [
+                Text('status: ${state.status.name}'),
+                Text('data: ${state.data}'),
+                Text('error: ${state.error}'),
+              ],
+            );
+          },
+        ),
+      );
+
+      await tester.pump(const Duration(seconds: 3));
+
+      expect(find.text('status: success'), findsOneWidget);
+      expect(find.text('data: data'), findsOneWidget);
+    },
+  );
 }
