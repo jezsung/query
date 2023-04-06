@@ -1,13 +1,15 @@
 import 'dart:async';
 
 class ZonedTimerInterceptor {
-  final List<Timer> timers = [];
+  final List<Timer> _timers = [];
 
-  late final Zone _zone;
+  List<Timer> get timers => _timers;
+
+  Zone? _zone;
 
   R run<R>(R Function() callback) {
-    timers.clear();
-    _zone = Zone.current.fork(
+    _timers.clear();
+    _zone ??= Zone.current.fork(
       specification: ZoneSpecification(
         createTimer: (self, parent, zone, duration, f) {
           final timer = parent.createTimer(zone, duration, f);
@@ -21,13 +23,13 @@ class ZonedTimerInterceptor {
         },
       ),
     );
-    return _zone.run<R>(callback);
+    return _zone!.run<R>(callback);
   }
 
-  cancel() {
-    for (final timer in timers) {
+  void cancel() {
+    for (final timer in _timers) {
       timer.cancel();
     }
-    timers.clear();
+    _timers.clear();
   }
 }
