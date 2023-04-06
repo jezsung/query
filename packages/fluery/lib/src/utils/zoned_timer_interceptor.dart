@@ -9,9 +9,6 @@ class ZonedTimerInterceptor {
     timers.clear();
     _zone = Zone.current.fork(
       specification: ZoneSpecification(
-        handleUncaughtError: (self, parent, zone, error, stackTrace) {
-          throw error;
-        },
         createTimer: (self, parent, zone, duration, f) {
           final timer = parent.createTimer(zone, duration, f);
           timers.add(timer);
