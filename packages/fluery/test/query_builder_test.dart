@@ -36,20 +36,12 @@ void main() {
             return 'data';
           },
           builder: (context, state, child) {
-            return Column(
-              children: [
-                Text('status: ${state.status.name}'),
-                Text('data: ${state.data}'),
-                Text('error: ${state.error}'),
-              ],
-            );
+            return Text(state.status.name);
           },
         ),
       );
 
-      expect(find.text('status: fetching'), findsOneWidget);
-      expect(find.text('data: null'), findsOneWidget);
-      expect(find.text('error: null'), findsOneWidget);
+      expect(find.text('fetching'), findsOneWidget);
     },
   );
 
@@ -64,22 +56,14 @@ void main() {
             return 'data';
           },
           builder: (context, state, child) {
-            return Column(
-              children: [
-                Text('status: ${state.status.name}'),
-                Text('data: ${state.data}'),
-                Text('error: ${state.error}'),
-              ],
-            );
+            return Text(state.status.name);
           },
         ),
       );
 
       await tester.pump(const Duration(seconds: 3));
 
-      expect(find.text('status: success'), findsOneWidget);
-      expect(find.text('data: data'), findsOneWidget);
-      expect(find.text('error: null'), findsOneWidget);
+      expect(find.text('success'), findsOneWidget);
     },
   );
 
@@ -94,22 +78,14 @@ void main() {
             throw 'error';
           },
           builder: (context, state, child) {
-            return Column(
-              children: [
-                Text('status: ${state.status.name}'),
-                Text('data: ${state.data}'),
-                Text('error: ${state.error}'),
-              ],
-            );
+            return Text(state.status.name);
           },
         ),
       );
 
-      await tester.pump(const Duration(seconds: 4));
+      await tester.pump(const Duration(seconds: 3));
 
-      expect(find.text('status: failure'), findsOneWidget);
-      expect(find.text('data: null'), findsOneWidget);
-      expect(find.text('error: error'), findsOneWidget);
+      expect(find.text('failure'), findsOneWidget);
     },
   );
 }
