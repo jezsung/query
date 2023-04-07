@@ -89,38 +89,6 @@ void main() {
     },
   );
 
-  testWidgets(
-    'should show placeholder data when it has no previous data and it is fetching',
-    (tester) async {
-      await tester.pumpWithQueryClientProvider(
-        QueryBuilder<String>(
-          id: 'id',
-          fetcher: (id) async {
-            await Future.delayed(const Duration(seconds: 3));
-            return 'data';
-          },
-          placeholderData: 'placeholder data',
-          builder: (context, state, child) {
-            return Column(
-              children: [
-                Text('status: ${state.status.name}'),
-                Text('data: ${state.data}'),
-              ],
-            );
-          },
-        ),
-      );
-
-      expect(find.text('status: fetching'), findsOneWidget);
-      expect(find.text('data: placeholder data'), findsOneWidget);
-
-      await tester.pump(const Duration(seconds: 3));
-
-      expect(find.text('status: success'), findsOneWidget);
-      expect(find.text('data: data'), findsOneWidget);
-    },
-  );
-
   group(
     'when "enabled" is false',
     () {
@@ -230,6 +198,26 @@ void main() {
             (tester) async {},
           );
         },
+      );
+    },
+  );
+
+  group(
+    'when "placeholderData" is set',
+    () {
+      testWidgets(
+        'should show the "placeholderData" if there is no cached data and it is in a fetching or retrying status',
+        (tester) async {},
+      );
+
+      testWidgets(
+        'should not show the "placeholderData" if there is cached data',
+        (tester) async {},
+      );
+
+      testWidgets(
+        'should not show the "placeholderData" if it is not in a fetching or retrying status',
+        (tester) async {},
       );
     },
   );
