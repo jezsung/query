@@ -221,4 +221,14 @@ void main() {
       );
     },
   );
+
+  group(
+    'for "staleDuration"',
+    () {
+      testWidgets(
+        'should not refetch if the cached data is not stale',
+        (tester) async {},
+      );
+    },
+  );
 }
