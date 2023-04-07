@@ -231,4 +231,46 @@ void main() {
       );
     },
   );
+
+  group(
+    'should test the retry feature',
+    () {
+      final inputs = [
+        {
+          'retryCount': 0,
+          'retryDelayDuration': Duration.zero,
+        },
+        {
+          'retryCount': 0,
+          'retryDelayDuration': const Duration(seconds: 3),
+        },
+        {
+          'retryCount': 1,
+          'retryDelayDuration': Duration.zero,
+        },
+        {
+          'retryCount': 1,
+          'retryDelayDuration': const Duration(seconds: 3),
+        },
+        {
+          'retryCount': 2,
+          'retryDelayDuration': Duration.zero,
+        },
+        {
+          'retryCount': 2,
+          'retryDelayDuration': const Duration(seconds: 3),
+        },
+      ];
+
+      for (final input in inputs) {
+        final retryCount = input['retryCount'] as int;
+        final retryDelayDuration = input['retryDelayDuration'] as Duration;
+
+        testWidgets(
+          'should retry $retryCount times with $retryDelayDuration delay if the initial fetching failed',
+          (tester) async {},
+        );
+      }
+    },
+  );
 }
