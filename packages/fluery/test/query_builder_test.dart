@@ -90,33 +90,6 @@ void main() {
   );
 
   testWidgets(
-    'should start with a success status and populated data when the initial data is provided',
-    (tester) async {
-      await tester.pumpWithQueryClientProvider(
-        QueryBuilder<String>(
-          id: 'id',
-          fetcher: (id) async {
-            await Future.delayed(const Duration(seconds: 3));
-            return 'data';
-          },
-          initialData: 'initial data',
-          builder: (context, state, child) {
-            return Column(
-              children: [
-                Text('status: ${state.status.name}'),
-                Text('data: ${state.data}'),
-              ],
-            );
-          },
-        ),
-      );
-
-      expect(find.text('status: success'), findsOneWidget);
-      expect(find.text('data: initial data'), findsOneWidget);
-    },
-  );
-
-  testWidgets(
     'should show placeholder data when it has no previous data and it is fetching',
     (tester) async {
       await tester.pumpWithQueryClientProvider(
@@ -217,6 +190,46 @@ void main() {
       testWidgets(
         'should not refetch on intervals even if the "refetchIntervalDuration" is set',
         (tester) async {},
+      );
+    },
+  );
+
+  group(
+    'when "initialData" is set',
+    () {
+      group(
+        'and "initialDataUpdatedAt" is not set',
+        () {
+          testWidgets(
+            'should start with a fetching status and the "initialData" if there is no cached data',
+            (tester) async {},
+          );
+
+          testWidgets(
+            'should start fetching immediately and resolve',
+            (tester) async {},
+          );
+
+          testWidgets(
+            'should ignore the "initialData" if a cached query already exists',
+            (tester) async {},
+          );
+        },
+      );
+
+      group(
+        'and "initialDataUpdatedAt" is set',
+        () {
+          testWidgets(
+            'should start with a success status and the "initialData" if the "initialData" is up to date based on the "intialDataUpdatedAt" and "staleDuration"',
+            (tester) async {},
+          );
+
+          testWidgets(
+            'should not start fetching if the "initialData" is up to date',
+            (tester) async {},
+          );
+        },
       );
     },
   );
