@@ -6,10 +6,12 @@ abstract class BaseQueryState extends Equatable {
   const BaseQueryState();
 }
 
-abstract class BaseQueryEvent extends Equatable {}
+abstract class BaseQueryEvent extends Equatable {
+  const BaseQueryEvent();
+}
 
 class QueryStateUpdated<State extends BaseQueryState> extends BaseQueryEvent {
-  QueryStateUpdated(this.state);
+  const QueryStateUpdated(this.state);
 
   final State state;
 
