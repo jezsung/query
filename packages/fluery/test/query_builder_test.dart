@@ -123,37 +123,6 @@ void main() {
   );
 
   testWidgets(
-    'should start with an idle status when it is not enabled',
-    (tester) async {
-      await tester.pumpWithQueryClientProvider(
-        QueryBuilder<String>(
-          id: 'id',
-          fetcher: (id) async {
-            await Future.delayed(const Duration(seconds: 3));
-            return 'data';
-          },
-          enabled: false,
-          initialData: null,
-          initialDataUpdatedAt: null,
-          placeholderData: null,
-          staleDuration: Duration.zero,
-          retryCount: 0,
-          retryDelayDuration: Duration.zero,
-          refetchOnInit: RefetchMode.stale,
-          refetchOnResumed: RefetchMode.stale,
-          refetchIntervalDuration: null,
-          builder: (context, state, child) {
-            return Text(state.status.name);
-          },
-          child: null,
-        ),
-      );
-
-      expect(find.text('idle'), findsOneWidget);
-    },
-  );
-
-  testWidgets(
     'should start with a success status and populated data when the initial data is provided',
     (tester) async {
       await tester.pumpWithQueryClientProvider(
@@ -229,6 +198,99 @@ void main() {
 
       expect(find.text('status: success'), findsOneWidget);
       expect(find.text('data: data'), findsOneWidget);
+    },
+  );
+
+  group(
+    'when enabled is false',
+    () {
+      testWidgets(
+        'should start with an idle status if there is no cached query',
+        (tester) async {
+          await tester.pumpWithQueryClientProvider(
+            QueryBuilder<String>(
+              id: 'id',
+              fetcher: (id) async {
+                await Future.delayed(const Duration(seconds: 3));
+                return 'data';
+              },
+              enabled: false,
+              initialData: null,
+              initialDataUpdatedAt: null,
+              placeholderData: null,
+              staleDuration: Duration.zero,
+              retryCount: 0,
+              retryDelayDuration: Duration.zero,
+              refetchOnInit: RefetchMode.stale,
+              refetchOnResumed: RefetchMode.stale,
+              refetchIntervalDuration: null,
+              builder: (context, state, child) {
+                return Text(state.status.name);
+              },
+              child: null,
+            ),
+          );
+
+          expect(find.text('idle'), findsOneWidget);
+        },
+      );
+
+      testWidgets(
+        'should not start fetching even if there is no cached query',
+        (tester) async {
+          int fetchCallCount = 0;
+
+          await tester.pumpWithQueryClientProvider(
+            QueryBuilder<String>(
+              id: 'id',
+              fetcher: (id) async {
+                fetchCallCount++;
+                await Future.delayed(const Duration(seconds: 3));
+                return 'data';
+              },
+              enabled: false,
+              initialData: null,
+              initialDataUpdatedAt: null,
+              placeholderData: null,
+              staleDuration: Duration.zero,
+              retryCount: 0,
+              retryDelayDuration: Duration.zero,
+              refetchOnInit: RefetchMode.stale,
+              refetchOnResumed: RefetchMode.stale,
+              refetchIntervalDuration: null,
+              builder: (context, state, child) {
+                return Text(state.status.name);
+              },
+              child: null,
+            ),
+          );
+
+          await tester.pump(const Duration(seconds: 3));
+
+          expect(find.text('idle'), findsOneWidget);
+          expect(fetchCallCount, isZero);
+        },
+      );
+
+      testWidgets(
+        'should populate a cached query if one exists',
+        (tester) async {},
+      );
+
+      testWidgets(
+        'should not refetch on init regardless of the "refetchOnInit" property',
+        (tester) async {},
+      );
+
+      testWidgets(
+        'should not refetch on resumed regardless of the "refetchOnResumed" property',
+        (tester) async {},
+      );
+
+      testWidgets(
+        'should not refetch on intervals even if the "refetchIntervalDuration" is set',
+        (tester) async {},
+      );
     },
   );
 }
