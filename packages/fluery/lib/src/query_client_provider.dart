@@ -5,11 +5,11 @@ import 'package:flutter/widgets.dart';
 class QueryClientProvider extends StatefulWidget {
   const QueryClientProvider({
     super.key,
-    this.cacheStorage,
+    this.client,
     required this.child,
   });
 
-  final QueryCacheStorage? cacheStorage;
+  final QueryClient? client;
   final Widget child;
 
   static QueryClient? maybeOf(BuildContext context) {
@@ -42,7 +42,7 @@ class _QueryClientProviderState extends State<QueryClientProvider> {
   @override
   void initState() {
     super.initState();
-    _queryClient = QueryClient(cacheStorage: widget.cacheStorage);
+    _queryClient = widget.client ?? QueryClient();
   }
 
   @override
