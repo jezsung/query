@@ -12,16 +12,19 @@ class QueryManager {
   Query<Data> buildQuery<Data>(QueryIdentifier id) {
     final Query<Data> query;
 
-    if (_queries[id] != null) {
+    final cached = _queries[id] != null;
+    final persisted = cacheStorage != null && cacheStorage!.get(id) != null;
+
+    if (cached) {
       query = _queries[id] as Query<Data>;
-    } else if (cacheStorage == null || cacheStorage!.get(id) == null) {
-      query = _queries[id] = Query<Data>(id: id);
-    } else {
+    } else if (persisted) {
       final json = cacheStorage!.get(id)!;
       query = Query<Data>(
         id: id,
         initialState: QueryState<Data>.fromJson(json),
       );
+    } else {
+      query = _queries[id] = Query<Data>(id: id);
     }
 
     if (cacheStorage != null) {
