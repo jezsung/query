@@ -92,51 +92,57 @@ void main() {
   group(
     'when "enabled" is false',
     () {
-      testWidgets(
-        'should start with an idle status if there is no cached query',
-        (tester) async {
-          await tester.pumpWithQueryClientProvider(
-            QueryBuilder<String>(
-              id: 'id',
-              fetcher: (id) async {
-                await Future.delayed(const Duration(seconds: 3));
-                return 'data';
-              },
-              enabled: false,
-              builder: (context, state, child) {
-                return Text(state.status.name);
-              },
-            ),
+      group(
+        'and there is no cached query',
+        () {
+          testWidgets(
+            'should start with an idle status',
+            (tester) async {
+              await tester.pumpWithQueryClientProvider(
+                QueryBuilder<String>(
+                  id: 'id',
+                  fetcher: (id) async {
+                    await Future.delayed(const Duration(seconds: 3));
+                    return 'data';
+                  },
+                  enabled: false,
+                  builder: (context, state, child) {
+                    return Text(state.status.name);
+                  },
+                ),
+              );
+
+              expect(find.text('idle'), findsOneWidget);
+            },
           );
 
-          expect(find.text('idle'), findsOneWidget);
-        },
-      );
+          testWidgets(
+            'should not start fetching',
+            (tester) async {
+              int fetchCallCount = 0;
 
-      testWidgets(
-        'should not start fetching even if there is no cached query',
-        (tester) async {
-          int fetchCallCount = 0;
+              await tester.pumpWithQueryClientProvider(
+                QueryBuilder<String>(
+                  id: 'id',
+                  fetcher: (id) async {
+                    fetchCallCount++;
+                    await Future.delayed(const Duration(seconds: 3));
+                    return 'data';
+                  },
+                  enabled: false,
+                  builder: (context, state, child) {
+                    return Text(state.status.name);
+                  },
+                ),
+              );
 
-          await tester.pumpWithQueryClientProvider(
-            QueryBuilder<String>(
-              id: 'id',
-              fetcher: (id) async {
-                fetchCallCount++;
-                await Future.delayed(const Duration(seconds: 3));
-                return 'data';
-              },
-              enabled: false,
-              builder: (context, state, child) {
-                return Text(state.status.name);
-              },
-            ),
+              expect(fetchCallCount, isZero);
+
+              await tester.pump(const Duration(seconds: 3));
+
+              expect(fetchCallCount, isZero);
+            },
           );
-
-          await tester.pump(const Duration(seconds: 3));
-
-          expect(find.text('idle'), findsOneWidget);
-          expect(fetchCallCount, isZero);
         },
       );
 
