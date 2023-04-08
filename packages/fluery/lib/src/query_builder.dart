@@ -301,7 +301,7 @@ class Query<Data> extends BaseQuery {
   }
 
   void setState(QueryState<Data> state) {
-    notify(QueryStateUpdated(state));
+    notify(QueryStateUpdated(this.state = state));
   }
 
   void onRefetchIntervalChanged() {
