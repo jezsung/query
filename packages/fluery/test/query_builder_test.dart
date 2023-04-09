@@ -218,6 +218,8 @@ void main() {
                 },
                 enabled: false,
                 refetchOnInit: mode,
+                refetchOnResumed: RefetchMode.never,
+                refetchIntervalDuration: null,
                 builder: (context, state, child) {
                   return Column(
                     children: [
