@@ -395,7 +395,9 @@ class QueryController<Data> extends ValueNotifier<QueryState<Data>>
             updatedAt: initialDataUpdatedAt,
           );
         }
-        query.onRefetchIntervalChanged();
+        if (_enabled) {
+          query.onRefetchIntervalChanged();
+        }
       }
     } else if (event is QueryObserverRemoved<QueryController<Data>>) {
       if (event.observer == this) {
