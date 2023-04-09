@@ -16,6 +16,18 @@ class QueryClient {
     await query.fetch();
   }
 
+  Data? getQueryData<Data>(QueryIdentifier id) {
+    final query = manager.getQuery<Data>(id);
+
+    return query?.state.data;
+  }
+
+  QueryState<Data>? getQueryState<Data>(QueryIdentifier id) {
+    final query = manager.getQuery<Data>(id);
+
+    return query?.state;
+  }
+
   void setQueryData<Data>(QueryIdentifier id, Data data) {
     final query = manager.buildQuery<Data>(id);
     query.setData(data);
