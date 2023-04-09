@@ -295,7 +295,48 @@ void main() {
 
       testWidgets(
         'should not refetch on intervals even if the "refetchIntervalDuration" is set',
-        (tester) async {},
+        (tester) async {
+          final queryClient = QueryClient();
+          queryClient.setQueryState(
+            'id',
+            QueryState<String>(
+              status: QueryStatus.success,
+              data: 'prepopulated data',
+              dataUpdatedAt: DateTime.now(),
+            ),
+          );
+
+          bool didRefetch = false;
+
+          await tester.pumpWithQueryClientProvider(
+            QueryBuilder<String>(
+              id: 'id',
+              fetcher: (id) async {
+                didRefetch = true;
+                return 'data';
+              },
+              enabled: false,
+              refetchOnInit: RefetchMode.never,
+              refetchOnResumed: RefetchMode.never,
+              refetchIntervalDuration: const Duration(seconds: 3),
+              builder: (context, state, child) {
+                return Column(
+                  children: [
+                    Text('status: ${state.status.name}'),
+                    Text('data: ${state.data}'),
+                  ],
+                );
+              },
+            ),
+            queryClient,
+          );
+
+          for (int i = 0; i < 5; i++) {
+            expect(didRefetch, isFalse);
+
+            await tester.pump(const Duration(seconds: 3));
+          }
+        },
       );
     },
   );
