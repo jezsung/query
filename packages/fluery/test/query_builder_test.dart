@@ -5,11 +5,13 @@ import 'package:flutter_test/flutter_test.dart';
 extension WidgetTesterExtension on WidgetTester {
   Future<void> pumpWithQueryClientProvider(
     Widget widget, [
+    QueryClient? queryClient,
     Duration? duration,
     EnginePhase enginePhase = EnginePhase.sendSemanticsUpdate,
   ]) async {
     await pumpWidget(
       QueryClientProvider(
+        client: queryClient,
         child: MaterialApp(
           home: Builder(
             builder: (context) {
@@ -146,9 +148,48 @@ void main() {
         },
       );
 
-      testWidgets(
-        'should populate a cached query if one exists',
-        (tester) async {},
+      group(
+        'and there is a cached query',
+        () {
+          testWidgets(
+            'should populate the cached query',
+            (tester) async {
+              final queryClient = QueryClient();
+
+              queryClient.setQueryState(
+                'id',
+                QueryState<String>(
+                  status: QueryStatus.success,
+                  data: 'prepopulated data',
+                  dataUpdatedAt: DateTime.now(),
+                ),
+              );
+
+              await tester.pumpWithQueryClientProvider(
+                QueryBuilder<String>(
+                  id: 'id',
+                  fetcher: (id) async {
+                    await Future.delayed(const Duration(seconds: 3));
+                    return 'data';
+                  },
+                  enabled: false,
+                  builder: (context, state, child) {
+                    return Column(
+                      children: [
+                        Text('status: ${state.status.name}'),
+                        Text('data: ${state.data}'),
+                      ],
+                    );
+                  },
+                ),
+                queryClient,
+              );
+
+              expect(find.text('status: success'), findsOneWidget);
+              expect(find.text('data: prepopulated data'), findsOneWidget);
+            },
+          );
+        },
       );
 
       testWidgets(
