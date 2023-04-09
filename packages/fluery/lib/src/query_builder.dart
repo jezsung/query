@@ -585,12 +585,7 @@ class _QueryBuilderState<Data> extends State<QueryBuilder<Data>>
       return;
     }
 
-    if (widget.enabled && !oldWidget.enabled) {
-      WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
-        _initQuery();
-      });
-      return;
-    }
+    _initQuery();
   }
 
   @override
