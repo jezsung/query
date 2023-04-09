@@ -444,6 +444,44 @@ class QueryBuilder<Data> extends StatefulWidget {
   final QueryWidgetBuilder<Data> builder;
   final Widget? child;
 
+  @visibleForTesting
+  QueryBuilder copyWith({
+    QueryController<Data>? controller,
+    QueryIdentifier? id,
+    QueryFetcher<Data>? fetcher,
+    bool? enabled,
+    Data? initialData,
+    DateTime? initialDataUpdatedAt,
+    Data? placeholderData,
+    Duration? staleDuration,
+    int? retryCount,
+    Duration? retryDelayDuration,
+    RefetchMode? refetchOnInit,
+    RefetchMode? refetchOnResumed,
+    Duration? refetchIntervalDuration,
+    QueryWidgetBuilder<Data>? builder,
+    Widget? child,
+  }) {
+    return QueryBuilder<Data>(
+      controller: controller ?? this.controller,
+      id: id ?? this.id,
+      fetcher: fetcher ?? this.fetcher,
+      enabled: enabled ?? this.enabled,
+      initialData: initialData ?? this.initialData,
+      initialDataUpdatedAt: initialDataUpdatedAt ?? this.initialDataUpdatedAt,
+      placeholderData: placeholderData ?? this.placeholderData,
+      staleDuration: staleDuration ?? this.staleDuration,
+      retryCount: retryCount ?? this.retryCount,
+      retryDelayDuration: retryDelayDuration ?? this.retryDelayDuration,
+      refetchOnInit: refetchOnInit ?? this.refetchOnInit,
+      refetchOnResumed: refetchOnResumed ?? this.refetchOnResumed,
+      refetchIntervalDuration:
+          refetchIntervalDuration ?? this.refetchIntervalDuration,
+      builder: builder ?? this.builder,
+      child: child ?? this.child,
+    );
+  }
+
   @override
   State<QueryBuilder> createState() => _QueryBuilderState<Data>();
 }
