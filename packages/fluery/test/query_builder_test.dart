@@ -241,7 +241,54 @@ void main() {
 
       testWidgets(
         'should not refetch on resumed regardless of the "refetchOnResumed" property',
-        (tester) async {},
+        (tester) async {
+          final queryClient = QueryClient();
+          queryClient.setQueryState(
+            'id',
+            QueryState<String>(
+              status: QueryStatus.success,
+              data: 'prepopulated data',
+              dataUpdatedAt: DateTime.now(),
+            ),
+          );
+
+          for (final mode in RefetchMode.values) {
+            bool didRefetch = false;
+
+            await tester.pumpWithQueryClientProvider(
+              QueryBuilder<String>(
+                id: 'id',
+                fetcher: (id) async {
+                  await Future.delayed(const Duration(seconds: 3));
+                  didRefetch = true;
+                  return 'data';
+                },
+                enabled: false,
+                refetchOnInit: RefetchMode.never,
+                refetchOnResumed: mode,
+                refetchIntervalDuration: null,
+                builder: (context, state, child) {
+                  return Column(
+                    children: [
+                      Text('status: ${state.status.name}'),
+                      Text('data: ${state.data}'),
+                    ],
+                  );
+                },
+              ),
+              queryClient,
+            );
+
+            tester.binding
+                .handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+
+            expect(didRefetch, isFalse);
+
+            await tester.pump(const Duration(seconds: 3));
+
+            expect(didRefetch, isFalse);
+          }
+        },
       );
 
       testWidgets(
