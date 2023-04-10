@@ -571,14 +571,7 @@ class _QueryBuilderState<Data> extends State<QueryBuilder<Data>>
       _query.addObserver<QueryController<Data>>(widget.controller!);
     }
 
-    if (widget.id != oldWidget.id) {
-      WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
-        _initQuery();
-      });
-      return;
-    }
-
-    if (widget.enabled && !oldWidget.enabled) {
+    if (widget.id != oldWidget.id || widget.enabled && !oldWidget.enabled) {
       _initQuery();
     }
   }
