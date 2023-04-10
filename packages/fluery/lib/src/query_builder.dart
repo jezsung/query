@@ -323,15 +323,21 @@ class Query<Data> extends BaseQuery {
 
 class QueryController<Data> extends ValueNotifier<QueryState<Data>>
     with BaseQueryObserver<Query<Data>> {
-  QueryController() : super(QueryState<Data>());
+  QueryController({
+    Data? data,
+    DateTime? dataUpdatedAt,
+  })  : _initialData = data,
+        _initialDataUpdatedAt = dataUpdatedAt,
+        super(QueryState<Data>());
 
   Query? _query;
+
+  final Data? _initialData;
+  final DateTime? _initialDataUpdatedAt;
 
   late QueryIdentifier _id;
   late QueryFetcher<Data> _fetcher;
   late bool _enabled;
-  late Data? _initialData;
-  late DateTime? _initialDataUpdatedAt;
   late Data? _placeholderData;
   late Duration _staleDuration;
   late int _retryCount;
@@ -341,8 +347,6 @@ class QueryController<Data> extends ValueNotifier<QueryState<Data>>
   QueryIdentifier get id => _id;
   QueryFetcher<Data> get fetcher => _fetcher;
   bool get enabled => _enabled;
-  Data? get initialData => _initialData;
-  DateTime? get initialDataUpdatedAt => _initialDataUpdatedAt;
   Data? get placeholderData => _placeholderData;
   Duration get staleDuration => _staleDuration;
   int get retryCount => _retryCount;
@@ -393,7 +397,7 @@ class QueryController<Data> extends ValueNotifier<QueryState<Data>>
           query.setInitialData(
             // ignore: null_check_on_nullable_type_parameter
             data: _initialData!,
-            updatedAt: initialDataUpdatedAt,
+            updatedAt: _initialDataUpdatedAt,
           );
         }
         if (_enabled) {
@@ -416,8 +420,6 @@ class QueryBuilder<Data> extends StatefulWidget {
     required this.id,
     required this.fetcher,
     this.enabled = true,
-    this.initialData,
-    this.initialDataUpdatedAt,
     this.placeholderData,
     this.staleDuration = Duration.zero,
     this.retryCount = 0,
@@ -433,8 +435,6 @@ class QueryBuilder<Data> extends StatefulWidget {
   final QueryIdentifier id;
   final QueryFetcher<Data> fetcher;
   final bool enabled;
-  final Data? initialData;
-  final DateTime? initialDataUpdatedAt;
   final Data? placeholderData;
   final Duration staleDuration;
   final int retryCount;
@@ -451,8 +451,6 @@ class QueryBuilder<Data> extends StatefulWidget {
     QueryIdentifier? id,
     QueryFetcher<Data>? fetcher,
     bool? enabled,
-    Data? initialData,
-    DateTime? initialDataUpdatedAt,
     Data? placeholderData,
     Duration? staleDuration,
     int? retryCount,
@@ -468,8 +466,6 @@ class QueryBuilder<Data> extends StatefulWidget {
       id: id ?? this.id,
       fetcher: fetcher ?? this.fetcher,
       enabled: enabled ?? this.enabled,
-      initialData: initialData ?? this.initialData,
-      initialDataUpdatedAt: initialDataUpdatedAt ?? this.initialDataUpdatedAt,
       placeholderData: placeholderData ?? this.placeholderData,
       staleDuration: staleDuration ?? this.staleDuration,
       retryCount: retryCount ?? this.retryCount,
@@ -504,8 +500,6 @@ class _QueryBuilderState<Data> extends State<QueryBuilder<Data>>
     _effectiveController._id = widget.id;
     _effectiveController._fetcher = widget.fetcher;
     _effectiveController._enabled = widget.enabled;
-    _effectiveController._initialData = widget.initialData;
-    _effectiveController._initialDataUpdatedAt = widget.initialDataUpdatedAt;
     _effectiveController._placeholderData = widget.placeholderData;
     _effectiveController._staleDuration = widget.staleDuration;
     _effectiveController._retryCount = widget.retryCount;
@@ -554,8 +548,6 @@ class _QueryBuilderState<Data> extends State<QueryBuilder<Data>>
     _effectiveController._id = widget.id;
     _effectiveController._fetcher = widget.fetcher;
     _effectiveController._enabled = widget.enabled;
-    _effectiveController._initialData = widget.initialData;
-    _effectiveController._initialDataUpdatedAt = widget.initialDataUpdatedAt;
     _effectiveController._placeholderData = widget.placeholderData;
     _effectiveController._staleDuration = widget.staleDuration;
     _effectiveController._retryCount = widget.retryCount;
