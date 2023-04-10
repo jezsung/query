@@ -506,10 +506,6 @@ class _QueryBuilderState<Data> extends State<QueryBuilder<Data>>
     _effectiveController._retryDelayDuration = widget.retryDelayDuration;
     _effectiveController._refetchIntervalDuration =
         widget.refetchIntervalDuration;
-
-    WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
-      _initQuery();
-    });
   }
 
   @override
@@ -520,6 +516,8 @@ class _QueryBuilderState<Data> extends State<QueryBuilder<Data>>
         .buildQuery(_effectiveController.id);
 
     _query.addObserver<QueryController<Data>>(_effectiveController);
+
+    _initQuery();
   }
 
   @override
