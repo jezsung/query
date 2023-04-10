@@ -317,6 +317,7 @@ class Query<Data> extends BaseQuery {
 
   void dispose() {
     _zonedTimerInterceptor.cancel();
+    _retryResolver?.cancel();
   }
 }
 

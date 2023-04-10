@@ -1,4 +1,7 @@
+import 'dart:async';
+
 import 'package:async/async.dart';
+import 'package:fluery/src/utils/zoned_timer_interceptor.dart';
 
 typedef ErrorCallback = void Function(Object? error, int retried);
 
@@ -17,6 +20,7 @@ class RetryResolver<T> {
   final ErrorCallback? onError;
 
   final CancelableCompleter<T> _completer = CancelableCompleter<T>();
+  final ZonedTimerInterceptor _zonedTimerInterceptor = ZonedTimerInterceptor();
 
   Future<T> call() async {
     for (int count = 1; count <= maxCount; count++) {
@@ -28,7 +32,7 @@ class RetryResolver<T> {
         onError?.call(error, count);
 
         if (count != maxCount) {
-          await Future.delayed(delayDuration);
+          await _zonedTimerInterceptor.run(() => Future.delayed(delayDuration));
         }
       }
     }
@@ -37,6 +41,7 @@ class RetryResolver<T> {
   }
 
   Future<void> cancel() async {
+    _zonedTimerInterceptor.cancel();
     await _completer.operation.cancel();
   }
 }
