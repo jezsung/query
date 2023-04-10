@@ -93,7 +93,7 @@ void main() {
   );
 
   group(
-    'when "enabled" is false',
+    'when the "enabled" is false',
     () {
       testWidgets(
         'should start with an idle status if there is no cached query',
