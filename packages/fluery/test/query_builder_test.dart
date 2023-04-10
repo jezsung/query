@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:clock/clock.dart';
 import 'package:fluery/fluery.dart';
 import 'package:flutter/material.dart';
@@ -107,62 +109,54 @@ void main() {
               },
               enabled: false,
               builder: (context, state, child) {
-                return Text(state.status.name);
+                return Text('status: ${state.status.name}');
               },
             ),
           );
 
-          expect(find.text('idle'), findsOneWidget);
+          expect(find.text('status: idle'), findsOneWidget);
         },
       );
 
       testWidgets(
         'should not start fetching if there is no cached query',
         (tester) async {
-          int fetchCallCount = 0;
+          const fetchDuration = Duration(seconds: 3);
 
           await tester.pumpWithQueryClientProvider(
             QueryBuilder<String>(
               id: 'id',
               fetcher: (id) async {
-                fetchCallCount++;
-                await Future.delayed(const Duration(seconds: 3));
+                await Future.delayed(fetchDuration);
                 return 'data';
               },
               enabled: false,
               builder: (context, state, child) {
-                return Text(state.status.name);
+                return Text('status: ${state.status.name}');
               },
             ),
           );
 
-          expect(fetchCallCount, isZero);
-
-          await tester.pump(const Duration(seconds: 3));
-
-          expect(fetchCallCount, isZero);
+          expect(find.text('status: fetching'), findsNothing);
         },
       );
 
       testWidgets(
-        'should populate the cached query if there is one exists',
+        'should populate the cached query if one exists',
         (tester) async {
-          final queryClient = QueryClient();
-
-          queryClient.setQueryState(
-            'id',
-            QueryState<String>(
-              status: QueryStatus.success,
-              data: 'prepopulated data',
-              dataUpdatedAt: DateTime.now(),
-            ),
+          final cachedState = QueryState<String>(
+            status: QueryStatus.success,
+            data: 'cached data',
+            dataUpdatedAt: clock.now(),
           );
+          final client = QueryClient()..setQueryState('id', cachedState);
+          const fetchDuration = Duration(seconds: 3);
 
           await tester.pumpWithQueryClientProvider(
             QueryBuilder<String>(
               id: 'id',
               fetcher: (id) async {
-                await Future.delayed(const Duration(seconds: 3));
+                await Future.delayed(fetchDuration);
                 return 'data';
               },
               enabled: false,
@@ -175,59 +169,50 @@ void main() {
                 );
               },
             ),
-            queryClient,
+            client,
           );
 
-          expect(find.text('status: success'), findsOneWidget);
-          expect(find.text('data: prepopulated data'), findsOneWidget);
+          expect(
+            find.text('status: ${cachedState.status.name}'),
+            findsOneWidget,
+          );
+          expect(
+            find.text('data: ${cachedState.data}'),
+            findsOneWidget,
+          );
         },
       );
 
       testWidgets(
         'should not refetch on init regardless of the "refetchOnInit" property',
         (tester) async {
-          final queryClient = QueryClient();
-          queryClient.setQueryState(
-            'id',
-            QueryState<String>(
-              status: QueryStatus.success,
-              data: 'prepopulated data',
-              dataUpdatedAt: DateTime.now(),
-            ),
-          );
+          final client = QueryClient()
+            ..setQueryState(
+              'id',
+              QueryState<String>(
+                status: QueryStatus.success,
+                data: 'cached data',
+                dataUpdatedAt: clock.now(),
+              ),
+            );
 
           for (final mode in RefetchMode.values) {
-            bool didRefetch = false;
-
             await tester.pumpWithQueryClientProvider(
               QueryBuilder<String>(
                 id: 'id',
                 fetcher: (id) async {
-                  await Future.delayed(const Duration(seconds: 3));
-                  didRefetch = true;
                   return 'data';
                 },
                 enabled: false,
                 refetchOnInit: mode,
-                refetchOnResumed: RefetchMode.never,
-                refetchIntervalDuration: null,
                 builder: (context, state, child) {
-                  return Column(
-                    children: [
-                      Text('status: ${state.status.name}'),
-                      Text('data: ${state.data}'),
-                    ],
-                  );
+                  return Text('status: ${state.status.name}');
                 },
               ),
-              queryClient,
+              client,
             );
 
-            expect(didRefetch, isFalse);
-
-            await tester.pump(const Duration(seconds: 3));
-
-            expect(didRefetch, isFalse);
+            expect(find.text('status: fetching'), findsNothing);
           }
         },
       );
@@ -235,51 +220,37 @@ void main() {
       testWidgets(
         'should not refetch on resumed regardless of the "refetchOnResumed" property',
         (tester) async {
-          final queryClient = QueryClient();
-          queryClient.setQueryState(
-            'id',
-            QueryState<String>(
-              status: QueryStatus.success,
-              data: 'prepopulated data',
-              dataUpdatedAt: DateTime.now(),
-            ),
-          );
+          final client = QueryClient()
+            ..setQueryState(
+              'id',
+              QueryState<String>(
+                status: QueryStatus.success,
+                data: 'cached data',
+                dataUpdatedAt: clock.now(),
+              ),
+            );
 
           for (final mode in RefetchMode.values) {
-            bool didRefetch = false;
-
             await tester.pumpWithQueryClientProvider(
               QueryBuilder<String>(
                 id: 'id',
                 fetcher: (id) async {
-                  await Future.delayed(const Duration(seconds: 3));
-                  didRefetch = true;
                   return 'data';
                 },
                 enabled: false,
                 refetchOnInit: RefetchMode.never,
                 refetchOnResumed: mode,
-                refetchIntervalDuration: null,
                 builder: (context, state, child) {
-                  return Column(
-                    children: [
-                      Text('status: ${state.status.name}'),
-                      Text('data: ${state.data}'),
-                    ],
-                  );
+                  return Text('status: ${state.status.name}');
                 },
               ),
-              queryClient,
+              client,
             );
 
             tester.binding
                 .handleAppLifecycleStateChanged(AppLifecycleState.resumed);
 
-            expect(didRefetch, isFalse);
-
-            await tester.pump(const Duration(seconds: 3));
-
-            expect(didRefetch, isFalse);
+            expect(find.text('status: fetching'), findsNothing);
           }
         },
       );
@@ -287,29 +258,27 @@ void main() {
       testWidgets(
         'should not refetch on intervals even if the "refetchIntervalDuration" is set',
         (tester) async {
-          final queryClient = QueryClient();
-          queryClient.setQueryState(
-            'id',
-            QueryState<String>(
-              status: QueryStatus.success,
-              data: 'prepopulated data',
-              dataUpdatedAt: DateTime.now(),
-            ),
-          );
-
-          bool didRefetch = false;
+          final client = QueryClient()
+            ..setQueryState(
+              'id',
+              QueryState<String>(
+                status: QueryStatus.success,
+                data: 'cached data',
+                dataUpdatedAt: clock.now(),
+              ),
+            );
+          const refetchIntervalDuration = Duration(seconds: 3);
 
           await tester.pumpWithQueryClientProvider(
             QueryBuilder<String>(
               id: 'id',
               fetcher: (id) async {
-                didRefetch = true;
                 return 'data';
               },
               enabled: false,
               refetchOnInit: RefetchMode.never,
               refetchOnResumed: RefetchMode.never,
-              refetchIntervalDuration: const Duration(seconds: 3),
+              refetchIntervalDuration: refetchIntervalDuration,
               builder: (context, state, child) {
                 return Column(
                   children: [
@@ -319,13 +288,13 @@ void main() {
                 );
               },
             ),
-            queryClient,
+            client,
           );
 
           for (int i = 0; i < 5; i++) {
-            expect(didRefetch, isFalse);
+            expect(find.text('status: fetching'), findsNothing);
 
-            await tester.pump(const Duration(seconds: 3));
+            await tester.pump(refetchIntervalDuration);
           }
         },
       );
