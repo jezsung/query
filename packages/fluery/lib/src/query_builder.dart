@@ -365,7 +365,7 @@ class QueryController<Data> extends ValueNotifier<QueryState<Data>>
       state = state.copyWith(status: QueryStatus.fetching);
     }
 
-    if (!state.hasData && state.status.isLoading) {
+    if (!state.hasData && (state.status.isIdle || state.status.isLoading)) {
       state = state.copyWith(data: _placeholder);
     }
 
