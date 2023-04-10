@@ -20,7 +20,6 @@ typedef QueryWidgetBuilder<Data> = Widget Function(
 enum RefetchMode {
   never,
   stale,
-  failure,
   always,
 }
 
@@ -626,11 +625,6 @@ class _QueryBuilderState<Data> extends State<QueryBuilder<Data>>
         break;
       case RefetchMode.stale:
         await _fetch();
-        break;
-      case RefetchMode.failure:
-        if (_query.state.status == QueryStatus.failure) {
-          await _fetch(ignoreStaleness: true);
-        }
         break;
       case RefetchMode.always:
         await _fetch(ignoreStaleness: true);
