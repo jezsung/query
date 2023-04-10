@@ -95,101 +95,91 @@ void main() {
   group(
     'when "enabled" is false',
     () {
-      group(
-        'and there is no cached query',
-        () {
-          testWidgets(
-            'should start with an idle status',
-            (tester) async {
-              await tester.pumpWithQueryClientProvider(
-                QueryBuilder<String>(
-                  id: 'id',
-                  fetcher: (id) async {
-                    await Future.delayed(const Duration(seconds: 3));
-                    return 'data';
-                  },
-                  enabled: false,
-                  builder: (context, state, child) {
-                    return Text(state.status.name);
-                  },
-                ),
-              );
-
-              expect(find.text('idle'), findsOneWidget);
-            },
+      testWidgets(
+        'should start with an idle status if there is no cached query',
+        (tester) async {
+          await tester.pumpWithQueryClientProvider(
+            QueryBuilder<String>(
+              id: 'id',
+              fetcher: (id) async {
+                await Future.delayed(const Duration(seconds: 3));
+                return 'data';
+              },
+              enabled: false,
+              builder: (context, state, child) {
+                return Text(state.status.name);
+              },
+            ),
           );
 
-          testWidgets(
-            'should not start fetching',
-            (tester) async {
-              int fetchCallCount = 0;
-
-              await tester.pumpWithQueryClientProvider(
-                QueryBuilder<String>(
-                  id: 'id',
-                  fetcher: (id) async {
-                    fetchCallCount++;
-                    await Future.delayed(const Duration(seconds: 3));
-                    return 'data';
-                  },
-                  enabled: false,
-                  builder: (context, state, child) {
-                    return Text(state.status.name);
-                  },
-                ),
-              );
-
-              expect(fetchCallCount, isZero);
-
-              await tester.pump(const Duration(seconds: 3));
-
-              expect(fetchCallCount, isZero);
-            },
-          );
+          expect(find.text('idle'), findsOneWidget);
         },
       );
 
-      group(
-        'and there is a cached query',
-        () {
-          testWidgets(
-            'should populate the cached query',
-            (tester) async {
-              final queryClient = QueryClient();
+      testWidgets(
+        'should not start fetching if there is no cached query',
+        (tester) async {
+          int fetchCallCount = 0;
 
-              queryClient.setQueryState(
-                'id',
-                QueryState<String>(
-                  status: QueryStatus.success,
-                  data: 'prepopulated data',
-                  dataUpdatedAt: DateTime.now(),
-                ),
-              );
-
-              await tester.pumpWithQueryClientProvider(
-                QueryBuilder<String>(
-                  id: 'id',
-                  fetcher: (id) async {
-                    await Future.delayed(const Duration(seconds: 3));
-                    return 'data';
-                  },
-                  enabled: false,
-                  builder: (context, state, child) {
-                    return Column(
-                      children: [
-                        Text('status: ${state.status.name}'),
-                        Text('data: ${state.data}'),
-                      ],
-                    );
-                  },
-                ),
-                queryClient,
-              );
-
-              expect(find.text('status: success'), findsOneWidget);
-              expect(find.text('data: prepopulated data'), findsOneWidget);
-            },
+          await tester.pumpWithQueryClientProvider(
+            QueryBuilder<String>(
+              id: 'id',
+              fetcher: (id) async {
+                fetchCallCount++;
+                await Future.delayed(const Duration(seconds: 3));
+                return 'data';
+              },
+              enabled: false,
+              builder: (context, state, child) {
+                return Text(state.status.name);
+              },
+            ),
           );
+
+          expect(fetchCallCount, isZero);
+
+          await tester.pump(const Duration(seconds: 3));
+
+          expect(fetchCallCount, isZero);
+        },
+      );
+
+      testWidgets(
+        'should populate the cached query if there is one exists',
+        (tester) async {
+          final queryClient = QueryClient();
+
+          queryClient.setQueryState(
+            'id',
+            QueryState<String>(
+              status: QueryStatus.success,
+              data: 'prepopulated data',
+              dataUpdatedAt: DateTime.now(),
+            ),
+          );
+
+          await tester.pumpWithQueryClientProvider(
+            QueryBuilder<String>(
+              id: 'id',
+              fetcher: (id) async {
+                await Future.delayed(const Duration(seconds: 3));
+                return 'data';
+              },
+              enabled: false,
+              builder: (context, state, child) {
+                return Column(
+                  children: [
+                    Text('status: ${state.status.name}'),
+                    Text('data: ${state.data}'),
+                  ],
+                );
+              },
+            ),
+            queryClient,
+          );
+
+          expect(find.text('status: success'), findsOneWidget);
+          expect(find.text('data: prepopulated data'), findsOneWidget);
         },
       );
 
