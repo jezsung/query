@@ -200,7 +200,7 @@ class QueryExample2Page extends StatelessWidget {
             // throw 'Fetching Failure';
             return 'Fetching Success!';
           },
-          placeholderData: 'Placeholder Data!',
+          preview: 'Placeholder Data!',
           staleDuration: const Duration(seconds: 10),
           builder: (context, state, child) {
             switch (state.status) {
