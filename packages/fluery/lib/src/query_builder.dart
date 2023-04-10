@@ -337,7 +337,7 @@ class QueryController<Data> extends ValueNotifier<QueryState<Data>>
   late QueryIdentifier _id;
   late QueryFetcher<Data> _fetcher;
   late bool _enabled;
-  late Data? _preview;
+  late Data? _placeholder;
   late Duration _staleDuration;
   late int _retryCount;
   late Duration _retryDelayDuration;
@@ -346,7 +346,7 @@ class QueryController<Data> extends ValueNotifier<QueryState<Data>>
   QueryIdentifier get id => _id;
   QueryFetcher<Data> get fetcher => _fetcher;
   bool get enabled => _enabled;
-  Data? get placeholderData => _preview;
+  Data? get placeholder => _placeholder;
   Duration get staleDuration => _staleDuration;
   int get retryCount => _retryCount;
   Duration get retryDelayDuration => _retryDelayDuration;
@@ -366,7 +366,7 @@ class QueryController<Data> extends ValueNotifier<QueryState<Data>>
     }
 
     if (!state.hasData && state.status.isLoading) {
-      state = state.copyWith(data: _preview);
+      state = state.copyWith(data: _placeholder);
     }
 
     return state;
@@ -420,7 +420,7 @@ class QueryBuilder<Data> extends StatefulWidget {
     required this.id,
     required this.fetcher,
     this.enabled = true,
-    this.preview,
+    this.placeholder,
     this.staleDuration = Duration.zero,
     this.retryCount = 0,
     this.retryDelayDuration = const Duration(seconds: 3),
@@ -435,7 +435,7 @@ class QueryBuilder<Data> extends StatefulWidget {
   final QueryIdentifier id;
   final QueryFetcher<Data> fetcher;
   final bool enabled;
-  final Data? preview;
+  final Data? placeholder;
   final Duration staleDuration;
   final int retryCount;
   final Duration retryDelayDuration;
@@ -451,7 +451,7 @@ class QueryBuilder<Data> extends StatefulWidget {
     QueryIdentifier? id,
     QueryFetcher<Data>? fetcher,
     bool? enabled,
-    Data? preview,
+    Data? placeholder,
     Duration? staleDuration,
     int? retryCount,
     Duration? retryDelayDuration,
@@ -466,7 +466,7 @@ class QueryBuilder<Data> extends StatefulWidget {
       id: id ?? this.id,
       fetcher: fetcher ?? this.fetcher,
       enabled: enabled ?? this.enabled,
-      preview: preview ?? this.preview,
+      placeholder: placeholder ?? this.placeholder,
       staleDuration: staleDuration ?? this.staleDuration,
       retryCount: retryCount ?? this.retryCount,
       retryDelayDuration: retryDelayDuration ?? this.retryDelayDuration,
@@ -500,7 +500,7 @@ class _QueryBuilderState<Data> extends State<QueryBuilder<Data>>
     _effectiveController._id = widget.id;
     _effectiveController._fetcher = widget.fetcher;
     _effectiveController._enabled = widget.enabled;
-    _effectiveController._preview = widget.preview;
+    _effectiveController._placeholder = widget.placeholder;
     _effectiveController._staleDuration = widget.staleDuration;
     _effectiveController._retryCount = widget.retryCount;
     _effectiveController._retryDelayDuration = widget.retryDelayDuration;
@@ -546,7 +546,7 @@ class _QueryBuilderState<Data> extends State<QueryBuilder<Data>>
     _effectiveController._id = widget.id;
     _effectiveController._fetcher = widget.fetcher;
     _effectiveController._enabled = widget.enabled;
-    _effectiveController._preview = widget.preview;
+    _effectiveController._placeholder = widget.placeholder;
     _effectiveController._staleDuration = widget.staleDuration;
     _effectiveController._retryCount = widget.retryCount;
     _effectiveController._retryDelayDuration = widget.retryDelayDuration;
