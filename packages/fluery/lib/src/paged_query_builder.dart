@@ -2,6 +2,7 @@ import 'package:fluery/src/base_query.dart';
 import 'package:fluery/src/query_client_provider.dart';
 import 'package:fluery/src/query_status.dart';
 import 'package:flutter/widgets.dart';
+import 'package:clock/clock.dart';
 
 typedef Pages<Data> = List<Data>;
 
@@ -123,9 +124,9 @@ class PagedQuery<Data, Params> extends BaseQuery {
     }
 
     Future<void> execute() async {
-      final isDataStale = state.dataUpdatedAt
-              ?.isBefore(DateTime.now().subtract(staleDuration)) ??
-          true;
+      final isDataStale =
+          state.dataUpdatedAt?.isBefore(clock.now().subtract(staleDuration)) ??
+              true;
       if (!isDataStale) {
         return;
       }
@@ -146,7 +147,7 @@ class PagedQuery<Data, Params> extends BaseQuery {
             pages: pages,
             hasNextPage: nextPageParamsBuilder?.call(pages) != null,
             hasPreviousPage: previousPageParamsBuilder?.call(pages) != null,
-            dataUpdatedAt: DateTime.now(),
+            dataUpdatedAt: clock.now(),
           ),
         ));
       } catch (e) {
@@ -154,7 +155,7 @@ class PagedQuery<Data, Params> extends BaseQuery {
           state = state.copyWith(
             status: QueryStatus.failure,
             error: e,
-            errorUpdatedAt: DateTime.now(),
+            errorUpdatedAt: clock.now(),
           ),
         ));
       }
@@ -205,7 +206,7 @@ class PagedQuery<Data, Params> extends BaseQuery {
             pages: pages,
             isFetchingNextPage: false,
             hasNextPage: nextPageParamsBuilder?.call(pages) != null,
-            dataUpdatedAt: DateTime.now(),
+            dataUpdatedAt: clock.now(),
           ),
         ));
       } catch (e) {
@@ -214,7 +215,7 @@ class PagedQuery<Data, Params> extends BaseQuery {
             status: QueryStatus.failure,
             isFetchingNextPage: false,
             error: e,
-            errorUpdatedAt: DateTime.now(),
+            errorUpdatedAt: clock.now(),
           ),
         ));
       }
@@ -265,7 +266,7 @@ class PagedQuery<Data, Params> extends BaseQuery {
             pages: pages,
             isFetchingPreviousPage: false,
             hasPreviousPage: previousPageParamsBuilder?.call(pages) != null,
-            dataUpdatedAt: DateTime.now(),
+            dataUpdatedAt: clock.now(),
           ),
         ));
       } catch (e) {
@@ -274,7 +275,7 @@ class PagedQuery<Data, Params> extends BaseQuery {
             status: QueryStatus.failure,
             isFetchingPreviousPage: false,
             error: e,
-            errorUpdatedAt: DateTime.now(),
+            errorUpdatedAt: clock.now(),
           ),
         ));
       }
@@ -306,7 +307,7 @@ class PagedQuery<Data, Params> extends BaseQuery {
           pages: pages,
           hasNextPage: nextPageParamsBuilder?.call(pages) != null,
           hasPreviousPage: previousPageParamsBuilder?.call(pages) != null,
-          dataUpdatedAt: updatedAt ?? DateTime.now(),
+          dataUpdatedAt: updatedAt ?? clock.now(),
         ),
       ));
     }

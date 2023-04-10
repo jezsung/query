@@ -7,6 +7,7 @@ import 'package:fluery/src/utils/periodic_timer.dart';
 import 'package:fluery/src/utils/retry_resolver.dart';
 import 'package:fluery/src/utils/zoned_timer_interceptor.dart';
 import 'package:flutter/widgets.dart';
+import 'package:clock/clock.dart';
 
 typedef QueryFetcher<Data> = Future<Data> Function(QueryIdentifier id);
 
@@ -178,9 +179,9 @@ class Query<Data> extends BaseQuery {
 
       final effectiveStaleDuration = staleDuration ?? this.staleDuration!;
 
-      final isFresh = DateTime.now().isBefore(
-        state.dataUpdatedAt!.add(effectiveStaleDuration),
-      );
+      final isFresh = clock.now().isBefore(
+            state.dataUpdatedAt!.add(effectiveStaleDuration),
+          );
 
       return isFresh;
     }();
@@ -208,7 +209,7 @@ class Query<Data> extends BaseQuery {
         state = state.copyWith(
           status: QueryStatus.success,
           data: data,
-          dataUpdatedAt: DateTime.now(),
+          dataUpdatedAt: clock.now(),
         ),
       ));
     } catch (error) {
@@ -219,7 +220,7 @@ class Query<Data> extends BaseQuery {
           state = state.copyWith(
             status: QueryStatus.retrying,
             error: error,
-            errorUpdatedAt: DateTime.now(),
+            errorUpdatedAt: clock.now(),
           ),
         ));
 
@@ -233,7 +234,7 @@ class Query<Data> extends BaseQuery {
                 state = state.copyWith(
                   retried: retried,
                   error: error,
-                  errorUpdatedAt: DateTime.now(),
+                  errorUpdatedAt: clock.now(),
                 ),
               ));
             } else {
@@ -242,7 +243,7 @@ class Query<Data> extends BaseQuery {
                   status: QueryStatus.failure,
                   retried: retried,
                   error: error,
-                  errorUpdatedAt: DateTime.now(),
+                  errorUpdatedAt: clock.now(),
                 ),
               ));
             }
@@ -255,7 +256,7 @@ class Query<Data> extends BaseQuery {
           state = state.copyWith(
             status: QueryStatus.success,
             data: data,
-            dataUpdatedAt: DateTime.now(),
+            dataUpdatedAt: clock.now(),
           ),
         ));
       } else {
@@ -263,7 +264,7 @@ class Query<Data> extends BaseQuery {
           state = state.copyWith(
             status: QueryStatus.failure,
             error: error,
-            errorUpdatedAt: DateTime.now(),
+            errorUpdatedAt: clock.now(),
           ),
         ));
       }
@@ -283,7 +284,7 @@ class Query<Data> extends BaseQuery {
         state = state.copyWith(
           status: QueryStatus.success,
           data: data,
-          dataUpdatedAt: updatedAt ?? DateTime.now(),
+          dataUpdatedAt: updatedAt ?? clock.now(),
         ),
       ));
     }
@@ -295,7 +296,7 @@ class Query<Data> extends BaseQuery {
         status: QueryStatus.success,
         data: data,
         retried: 0,
-        dataUpdatedAt: DateTime.now(),
+        dataUpdatedAt: clock.now(),
       ),
     ));
   }
@@ -585,7 +586,9 @@ class _QueryBuilderState<Data> extends State<QueryBuilder<Data>>
       return;
     }
 
-    _initQuery();
+    if (widget.enabled && !oldWidget.enabled) {
+      _initQuery();
+    }
   }
 
   @override

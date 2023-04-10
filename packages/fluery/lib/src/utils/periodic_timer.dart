@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import 'package:clock/clock.dart';
+
 class PeriodicTimer {
   PeriodicTimer(
     Function callback,
@@ -21,11 +23,11 @@ class PeriodicTimer {
       return;
     }
 
-    _lastTickedAt = DateTime.now();
+    _lastTickedAt = clock.now();
     _timer = Timer.periodic(
       _interval,
       (timer) {
-        _lastTickedAt = DateTime.now();
+        _lastTickedAt = clock.now();
         _callback();
       },
     );
@@ -52,28 +54,28 @@ class PeriodicTimer {
   void _reset() {
     if (!running) return;
 
-    final diff = _lastTickedAt!.add(_interval).difference(DateTime.now());
+    final diff = _lastTickedAt!.add(_interval).difference(clock.now());
 
     if (diff.isNegative || diff == Duration.zero) {
-      _lastTickedAt = DateTime.now();
+      _lastTickedAt = clock.now();
       _callback();
       _timer?.cancel();
       _timer = Timer.periodic(
         _interval,
         (timer) {
-          _lastTickedAt = DateTime.now();
+          _lastTickedAt = clock.now();
           _callback();
         },
       );
     } else {
       Timer(diff, () {
-        _lastTickedAt = DateTime.now();
+        _lastTickedAt = clock.now();
         _callback();
         _timer?.cancel();
         _timer = Timer.periodic(
           _interval,
           (timer) {
-            _lastTickedAt = DateTime.now();
+            _lastTickedAt = clock.now();
             _callback();
           },
         );
