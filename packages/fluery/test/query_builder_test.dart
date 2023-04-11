@@ -512,46 +512,6 @@ void main() {
   );
 
   group(
-    'when "initialData" is set',
-    () {
-      group(
-        'and "initialDataUpdatedAt" is not set',
-        () {
-          testWidgets(
-            'should start with a fetching status and the "initialData" if there is no cached data',
-            (tester) async {},
-          );
-
-          testWidgets(
-            'should start fetching immediately and resolve',
-            (tester) async {},
-          );
-
-          testWidgets(
-            'should ignore the "initialData" if a cached query already exists',
-            (tester) async {},
-          );
-        },
-      );
-
-      group(
-        'and "initialDataUpdatedAt" is set',
-        () {
-          testWidgets(
-            'should start with a success status and the "initialData" if the "initialData" is up to date based on the "intialDataUpdatedAt" and "staleDuration"',
-            (tester) async {},
-          );
-
-          testWidgets(
-            'should not start fetching if the "initialData" is up to date',
-            (tester) async {},
-          );
-        },
-      );
-    },
-  );
-
-  group(
     'when the "placeholder" is set',
     () {
       testWidgets(
