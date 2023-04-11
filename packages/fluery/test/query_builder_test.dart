@@ -724,7 +724,53 @@ void main() {
 
         testWidgets(
           'should retry $retryCount times with $retryDelayDuration delay if the initial fetching failed',
-          (tester) async {},
+          (tester) async {
+            const fetchDuration = Duration(seconds: 3);
+
+            await tester.pumpWithQueryClientProvider(
+              QueryBuilder<String>(
+                id: 'id',
+                fetcher: (id) async {
+                  await Future.delayed(fetchDuration);
+                  throw 'error';
+                },
+                retryCount: retryCount,
+                retryDelayDuration: retryDelayDuration,
+                builder: (context, state, child) {
+                  return Column(
+                    children: [
+                      Text('status: ${state.status.name}'),
+                      Text('data: ${state.data}'),
+                      Text('error: ${state.error}'),
+                      Text('retried: ${state.retried}'),
+                    ],
+                  );
+                },
+              ),
+            );
+
+            expect(find.text('status: fetching'), findsOneWidget);
+            expect(find.text('data: null'), findsOneWidget);
+            expect(find.text('error: null'), findsOneWidget);
+            expect(find.text('retried: 0'), findsOneWidget);
+
+            await tester.pump(fetchDuration);
+
+            for (int i = 0; i < retryCount; i++) {
+              expect(find.text('status: retrying'), findsOneWidget);
+              expect(find.text('data: null'), findsOneWidget);
+              expect(find.text('error: error'), findsOneWidget);
+              expect(find.text('retried: $i'), findsOneWidget);
+
+              await tester.pump(fetchDuration);
+              await tester.pump(retryDelayDuration);
+            }
+
+            expect(find.text('status: failure'), findsOneWidget);
+            expect(find.text('data: null'), findsOneWidget);
+            expect(find.text('error: error'), findsOneWidget);
+            expect(find.text('retried: $retryCount'), findsOneWidget);
+          },
         );
       }
     },
