@@ -622,7 +622,7 @@ void main() {
   );
 
   group(
-    'should test the retry feature',
+    'when "retryCount" and "retryDelayDuration" are set',
     () {
       final inputs = [
         {
