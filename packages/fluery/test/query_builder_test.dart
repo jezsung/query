@@ -1,5 +1,3 @@
-import 'dart:math';
-
 import 'package:clock/clock.dart';
 import 'package:fluery/fluery.dart';
 import 'package:flutter/material.dart';
@@ -31,66 +29,74 @@ extension WidgetTesterExtension on WidgetTester {
 
 void main() {
   testWidgets(
-    'should start with a fetching status',
+    'fetching should succeed',
     (tester) async {
+      const fetchDuration = Duration(seconds: 3);
+
       await tester.pumpWithQueryClientProvider(
         QueryBuilder<String>(
           id: 'id',
           fetcher: (id) async {
-            await Future.delayed(const Duration(seconds: 3));
+            await Future.delayed(fetchDuration);
             return 'data';
           },
           builder: (context, state, child) {
-            return Text(state.status.name);
+            return Column(
+              children: [
+                Text('status: ${state.status.name}'),
+                Text('data: ${state.data}'),
+                Text('error: ${state.error}'),
+              ],
+            );
           },
         ),
       );
 
-      expect(find.text('fetching'), findsOneWidget);
+      expect(find.text('status: fetching'), findsOneWidget);
+      expect(find.text('data: null'), findsOneWidget);
+      expect(find.text('error: null'), findsOneWidget);
+
+      await tester.pump(fetchDuration);
+
+      expect(find.text('status: success'), findsOneWidget);
+      expect(find.text('data: data'), findsOneWidget);
+      expect(find.text('error: null'), findsOneWidget);
     },
   );
 
   testWidgets(
-    'should end with a success status',
+    'fetching should fail',
     (tester) async {
+      const fetchDuration = Duration(seconds: 3);
+
       await tester.pumpWithQueryClientProvider(
         QueryBuilder<String>(
           id: 'id',
           fetcher: (id) async {
-            await Future.delayed(const Duration(seconds: 3));
-            return 'data';
-          },
-          builder: (context, state, child) {
-            return Text(state.status.name);
-          },
-        ),
-      );
-
-      await tester.pump(const Duration(seconds: 3));
-
-      expect(find.text('success'), findsOneWidget);
-    },
-  );
-
-  testWidgets(
-    'should end with a failure status',
-    (tester) async {
-      await tester.pumpWithQueryClientProvider(
-        QueryBuilder<String>(
-          id: 'id',
-          fetcher: (id) async {
-            await Future.delayed(const Duration(seconds: 3));
+            await Future.delayed(fetchDuration);
             throw 'error';
           },
           builder: (context, state, child) {
-            return Text(state.status.name);
+            return Column(
+              children: [
+                Text('status: ${state.status.name}'),
+                Text('data: ${state.data}'),
+                Text('error: ${state.error}'),
+              ],
+            );
           },
         ),
       );
 
-      await tester.pump(const Duration(seconds: 3));
+      expect(find.text('status: fetching'), findsOneWidget);
+      expect(find.text('data: null'), findsOneWidget);
+      expect(find.text('error: null'), findsOneWidget);
 
-      expect(find.text('failure'), findsOneWidget);
+      await tester.pump(fetchDuration);
+
+      expect(find.text('status: failure'), findsOneWidget);
+      expect(find.text('data: null'), findsOneWidget);
+      expect(find.text('error: error'), findsOneWidget);
     },
   );
 
