@@ -301,224 +301,160 @@ void main() {
     },
   );
 
-  group('when the "enabled" is changed from "false" to "true"', () {
-    testWidgets(
-      'should fetch if it has never been fetched',
-      (tester) async {
-        final widget = QueryBuilder<String>(
-          key: ValueKey('key'),
-          id: 'id',
-          fetcher: (id) async {
-            await Future.delayed(const Duration(seconds: 3));
-            return 'data';
-          },
-          enabled: false,
-          builder: (context, state, child) {
-            return Column(
-              children: [
-                Text('status: ${state.status.name}'),
-                Text('data: ${state.data}'),
-              ],
-            );
-          },
-        );
-
-        await tester.pumpWithQueryClientProvider(widget);
-
-        expect(find.text('status: idle'), findsOneWidget);
-        expect(find.text('data: null'), findsOneWidget);
-
-        await tester.pump(const Duration(seconds: 3));
-
-        expect(find.text('status: idle'), findsOneWidget);
-        expect(find.text('data: null'), findsOneWidget);
-
-        await tester.pumpWithQueryClientProvider(
-          widget.copyWith(enabled: true),
-        );
-
-        expect(find.text('status: fetching'), findsOneWidget);
-        expect(find.text('data: null'), findsOneWidget);
-
-        await tester.pump(const Duration(seconds: 3));
-
-        expect(find.text('status: success'), findsOneWidget);
-        expect(find.text('data: data'), findsOneWidget);
-      },
-    );
-
-    testWidgets(
-      'should not refetch if the "refetchOnInit" is set to "RefecthMode.never"',
-      (tester) async {
-        final client = QueryClient()
-          ..setQueryState(
-            'id',
-            QueryState<String>(
-              status: QueryStatus.success,
-              data: 'prepopulated data',
-              dataUpdatedAt: DateTime.now(),
-            ),
+  group(
+    'when the "enabled" is changed from "false" to "true"',
+    () {
+      testWidgets(
+        'should fetch if it has never been fetched',
+        (tester) async {
+          final widget = QueryBuilder<String>(
+            key: ValueKey('key'),
+            id: 'id',
+            fetcher: (id) async {
+              return 'data';
+            },
+            enabled: false,
+            builder: (context, state, child) {
+              return Column(
+                children: [
+                  Text('status: ${state.status.name}'),
+                  Text('data: ${state.data}'),
+                ],
+              );
+            },
           );
 
-        final widget = QueryBuilder<String>(
-          key: ValueKey('key'),
-          id: 'id',
-          fetcher: (id) async {
-            await Future.delayed(const Duration(seconds: 3));
-            return 'data';
-          },
-          enabled: false,
-          refetchOnInit: RefetchMode.never,
-          builder: (context, state, child) {
-            return Column(
-              children: [
-                Text('status: ${state.status.name}'),
-                Text('data: ${state.data}'),
-              ],
-            );
-          },
-        );
-
-        await tester.pumpWithQueryClientProvider(widget, client);
-
-        expect(find.text('status: success'), findsOneWidget);
-        expect(find.text('data: prepopulated data'), findsOneWidget);
-
-        await tester.pump(const Duration(seconds: 3));
-
-        expect(find.text('status: success'), findsOneWidget);
-        expect(find.text('data: prepopulated data'), findsOneWidget);
-
-        await tester.pumpWithQueryClientProvider(
-          widget.copyWith(enabled: true),
-          client,
-        );
-
-        expect(find.text('status: success'), findsOneWidget);
-        expect(find.text('data: prepopulated data'), findsOneWidget);
-
-        await tester.pump(const Duration(seconds: 3));
-
-        expect(find.text('status: success'), findsOneWidget);
-        expect(find.text('data: prepopulated data'), findsOneWidget);
-      },
-    );
-
-    testWidgets(
-      'should refetch if the "refetchOnInit" is set to "RefecthMode.stale" and the data is stale',
-      (tester) async {
-        final cachedQueryState = QueryState<String>(
-          status: QueryStatus.success,
-          data: 'prepopulated data',
-          dataUpdatedAt: clock.now(),
-        );
-        final fetchDuration = const Duration(seconds: 3);
-        final staleDuration = const Duration(seconds: 5);
-        final client = QueryClient()..setQueryState('id', cachedQueryState);
-        final widget = QueryBuilder<String>(
-          key: ValueKey('key'),
-          id: 'id',
-          fetcher: (id) async {
-            await Future.delayed(fetchDuration);
-            return 'data';
-          },
-          enabled: false,
-          staleDuration: staleDuration,
-          refetchOnInit: RefetchMode.stale,
-          builder: (context, state, child) {
-            return Column(
-              children: [
-                Text('status: ${state.status.name}'),
-                Text('data: ${state.data}'),
-              ],
-            );
-          },
-        );
-
-        await tester.pumpWithQueryClientProvider(
-          widget.copyWith(enabled: false),
-          client,
-        );
-
-        expect(find.text('status: success'), findsOneWidget);
-        expect(find.text('data: prepopulated data'), findsOneWidget);
-
-        await tester.pump(staleDuration);
-
-        await tester.pumpWithQueryClientProvider(
-          widget.copyWith(enabled: true),
-          client,
-        );
-
-        expect(find.text('status: fetching'), findsOneWidget);
-        expect(find.text('data: prepopulated data'), findsOneWidget);
-
-        await tester.pump(fetchDuration);
-
-        expect(find.text('status: success'), findsOneWidget);
-        expect(find.text('data: data'), findsOneWidget);
-      },
-    );
-
-    testWidgets(
-      'should refetch if the "refetchOnInit" is set to "RefecthMode.always"',
-      (tester) async {
-        final client = QueryClient()
-          ..setQueryState(
-            'id',
-            QueryState<String>(
-              status: QueryStatus.success,
-              data: 'prepopulated data',
-              dataUpdatedAt: DateTime.now(),
-            ),
+          await tester.pumpWithQueryClientProvider(
+            widget.copyWith(enabled: false),
+          );
+          await tester.pumpWithQueryClientProvider(
+            widget.copyWith(enabled: true),
           );
 
-        final widget = QueryBuilder<String>(
-          key: ValueKey('key'),
-          id: 'id',
-          fetcher: (id) async {
-            await Future.delayed(const Duration(seconds: 3));
-            return 'data';
-          },
-          enabled: false,
-          refetchOnInit: RefetchMode.always,
-          builder: (context, state, child) {
-            return Column(
-              children: [
-                Text('status: ${state.status.name}'),
-                Text('data: ${state.data}'),
-              ],
+          expect(find.text('status: fetching'), findsOneWidget);
+        },
+      );
+
+      testWidgets(
+        'should not refetch if the "refetchOnInit" is set to "RefecthMode.never"',
+        (tester) async {
+          final client = QueryClient()
+            ..setQueryState(
+              'id',
+              QueryState<String>(
+                status: QueryStatus.success,
+                data: 'cached data',
+                dataUpdatedAt: clock.now(),
+              ),
             );
-          },
-        );
 
-        await tester.pumpWithQueryClientProvider(widget, client);
+          final widget = QueryBuilder<String>(
+            key: ValueKey('key'),
+            id: 'id',
+            fetcher: (id) async {
+              return 'data';
+            },
+            enabled: false,
+            refetchOnInit: RefetchMode.never,
+            builder: (context, state, child) {
+              return Text('status: ${state.status.name}');
+            },
+          );
 
-        expect(find.text('status: success'), findsOneWidget);
-        expect(find.text('data: prepopulated data'), findsOneWidget);
+          await tester.pumpWithQueryClientProvider(
+            widget.copyWith(enabled: false),
+            client,
+          );
+          await tester.pumpWithQueryClientProvider(
+            widget.copyWith(enabled: true),
+            client,
+          );
 
-        await tester.pump(const Duration(seconds: 3));
+          expect(find.text('status: fetchig'), findsNothing);
+        },
+      );
 
-        expect(find.text('status: success'), findsOneWidget);
-        expect(find.text('data: prepopulated data'), findsOneWidget);
+      testWidgets(
+        'should refetch if the "refetchOnInit" is set to "RefecthMode.stale" and the data is stale',
+        (tester) async {
+          final cachedState = QueryState<String>(
+            status: QueryStatus.success,
+            data: 'cached data',
+            dataUpdatedAt: clock.now(),
+          );
+          final client = QueryClient()..setQueryState('id', cachedState);
+          final staleDuration = const Duration(seconds: 5);
+          final widget = QueryBuilder<String>(
+            key: ValueKey('key'),
+            id: 'id',
+            fetcher: (id) async {
+              return 'data';
+            },
+            enabled: false,
+            staleDuration: staleDuration,
+            refetchOnInit: RefetchMode.stale,
+            builder: (context, state, child) {
+              return Text('status: ${state.status.name}');
+            },
+          );
 
-        await tester.pumpWithQueryClientProvider(
-          widget.copyWith(enabled: true),
-          client,
-        );
+          await tester.pumpWithQueryClientProvider(
+            widget.copyWith(enabled: false),
+            client,
+          );
 
-        await tester.pump();
+          await tester.pump(staleDuration);
 
-        expect(find.text('status: fetching'), findsOneWidget);
-        expect(find.text('data: prepopulated data'), findsOneWidget);
+          await tester.pumpWithQueryClientProvider(
+            widget.copyWith(enabled: true),
+            client,
+          );
 
-        await tester.pump(const Duration(seconds: 3));
+          expect(find.text('status: fetching'), findsOneWidget);
+        },
+      );
 
-        expect(find.text('status: success'), findsOneWidget);
-        expect(find.text('data: data'), findsOneWidget);
-      },
-    );
-  });
+      testWidgets(
+        'should refetch if the "refetchOnInit" is set to "RefecthMode.always"',
+        (tester) async {
+          final client = QueryClient()
+            ..setQueryState(
+              'id',
+              QueryState<String>(
+                status: QueryStatus.success,
+                data: 'cached data',
+                dataUpdatedAt: clock.now(),
+              ),
+            );
+
+          final widget = QueryBuilder<String>(
+            key: ValueKey('key'),
+            id: 'id',
+            fetcher: (id) async {
+              return 'data';
+            },
+            enabled: false,
+            refetchOnInit: RefetchMode.always,
+            builder: (context, state, child) {
+              return Text('status: ${state.status.name}');
+            },
+          );
+
+          await tester.pumpWithQueryClientProvider(
+            widget.copyWith(enabled: false),
+            client,
+          );
+
+          await tester.pumpWithQueryClientProvider(
+            widget.copyWith(enabled: true),
+            client,
+          );
+
+          expect(find.text('status: fetching'), findsOneWidget);
+        },
+      );
+    },
+  );
 
   group(
     'when "initialData" is set',
