@@ -555,181 +555,67 @@ void main() {
     'when the "placeholder" is set',
     () {
       testWidgets(
-        'should show the "placeholder" if it is in an idle status and there is no cached data',
-        (tester) async {
-          final widget = QueryBuilder<String>(
-            id: 'id',
-            fetcher: (id) async {
-              return 'data';
-            },
-            enabled: false,
-            placeholder: 'placeholder data',
-            builder: (context, state, child) {
-              return Column(
-                children: [
-                  Text('status: ${state.status.name}'),
-                  Text('data: ${state.data}'),
-                ],
-              );
-            },
-          );
-
-          await tester.pumpWithQueryClientProvider(widget);
-
-          expect(find.text('status: idle'), findsOneWidget);
-          expect(find.text('data: placeholder data'), findsOneWidget);
-        },
-      );
-
-      testWidgets(
-        'should show the "placeholder" if it is in a fetching status and there is no cached data',
-        (tester) async {
-          final widget = QueryBuilder<String>(
-            id: 'id',
-            fetcher: (id) async {
-              return 'data';
-            },
-            placeholder: 'placeholder data',
-            builder: (context, state, child) {
-              return Column(
-                children: [
-                  Text('status: ${state.status.name}'),
-                  Text('data: ${state.data}'),
-                ],
-              );
-            },
-          );
-
-          await tester.pumpWithQueryClientProvider(widget);
-
-          expect(find.text('status: fetching'), findsOneWidget);
-          expect(find.text('data: placeholder data'), findsOneWidget);
-        },
-      );
-
-      testWidgets(
-        'should show the "placeholder" if it is in a retrying status and has no data',
+        'should show the "placeholder" if there is no cached data',
         (tester) async {
           const fetchDuration = Duration(seconds: 3);
-
           final widget = QueryBuilder<String>(
             id: 'id',
             fetcher: (id) async {
               await Future.delayed(fetchDuration);
-              throw 'error';
+              return 'data';
             },
             placeholder: 'placeholder data',
-            retryCount: 1,
             builder: (context, state, child) {
               return Column(
                 children: [
                   Text('status: ${state.status.name}'),
                   Text('data: ${state.data}'),
+                  Text('error: ${state.error}'),
                 ],
               );
             },
           );
 
+          // Tests success case.
           await tester.pumpWithQueryClientProvider(widget);
+
+          expect(find.text('status: fetching'), findsOneWidget);
+          expect(find.text('data: placeholder data'), findsOneWidget);
+          expect(find.text('error: null'), findsOneWidget);
+
+          await tester.pump(fetchDuration);
+
+          expect(find.text('status: success'), findsOneWidget);
+          expect(find.text('data: data'), findsOneWidget);
+          expect(find.text('error: null'), findsOneWidget);
+
+          // Tests failure case.
+          await tester.pumpWidget(Placeholder());
+          await tester.pumpWithQueryClientProvider(
+            widget.copyWith(
+              fetcher: (id) async {
+                await Future.delayed(fetchDuration);
+                throw 'error';
+              },
+              retryCount: 1,
+            ),
+          );
+
+          expect(find.text('status: fetching'), findsOneWidget);
+          expect(find.text('data: placeholder data'), findsOneWidget);
+          expect(find.text('error: null'), findsOneWidget);
 
           await tester.pump(fetchDuration);
 
           expect(find.text('status: retrying'), findsOneWidget);
           expect(find.text('data: placeholder data'), findsOneWidget);
-        },
-      );
-
-      testWidgets(
-        'should not show the "placeholder" if it is in a failure status and has no data',
-        (tester) async {
-          const fetchDuration = Duration(seconds: 3);
-
-          final widget = QueryBuilder<String>(
-            id: 'id',
-            fetcher: (id) async {
-              await Future.delayed(fetchDuration);
-              throw 'error';
-            },
-            placeholder: 'placeholder data',
-            builder: (context, state, child) {
-              return Column(
-                children: [
-                  Text('status: ${state.status.name}'),
-                  Text('data: ${state.data}'),
-                ],
-              );
-            },
-          );
-
-          await tester.pumpWithQueryClientProvider(widget);
+          expect(find.text('error: error'), findsOneWidget);
 
           await tester.pump(fetchDuration);
 
           expect(find.text('status: failure'), findsOneWidget);
-          expect(find.text('data: null'), findsOneWidget);
-        },
-      );
-
-      testWidgets(
-        'should not show the "placeholder" if it is in a success status and has data',
-        (tester) async {
-          const fetchDuration = Duration(seconds: 3);
-
-          final widget = QueryBuilder<String>(
-            id: 'id',
-            fetcher: (id) async {
-              await Future.delayed(fetchDuration);
-              return 'data';
-            },
-            placeholder: 'placeholder data',
-            builder: (context, state, child) {
-              return Column(
-                children: [
-                  Text('status: ${state.status.name}'),
-                  Text('data: ${state.data}'),
-                ],
-              );
-            },
-          );
-
-          await tester.pumpWithQueryClientProvider(widget);
-
-          await tester.pump(fetchDuration);
-
-          expect(find.text('status: success'), findsOneWidget);
-          expect(find.text('data: placeholder data'), findsNothing);
-        },
-      );
-
-      testWidgets(
-        'should not show the "placeholder" if it has cached data',
-        (tester) async {
-          final client = QueryClient()..setQueryData('id', 'cached data');
-
-          const fetchDuration = Duration(seconds: 3);
-
-          final widget = QueryBuilder<String>(
-            id: 'id',
-            fetcher: (id) async {
-              await Future.delayed(fetchDuration);
-              return 'data';
-            },
-            placeholder: 'placeholder data',
-            builder: (context, state, child) {
-              return Column(
-                children: [
-                  Text('status: ${state.status.name}'),
-                  Text('data: ${state.data}'),
-                ],
-              );
-            },
-          );
-
-          await tester.pumpWithQueryClientProvider(widget, client);
-
-          expect(find.text('status: fetching'), findsOneWidget);
-          expect(find.text('data: cached data'), findsOneWidget);
-          expect(find.text('data: placeholder data'), findsNothing);
+          expect(find.text('data: placeholder data'), findsOneWidget);
+          expect(find.text('error: error'), findsOneWidget);
         },
       );
     },
