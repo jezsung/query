@@ -4,7 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 extension WidgetTesterExtension on WidgetTester {
   Future<void> pumpWithQueryClientProvider(
-    Widget widget, [
+    Widget? widget, [
     QueryClient? queryClient,
     Duration? duration,
     EnginePhase enginePhase = EnginePhase.sendSemanticsUpdate,
@@ -15,7 +15,7 @@ extension WidgetTesterExtension on WidgetTester {
         child: MaterialApp(
           home: Builder(
             builder: (context) {
-              return widget;
+              return widget ?? Placeholder();
             },
           ),
         ),
@@ -96,6 +96,56 @@ void main() {
       expect(find.text('status: failure'), findsOneWidget);
       expect(find.text('data: null'), findsOneWidget);
       expect(find.text('error: error'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'should start fetching when a cached query becomes stale',
+    (tester) async {
+      final client = QueryClient()..setQueryData('id', 'cached data');
+      const staleDuration = Duration(minutes: 10);
+      const fetchDuration = Duration(seconds: 3);
+      final widget = QueryBuilder<String>(
+        id: 'id',
+        fetcher: (id) async {
+          await Future.delayed(fetchDuration);
+          return 'data';
+        },
+        staleDuration: staleDuration,
+        builder: (context, state, child) {
+          return Column(
+            children: [
+              Text('status: ${state.status.name}'),
+              Text('data: ${state.data}'),
+              Text('error: ${state.error}'),
+            ],
+          );
+        },
+      );
+
+      await tester.pumpWithQueryClientProvider(widget, client);
+
+      // Should show the cached query since the query is still fresh.
+      expect(find.text('status: success'), findsOneWidget);
+      expect(find.text('data: cached data'), findsOneWidget);
+      expect(find.text('error: null'), findsOneWidget);
+
+      await tester.pump(staleDuration);
+
+      // The widget is initialized again.
+      await tester.pumpWithQueryClientProvider(null, client);
+      await tester.pumpWithQueryClientProvider(widget, client);
+
+      // Should start fetching since now the query is stale.
+      expect(find.text('status: fetching'), findsOneWidget);
+      expect(find.text('data: cached data'), findsOneWidget);
+      expect(find.text('error: null'), findsOneWidget);
+
+      await tester.pump(fetchDuration);
+
+      expect(find.text('status: success'), findsOneWidget);
+      expect(find.text('data: data'), findsOneWidget);
+      expect(find.text('error: null'), findsOneWidget);
     },
   );
 
