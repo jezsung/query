@@ -28,7 +28,7 @@ extension WidgetTesterExtension on WidgetTester {
 
 void main() {
   testWidgets(
-    'fetching should succeed',
+    'should succeed',
     (tester) async {
       const fetchDuration = Duration(seconds: 3);
 
@@ -64,7 +64,7 @@ void main() {
   );
 
   testWidgets(
-    'fetching should fail',
+    'should fail',
     (tester) async {
       const fetchDuration = Duration(seconds: 3);
 
