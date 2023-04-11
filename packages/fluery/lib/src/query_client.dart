@@ -28,9 +28,13 @@ class QueryClient {
     return query?.state;
   }
 
-  void setQueryData<Data>(QueryIdentifier id, Data data) {
+  void setQueryData<Data>(
+    QueryIdentifier id,
+    Data data, [
+    DateTime? updatedAt,
+  ]) {
     final query = manager.buildQuery<Data>(id);
-    query.setData(data);
+    query.setData(data, updatedAt);
   }
 
   void dispose() {

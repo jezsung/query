@@ -289,15 +289,32 @@ class Query<Data> extends BaseQuery {
     }
   }
 
-  void setData(Data data) {
-    notify(QueryStateUpdated(
-      state = state.copyWith(
-        status: QueryStatus.success,
-        data: data,
-        retried: 0,
-        dataUpdatedAt: clock.now(),
-      ),
-    ));
+  void setData(
+    Data data, [
+    DateTime? updatedAt,
+  ]) {
+    final bool shouldUpdate;
+
+    if (!state.hasData) {
+      shouldUpdate = true;
+    } else if (state.dataUpdatedAt == null) {
+      shouldUpdate = true;
+    } else if (updatedAt == null) {
+      shouldUpdate = true;
+    } else {
+      shouldUpdate = updatedAt.isAfter(state.dataUpdatedAt!);
+    }
+
+    if (shouldUpdate) {
+      notify(QueryStateUpdated(
+        state = state.copyWith(
+          status: QueryStatus.success,
+          data: data,
+          retried: 0,
+          dataUpdatedAt: updatedAt ?? clock.now(),
+        ),
+      ));
+    }
   }
 
   void setState(QueryState<Data> state) {
