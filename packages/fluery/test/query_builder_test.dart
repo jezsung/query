@@ -1,4 +1,3 @@
-import 'package:clock/clock.dart';
 import 'package:fluery/fluery.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -150,12 +149,7 @@ void main() {
       testWidgets(
         'should populate the cached query if one exists',
         (tester) async {
-          final cachedState = QueryState<String>(
-            status: QueryStatus.success,
-            data: 'cached data',
-            dataUpdatedAt: clock.now(),
-          );
-          final client = QueryClient()..setQueryState('id', cachedState);
+          final client = QueryClient()..setQueryData('id', 'cached data');
           const fetchDuration = Duration(seconds: 3);
 
           await tester.pumpWithQueryClientProvider(
@@ -178,29 +172,15 @@ void main() {
             client,
           );
 
-          expect(
-            find.text('status: ${cachedState.status.name}'),
-            findsOneWidget,
-          );
-          expect(
-            find.text('data: ${cachedState.data}'),
-            findsOneWidget,
-          );
+          expect(find.text('status: success'), findsOneWidget);
+          expect(find.text('data: cached data'), findsOneWidget);
         },
       );
 
       testWidgets(
         'should not refetch on init regardless of the "refetchOnInit" property',
         (tester) async {
-          final client = QueryClient()
-            ..setQueryState(
-              'id',
-              QueryState<String>(
-                status: QueryStatus.success,
-                data: 'cached data',
-                dataUpdatedAt: clock.now(),
-              ),
-            );
+          final client = QueryClient()..setQueryData('id', 'cached data');
 
           for (final mode in RefetchMode.values) {
             await tester.pumpWithQueryClientProvider(
@@ -226,15 +206,7 @@ void main() {
       testWidgets(
         'should not refetch on resumed regardless of the "refetchOnResumed" property',
         (tester) async {
-          final client = QueryClient()
-            ..setQueryState(
-              'id',
-              QueryState<String>(
-                status: QueryStatus.success,
-                data: 'cached data',
-                dataUpdatedAt: clock.now(),
-              ),
-            );
+          final client = QueryClient()..setQueryData('id', 'cached data');
 
           for (final mode in RefetchMode.values) {
             await tester.pumpWithQueryClientProvider(
@@ -264,15 +236,7 @@ void main() {
       testWidgets(
         'should not refetch on intervals even if the "refetchIntervalDuration" is set',
         (tester) async {
-          final client = QueryClient()
-            ..setQueryState(
-              'id',
-              QueryState<String>(
-                status: QueryStatus.success,
-                data: 'cached data',
-                dataUpdatedAt: clock.now(),
-              ),
-            );
+          final client = QueryClient()..setQueryData('id', 'cached data');
           const refetchIntervalDuration = Duration(seconds: 3);
 
           await tester.pumpWithQueryClientProvider(
@@ -344,15 +308,7 @@ void main() {
       testWidgets(
         'should not refetch if the "refetchOnInit" is set to "RefecthMode.never"',
         (tester) async {
-          final client = QueryClient()
-            ..setQueryState(
-              'id',
-              QueryState<String>(
-                status: QueryStatus.success,
-                data: 'cached data',
-                dataUpdatedAt: clock.now(),
-              ),
-            );
+          final client = QueryClient()..setQueryData('id', 'cached data');
 
           final widget = QueryBuilder<String>(
             key: ValueKey('key'),
@@ -383,12 +339,7 @@ void main() {
       testWidgets(
         'should refetch if the "refetchOnInit" is set to "RefecthMode.stale" and the data is stale',
         (tester) async {
-          final cachedState = QueryState<String>(
-            status: QueryStatus.success,
-            data: 'cached data',
-            dataUpdatedAt: clock.now(),
-          );
-          final client = QueryClient()..setQueryState('id', cachedState);
+          final client = QueryClient()..setQueryData('id', 'cached data');
           final staleDuration = const Duration(seconds: 5);
           final widget = QueryBuilder<String>(
             key: ValueKey('key'),
@@ -423,15 +374,7 @@ void main() {
       testWidgets(
         'should refetch if the "refetchOnInit" is set to "RefecthMode.always"',
         (tester) async {
-          final client = QueryClient()
-            ..setQueryState(
-              'id',
-              QueryState<String>(
-                status: QueryStatus.success,
-                data: 'cached data',
-                dataUpdatedAt: clock.now(),
-              ),
-            );
+          final client = QueryClient()..setQueryData('id', 'cached data');
 
           final widget = QueryBuilder<String>(
             key: ValueKey('key'),
@@ -655,15 +598,7 @@ void main() {
       testWidgets(
         'should not show the "placeholder" if it has cached data',
         (tester) async {
-          final client = QueryClient()
-            ..setQueryState(
-              'id',
-              QueryState<String>(
-                status: QueryStatus.success,
-                data: 'cached data',
-                dataUpdatedAt: clock.now(),
-              ),
-            );
+          final client = QueryClient()..setQueryData('id', 'cached data');
 
           const fetchDuration = Duration(seconds: 3);
 

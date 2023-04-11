@@ -33,11 +33,6 @@ class QueryClient {
     query.setData(data);
   }
 
-  void setQueryState<Data>(QueryIdentifier id, QueryState<Data> state) {
-    final query = manager.buildQuery<Data>(id);
-    query.setState(state);
-  }
-
   void dispose() {
     manager.dispose();
   }
