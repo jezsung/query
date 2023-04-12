@@ -150,6 +150,89 @@ void main() {
   );
 
   group(
+    'when the "controller" is set',
+    () {
+      testWidgets(
+        'should succeed',
+        (tester) async {
+          final controller = QueryController<String>();
+
+          const fetchDuration = Duration(seconds: 3);
+
+          await tester.pumpWithQueryClientProvider(
+            QueryBuilder<String>(
+              controller: controller,
+              id: 'id',
+              fetcher: (id) async {
+                await Future.delayed(fetchDuration);
+                return 'data';
+              },
+              builder: (context, state, child) {
+                return Column(
+                  children: [
+                    Text('status: ${state.status.name}'),
+                    Text('data: ${state.data}'),
+                    Text('error: ${state.error}'),
+                  ],
+                );
+              },
+            ),
+          );
+
+          expect(find.text('status: fetching'), findsOneWidget);
+          expect(find.text('data: null'), findsOneWidget);
+          expect(find.text('error: null'), findsOneWidget);
+
+          await tester.pump(fetchDuration);
+
+          expect(find.text('status: success'), findsOneWidget);
+          expect(find.text('data: data'), findsOneWidget);
+          expect(find.text('error: null'), findsOneWidget);
+        },
+      );
+
+      testWidgets(
+        'should fail',
+        (tester) async {
+          final controller = QueryController<String>();
+
+          const fetchDuration = Duration(seconds: 3);
+
+          await tester.pumpWithQueryClientProvider(
+            QueryBuilder<String>(
+              controller: controller,
+              id: 'id',
+              fetcher: (id) async {
+                await Future.delayed(fetchDuration);
+                throw 'error';
+              },
+              builder: (context, state, child) {
+                return Column(
+                  children: [
+                    Text('status: ${state.status.name}'),
+                    Text('data: ${state.data}'),
+                    Text('error: ${state.error}'),
+                  ],
+                );
+              },
+            ),
+          );
+
+          expect(find.text('status: fetching'), findsOneWidget);
+          expect(find.text('data: null'), findsOneWidget);
+          expect(find.text('error: null'), findsOneWidget);
+
+          await tester.pump(fetchDuration);
+
+          expect(find.text('status: failure'), findsOneWidget);
+          expect(find.text('data: null'), findsOneWidget);
+          expect(find.text('error: error'), findsOneWidget);
+        },
+      );
+    },
+  );
+
+  group(
     'when the "enabled" is false',
     () {
       testWidgets(
