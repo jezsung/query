@@ -269,6 +269,7 @@ void main() {
 
             tester.binding
                 .handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+            await tester.pump();
 
             expect(find.text('status: success'), findsOneWidget);
             expect(find.text('data: cached data'), findsOneWidget);
