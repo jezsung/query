@@ -277,6 +277,299 @@ void main() {
   );
 
   group(
+    'when the "id" is changed',
+    () {
+      testWidgets(
+        'should fetch if a cached query with the new "id" does not exist',
+        (tester) async {
+          const fetchDuration = Duration(seconds: 3);
+          final widget = QueryBuilder<String>(
+            id: 'id1',
+            fetcher: (id) async {
+              await Future.delayed(fetchDuration);
+              return 'data1';
+            },
+            builder: (context, state, child) {
+              return Column(
+                children: [
+                  Text('status: ${state.status.name}'),
+                  Text('data: ${state.data}'),
+                  Text('error: ${state.error}'),
+                ],
+              );
+            },
+          );
+
+          await tester.pumpWithQueryClientProvider(
+            widget.copyWith(
+              id: 'id1',
+              fetcher: (id) async {
+                await Future.delayed(fetchDuration);
+                return 'data1';
+              },
+            ),
+          );
+
+          expect(find.text('status: fetching'), findsOneWidget);
+          expect(find.text('data: null'), findsOneWidget);
+          expect(find.text('error: null'), findsOneWidget);
+
+          await tester.pump(fetchDuration);
+
+          expect(find.text('status: success'), findsOneWidget);
+          expect(find.text('data: data1'), findsOneWidget);
+          expect(find.text('error: null'), findsOneWidget);
+
+          await tester.pumpWithQueryClientProvider(
+            widget.copyWith(
+              id: 'id2',
+              fetcher: (id) async {
+                await Future.delayed(fetchDuration);
+                return 'data2';
+              },
+            ),
+          );
+
+          expect(find.text('status: fetching'), findsOneWidget);
+          expect(find.text('data: null'), findsOneWidget);
+          expect(find.text('error: null'), findsOneWidget);
+
+          await tester.pump(fetchDuration);
+
+          expect(find.text('status: success'), findsOneWidget);
+          expect(find.text('data: data2'), findsOneWidget);
+          expect(find.text('error: null'), findsOneWidget);
+        },
+      );
+
+      testWidgets(
+        'should not refetch if a cached query with the new "id" exists and the "refetchOnInit" is set to "RefetchMode.never"',
+        (tester) async {
+          final client = QueryClient()..setQueryData('id2', 'cached data2');
+          const fetchDuration = Duration(seconds: 3);
+          final widget = QueryBuilder<String>(
+            id: 'id1',
+            fetcher: (id) async {
+              await Future.delayed(fetchDuration);
+              return 'data1';
+            },
+            refetchOnInit: RefetchMode.never,
+            builder: (context, state, child) {
+              return Column(
+                children: [
+                  Text('status: ${state.status.name}'),
+                  Text('data: ${state.data}'),
+                  Text('error: ${state.error}'),
+                ],
+              );
+            },
+          );
+
+          await tester.pumpWithQueryClientProvider(
+            widget.copyWith(
+              id: 'id1',
+              fetcher: (id) async {
+                await Future.delayed(fetchDuration);
+                return 'data1';
+              },
+            ),
+            client,
+          );
+
+          expect(find.text('status: fetching'), findsOneWidget);
+          expect(find.text('data: null'), findsOneWidget);
+          expect(find.text('error: null'), findsOneWidget);
+
+          await tester.pump(fetchDuration);
+
+          expect(find.text('status: success'), findsOneWidget);
+          expect(find.text('data: data1'), findsOneWidget);
+          expect(find.text('error: null'), findsOneWidget);
+
+          await tester.pumpWithQueryClientProvider(
+            widget.copyWith(
+              id: 'id2',
+              fetcher: (id) async {
+                await Future.delayed(fetchDuration);
+                return 'data2';
+              },
+            ),
+            client,
+          );
+
+          expect(find.text('status: success'), findsOneWidget);
+          expect(find.text('data: cached data2'), findsOneWidget);
+          expect(find.text('error: null'), findsOneWidget);
+        },
+      );
+
+      testWidgets(
+        'should refetch if a stale cached query with the new "id" exists and the "refetchOnInit" is set to "RefetchMode.stale"',
+        (tester) async {
+          final client = QueryClient()..setQueryData('id2', 'cached data2');
+          const staleDuration = Duration(minutes: 10);
+          const fetchDuration = Duration(seconds: 3);
+          final widget = QueryBuilder<String>(
+            id: 'id1',
+            fetcher: (id) async {
+              await Future.delayed(fetchDuration);
+              return 'data1';
+            },
+            staleDuration: staleDuration,
+            refetchOnInit: RefetchMode.stale,
+            builder: (context, state, child) {
+              return Column(
+                children: [
+                  Text('status: ${state.status.name}'),
+                  Text('data: ${state.data}'),
+                  Text('error: ${state.error}'),
+                ],
+              );
+            },
+          );
+
+          await tester.pumpWithQueryClientProvider(
+            widget.copyWith(
+              id: 'id1',
+              fetcher: (id) async {
+                await Future.delayed(fetchDuration);
+                return 'data1';
+              },
+            ),
+            client,
+          );
+
+          expect(find.text('status: fetching'), findsOneWidget);
+          expect(find.text('data: null'), findsOneWidget);
+          expect(find.text('error: null'), findsOneWidget);
+
+          await tester.pump(fetchDuration);
+
+          expect(find.text('status: success'), findsOneWidget);
+          expect(find.text('data: data1'), findsOneWidget);
+          expect(find.text('error: null'), findsOneWidget);
+
+          await tester.pumpWithQueryClientProvider(
+            widget.copyWith(
+              id: 'id2',
+              fetcher: (id) async {
+                await Future.delayed(fetchDuration);
+                return 'data2';
+              },
+            ),
+            client,
+          );
+
+          // The data is not stale yet, it should not refetch.
+          expect(find.text('status: success'), findsOneWidget);
+          expect(find.text('data: cached data2'), findsOneWidget);
+          expect(find.text('error: null'), findsOneWidget);
+
+          await tester.pump(staleDuration);
+
+          await tester.pumpWithQueryClientProvider(
+            widget.copyWith(
+              id: 'id1',
+              fetcher: (id) async {
+                await Future.delayed(fetchDuration);
+                return 'data1';
+              },
+            ),
+            client,
+          );
+          await tester.pumpWithQueryClientProvider(
+            widget.copyWith(
+              id: 'id2',
+              fetcher: (id) async {
+                await Future.delayed(fetchDuration);
+                return 'data2';
+              },
+            ),
+            client,
+          );
+
+          expect(find.text('status: fetching'), findsOneWidget);
+          expect(find.text('data: cached data2'), findsOneWidget);
+          expect(find.text('error: null'), findsOneWidget);
+
+          await tester.pump(fetchDuration);
+
+          expect(find.text('status: success'), findsOneWidget);
+          expect(find.text('data: data2'), findsOneWidget);
+          expect(find.text('error: null'), findsOneWidget);
+        },
+      );
+
+      testWidgets(
+        'should refetch if a cached query with the new "id" exists and the "refetchOnInit" is set to "RefetchMode.always"',
+        (tester) async {
+          final client = QueryClient()..setQueryData('id2', 'cached data2');
+          const fetchDuration = Duration(seconds: 3);
+          final widget = QueryBuilder<String>(
+            id: 'id1',
+            fetcher: (id) async {
+              await Future.delayed(fetchDuration);
+              return 'data1';
+            },
+            refetchOnInit: RefetchMode.always,
+            builder: (context, state, child) {
+              return Column(
+                children: [
+                  Text('status: ${state.status.name}'),
+                  Text('data: ${state.data}'),
+                  Text('error: ${state.error}'),
+                ],
+              );
+            },
+          );
+
+          await tester.pumpWithQueryClientProvider(
+            widget.copyWith(
+              id: 'id1',
+              fetcher: (id) async {
+                await Future.delayed(fetchDuration);
+                return 'data1';
+              },
+            ),
+            client,
+          );
+
+          expect(find.text('status: fetching'), findsOneWidget);
+          expect(find.text('data: null'), findsOneWidget);
+          expect(find.text('error: null'), findsOneWidget);
+
+          await tester.pump(fetchDuration);
+
+          expect(find.text('status: success'), findsOneWidget);
+          expect(find.text('data: data1'), findsOneWidget);
+          expect(find.text('error: null'), findsOneWidget);
+
+          await tester.pumpWithQueryClientProvider(
+            widget.copyWith(
+              id: 'id2',
+              fetcher: (id) async {
+                await Future.delayed(fetchDuration);
+                return 'data2';
+              },
+            ),
+            client,
+          );
+
+          expect(find.text('status: fetching'), findsOneWidget);
+          expect(find.text('data: cached data2'), findsOneWidget);
+          expect(find.text('error: null'), findsOneWidget);
+
+          await tester.pump(fetchDuration);
+
+          expect(find.text('status: success'), findsOneWidget);
+          expect(find.text('data: data2'), findsOneWidget);
+          expect(find.text('error: null'), findsOneWidget);
+        },
+      );
+    },
+  );
+
+  group(
     'when the "enabled" is false',
     () {
       testWidgets(
