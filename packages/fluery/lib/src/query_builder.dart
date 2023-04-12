@@ -386,7 +386,7 @@ class QueryController<Data> extends ValueNotifier<QueryState<Data>>
     return state;
   }
 
-  Future<void> fetch({
+  Future<void> refetch({
     Duration? staleDuration,
     int? retryCount,
     Duration? retryDelayDuration,

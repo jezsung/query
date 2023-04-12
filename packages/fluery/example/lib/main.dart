@@ -170,7 +170,7 @@ class _QueryExamplePageState extends State<QueryExamplePage> {
                     Text(error),
                     TextButton(
                       onPressed: () {
-                        _controller.fetch();
+                        _controller.refetch();
                         // QueryClientProvider.of(context).refetch('example');
                       },
                       child: const Text('Refetch'),
