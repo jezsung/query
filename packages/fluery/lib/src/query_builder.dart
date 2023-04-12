@@ -317,10 +317,6 @@ class Query<Data> extends BaseQuery {
     }
   }
 
-  void setState(QueryState<Data> state) {
-    notify(QueryStateUpdated(this.state = state));
-  }
-
   void onRefetchIntervalChanged() {
     if (refetchIntervalDuration == null) {
       _periodicTimer?.stop();
