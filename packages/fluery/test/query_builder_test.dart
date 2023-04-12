@@ -1,4 +1,3 @@
-import 'package:clock/clock.dart';
 import 'package:fluery/fluery.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -782,6 +781,147 @@ void main() {
           );
 
           await tester.pumpWithQueryClientProvider(widget, client);
+
+          // Should fetch even if the data is not stale.
+          expect(find.text('status: fetching'), findsOneWidget);
+          expect(find.text('data: cached data'), findsOneWidget);
+          expect(find.text('error: null'), findsOneWidget);
+
+          await tester.pump(fetchDuration);
+
+          expect(find.text('status: success'), findsOneWidget);
+          expect(find.text('data: data'), findsOneWidget);
+          expect(find.text('error: null'), findsOneWidget);
+        },
+      );
+    },
+  );
+
+  group(
+    'when the "refetchOnResumed" is set',
+    () {
+      testWidgets(
+        'should not refetch if the "refetchOnResumed" is set to "RefetchMode.never"',
+        (tester) async {
+          final client = QueryClient()..setQueryData('id', 'cached data');
+          const fetchDuration = Duration(seconds: 3);
+          final widget = QueryBuilder<String>(
+            id: 'id',
+            fetcher: (id) async {
+              await Future.delayed(fetchDuration);
+              return 'data';
+            },
+            refetchOnInit: RefetchMode.never,
+            refetchOnResumed: RefetchMode.never,
+            builder: (context, state, child) {
+              return Column(
+                children: [
+                  Text('status: ${state.status.name}'),
+                  Text('data: ${state.data}'),
+                  Text('error: ${state.error}'),
+                ],
+              );
+            },
+          );
+
+          await tester.pumpWithQueryClientProvider(widget, client);
+
+          tester.binding
+              .handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+
+          expect(find.text('status: success'), findsOneWidget);
+          expect(find.text('data: cached data'), findsOneWidget);
+          expect(find.text('error: null'), findsOneWidget);
+        },
+      );
+
+      testWidgets(
+        'should refetch if the "refetchOnResumed" is set to "RefecthMode.stale" and the data is stale',
+        (tester) async {
+          final client = QueryClient()..setQueryData('id', 'cached data');
+          const staleDuration = Duration(minutes: 10);
+          const fetchDuration = Duration(seconds: 3);
+          final widget = QueryBuilder<String>(
+            id: 'id',
+            fetcher: (id) async {
+              await Future.delayed(fetchDuration);
+              return 'data';
+            },
+            staleDuration: staleDuration,
+            refetchOnInit: RefetchMode.never,
+            refetchOnResumed: RefetchMode.stale,
+            builder: (context, state, child) {
+              return Column(
+                children: [
+                  Text('status: ${state.status.name}'),
+                  Text('data: ${state.data}'),
+                  Text('error: ${state.error}'),
+                ],
+              );
+            },
+          );
+
+          await tester.pumpWithQueryClientProvider(widget, client);
+
+          tester.binding
+              .handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+          await tester.pump();
+
+          // The data is not stale yet, the query should not be fetching.
+          expect(find.text('status: success'), findsOneWidget);
+          expect(find.text('data: cached data'), findsOneWidget);
+          expect(find.text('error: null'), findsOneWidget);
+
+          await tester.pump(staleDuration);
+
+          tester.binding
+              .handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+          await tester.pump();
+
+          // The data is stale, the query should be fetching.
+          expect(find.text('status: fetching'), findsOneWidget);
+          expect(find.text('data: cached data'), findsOneWidget);
+          expect(find.text('error: null'), findsOneWidget);
+
+          await tester.pump(fetchDuration);
+
+          expect(find.text('status: success'), findsOneWidget);
+          expect(find.text('data: data'), findsOneWidget);
+          expect(find.text('error: null'), findsOneWidget);
+        },
+      );
+
+      testWidgets(
+        'should refetch if the "refetchOnResumed" is set to "RefecthMode.always"',
+        (tester) async {
+          final client = QueryClient()..setQueryData('id', 'cached data');
+          const staleDuration = Duration(minutes: 10);
+          const fetchDuration = Duration(seconds: 3);
+          final widget = QueryBuilder<String>(
+            id: 'id',
+            fetcher: (id) async {
+              await Future.delayed(fetchDuration);
+              return 'data';
+            },
+            staleDuration: staleDuration,
+            refetchOnInit: RefetchMode.never,
+            refetchOnResumed: RefetchMode.always,
+            builder: (context, state, child) {
+              return Column(
+                children: [
+                  Text('status: ${state.status.name}'),
+                  Text('data: ${state.data}'),
+                  Text('error: ${state.error}'),
+                ],
+              );
+            },
+          );
+
+          await tester.pumpWithQueryClientProvider(widget, client);
+
+          tester.binding
+              .handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+          await tester.pump();
 
           // Should fetch even if the data is not stale.
           expect(find.text('status: fetching'), findsOneWidget);
