@@ -379,10 +379,6 @@ class QueryController<Data> extends ValueNotifier<QueryState<Data>>
   QueryState<Data> get value {
     QueryState<Data> state = super.value;
 
-    if (_enabled && state.status.isIdle) {
-      state = state.copyWith(status: QueryStatus.fetching);
-    }
-
     if (!state.hasData) {
       state = state.copyWith(data: _placeholder);
     }
