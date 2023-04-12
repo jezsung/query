@@ -229,6 +229,50 @@ void main() {
           expect(find.text('error: error'), findsOneWidget);
         },
       );
+
+      testWidgets(
+        'the properties should be initialized by the widget',
+        (tester) async {
+          final id = 'id';
+          // ignore: prefer_function_declarations_over_variables
+          final fetcher = (id) async {
+            return 'data';
+          };
+          final enabled = true;
+          final placeholder = 'placeholder data';
+          const staleDuration = Duration(seconds: 3);
+          final retryCount = 3;
+          const retryDelayDuration = Duration(seconds: 3);
+          const refetchIntervalDuration = Duration(seconds: 3);
+
+          final controller = QueryController<String>();
+          final widget = QueryBuilder<String>(
+            controller: controller,
+            id: id,
+            fetcher: fetcher,
+            enabled: enabled,
+            placeholder: placeholder,
+            staleDuration: staleDuration,
+            retryCount: retryCount,
+            retryDelayDuration: retryDelayDuration,
+            refetchIntervalDuration: refetchIntervalDuration,
+            builder: (context, state, child) {
+              return Placeholder();
+            },
+          );
+
+          await tester.pumpWithQueryClientProvider(widget);
+
+          expect(controller.id, id);
+          expect(controller.fetcher, fetcher);
+          expect(controller.enabled, enabled);
+          expect(controller.placeholder, placeholder);
+          expect(controller.staleDuration, staleDuration);
+          expect(controller.retryCount, retryCount);
+          expect(controller.retryDelayDuration, retryDelayDuration);
+          expect(controller.refetchIntervalDuration, refetchIntervalDuration);
+        },
+      );
     },
   );
 
