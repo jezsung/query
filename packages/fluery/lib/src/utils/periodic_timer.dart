@@ -4,13 +4,31 @@ import 'package:clock/clock.dart';
 
 class PeriodicTimer {
   PeriodicTimer(
-    Function callback,
-    Duration interval,
+    callback,
+    interval,
   )   : _callback = callback,
         _interval = interval;
 
   Function _callback;
   Duration _interval;
+
+  Function get callback => _callback;
+
+  Duration get interval => _interval;
+
+  set callback(Function value) {
+    if (value == _callback) return;
+
+    _callback = value;
+    _reset();
+  }
+
+  set interval(Duration value) {
+    if (value == _interval) return;
+
+    _interval = value;
+    _reset();
+  }
 
   DateTime? _lastTickedAt;
   Timer? _timer;
@@ -35,20 +53,6 @@ class PeriodicTimer {
 
   void stop() {
     _timer?.cancel();
-  }
-
-  void setCallback(Function callback) {
-    if (callback == _callback) return;
-
-    _callback = callback;
-    _reset();
-  }
-
-  void setInterval(Duration duration) {
-    if (duration == _interval) return;
-
-    _interval = duration;
-    _reset();
   }
 
   void _reset() {

@@ -324,7 +324,8 @@ class Query<Data> extends BaseQuery {
     }
 
     _periodicTimer ??= PeriodicTimer(fetch, refetchIntervalDuration!);
-    _periodicTimer!.setInterval(refetchIntervalDuration!);
+    _periodicTimer!.callback = fetch;
+    _periodicTimer!.interval = refetchIntervalDuration!;
     _periodicTimer!.start();
   }
 
@@ -366,11 +367,6 @@ class QueryController<Data> extends ValueNotifier<QueryState<Data>>
   Duration get retryDelayDuration => _retryDelayDuration;
   Duration? get refetchIntervalDuration => _refetchIntervalDuration;
 
-  set refetchIntervalDuration(Duration? value) {
-    _refetchIntervalDuration = value;
-    _query?.onRefetchIntervalChanged();
-  }
-
   @override
   QueryState<Data> get value {
     QueryState<Data> state = super.value;
@@ -403,6 +399,7 @@ class QueryController<Data> extends ValueNotifier<QueryState<Data>>
       if (event.observer == this) {
         _query = query;
         value = query.state;
+
         if (_initialData != null) {
           query.setInitialData(
             // ignore: null_check_on_nullable_type_parameter
@@ -410,14 +407,10 @@ class QueryController<Data> extends ValueNotifier<QueryState<Data>>
             updatedAt: _initialDataUpdatedAt,
           );
         }
-        if (_enabled) {
-          query.onRefetchIntervalChanged();
-        }
       }
     } else if (event is QueryObserverRemoved<QueryController<Data>>) {
       if (event.observer == this) {
         _query = null;
-        query.onRefetchIntervalChanged();
       }
     }
   }
@@ -530,6 +523,7 @@ class _QueryBuilderState<Data> extends State<QueryBuilder<Data>>
     _query.addObserver<QueryController<Data>>(_effectiveController);
 
     _initQuery();
+    _onRefetchIntervalChanged();
   }
 
   @override
@@ -583,6 +577,7 @@ class _QueryBuilderState<Data> extends State<QueryBuilder<Data>>
 
     if (widget.id != oldWidget.id || widget.enabled && !oldWidget.enabled) {
       _initQuery();
+      _onRefetchIntervalChanged();
     }
   }
 
@@ -596,6 +591,7 @@ class _QueryBuilderState<Data> extends State<QueryBuilder<Data>>
   @override
   void dispose() {
     _query.removeObserver<QueryController<Data>>(_effectiveController);
+    _onRefetchIntervalChanged();
     _controller.dispose();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
@@ -632,6 +628,12 @@ class _QueryBuilderState<Data> extends State<QueryBuilder<Data>>
       case RefetchMode.always:
         await _fetch(ignoreStaleness: true);
         break;
+    }
+  }
+
+  void _onRefetchIntervalChanged() {
+    if (widget.enabled) {
+      _query.onRefetchIntervalChanged();
     }
   }
 
