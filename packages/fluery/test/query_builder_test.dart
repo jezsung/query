@@ -1358,4 +1358,80 @@ void main() {
       );
     },
   );
+
+  group(
+    'when there are multiple instances of the "QueryBuilder"',
+    () {
+      testWidgets(
+        'should be synchronized',
+        (tester) async {
+          int fetchCount = 0;
+          const fetchDuration = Duration(seconds: 3);
+          final baseInstance = QueryBuilder(
+            id: 'id',
+            fetcher: (id) async {
+              fetchCount++;
+              await Future.delayed(fetchDuration);
+              return 'data';
+            },
+            builder: (context, state, child) {
+              return Column(
+                children: [
+                  Text('status: ${state.status.name}'),
+                  Text('data: ${state.data}'),
+                  Text('error: ${state.error}'),
+                ],
+              );
+            },
+          );
+          final instance1 = baseInstance.copyWith(key: Key('key1'));
+          final instance2 = baseInstance.copyWith(key: Key('key2'));
+          final instance3 = baseInstance.copyWith(key: Key('key3'));
+
+          await tester.pumpWithQueryClientProvider(
+            Column(
+              children: [
+                instance1,
+                instance2,
+              ],
+            ),
+          );
+
+          expect(find.text('status: fetching'), findsNWidgets(2));
+          expect(find.text('data: null'), findsNWidgets(2));
+          expect(find.text('error: null'), findsNWidgets(2));
+
+          await tester.pump(fetchDuration);
+
+          expect(find.text('status: success'), findsNWidgets(2));
+          expect(find.text('data: data'), findsNWidgets(2));
+          expect(find.text('error: null'), findsNWidgets(2));
+
+          expect(fetchCount, 1);
+
+          await tester.pumpWithQueryClientProvider(
+            Column(
+              children: [
+                instance1,
+                instance2,
+                instance3,
+              ],
+            ),
+          );
+
+          expect(find.text('status: fetching'), findsNWidgets(3));
+          expect(find.text('data: data'), findsNWidgets(3));
+          expect(find.text('error: null'), findsNWidgets(3));
+
+          await tester.pump(fetchDuration);
+
+          expect(find.text('status: success'), findsNWidgets(3));
+          expect(find.text('data: data'), findsNWidgets(3));
+          expect(find.text('error: null'), findsNWidgets(3));
+
+          expect(fetchCount, 2);
+        },
+      );
+    },
+  );
 }
