@@ -457,6 +457,7 @@ class QueryBuilder<Data> extends StatefulWidget {
 
   @visibleForTesting
   QueryBuilder copyWith({
+    Key? key,
     QueryController<Data>? controller,
     QueryIdentifier? id,
     QueryFetcher<Data>? fetcher,
@@ -472,6 +473,7 @@ class QueryBuilder<Data> extends StatefulWidget {
     Widget? child,
   }) {
     return QueryBuilder<Data>(
+      key: key ?? this.key,
       controller: controller ?? this.controller,
       id: id ?? this.id,
       fetcher: fetcher ?? this.fetcher,
