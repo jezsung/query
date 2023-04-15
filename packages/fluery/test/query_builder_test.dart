@@ -1360,6 +1360,391 @@ void main() {
   );
 
   group(
+    'when the "refetchIntervalDuration" is set',
+    () {
+      testWidgets(
+        'should refetch on intervals',
+        (tester) async {
+          const fetchDuration = Duration(seconds: 3);
+          const refetchIntervalDuration = Duration(seconds: 10);
+          final widget = QueryBuilder(
+            id: 'id',
+            fetcher: (id) async {
+              await Future.delayed(fetchDuration);
+              return 'data';
+            },
+            refetchIntervalDuration: refetchIntervalDuration,
+            builder: (context, state, child) {
+              return Column(
+                children: [
+                  Text('status: ${state.status.name}'),
+                  Text('data: ${state.data}'),
+                  Text('error: ${state.error}'),
+                ],
+              );
+            },
+          );
+
+          await tester.pumpWithQueryClientProvider(widget);
+
+          expect(find.text('status: fetching'), findsOneWidget);
+          expect(find.text('data: null'), findsOneWidget);
+          expect(find.text('error: null'), findsOneWidget);
+
+          await tester.pump(fetchDuration);
+
+          expect(find.text('status: success'), findsOneWidget);
+          expect(find.text('data: data'), findsOneWidget);
+          expect(find.text('error: null'), findsOneWidget);
+
+          for (int i = 0; i < 10; i++) {
+            await tester.pump(refetchIntervalDuration);
+
+            expect(find.text('status: fetching'), findsOneWidget);
+            expect(find.text('data: data'), findsOneWidget);
+            expect(find.text('error: null'), findsOneWidget);
+
+            await tester.pump(fetchDuration);
+
+            expect(find.text('status: success'), findsOneWidget);
+            expect(find.text('data: data'), findsOneWidget);
+            expect(find.text('error: null'), findsOneWidget);
+          }
+        },
+      );
+
+      testWidgets(
+        'should reschedule refetch when the "refetchIntervalDuration" is changed',
+        (tester) async {
+          const fetchDuration = Duration(seconds: 3);
+          const refetchIntervalDuration1 = Duration(seconds: 7);
+          const refetchIntervalDuration2 = Duration(seconds: 17);
+          final widget = QueryBuilder(
+            id: 'id',
+            fetcher: (id) async {
+              await Future.delayed(fetchDuration);
+              return 'data';
+            },
+            builder: (context, state, child) {
+              return Column(
+                children: [
+                  Text('status: ${state.status.name}'),
+                  Text('data: ${state.data}'),
+                  Text('error: ${state.error}'),
+                ],
+              );
+            },
+          );
+
+          await tester.pumpWithQueryClientProvider(
+            widget.copyWith(
+              refetchIntervalDuration: refetchIntervalDuration1,
+            ),
+          );
+
+          expect(find.text('status: fetching'), findsOneWidget);
+          expect(find.text('data: null'), findsOneWidget);
+          expect(find.text('error: null'), findsOneWidget);
+
+          await tester.pump(fetchDuration);
+
+          expect(find.text('status: success'), findsOneWidget);
+          expect(find.text('data: data'), findsOneWidget);
+          expect(find.text('error: null'), findsOneWidget);
+
+          for (int i = 0; i < 10; i++) {
+            await tester.pump(refetchIntervalDuration1);
+
+            expect(find.text('status: fetching'), findsOneWidget);
+            expect(find.text('data: data'), findsOneWidget);
+            expect(find.text('error: null'), findsOneWidget);
+
+            await tester.pump(fetchDuration);
+
+            expect(find.text('status: success'), findsOneWidget);
+            expect(find.text('data: data'), findsOneWidget);
+            expect(find.text('error: null'), findsOneWidget);
+          }
+
+          await tester.pump(const Duration(seconds: 5));
+
+          await tester.pumpWithQueryClientProvider(
+            widget.copyWith(
+              refetchIntervalDuration: refetchIntervalDuration2,
+            ),
+          );
+
+          expect(find.text('status: success'), findsOneWidget);
+          expect(find.text('data: data'), findsOneWidget);
+          expect(find.text('error: null'), findsOneWidget);
+
+          await tester.pump(const Duration(seconds: 12));
+
+          expect(find.text('status: fetching'), findsOneWidget);
+          expect(find.text('data: data'), findsOneWidget);
+          expect(find.text('error: null'), findsOneWidget);
+
+          await tester.pump(fetchDuration);
+
+          expect(find.text('status: success'), findsOneWidget);
+          expect(find.text('data: data'), findsOneWidget);
+          expect(find.text('error: null'), findsOneWidget);
+
+          for (int i = 0; i < 10; i++) {
+            await tester.pump(refetchIntervalDuration2);
+
+            expect(find.text('status: fetching'), findsOneWidget);
+            expect(find.text('data: data'), findsOneWidget);
+            expect(find.text('error: null'), findsOneWidget);
+
+            await tester.pump(fetchDuration);
+
+            expect(find.text('status: success'), findsOneWidget);
+            expect(find.text('data: data'), findsOneWidget);
+            expect(find.text('error: null'), findsOneWidget);
+          }
+
+          await tester.pump(const Duration(seconds: 12));
+
+          expect(find.text('status: success'), findsOneWidget);
+          expect(find.text('data: data'), findsOneWidget);
+          expect(find.text('error: null'), findsOneWidget);
+
+          await tester.pumpWithQueryClientProvider(
+            widget.copyWith(
+              refetchIntervalDuration: refetchIntervalDuration1,
+            ),
+          );
+
+          expect(find.text('status: fetching'), findsOneWidget);
+          expect(find.text('data: data'), findsOneWidget);
+          expect(find.text('error: null'), findsOneWidget);
+
+          await tester.pump(fetchDuration);
+
+          expect(find.text('status: success'), findsOneWidget);
+          expect(find.text('data: data'), findsOneWidget);
+          expect(find.text('error: null'), findsOneWidget);
+
+          for (int i = 0; i < 10; i++) {
+            await tester.pump(refetchIntervalDuration1);
+
+            expect(find.text('status: fetching'), findsOneWidget);
+            expect(find.text('data: data'), findsOneWidget);
+            expect(find.text('error: null'), findsOneWidget);
+
+            await tester.pump(fetchDuration);
+
+            expect(find.text('status: success'), findsOneWidget);
+            expect(find.text('data: data'), findsOneWidget);
+            expect(find.text('error: null'), findsOneWidget);
+          }
+        },
+      );
+
+      testWidgets(
+        'should refetch on the shortest intervals if there are two instances with the "refetchIntervalDuration" is set',
+        (tester) async {
+          const fetchDuration = Duration(seconds: 3);
+          const shortestRefetchIntervalDuration = Duration(seconds: 7);
+          const longestRefetchIntervalDuration = Duration(seconds: 17);
+          final baseWidget = QueryBuilder(
+            id: 'id',
+            fetcher: (id) async {
+              await Future.delayed(fetchDuration);
+              return 'data';
+            },
+            builder: (context, state, child) {
+              return Column(
+                children: [
+                  Text('status: ${state.status.name}'),
+                  Text('data: ${state.data}'),
+                  Text('error: ${state.error}'),
+                ],
+              );
+            },
+          );
+
+          await tester.pumpWithQueryClientProvider(
+            Column(
+              children: [
+                baseWidget.copyWith(
+                  refetchIntervalDuration: shortestRefetchIntervalDuration,
+                ),
+                baseWidget.copyWith(
+                  refetchIntervalDuration: longestRefetchIntervalDuration,
+                ),
+              ],
+            ),
+          );
+
+          expect(find.text('status: fetching'), findsNWidgets(2));
+          expect(find.text('data: null'), findsNWidgets(2));
+          expect(find.text('error: null'), findsNWidgets(2));
+
+          await tester.pump(fetchDuration);
+
+          expect(find.text('status: success'), findsNWidgets(2));
+          expect(find.text('data: data'), findsNWidgets(2));
+          expect(find.text('error: null'), findsNWidgets(2));
+
+          for (int i = 0; i < 10; i++) {
+            await tester.pump(shortestRefetchIntervalDuration);
+
+            expect(find.text('status: fetching'), findsNWidgets(2));
+            expect(find.text('data: data'), findsNWidgets(2));
+            expect(find.text('error: null'), findsNWidgets(2));
+
+            await tester.pump(fetchDuration);
+
+            expect(find.text('status: success'), findsNWidgets(2));
+            expect(find.text('data: data'), findsNWidgets(2));
+            expect(find.text('error: null'), findsNWidgets(2));
+          }
+        },
+      );
+
+      testWidgets(
+        'should use the other "refetchIntervalDuration" when the shortest one is removed',
+        (tester) async {
+          const fetchDuration = Duration(seconds: 3);
+          const shortestRefetchIntervalDuration = Duration(seconds: 7);
+          const longestRefetchIntervalDuration = Duration(seconds: 17);
+          final baseWidget = QueryBuilder(
+            id: 'id',
+            fetcher: (id) async {
+              await Future.delayed(fetchDuration);
+              return 'data';
+            },
+            builder: (context, state, child) {
+              return Column(
+                children: [
+                  Text('status: ${state.status.name}'),
+                  Text('data: ${state.data}'),
+                  Text('error: ${state.error}'),
+                ],
+              );
+            },
+          );
+
+          await tester.pumpWithQueryClientProvider(
+            Column(
+              children: [
+                baseWidget.copyWith(
+                  refetchIntervalDuration: shortestRefetchIntervalDuration,
+                ),
+                baseWidget.copyWith(
+                  refetchIntervalDuration: longestRefetchIntervalDuration,
+                ),
+              ],
+            ),
+          );
+
+          expect(find.text('status: fetching'), findsNWidgets(2));
+          expect(find.text('data: null'), findsNWidgets(2));
+          expect(find.text('error: null'), findsNWidgets(2));
+
+          await tester.pump(fetchDuration);
+
+          expect(find.text('status: success'), findsNWidgets(2));
+          expect(find.text('data: data'), findsNWidgets(2));
+          expect(find.text('error: null'), findsNWidgets(2));
+
+          for (int i = 0; i < 10; i++) {
+            await tester.pump(shortestRefetchIntervalDuration);
+
+            expect(find.text('status: fetching'), findsNWidgets(2));
+            expect(find.text('data: data'), findsNWidgets(2));
+            expect(find.text('error: null'), findsNWidgets(2));
+
+            await tester.pump(fetchDuration);
+
+            expect(find.text('status: success'), findsNWidgets(2));
+            expect(find.text('data: data'), findsNWidgets(2));
+            expect(find.text('error: null'), findsNWidgets(2));
+          }
+
+          await tester.pumpWithQueryClientProvider(
+            Column(
+              children: [
+                baseWidget.copyWith(
+                  refetchIntervalDuration: longestRefetchIntervalDuration,
+                ),
+              ],
+            ),
+          );
+
+          for (int i = 0; i < 10; i++) {
+            await tester.pump(longestRefetchIntervalDuration);
+
+            expect(find.text('status: fetching'), findsOneWidget);
+            expect(find.text('data: data'), findsOneWidget);
+            expect(find.text('error: null'), findsOneWidget);
+
+            await tester.pump(fetchDuration);
+
+            expect(find.text('status: success'), findsOneWidget);
+            expect(find.text('data: data'), findsOneWidget);
+            expect(find.text('error: null'), findsOneWidget);
+          }
+        },
+      );
+
+      testWidgets(
+        'should fetch even if the "refetchOnInit" is set to "RefetchMode.never"',
+        (tester) async {
+          const fetchDuration = Duration(seconds: 3);
+          const refetchIntervalDuration = Duration(seconds: 10);
+          final widget = QueryBuilder(
+            id: 'id',
+            fetcher: (id) async {
+              await Future.delayed(fetchDuration);
+              return 'data';
+            },
+            refetchOnInit: RefetchMode.never,
+            refetchIntervalDuration: refetchIntervalDuration,
+            builder: (context, state, child) {
+              return Column(
+                children: [
+                  Text('status: ${state.status.name}'),
+                  Text('data: ${state.data}'),
+                  Text('error: ${state.error}'),
+                ],
+              );
+            },
+          );
+
+          await tester.pumpWithQueryClientProvider(widget);
+
+          expect(find.text('status: fetching'), findsOneWidget);
+          expect(find.text('data: null'), findsOneWidget);
+          expect(find.text('error: null'), findsOneWidget);
+
+          await tester.pump(fetchDuration);
+
+          expect(find.text('status: success'), findsOneWidget);
+          expect(find.text('data: data'), findsOneWidget);
+          expect(find.text('error: null'), findsOneWidget);
+
+          for (int i = 0; i < 10; i++) {
+            await tester.pump(refetchIntervalDuration);
+
+            expect(find.text('status: fetching'), findsOneWidget);
+            expect(find.text('data: data'), findsOneWidget);
+            expect(find.text('error: null'), findsOneWidget);
+
+            await tester.pump(fetchDuration);
+
+            expect(find.text('status: success'), findsOneWidget);
+            expect(find.text('data: data'), findsOneWidget);
+            expect(find.text('error: null'), findsOneWidget);
+          }
+        },
+      );
+    },
+  );
+
+  group(
     'when there are multiple instances of the "QueryBuilder"',
     () {
       testWidgets(

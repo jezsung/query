@@ -115,6 +115,8 @@ class Query<Data> {
 
   final ZonedTimerInterceptor _zonedTimerInterceptor = ZonedTimerInterceptor();
   RetryResolver<Data>? _retryResolver;
+  Timer? _refetchTimer;
+  DateTime? _refetchedAt;
 
   bool get active {
     return controllers.isNotEmpty;
@@ -273,6 +275,8 @@ class Query<Data> {
           errorUpdatedAt: clock.now(),
         ));
       }
+    } finally {
+      setRefetchInterval();
     }
   }
 
@@ -302,6 +306,47 @@ class Query<Data> {
     }
   }
 
+  void setRefetchInterval() {
+    final shouldCancel = refetchIntervalDuration == null;
+    final shouldSchedule = refetchIntervalDuration != null &&
+        (_refetchTimer == null || _refetchTimer?.isActive == false);
+    final shouldReschedule =
+        refetchIntervalDuration != null && _refetchTimer?.isActive == true;
+
+    if (shouldCancel) {
+      _refetchTimer?.cancel();
+      return;
+    }
+
+    if (shouldSchedule) {
+      _refetchedAt ??= clock.now();
+      _refetchTimer = Timer(
+        refetchIntervalDuration!,
+        () {
+          fetch().then((_) => _refetchedAt = clock.now());
+        },
+      );
+      return;
+    }
+
+    if (shouldReschedule) {
+      _refetchTimer?.cancel();
+
+      final diff =
+          _refetchedAt!.add(refetchIntervalDuration!).difference(clock.now());
+
+      if (diff.isNegative || diff == Duration.zero) {
+        fetch().then((_) => _refetchedAt = clock.now());
+      } else {
+        _refetchTimer = Timer(diff, () {
+          fetch().then((_) => _refetchedAt = clock.now());
+        });
+      }
+
+      return;
+    }
+  }
+
   void update(QueryState<Data> state) {
     this.state = state;
     emit(QueryStateUpdated<Data>(state));
@@ -328,6 +373,7 @@ class Query<Data> {
   void dispose() {
     _zonedTimerInterceptor.cancel();
     _retryResolver?.cancel();
+    _refetchTimer?.cancel();
   }
 }
 
@@ -564,13 +610,28 @@ class _QueryBuilderState<Data> extends State<QueryBuilder<Data>>
 
     if (widget.id != oldWidget.id || widget.enabled && !oldWidget.enabled) {
       _initQuery();
+      return;
+    }
+
+    if (widget.refetchIntervalDuration != oldWidget.refetchIntervalDuration) {
+      _query.setRefetchInterval();
+      return;
     }
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
-      _refetch(widget.refetchOnResumed);
+      switch (widget.refetchOnResumed) {
+        case RefetchMode.never:
+          break;
+        case RefetchMode.stale:
+          _fetch();
+          break;
+        case RefetchMode.always:
+          _fetch(ignoreStaleness: true);
+          break;
+      }
     }
   }
 
@@ -582,38 +643,29 @@ class _QueryBuilderState<Data> extends State<QueryBuilder<Data>>
     super.dispose();
   }
 
-  Future<void> _initQuery() async {
-    if (_query.state.status == QueryStatus.idle) {
-      await _fetch();
-    } else {
-      await _refetch(widget.refetchOnInit);
+  void _initQuery() {
+    if (!widget.enabled) return;
+
+    if (_query.state.status.isIdle) {
+      _fetch();
+    } else if (widget.refetchOnInit == RefetchMode.stale) {
+      _fetch();
+    } else if (widget.refetchOnInit == RefetchMode.always) {
+      _fetch(ignoreStaleness: true);
+    } else if (widget.refetchIntervalDuration != null) {
+      _query.setRefetchInterval();
     }
   }
 
   Future<void> _fetch({
     bool ignoreStaleness = false,
   }) async {
-    if (!widget.enabled) return;
-
     await _query.fetch(
       fetcher: widget.fetcher,
       staleDuration: ignoreStaleness ? Duration.zero : widget.staleDuration,
       retryCount: widget.retryCount,
       retryDelayDuration: widget.retryDelayDuration,
     );
-  }
-
-  Future<void> _refetch(RefetchMode mode) async {
-    switch (mode) {
-      case RefetchMode.never:
-        break;
-      case RefetchMode.stale:
-        await _fetch();
-        break;
-      case RefetchMode.always:
-        await _fetch(ignoreStaleness: true);
-        break;
-    }
   }
 
   @override
