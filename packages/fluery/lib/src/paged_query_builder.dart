@@ -450,9 +450,9 @@ class _PagedQueryBuilderState<Data, Params>
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    _query = QueryClientProvider.of(context)
-        .manager
-        .buildPagedQuery(_effectiveController.id);
+    // _query = QueryClientProvider.of(context)
+    //     .manager
+    //     .buildPagedQuery(_effectiveController.id);
 
     _query.addObserver(_effectiveController);
 

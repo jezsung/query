@@ -516,9 +516,8 @@ class _QueryBuilderState<Data> extends State<QueryBuilder<Data>>
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    _query = QueryClientProvider.of(context)
-        .manager
-        .buildQuery(_effectiveController.id);
+    _query =
+        QueryClientProvider.of(context).manager.build(_effectiveController.id);
 
     _query.addObserver<QueryController<Data>>(_effectiveController);
 
@@ -560,7 +559,7 @@ class _QueryBuilderState<Data> extends State<QueryBuilder<Data>>
         widget.refetchIntervalDuration;
 
     if (widget.id != oldWidget.id) {
-      _query = QueryClientProvider.of(context).manager.buildQuery(widget.id);
+      _query = QueryClientProvider.of(context).manager.build(widget.id);
     }
 
     if (hasController && !hadController) {

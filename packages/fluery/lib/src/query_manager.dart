@@ -1,78 +1,27 @@
 import 'package:fluery/fluery.dart';
 
 class QueryManager {
-  QueryManager({
-    this.cacheStorage,
-  });
+  final Map<QueryIdentifier, Query> _queries = {};
 
-  final QueryCacheStorage? cacheStorage;
-
-  final Map<QueryIdentifier, BaseQuery> _queries = {};
-
-  Query<Data> buildQuery<Data>(QueryIdentifier id) {
-    final Query<Data> query;
-
-    final cached = _queries[id] != null;
-    final persisted = cacheStorage != null && cacheStorage!.get(id) != null;
-
-    if (cached) {
-      query = _queries[id] as Query<Data>;
-    } else if (persisted) {
-      final json = cacheStorage!.get(id)!;
-      query = Query<Data>(
-        id: id,
-        initialState: QueryState<Data>.fromJson(json),
-      );
-    } else {
-      query = _queries[id] = Query<Data>(id: id);
-    }
-
-    if (cacheStorage != null) {
-      query.addObserver(cacheStorage!);
-    }
-
-    return query;
+  bool exist(QueryIdentifier id) {
+    return _queries[id] != null;
   }
 
-  PagedQuery<Data, Params> buildPagedQuery<Data, Params>(
-    QueryIdentifier id,
-  ) {
-    final PagedQuery<Data, Params> query;
-
-    if (_queries[id] != null) {
-      query = _queries[id] as PagedQuery<Data, Params>;
-    } else if (cacheStorage == null || cacheStorage!.get(id) == null) {
-      query = _queries[id] = PagedQuery<Data, Params>(id: id);
+  Query<Data> build<Data>(QueryIdentifier id) {
+    if (exist(id)) {
+      return _queries[id] as Query<Data>;
     } else {
-      final json = cacheStorage!.get(id)!;
-      query = PagedQuery<Data, Params>(
-        id: id,
-        initialState: PagedQueryState<Data>.fromJson(json),
-      );
+      return Query<Data>(id: id);
     }
-
-    if (cacheStorage != null) {
-      query.addObserver(cacheStorage!);
-    }
-
-    return query;
   }
 
-  Query<Data>? getQuery<Data>(QueryIdentifier id) {
+  Query<Data>? get<Data>(QueryIdentifier id) {
     return _queries[id] as Query<Data>?;
-  }
-
-  PagedQuery<Data, Params>? getPagedQuery<Data, Params>(
-    QueryIdentifier id,
-  ) {
-    return _queries[id] as PagedQuery<Data, Params>?;
   }
 
   void dispose() {
     for (final query in _queries.values) {
-      if (query is Query) {
-        query.dispose();
-      }
+      query.dispose();
     }
   }
 }
