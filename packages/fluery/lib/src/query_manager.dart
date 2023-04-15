@@ -11,7 +11,7 @@ class QueryManager {
     if (exist(id)) {
       return _queries[id] as Query<Data>;
     } else {
-      return Query<Data>(id: id);
+      return _queries[id] = Query<Data>(id);
     }
   }
 

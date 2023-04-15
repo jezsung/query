@@ -1,4 +1,3 @@
-import 'package:fluery/src/base_query.dart';
 import 'package:fluery/src/query_builder.dart';
 import 'package:fluery/src/query_manager.dart';
 

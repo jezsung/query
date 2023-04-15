@@ -1,13 +1,14 @@
 import 'dart:async';
 
-import 'package:fluery/src/base_query.dart';
+import 'package:equatable/equatable.dart';
 import 'package:fluery/src/query_client_provider.dart';
 import 'package:fluery/src/query_status.dart';
-import 'package:fluery/src/utils/periodic_timer.dart';
 import 'package:fluery/src/utils/retry_resolver.dart';
 import 'package:fluery/src/utils/zoned_timer_interceptor.dart';
 import 'package:flutter/widgets.dart';
 import 'package:clock/clock.dart';
+
+typedef QueryIdentifier = String;
 
 typedef QueryFetcher<Data> = Future<Data> Function(QueryIdentifier id);
 
@@ -17,13 +18,44 @@ typedef QueryWidgetBuilder<Data> = Widget Function(
   Widget? child,
 );
 
+abstract class QueryEvent extends Equatable {
+  const QueryEvent();
+}
+
+class QueryStateUpdated<Data> extends QueryEvent {
+  const QueryStateUpdated(this.state);
+
+  final QueryState<Data> state;
+
+  @override
+  List<Object?> get props => [state];
+}
+
+class QuerySubscribed<Data> extends QueryEvent {
+  QuerySubscribed(this.controller);
+
+  final QueryController<Data> controller;
+
+  @override
+  List<Object?> get props => [controller];
+}
+
+class QueryUnsubscribed<Data> extends QueryEvent {
+  QueryUnsubscribed(this.controller);
+
+  final QueryController<Data> controller;
+
+  @override
+  List<Object?> get props => [controller];
+}
+
 enum RefetchMode {
   never,
   stale,
   always,
 }
 
-class QueryState<Data> extends BaseQueryState {
+class QueryState<Data> extends Equatable {
   const QueryState({
     this.status = QueryStatus.idle,
     this.data,
@@ -62,11 +94,6 @@ class QueryState<Data> extends BaseQueryState {
     );
   }
 
-  factory QueryState.fromJson(Map<String, dynamic> json) {
-    // Not implemented yet.
-    return QueryState();
-  }
-
   @override
   List<Object?> get props => [
         status,
@@ -78,23 +105,16 @@ class QueryState<Data> extends BaseQueryState {
       ];
 }
 
-class Query<Data> extends BaseQuery {
-  Query({
-    required QueryIdentifier id,
-    QueryState<Data>? initialState,
-  }) : super(id) {
-    state = initialState ?? QueryState<Data>();
-  }
+class Query<Data> {
+  Query(this.id);
 
-  late QueryState<Data> state;
+  final QueryIdentifier id;
+  final Set<QueryController<Data>> controllers = {};
+
+  QueryState<Data> state = QueryState<Data>();
 
   final ZonedTimerInterceptor _zonedTimerInterceptor = ZonedTimerInterceptor();
   RetryResolver<Data>? _retryResolver;
-  PeriodicTimer? _periodicTimer;
-
-  Set<QueryController<Data>> get controllers {
-    return observers.whereType<QueryController<Data>>().toSet();
-  }
 
   bool get active {
     return controllers.isNotEmpty;
@@ -192,11 +212,9 @@ class Query<Data> extends BaseQuery {
     final effectiveRetryDelayDuration =
         retryDelayDuration ?? this.retryDelayDuration!;
 
-    notify(QueryStateUpdated<QueryState<Data>>(
-      state = state.copyWith(
-        status: QueryStatus.fetching,
-        retried: 0,
-      ),
+    update(state.copyWith(
+      status: QueryStatus.fetching,
+      retried: 0,
     ));
 
     try {
@@ -204,23 +222,19 @@ class Query<Data> extends BaseQuery {
         () => effectiveFetcher(id),
       );
 
-      notify(QueryStateUpdated<QueryState<Data>>(
-        state = state.copyWith(
-          status: QueryStatus.success,
-          data: data,
-          dataUpdatedAt: clock.now(),
-        ),
+      update(state.copyWith(
+        status: QueryStatus.success,
+        data: data,
+        dataUpdatedAt: clock.now(),
       ));
     } catch (error) {
       final shouldRetry = effectiveRetryCount >= 1;
 
       if (shouldRetry) {
-        notify(QueryStateUpdated<QueryState<Data>>(
-          state = state.copyWith(
-            status: QueryStatus.retrying,
-            error: error,
-            errorUpdatedAt: clock.now(),
-          ),
+        update(state.copyWith(
+          status: QueryStatus.retrying,
+          error: error,
+          errorUpdatedAt: clock.now(),
         ));
 
         _retryResolver = RetryResolver<Data>(
@@ -229,21 +243,17 @@ class Query<Data> extends BaseQuery {
           delayDuration: effectiveRetryDelayDuration,
           onError: (error, retried) {
             if (retried < effectiveRetryCount) {
-              notify(QueryStateUpdated<QueryState<Data>>(
-                state = state.copyWith(
-                  retried: retried,
-                  error: error,
-                  errorUpdatedAt: clock.now(),
-                ),
+              update(state.copyWith(
+                retried: retried,
+                error: error,
+                errorUpdatedAt: clock.now(),
               ));
             } else {
-              notify(QueryStateUpdated<QueryState<Data>>(
-                state = state.copyWith(
-                  status: QueryStatus.failure,
-                  retried: retried,
-                  error: error,
-                  errorUpdatedAt: clock.now(),
-                ),
+              update(state.copyWith(
+                status: QueryStatus.failure,
+                retried: retried,
+                error: error,
+                errorUpdatedAt: clock.now(),
               ));
             }
           },
@@ -251,41 +261,18 @@ class Query<Data> extends BaseQuery {
 
         final data = await _retryResolver!.call();
 
-        notify(QueryStateUpdated<QueryState<Data>>(
-          state = state.copyWith(
-            status: QueryStatus.success,
-            data: data,
-            dataUpdatedAt: clock.now(),
-          ),
-        ));
-      } else {
-        notify(QueryStateUpdated<QueryState<Data>>(
-          state = state.copyWith(
-            status: QueryStatus.failure,
-            error: error,
-            errorUpdatedAt: clock.now(),
-          ),
-        ));
-      }
-    }
-  }
-
-  void setInitialData({
-    required Data data,
-    DateTime? updatedAt,
-  }) {
-    final isDataUpToDate = updatedAt != null &&
-        state.dataUpdatedAt != null &&
-        updatedAt.isAfter(state.dataUpdatedAt!);
-
-    if (!state.hasData || isDataUpToDate) {
-      notify(QueryStateUpdated(
-        state = state.copyWith(
+        update(state.copyWith(
           status: QueryStatus.success,
           data: data,
-          dataUpdatedAt: updatedAt ?? clock.now(),
-        ),
-      ));
+          dataUpdatedAt: clock.now(),
+        ));
+      } else {
+        update(state.copyWith(
+          status: QueryStatus.failure,
+          error: error,
+          errorUpdatedAt: clock.now(),
+        ));
+      }
     }
   }
 
@@ -306,27 +293,36 @@ class Query<Data> extends BaseQuery {
     }
 
     if (shouldUpdate) {
-      notify(QueryStateUpdated(
-        state = state.copyWith(
-          status: QueryStatus.success,
-          data: data,
-          retried: 0,
-          dataUpdatedAt: updatedAt ?? clock.now(),
-        ),
+      update(state.copyWith(
+        status: QueryStatus.success,
+        data: data,
+        retried: 0,
+        dataUpdatedAt: updatedAt ?? clock.now(),
       ));
     }
   }
 
-  void onRefetchIntervalChanged() {
-    if (refetchIntervalDuration == null) {
-      _periodicTimer?.stop();
-      return;
-    }
+  void update(QueryState<Data> state) {
+    this.state = state;
+    emit(QueryStateUpdated<Data>(state));
+  }
 
-    _periodicTimer ??= PeriodicTimer(fetch, refetchIntervalDuration!);
-    _periodicTimer!.callback = fetch;
-    _periodicTimer!.interval = refetchIntervalDuration!;
-    _periodicTimer!.start();
+  void subscribe(QueryController<Data> controller) {
+    controllers.add(controller);
+    emit(QuerySubscribed<Data>(controller));
+  }
+
+  void unsubscribe(QueryController<Data> controller) {
+    controllers.remove(controller);
+    final event = QueryUnsubscribed<Data>(controller);
+    controller.onEvent(event, this);
+    emit(event);
+  }
+
+  void emit(QueryEvent event) {
+    for (final controller in controllers) {
+      controller.onEvent(event, this);
+    }
   }
 
   void dispose() {
@@ -335,8 +331,7 @@ class Query<Data> extends BaseQuery {
   }
 }
 
-class QueryController<Data> extends ValueNotifier<QueryState<Data>>
-    with BaseQueryObserver<Query<Data>> {
+class QueryController<Data> extends ValueNotifier<QueryState<Data>> {
   QueryController({
     Data? data,
     DateTime? dataUpdatedAt,
@@ -391,25 +386,21 @@ class QueryController<Data> extends ValueNotifier<QueryState<Data>>
     );
   }
 
-  @override
-  void onNotified(Query<Data> query, BaseQueryEvent event) {
-    if (event is QueryStateUpdated<QueryState<Data>>) {
+  void onEvent(QueryEvent event, Query<Data> query) {
+    if (event is QueryStateUpdated<Data>) {
       value = event.state;
-    } else if (event is QueryObserverAdded<QueryController<Data>>) {
-      if (event.observer == this) {
+    } else if (event is QuerySubscribed<Data>) {
+      if (event.controller == this) {
         _query = query;
         value = query.state;
 
         if (_initialData != null) {
-          query.setInitialData(
-            // ignore: null_check_on_nullable_type_parameter
-            data: _initialData!,
-            updatedAt: _initialDataUpdatedAt,
-          );
+          // ignore: null_check_on_nullable_type_parameter
+          query.setData(_initialData!, _initialDataUpdatedAt);
         }
       }
-    } else if (event is QueryObserverRemoved<QueryController<Data>>) {
-      if (event.observer == this) {
+    } else if (event is QueryUnsubscribed<Data>) {
+      if (event.controller == this) {
         _query = null;
       }
     }
@@ -516,13 +507,10 @@ class _QueryBuilderState<Data> extends State<QueryBuilder<Data>>
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    _query =
-        QueryClientProvider.of(context).manager.build(_effectiveController.id);
-
-    _query.addObserver<QueryController<Data>>(_effectiveController);
+    _query = QueryClientProvider.of(context).manager.build(widget.id);
+    _query.subscribe(_effectiveController);
 
     _initQuery();
-    _onRefetchIntervalChanged();
   }
 
   @override
@@ -537,15 +525,15 @@ class _QueryBuilderState<Data> extends State<QueryBuilder<Data>>
         widget.controller == null && oldWidget.controller == null;
 
     if (hasController && !hadController) {
-      _query.removeObserver<QueryController<Data>>(_controller);
+      _query.unsubscribe(_controller);
     } else if (!hasController && hadController) {
-      _query.removeObserver<QueryController<Data>>(oldWidget.controller!);
+      _query.unsubscribe(oldWidget.controller!);
     } else if (hasController && hadController && !hasHadSameController) {
-      _query.removeObserver<QueryController<Data>>(oldWidget.controller!);
+      _query.unsubscribe(oldWidget.controller!);
     } else if (hasHadNoController && widget.id != oldWidget.id) {
-      _query.removeObserver<QueryController<Data>>(_controller);
+      _query.unsubscribe(_controller);
     } else if (hasHadSameController && widget.id != oldWidget.id) {
-      _query.removeObserver<QueryController<Data>>(widget.controller!);
+      _query.unsubscribe(widget.controller!);
     }
 
     _effectiveController._id = widget.id;
@@ -563,20 +551,19 @@ class _QueryBuilderState<Data> extends State<QueryBuilder<Data>>
     }
 
     if (hasController && !hadController) {
-      _query.addObserver<QueryController<Data>>(widget.controller!);
+      _query.subscribe(widget.controller!);
     } else if (!hasController && hadController) {
-      _query.addObserver<QueryController<Data>>(_controller);
+      _query.subscribe(_controller);
     } else if (hasController && hadController && !hasHadSameController) {
-      _query.addObserver<QueryController<Data>>(widget.controller!);
+      _query.subscribe(widget.controller!);
     } else if (hasHadNoController && widget.id != oldWidget.id) {
-      _query.addObserver<QueryController<Data>>(_controller);
+      _query.subscribe(_controller);
     } else if (hasHadSameController && widget.id != oldWidget.id) {
-      _query.addObserver<QueryController<Data>>(widget.controller!);
+      _query.subscribe(widget.controller!);
     }
 
     if (widget.id != oldWidget.id || widget.enabled && !oldWidget.enabled) {
       _initQuery();
-      _onRefetchIntervalChanged();
     }
   }
 
@@ -589,8 +576,7 @@ class _QueryBuilderState<Data> extends State<QueryBuilder<Data>>
 
   @override
   void dispose() {
-    _query.removeObserver<QueryController<Data>>(_effectiveController);
-    _onRefetchIntervalChanged();
+    _query.unsubscribe(_effectiveController);
     _controller.dispose();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
@@ -627,12 +613,6 @@ class _QueryBuilderState<Data> extends State<QueryBuilder<Data>>
       case RefetchMode.always:
         await _fetch(ignoreStaleness: true);
         break;
-    }
-  }
-
-  void _onRefetchIntervalChanged() {
-    if (widget.enabled) {
-      _query.onRefetchIntervalChanged();
     }
   }
 
