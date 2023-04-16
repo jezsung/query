@@ -622,6 +622,8 @@ class _QueryBuilderState<Data> extends State<QueryBuilder<Data>>
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
+      if (!widget.enabled) return;
+
       switch (widget.refetchOnResumed) {
         case RefetchMode.never:
           break;
