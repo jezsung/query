@@ -18,37 +18,6 @@ typedef QueryWidgetBuilder<Data> = Widget Function(
   Widget? child,
 );
 
-abstract class QueryEvent extends Equatable {
-  const QueryEvent();
-}
-
-class QueryStateUpdated<Data> extends QueryEvent {
-  const QueryStateUpdated(this.state);
-
-  final QueryState<Data> state;
-
-  @override
-  List<Object?> get props => [state];
-}
-
-class QuerySubscribed<Data> extends QueryEvent {
-  QuerySubscribed(this.controller);
-
-  final QueryController<Data> controller;
-
-  @override
-  List<Object?> get props => [controller];
-}
-
-class QueryUnsubscribed<Data> extends QueryEvent {
-  QueryUnsubscribed(this.controller);
-
-  final QueryController<Data> controller;
-
-  @override
-  List<Object?> get props => [controller];
-}
-
 enum RefetchMode {
   never,
   stale,
@@ -349,25 +318,19 @@ class Query<Data> {
 
   void update(QueryState<Data> state) {
     this.state = state;
-    emit(QueryStateUpdated<Data>(state));
-  }
-
-  void subscribe(QueryController<Data> controller) {
-    controllers.add(controller);
-    emit(QuerySubscribed<Data>(controller));
-  }
-
-  void unsubscribe(QueryController<Data> controller) {
-    controllers.remove(controller);
-    final event = QueryUnsubscribed<Data>(controller);
-    controller.onEvent(event, this);
-    emit(event);
-  }
-
-  void emit(QueryEvent event) {
     for (final controller in controllers) {
-      controller.onEvent(event, this);
+      controller.onStateUpdated(state);
     }
+  }
+
+  void addController(QueryController<Data> controller) {
+    controllers.add(controller);
+    controller.onAddedToQuery(this);
+  }
+
+  void removeController(QueryController<Data> controller) {
+    controllers.remove(controller);
+    controller.onRemovedFromQuery(this);
   }
 
   void dispose() {
@@ -432,24 +395,22 @@ class QueryController<Data> extends ValueNotifier<QueryState<Data>> {
     );
   }
 
-  void onEvent(QueryEvent event, Query<Data> query) {
-    if (event is QueryStateUpdated<Data>) {
-      value = event.state;
-    } else if (event is QuerySubscribed<Data>) {
-      if (event.controller == this) {
-        _query = query;
-        value = query.state;
+  void onStateUpdated(QueryState<Data> state) {
+    value = state;
+  }
 
-        if (_initialData != null) {
-          // ignore: null_check_on_nullable_type_parameter
-          query.setData(_initialData!, _initialDataUpdatedAt);
-        }
-      }
-    } else if (event is QueryUnsubscribed<Data>) {
-      if (event.controller == this) {
-        _query = null;
-      }
+  void onAddedToQuery(Query<Data> query) {
+    _query = query;
+    value = query.state;
+
+    if (_initialData != null) {
+      // ignore: null_check_on_nullable_type_parameter
+      query.setData(_initialData!, _initialDataUpdatedAt);
     }
+  }
+
+  void onRemovedFromQuery(Query<Data> query) {
+    _query = null;
   }
 }
 
@@ -554,7 +515,7 @@ class _QueryBuilderState<Data> extends State<QueryBuilder<Data>>
   void didChangeDependencies() {
     super.didChangeDependencies();
     _query = QueryClientProvider.of(context).cache.build(widget.id);
-    _query.subscribe(_effectiveController);
+    _query.addController(_effectiveController);
 
     _initQuery();
   }
@@ -571,15 +532,15 @@ class _QueryBuilderState<Data> extends State<QueryBuilder<Data>>
         widget.controller == null && oldWidget.controller == null;
 
     if (hasController && !hadController) {
-      _query.unsubscribe(_controller);
+      _query.removeController(_controller);
     } else if (!hasController && hadController) {
-      _query.unsubscribe(oldWidget.controller!);
+      _query.removeController(oldWidget.controller!);
     } else if (hasController && hadController && !hasHadSameController) {
-      _query.unsubscribe(oldWidget.controller!);
+      _query.removeController(oldWidget.controller!);
     } else if (hasHadNoController && widget.id != oldWidget.id) {
-      _query.unsubscribe(_controller);
+      _query.removeController(_controller);
     } else if (hasHadSameController && widget.id != oldWidget.id) {
-      _query.unsubscribe(widget.controller!);
+      _query.removeController(widget.controller!);
     }
 
     _effectiveController._id = widget.id;
@@ -597,15 +558,15 @@ class _QueryBuilderState<Data> extends State<QueryBuilder<Data>>
     }
 
     if (hasController && !hadController) {
-      _query.subscribe(widget.controller!);
+      _query.addController(widget.controller!);
     } else if (!hasController && hadController) {
-      _query.subscribe(_controller);
+      _query.addController(_controller);
     } else if (hasController && hadController && !hasHadSameController) {
-      _query.subscribe(widget.controller!);
+      _query.addController(widget.controller!);
     } else if (hasHadNoController && widget.id != oldWidget.id) {
-      _query.subscribe(_controller);
+      _query.addController(_controller);
     } else if (hasHadSameController && widget.id != oldWidget.id) {
-      _query.subscribe(widget.controller!);
+      _query.addController(widget.controller!);
     }
 
     if (widget.id != oldWidget.id || widget.enabled && !oldWidget.enabled) {
@@ -639,7 +600,7 @@ class _QueryBuilderState<Data> extends State<QueryBuilder<Data>>
 
   @override
   void dispose() {
-    _query.unsubscribe(_effectiveController);
+    _query.removeController(_effectiveController);
     _controller.dispose();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
