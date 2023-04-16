@@ -1,22 +1,22 @@
 import 'package:fluery/src/query_builder.dart';
-import 'package:fluery/src/query_manager.dart';
+import 'package:fluery/src/query_cache.dart';
 
 class QueryClient {
-  final QueryManager manager = QueryManager();
+  final QueryCache cache = QueryCache();
 
   Future<void> refetch(QueryIdentifier id) async {
-    final query = manager.build(id);
+    final query = cache.build(id);
     await query.fetch();
   }
 
   Data? getQueryData<Data>(QueryIdentifier id) {
-    final query = manager.get<Data>(id);
+    final query = cache.get<Data>(id);
 
     return query?.state.data;
   }
 
   QueryState<Data>? getQueryState<Data>(QueryIdentifier id) {
-    final query = manager.get<Data>(id);
+    final query = cache.get<Data>(id);
 
     return query?.state;
   }
@@ -26,11 +26,11 @@ class QueryClient {
     Data data, [
     DateTime? updatedAt,
   ]) {
-    final query = manager.build<Data>(id);
+    final query = cache.build<Data>(id);
     query.setData(data, updatedAt);
   }
 
   void dispose() {
-    manager.dispose();
+    cache.dispose();
   }
 }

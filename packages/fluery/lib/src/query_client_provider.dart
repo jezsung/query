@@ -72,6 +72,6 @@ class _QueryClientScope extends InheritedWidget {
   @override
   bool updateShouldNotify(_QueryClientScope oldWidget) {
     return queryClient != oldWidget.queryClient ||
-        queryClient.manager != oldWidget.queryClient.manager;
+        queryClient.cache != oldWidget.queryClient.cache;
   }
 }

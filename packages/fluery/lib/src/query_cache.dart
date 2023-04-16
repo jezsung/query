@@ -1,11 +1,7 @@
 import 'package:fluery/fluery.dart';
 
-class QueryManager {
+class QueryCache {
   final Map<QueryIdentifier, Query> _queries = {};
-
-  bool exist(QueryIdentifier id) {
-    return _queries[id] != null;
-  }
 
   Query<Data> build<Data>(QueryIdentifier id) {
     if (exist(id)) {
@@ -17,6 +13,10 @@ class QueryManager {
 
   Query<Data>? get<Data>(QueryIdentifier id) {
     return _queries[id] as Query<Data>?;
+  }
+
+  bool exist(QueryIdentifier id) {
+    return _queries[id] != null;
   }
 
   void dispose() {
