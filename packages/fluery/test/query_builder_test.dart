@@ -932,6 +932,87 @@ void main() {
   );
 
   group(
+    'when the "cacheDuration" is set',
+    () {
+      testWidgets(
+        'should schedule garbage collection if there is no "QueryBuilder"ƒ',
+        (tester) async {
+          final client = QueryClient();
+          const cacheDuration = Duration(minutes: 5);
+          final widget = QueryBuilder(
+            id: 'id',
+            fetcher: (id) async {
+              return 'data';
+            },
+            cacheDuration: cacheDuration,
+            builder: (context, state, child) {
+              return Column(
+                children: [
+                  Text('status: ${state.status.name}'),
+                  Text('data: ${state.data}'),
+                  Text('error: ${state.error}'),
+                ],
+              );
+            },
+          );
+
+          await tester.pumpWithQueryClientProvider(widget, client);
+
+          expect(client.cache.exist('id'), isTrue);
+
+          await tester.pumpWithQueryClientProvider(Placeholder(), client);
+
+          expect(client.cache.exist('id'), isTrue);
+
+          await tester.pump(cacheDuration);
+
+          expect(client.cache.exist('id'), isFalse);
+        },
+      );
+
+      testWidgets(
+        'should cancel the garbage collection if a "QueryBuilder" reappears',
+        (tester) async {
+          final client = QueryClient();
+          const cacheDuration = Duration(minutes: 5);
+          final widget = QueryBuilder(
+            id: 'id',
+            fetcher: (id) async {
+              return 'data';
+            },
+            cacheDuration: cacheDuration,
+            builder: (context, state, child) {
+              return Column(
+                children: [
+                  Text('status: ${state.status.name}'),
+                  Text('data: ${state.data}'),
+                  Text('error: ${state.error}'),
+                ],
+              );
+            },
+          );
+
+          await tester.pumpWithQueryClientProvider(widget, client);
+
+          expect(client.cache.exist('id'), isTrue);
+
+          await tester.pumpWithQueryClientProvider(Placeholder(), client);
+
+          expect(client.cache.exist('id'), isTrue);
+
+          await tester.pumpWithQueryClientProvider(widget, client);
+
+          expect(client.cache.exist('id'), isTrue);
+
+          await tester.pump(cacheDuration);
+
+          expect(client.cache.exist('id'), isTrue);
+        },
+      );
+    },
+  );
+
+  group(
     'when the "placeholder" is set',
     () {
       testWidgets(
