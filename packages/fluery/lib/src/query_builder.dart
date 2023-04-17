@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:equatable/equatable.dart';
+import 'package:fluery/src/query_cache.dart';
 import 'package:fluery/src/query_client_provider.dart';
 import 'package:fluery/src/query_status.dart';
 import 'package:fluery/src/utils/retry_resolver.dart';
@@ -75,9 +76,13 @@ class QueryState<Data> extends Equatable {
 }
 
 class Query<Data> {
-  Query(this.id);
+  Query(
+    this.id,
+    this.cache,
+  );
 
   final QueryIdentifier id;
+  final QueryCache cache;
   final Set<QueryController<Data>> controllers = {};
 
   QueryState<Data> state = QueryState<Data>();
@@ -86,6 +91,7 @@ class Query<Data> {
   RetryResolver<Data>? _retryResolver;
   Timer? _refetchTimer;
   DateTime? _refetchedAt;
+  Timer? _garbageCollectionTimer;
 
   bool get active {
     return controllers.isNotEmpty;
@@ -105,6 +111,17 @@ class Query<Data> {
       (staleDuration, controller) => controller.staleDuration < staleDuration
           ? controller.staleDuration
           : staleDuration,
+    );
+  }
+
+  Duration? get cacheDuration {
+    if (!active) return null;
+
+    return controllers.fold<Duration>(
+      controllers.first.cacheDuration,
+      (cacheDuration, controller) => controller.cacheDuration > cacheDuration
+          ? controller.cacheDuration
+          : cacheDuration,
     );
   }
 
@@ -316,6 +333,22 @@ class Query<Data> {
     }
   }
 
+  void scheduleGarbageCollection(Duration cacheDuration) {
+    if (active) return;
+
+    _garbageCollectionTimer = Timer(
+      cacheDuration,
+      () {
+        dispose();
+        cache.remove(id);
+      },
+    );
+  }
+
+  void cancelGarbageCollection() {
+    _garbageCollectionTimer?.cancel();
+  }
+
   void update(QueryState<Data> state) {
     this.state = state;
     for (final controller in controllers) {
@@ -326,17 +359,26 @@ class Query<Data> {
   void addController(QueryController<Data> controller) {
     controllers.add(controller);
     controller.onAddedToQuery(this);
+
+    if (controllers.length == 1) {
+      cancelGarbageCollection();
+    }
   }
 
   void removeController(QueryController<Data> controller) {
     controllers.remove(controller);
     controller.onRemovedFromQuery(this);
+
+    if (!active) {
+      scheduleGarbageCollection(controller.cacheDuration);
+    }
   }
 
   void dispose() {
     _zonedTimerInterceptor.cancel();
     _retryResolver?.cancel();
     _refetchTimer?.cancel();
+    _garbageCollectionTimer?.cancel();
   }
 }
 
@@ -358,6 +400,7 @@ class QueryController<Data> extends ValueNotifier<QueryState<Data>> {
   late bool _enabled;
   late Data? _placeholder;
   late Duration _staleDuration;
+  late Duration _cacheDuration;
   late int _retryCount;
   late Duration _retryDelayDuration;
   late Duration? _refetchIntervalDuration;
@@ -367,6 +410,7 @@ class QueryController<Data> extends ValueNotifier<QueryState<Data>> {
   bool get enabled => _enabled;
   Data? get placeholder => _placeholder;
   Duration get staleDuration => _staleDuration;
+  Duration get cacheDuration => _cacheDuration;
   int get retryCount => _retryCount;
   Duration get retryDelayDuration => _retryDelayDuration;
   Duration? get refetchIntervalDuration => _refetchIntervalDuration;
@@ -423,6 +467,7 @@ class QueryBuilder<Data> extends StatefulWidget {
     this.enabled = true,
     this.placeholder,
     this.staleDuration = Duration.zero,
+    this.cacheDuration = const Duration(minutes: 5),
     this.retryCount = 0,
     this.retryDelayDuration = const Duration(seconds: 3),
     this.refetchOnInit = RefetchMode.stale,
@@ -438,6 +483,7 @@ class QueryBuilder<Data> extends StatefulWidget {
   final bool enabled;
   final Data? placeholder;
   final Duration staleDuration;
+  final Duration cacheDuration;
   final int retryCount;
   final Duration retryDelayDuration;
   final RefetchMode refetchOnInit;
@@ -455,6 +501,7 @@ class QueryBuilder<Data> extends StatefulWidget {
     bool? enabled,
     Data? placeholder,
     Duration? staleDuration,
+    Duration? cacheDuration,
     int? retryCount,
     Duration? retryDelayDuration,
     RefetchMode? refetchOnInit,
@@ -471,6 +518,7 @@ class QueryBuilder<Data> extends StatefulWidget {
       enabled: enabled ?? this.enabled,
       placeholder: placeholder ?? this.placeholder,
       staleDuration: staleDuration ?? this.staleDuration,
+      cacheDuration: cacheDuration ?? this.cacheDuration,
       retryCount: retryCount ?? this.retryCount,
       retryDelayDuration: retryDelayDuration ?? this.retryDelayDuration,
       refetchOnInit: refetchOnInit ?? this.refetchOnInit,
@@ -505,6 +553,7 @@ class _QueryBuilderState<Data> extends State<QueryBuilder<Data>>
     _effectiveController._enabled = widget.enabled;
     _effectiveController._placeholder = widget.placeholder;
     _effectiveController._staleDuration = widget.staleDuration;
+    _effectiveController._cacheDuration = widget.cacheDuration;
     _effectiveController._retryCount = widget.retryCount;
     _effectiveController._retryDelayDuration = widget.retryDelayDuration;
     _effectiveController._refetchIntervalDuration =
@@ -548,6 +597,7 @@ class _QueryBuilderState<Data> extends State<QueryBuilder<Data>>
     _effectiveController._enabled = widget.enabled;
     _effectiveController._placeholder = widget.placeholder;
     _effectiveController._staleDuration = widget.staleDuration;
+    _effectiveController._cacheDuration = widget.cacheDuration;
     _effectiveController._retryCount = widget.retryCount;
     _effectiveController._retryDelayDuration = widget.retryDelayDuration;
     _effectiveController._refetchIntervalDuration =

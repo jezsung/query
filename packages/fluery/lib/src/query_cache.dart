@@ -7,7 +7,7 @@ class QueryCache {
     if (exist(id)) {
       return _queries[id] as Query<Data>;
     } else {
-      return _queries[id] = Query<Data>(id);
+      return _queries[id] = Query<Data>(id, this);
     }
   }
 
@@ -17,6 +17,10 @@ class QueryCache {
 
   bool exist(QueryIdentifier id) {
     return _queries[id] != null;
+  }
+
+  void remove(QueryIdentifier id) {
+    _queries.remove(id);
   }
 
   void dispose() {
