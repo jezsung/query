@@ -124,8 +124,6 @@ class _QueryExamplePageState extends State<QueryExamplePage> {
           },
           enabled: true,
           staleDuration: const Duration(seconds: 0),
-          retryCount: 3,
-          retryDelayDuration: const Duration(seconds: 1),
           refetchOnInit: RefetchMode.stale,
           builder: (context, state, child) {
             switch (state.status) {
@@ -140,11 +138,9 @@ class _QueryExamplePageState extends State<QueryExamplePage> {
                 }
                 return const CircularProgressIndicator();
               case QueryStatus.retrying:
-                final retried = state.retried;
                 return Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text('$retried'),
                     const CircularProgressIndicator(),
                   ],
                 );

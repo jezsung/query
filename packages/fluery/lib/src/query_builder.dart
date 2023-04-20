@@ -8,10 +8,13 @@ import 'package:fluery/src/utils/retry_resolver.dart';
 import 'package:fluery/src/utils/zoned_timer_interceptor.dart';
 import 'package:flutter/widgets.dart';
 import 'package:clock/clock.dart';
+import 'package:retry/retry.dart';
 
 typedef QueryIdentifier = String;
 
 typedef QueryFetcher<Data> = Future<Data> Function(QueryIdentifier id);
+
+typedef RetryCondition = FutureOr<bool> Function(Exception e);
 
 typedef QueryWidgetBuilder<Data> = Widget Function(
   BuildContext context,
@@ -30,15 +33,13 @@ class QueryState<Data> extends Equatable {
     this.status = QueryStatus.idle,
     this.data,
     this.dataUpdatedAt,
-    this.retried = 0,
     this.error,
     this.errorUpdatedAt,
   });
 
   final QueryStatus status;
   final Data? data;
-  final int retried;
-  final Object? error;
+  final Exception? error;
   final DateTime? dataUpdatedAt;
   final DateTime? errorUpdatedAt;
 
@@ -49,15 +50,13 @@ class QueryState<Data> extends Equatable {
   QueryState<Data> copyWith({
     QueryStatus? status,
     Data? data,
-    int? retried,
-    Object? error,
+    Exception? error,
     DateTime? dataUpdatedAt,
     DateTime? errorUpdatedAt,
   }) {
     return QueryState<Data>(
       status: status ?? this.status,
       data: data ?? this.data,
-      retried: retried ?? this.retried,
       error: error ?? this.error,
       dataUpdatedAt: dataUpdatedAt ?? this.dataUpdatedAt,
       errorUpdatedAt: errorUpdatedAt ?? this.errorUpdatedAt,
@@ -68,7 +67,6 @@ class QueryState<Data> extends Equatable {
   List<Object?> get props => [
         status,
         data,
-        retried,
         error,
         dataUpdatedAt,
         errorUpdatedAt,
@@ -125,26 +123,56 @@ class Query<Data> {
     );
   }
 
-  int? get retryCount {
+  RetryCondition? get retryWhen {
+    if (!active) return null;
+
+    return controllers.first.retryWhen;
+  }
+
+  int? get retryMaxAttempts {
     if (!active) return null;
 
     return controllers.fold<int>(
-      controllers.first.retryCount,
-      (retryCount, controller) => controller.retryCount > retryCount
-          ? controller.retryCount
-          : retryCount,
+      controllers.first.retryMaxAttempts,
+      (retryMaxAttempts, controller) =>
+          controller.retryMaxAttempts > retryMaxAttempts
+              ? controller.retryMaxAttempts
+              : retryMaxAttempts,
     );
   }
 
-  Duration? get retryDelayDuration {
+  Duration? get retryMaxDelay {
     if (!active) return null;
 
     return controllers.fold<Duration>(
-      controllers.first.retryDelayDuration,
-      (retryDelayDuration, controller) =>
-          controller.retryDelayDuration > retryDelayDuration
-              ? controller.retryDelayDuration
-              : retryDelayDuration,
+      controllers.first.retryMaxDelay,
+      (retryMaxDelay, controller) => controller.retryMaxDelay > retryMaxDelay
+          ? controller.retryMaxDelay
+          : retryMaxDelay,
+    );
+  }
+
+  Duration? get retryDelayFactor {
+    if (!active) return null;
+
+    return controllers.fold<Duration>(
+      controllers.first.retryDelayFactor,
+      (retryDelayFactor, controller) =>
+          controller.retryDelayFactor > retryDelayFactor
+              ? controller.retryDelayFactor
+              : retryDelayFactor,
+    );
+  }
+
+  double? get retryRandomizationFactor {
+    if (!active) return null;
+
+    return controllers.fold<double>(
+      controllers.first.retryRandomizationFactor,
+      (retryRandomizationFactor, controller) =>
+          controller.retryRandomizationFactor > retryRandomizationFactor
+              ? controller.retryRandomizationFactor
+              : retryRandomizationFactor,
     );
   }
 
@@ -171,8 +199,11 @@ class Query<Data> {
   Future<void> fetch({
     QueryFetcher<Data>? fetcher,
     Duration? staleDuration,
-    int? retryCount,
-    Duration? retryDelayDuration,
+    RetryCondition? retryWhen,
+    int? retryMaxAttempts,
+    Duration? retryMaxDelay,
+    Duration? retryDelayFactor,
+    double? retryRandomizationFactor,
   }) async {
     if (!active) return;
 
@@ -196,14 +227,17 @@ class Query<Data> {
     if (isDataFresh) return;
 
     final effectiveFetcher = fetcher ?? this.fetcher!;
-    final effectiveRetryCount = retryCount ?? this.retryCount!;
-    final effectiveRetryDelayDuration =
-        retryDelayDuration ?? this.retryDelayDuration!;
+    final effectiveRetryWhen =
+        retryWhen ?? this.retryWhen ?? (Exception e) => true;
+    final effectiveRetryMaxAttempts =
+        retryMaxAttempts ?? this.retryMaxAttempts!;
+    final effectiveRetryMaxDelay = retryMaxDelay ?? this.retryMaxDelay!;
+    final effectiveRetryDelayFactor =
+        retryDelayFactor ?? this.retryDelayFactor!;
+    final effectiveRetryRandomizationFactor =
+        retryRandomizationFactor ?? this.retryRandomizationFactor!;
 
-    update(state.copyWith(
-      status: QueryStatus.fetching,
-      retried: 0,
-    ));
+    update(state.copyWith(status: QueryStatus.fetching));
 
     try {
       final data = await _zonedTimerInterceptor.run(
@@ -215,8 +249,9 @@ class Query<Data> {
         data: data,
         dataUpdatedAt: clock.now(),
       ));
-    } catch (error) {
-      final shouldRetry = effectiveRetryCount >= 1;
+    } on Exception catch (error) {
+      final shouldRetry =
+          effectiveRetryMaxAttempts >= 1 && await effectiveRetryWhen(error);
 
       if (shouldRetry) {
         update(state.copyWith(
@@ -225,35 +260,36 @@ class Query<Data> {
           errorUpdatedAt: clock.now(),
         ));
 
-        _retryResolver = RetryResolver<Data>(
-          () => _zonedTimerInterceptor.run(() => effectiveFetcher(id)),
-          maxCount: effectiveRetryCount,
-          delayDuration: effectiveRetryDelayDuration,
-          onError: (error, retried) {
-            if (retried < effectiveRetryCount) {
-              update(state.copyWith(
-                retried: retried,
-                error: error,
-                errorUpdatedAt: clock.now(),
-              ));
-            } else {
-              update(state.copyWith(
-                status: QueryStatus.failure,
-                retried: retried,
-                error: error,
-                errorUpdatedAt: clock.now(),
-              ));
-            }
-          },
-        );
+        try {
+          final data = await _zonedTimerInterceptor.run(
+            () => retry(
+              () => effectiveFetcher(id),
+              retryIf: effectiveRetryWhen,
+              maxAttempts: effectiveRetryMaxAttempts,
+              maxDelay: effectiveRetryMaxDelay,
+              delayFactor: effectiveRetryDelayFactor,
+              randomizationFactor: effectiveRetryRandomizationFactor,
+              onRetry: (error) {
+                update(state.copyWith(
+                  error: error,
+                  errorUpdatedAt: clock.now(),
+                ));
+              },
+            ),
+          );
 
-        final data = await _retryResolver!.call();
-
-        update(state.copyWith(
-          status: QueryStatus.success,
-          data: data,
-          dataUpdatedAt: clock.now(),
-        ));
+          update(state.copyWith(
+            status: QueryStatus.success,
+            data: data,
+            dataUpdatedAt: clock.now(),
+          ));
+        } on Exception catch (e) {
+          update(state.copyWith(
+            status: QueryStatus.failure,
+            error: e,
+            errorUpdatedAt: clock.now(),
+          ));
+        }
       } else {
         update(state.copyWith(
           status: QueryStatus.failure,
@@ -286,7 +322,6 @@ class Query<Data> {
       update(state.copyWith(
         status: QueryStatus.success,
         data: data,
-        retried: 0,
         dataUpdatedAt: updatedAt ?? clock.now(),
       ));
     }
@@ -401,8 +436,11 @@ class QueryController<Data> extends ValueNotifier<QueryState<Data>> {
   late Data? _placeholder;
   late Duration _staleDuration;
   late Duration _cacheDuration;
-  late int _retryCount;
-  late Duration _retryDelayDuration;
+  late RetryCondition? _retryWhen;
+  late int _retryMaxAttempts;
+  late Duration _retryMaxDelay;
+  late Duration _retryDelayFactor;
+  late double _retryRandomizationFactor;
   late Duration? _refetchIntervalDuration;
 
   QueryIdentifier get id => _id;
@@ -411,8 +449,11 @@ class QueryController<Data> extends ValueNotifier<QueryState<Data>> {
   Data? get placeholder => _placeholder;
   Duration get staleDuration => _staleDuration;
   Duration get cacheDuration => _cacheDuration;
-  int get retryCount => _retryCount;
-  Duration get retryDelayDuration => _retryDelayDuration;
+  RetryCondition? get retryWhen => _retryWhen;
+  int get retryMaxAttempts => _retryMaxAttempts;
+  Duration get retryMaxDelay => _retryMaxDelay;
+  Duration get retryDelayFactor => _retryDelayFactor;
+  double get retryRandomizationFactor => _retryRandomizationFactor;
   Duration? get refetchIntervalDuration => _refetchIntervalDuration;
 
   @override
@@ -428,14 +469,21 @@ class QueryController<Data> extends ValueNotifier<QueryState<Data>> {
 
   Future<void> refetch({
     Duration? staleDuration,
-    int? retryCount,
-    Duration? retryDelayDuration,
+    RetryCondition? retryWhen,
+    int? retryMaxAttempts,
+    Duration? retryMaxDelay,
+    Duration? retryDelayFactor,
+    double? retryRandomizationFactor,
   }) async {
     await _query!.fetch(
       fetcher: _fetcher,
       staleDuration: staleDuration ?? _staleDuration,
-      retryCount: retryCount ?? _retryCount,
-      retryDelayDuration: retryDelayDuration ?? _retryDelayDuration,
+      retryWhen: retryWhen ?? _retryWhen,
+      retryMaxAttempts: retryMaxAttempts ?? _retryMaxAttempts,
+      retryMaxDelay: retryMaxDelay ?? _retryMaxDelay,
+      retryDelayFactor: retryDelayFactor ?? _retryDelayFactor,
+      retryRandomizationFactor:
+          retryRandomizationFactor ?? _retryRandomizationFactor,
     );
   }
 
@@ -468,8 +516,11 @@ class QueryBuilder<Data> extends StatefulWidget {
     this.placeholder,
     this.staleDuration = Duration.zero,
     this.cacheDuration = const Duration(minutes: 5),
-    this.retryCount = 0,
-    this.retryDelayDuration = const Duration(seconds: 3),
+    this.retryWhen,
+    this.retryMaxAttempts = 8,
+    this.retryMaxDelay = const Duration(seconds: 30),
+    this.retryDelayFactor = const Duration(milliseconds: 200),
+    this.retryRandomizationFactor = 0.25,
     this.refetchOnInit = RefetchMode.stale,
     this.refetchOnResumed = RefetchMode.stale,
     this.refetchIntervalDuration,
@@ -484,8 +535,11 @@ class QueryBuilder<Data> extends StatefulWidget {
   final Data? placeholder;
   final Duration staleDuration;
   final Duration cacheDuration;
-  final int retryCount;
-  final Duration retryDelayDuration;
+  final RetryCondition? retryWhen;
+  final int retryMaxAttempts;
+  final Duration retryMaxDelay;
+  final Duration retryDelayFactor;
+  final double retryRandomizationFactor;
   final RefetchMode refetchOnInit;
   final RefetchMode refetchOnResumed;
   final Duration? refetchIntervalDuration;
@@ -502,8 +556,11 @@ class QueryBuilder<Data> extends StatefulWidget {
     Data? placeholder,
     Duration? staleDuration,
     Duration? cacheDuration,
-    int? retryCount,
-    Duration? retryDelayDuration,
+    RetryCondition? retryWhen,
+    int? retryMaxAttempts,
+    Duration? retryMaxDelay,
+    Duration? retryDelayFactor,
+    double? retryRandomizationFactor,
     RefetchMode? refetchOnInit,
     RefetchMode? refetchOnResumed,
     Duration? refetchIntervalDuration,
@@ -519,8 +576,12 @@ class QueryBuilder<Data> extends StatefulWidget {
       placeholder: placeholder ?? this.placeholder,
       staleDuration: staleDuration ?? this.staleDuration,
       cacheDuration: cacheDuration ?? this.cacheDuration,
-      retryCount: retryCount ?? this.retryCount,
-      retryDelayDuration: retryDelayDuration ?? this.retryDelayDuration,
+      retryWhen: retryWhen ?? this.retryWhen,
+      retryMaxAttempts: retryMaxAttempts ?? this.retryMaxAttempts,
+      retryMaxDelay: retryMaxDelay ?? this.retryMaxDelay,
+      retryDelayFactor: retryDelayFactor ?? this.retryDelayFactor,
+      retryRandomizationFactor:
+          retryRandomizationFactor ?? this.retryRandomizationFactor,
       refetchOnInit: refetchOnInit ?? this.refetchOnInit,
       refetchOnResumed: refetchOnResumed ?? this.refetchOnResumed,
       refetchIntervalDuration:
@@ -554,8 +615,12 @@ class _QueryBuilderState<Data> extends State<QueryBuilder<Data>>
     _effectiveController._placeholder = widget.placeholder;
     _effectiveController._staleDuration = widget.staleDuration;
     _effectiveController._cacheDuration = widget.cacheDuration;
-    _effectiveController._retryCount = widget.retryCount;
-    _effectiveController._retryDelayDuration = widget.retryDelayDuration;
+    _effectiveController._retryWhen = widget.retryWhen;
+    _effectiveController._retryMaxAttempts = widget.retryMaxAttempts;
+    _effectiveController._retryMaxDelay = widget.retryMaxDelay;
+    _effectiveController._retryDelayFactor = widget.retryDelayFactor;
+    _effectiveController._retryRandomizationFactor =
+        widget.retryRandomizationFactor;
     _effectiveController._refetchIntervalDuration =
         widget.refetchIntervalDuration;
   }
@@ -598,8 +663,12 @@ class _QueryBuilderState<Data> extends State<QueryBuilder<Data>>
     _effectiveController._placeholder = widget.placeholder;
     _effectiveController._staleDuration = widget.staleDuration;
     _effectiveController._cacheDuration = widget.cacheDuration;
-    _effectiveController._retryCount = widget.retryCount;
-    _effectiveController._retryDelayDuration = widget.retryDelayDuration;
+    _effectiveController._retryWhen = widget.retryWhen;
+    _effectiveController._retryMaxAttempts = widget.retryMaxAttempts;
+    _effectiveController._retryMaxDelay = widget.retryMaxDelay;
+    _effectiveController._retryDelayFactor = widget.retryDelayFactor;
+    _effectiveController._retryRandomizationFactor =
+        widget.retryRandomizationFactor;
     _effectiveController._refetchIntervalDuration =
         widget.refetchIntervalDuration;
 
@@ -676,8 +745,11 @@ class _QueryBuilderState<Data> extends State<QueryBuilder<Data>>
     await _query.fetch(
       fetcher: widget.fetcher,
       staleDuration: ignoreStaleness ? Duration.zero : widget.staleDuration,
-      retryCount: widget.retryCount,
-      retryDelayDuration: widget.retryDelayDuration,
+      retryWhen: widget.retryWhen,
+      retryMaxAttempts: widget.retryMaxAttempts,
+      retryMaxDelay: widget.retryMaxDelay,
+      retryDelayFactor: widget.retryDelayFactor,
+      retryRandomizationFactor: widget.retryRandomizationFactor,
     );
   }
 

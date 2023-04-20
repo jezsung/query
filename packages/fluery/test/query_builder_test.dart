@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:fluery/fluery.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -24,6 +26,12 @@ extension WidgetTesterExtension on WidgetTester {
       enginePhase,
     );
   }
+}
+
+class TestException implements Exception {
+  TestException(this.message);
+
+  final String message;
 }
 
 void main() {
@@ -73,14 +81,15 @@ void main() {
           id: 'id',
           fetcher: (id) async {
             await Future.delayed(fetchDuration);
-            throw 'error';
+            throw TestException('error');
           },
+          retryMaxAttempts: 0,
           builder: (context, state, child) {
             return Column(
               children: [
                 Text('status: ${state.status.name}'),
                 Text('data: ${state.data}'),
-                Text('error: ${state.error}'),
+                Text('error: ${(state.error as TestException?)?.message}'),
               ],
             );
           },
@@ -204,14 +213,15 @@ void main() {
               id: 'id',
               fetcher: (id) async {
                 await Future.delayed(fetchDuration);
-                throw 'error';
+                throw TestException('error');
               },
+              retryMaxAttempts: 0,
               builder: (context, state, child) {
                 return Column(
                   children: [
                     Text('status: ${state.status.name}'),
                     Text('data: ${state.data}'),
-                    Text('error: ${state.error}'),
+                    Text('error: ${(state.error as TestException?)?.message}'),
                   ],
                 );
               },
@@ -241,8 +251,13 @@ void main() {
           final enabled = true;
           final placeholder = 'placeholder data';
           const staleDuration = Duration(seconds: 3);
-          final retryCount = 3;
-          const retryDelayDuration = Duration(seconds: 3);
+          const cacheDuration = Duration(minutes: 10);
+          // ignore: prefer_function_declarations_over_variables
+          final retryWhen = (Exception e) => false;
+          final retryMaxAttempts = 8;
+          const retryMaxDelay = Duration(seconds: 40);
+          const retryDelayFactor = Duration(milliseconds: 300);
+          final retryRandomizationFactor = 0.35;
           const refetchIntervalDuration = Duration(seconds: 3);
 
           final controller = QueryController<String>();
@@ -253,8 +268,12 @@ void main() {
             enabled: enabled,
             placeholder: placeholder,
             staleDuration: staleDuration,
-            retryCount: retryCount,
-            retryDelayDuration: retryDelayDuration,
+            cacheDuration: cacheDuration,
+            retryWhen: retryWhen,
+            retryMaxAttempts: retryMaxAttempts,
+            retryMaxDelay: retryMaxDelay,
+            retryDelayFactor: retryDelayFactor,
+            retryRandomizationFactor: retryRandomizationFactor,
             refetchIntervalDuration: refetchIntervalDuration,
             builder: (context, state, child) {
               return Placeholder();
@@ -264,12 +283,17 @@ void main() {
           await tester.pumpWithQueryClientProvider(widget);
 
           expect(controller.id, id);
-          expect(controller.fetcher, fetcher);
+
+          expect(controller.fetcher, same(fetcher));
           expect(controller.enabled, enabled);
-          expect(controller.placeholder, placeholder);
+          expect(controller.placeholder, same(placeholder));
           expect(controller.staleDuration, staleDuration);
-          expect(controller.retryCount, retryCount);
-          expect(controller.retryDelayDuration, retryDelayDuration);
+          expect(controller.cacheDuration, cacheDuration);
+          expect(controller.retryWhen, same(retryWhen));
+          expect(controller.retryMaxAttempts, retryMaxAttempts);
+          expect(controller.retryMaxDelay, retryMaxDelay);
+          expect(controller.retryDelayFactor, retryDelayFactor);
+          expect(controller.retryRandomizationFactor, retryRandomizationFactor);
           expect(controller.refetchIntervalDuration, refetchIntervalDuration);
         },
       );
@@ -1031,7 +1055,7 @@ void main() {
                 children: [
                   Text('status: ${state.status.name}'),
                   Text('data: ${state.data}'),
-                  Text('error: ${state.error}'),
+                  Text('error: ${(state.error as TestException?)?.message}'),
                 ],
               );
             },
@@ -1056,9 +1080,9 @@ void main() {
             widget.copyWith(
               fetcher: (id) async {
                 await Future.delayed(fetchDuration);
-                throw 'error';
+                throw TestException('error');
               },
-              retryCount: 1,
+              retryMaxAttempts: 1,
             ),
           );
 
@@ -1083,90 +1107,178 @@ void main() {
   );
 
   group(
-    'when "retryCount" and "retryDelayDuration" are set',
+    'when the retry properties are set',
     () {
       final inputs = [
         {
-          'retryCount': 0,
-          'retryDelayDuration': Duration.zero,
+          'retryMaxAttempts': 0,
+          'retryDelayFactor': Duration.zero,
         },
         {
-          'retryCount': 0,
-          'retryDelayDuration': const Duration(seconds: 3),
+          'retryMaxAttempts': 0,
+          'retryDelayFactor': const Duration(milliseconds: 200),
         },
         {
-          'retryCount': 1,
-          'retryDelayDuration': Duration.zero,
+          'retryMaxAttempts': 1,
+          'retryDelayFactor': Duration.zero,
         },
         {
-          'retryCount': 1,
-          'retryDelayDuration': const Duration(seconds: 3),
+          'retryMaxAttempts': 1,
+          'retryDelayFactor': const Duration(milliseconds: 200),
         },
         {
-          'retryCount': 2,
-          'retryDelayDuration': Duration.zero,
+          'retryMaxAttempts': 2,
+          'retryDelayFactor': Duration.zero,
         },
         {
-          'retryCount': 2,
-          'retryDelayDuration': const Duration(seconds: 3),
+          'retryMaxAttempts': 2,
+          'retryDelayFactor': const Duration(seconds: 3),
         },
       ];
 
       for (final input in inputs) {
-        final retryCount = input['retryCount'] as int;
-        final retryDelayDuration = input['retryDelayDuration'] as Duration;
+        final retryMaxAttempts = input['retryMaxAttempts'] as int;
+        final retryDelayFactor = input['retryDelayFactor'] as Duration;
 
         testWidgets(
-          'should retry $retryCount times with $retryDelayDuration delay if the initial fetching failed',
+          'should retry $retryMaxAttempts times with the $retryDelayFactor delay factor',
           (tester) async {
             const fetchDuration = Duration(seconds: 3);
-
-            await tester.pumpWithQueryClientProvider(
-              QueryBuilder<String>(
-                id: 'id',
-                fetcher: (id) async {
-                  await Future.delayed(fetchDuration);
-                  throw 'error';
-                },
-                retryCount: retryCount,
-                retryDelayDuration: retryDelayDuration,
-                builder: (context, state, child) {
-                  return Column(
-                    children: [
-                      Text('status: ${state.status.name}'),
-                      Text('data: ${state.data}'),
-                      Text('error: ${state.error}'),
-                      Text('retried: ${state.retried}'),
-                    ],
-                  );
-                },
-              ),
+            final widget = QueryBuilder<String>(
+              id: 'id',
+              fetcher: (id) async {
+                await Future.delayed(fetchDuration);
+                throw TestException('error');
+              },
+              retryMaxAttempts: retryMaxAttempts,
+              retryDelayFactor: retryDelayFactor,
+              retryRandomizationFactor: 0.0,
+              builder: (context, state, child) {
+                return Column(
+                  children: [
+                    Text('status: ${state.status.name}'),
+                    Text('data: ${state.data}'),
+                    Text('error: ${(state.error as TestException?)?.message}'),
+                  ],
+                );
+              },
             );
+
+            await tester.pumpWithQueryClientProvider(widget);
 
             expect(find.text('status: fetching'), findsOneWidget);
             expect(find.text('data: null'), findsOneWidget);
             expect(find.text('error: null'), findsOneWidget);
-            expect(find.text('retried: 0'), findsOneWidget);
 
             await tester.pump(fetchDuration);
 
-            for (int i = 0; i < retryCount; i++) {
+            for (int i = 1; i <= retryMaxAttempts; i++) {
               expect(find.text('status: retrying'), findsOneWidget);
               expect(find.text('data: null'), findsOneWidget);
               expect(find.text('error: error'), findsOneWidget);
-              expect(find.text('retried: $i'), findsOneWidget);
 
               await tester.pump(fetchDuration);
-              await tester.pump(retryDelayDuration);
+              await tester.pump(retryDelayFactor * pow(2, i));
             }
 
             expect(find.text('status: failure'), findsOneWidget);
             expect(find.text('data: null'), findsOneWidget);
             expect(find.text('error: error'), findsOneWidget);
-            expect(find.text('retried: $retryCount'), findsOneWidget);
           },
         );
       }
+
+      testWidgets(
+        'should not retry if the "retryWhen" returns "false"',
+        (tester) async {
+          const fetchDuration = Duration(seconds: 3);
+          final widget = QueryBuilder(
+            id: 'id',
+            fetcher: (id) async {
+              await Future.delayed(fetchDuration);
+              throw TestException('error');
+            },
+            retryWhen: (e) => false,
+            retryMaxAttempts: 3,
+            builder: (context, state, child) {
+              return Column(
+                children: [
+                  Text('status: ${state.status.name}'),
+                  Text('data: ${state.data}'),
+                  Text('error: ${(state.error as TestException?)?.message}'),
+                ],
+              );
+            },
+          );
+
+          await tester.pumpWithQueryClientProvider(widget);
+
+          expect(find.text('status: fetching'), findsOneWidget);
+          expect(find.text('data: null'), findsOneWidget);
+          expect(find.text('error: null'), findsOneWidget);
+
+          await tester.pump(fetchDuration);
+
+          expect(find.text('status: failure'), findsOneWidget);
+          expect(find.text('data: null'), findsOneWidget);
+          expect(find.text('error: error'), findsOneWidget);
+        },
+      );
+
+      testWidgets(
+        'should retry once if the "retryWhen" returns "false" after the first retry',
+        (tester) async {
+          int attempts = 0;
+          const fetchDuration = Duration(seconds: 3);
+          final widget = QueryBuilder(
+            id: 'id',
+            fetcher: (id) async {
+              await Future.delayed(fetchDuration);
+              attempts++;
+              if (attempts == 1) {
+                throw TestException('error1');
+              } else {
+                throw TestException('error');
+              }
+            },
+            retryWhen: (e) {
+              if (e is TestException) {
+                return e.message == 'error1';
+              } else {
+                return false;
+              }
+            },
+            retryMaxAttempts: 3,
+            builder: (context, state, child) {
+              return Column(
+                children: [
+                  Text('status: ${state.status.name}'),
+                  Text('data: ${state.data}'),
+                  Text('error: ${(state.error as TestException?)?.message}'),
+                ],
+              );
+            },
+          );
+
+          await tester.pumpWithQueryClientProvider(widget);
+
+          expect(find.text('status: fetching'), findsOneWidget);
+          expect(find.text('data: null'), findsOneWidget);
+          expect(find.text('error: null'), findsOneWidget);
+
+          await tester.pump(fetchDuration);
+
+          expect(find.text('status: retrying'), findsOneWidget);
+          expect(find.text('data: null'), findsOneWidget);
+          expect(find.text('error: error1'), findsOneWidget);
+
+          await tester.pump(fetchDuration);
+
+          expect(find.text('status: failure'), findsOneWidget);
+          expect(find.text('data: null'), findsOneWidget);
+          expect(find.text('error: error'), findsOneWidget);
+        },
+      );
     },
   );
 
