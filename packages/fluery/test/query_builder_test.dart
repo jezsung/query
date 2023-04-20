@@ -1,5 +1,6 @@
 import 'dart:math';
 
+import 'package:clock/clock.dart';
 import 'package:fluery/fluery.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -295,6 +296,121 @@ void main() {
           expect(controller.retryDelayFactor, retryDelayFactor);
           expect(controller.retryRandomizationFactor, retryRandomizationFactor);
           expect(controller.refetchIntervalDuration, refetchIntervalDuration);
+        },
+      );
+
+      testWidgets(
+        'should initialize the state with the provided "data"',
+        (tester) async {
+          const fetchDuration = Duration(seconds: 3);
+          final controller = QueryController<String>(
+            data: 'initial data',
+          );
+          final widget = QueryBuilder<String>(
+            controller: controller,
+            id: 'id',
+            fetcher: (id) async {
+              await Future.delayed(fetchDuration);
+              return 'data';
+            },
+            refetchOnInit: RefetchMode.never,
+            builder: (context, state, child) {
+              return Column(
+                children: [
+                  Text('status: ${state.status.name}'),
+                  Text('data: ${state.data}'),
+                  Text('error: ${(state.error as TestException?)?.message}'),
+                ],
+              );
+            },
+          );
+
+          await tester.pumpWithQueryClientProvider(widget);
+
+          expect(find.text('status: success'), findsOneWidget);
+          expect(find.text('data: initial data'), findsOneWidget);
+          expect(find.text('error: null'), findsOneWidget);
+        },
+      );
+
+      testWidgets(
+        'should not initialize the state with the provided "data" if the query has data and the provided "data" is stale',
+        (tester) async {
+          const fetchDuration = Duration(seconds: 3);
+          const staleDuration = Duration(minutes: 10);
+          final controller = QueryController<String>(
+            data: 'initial data',
+            dataUpdatedAt: clock.agoBy(staleDuration),
+          );
+          final client = QueryClient()..setQueryData('id', 'cached data');
+          final widget = QueryBuilder<String>(
+            controller: controller,
+            id: 'id',
+            fetcher: (id) async {
+              await Future.delayed(fetchDuration);
+              return 'data';
+            },
+            staleDuration: staleDuration,
+            refetchOnInit: RefetchMode.never,
+            builder: (context, state, child) {
+              return Column(
+                children: [
+                  Text('status: ${state.status.name}'),
+                  Text('data: ${state.data}'),
+                  Text('error: ${(state.error as TestException?)?.message}'),
+                ],
+              );
+            },
+          );
+
+          await tester.pumpWithQueryClientProvider(widget, client);
+
+          expect(find.text('status: success'), findsOneWidget);
+          expect(find.text('data: cached data'), findsOneWidget);
+          expect(find.text('error: null'), findsOneWidget);
+        },
+      );
+
+      testWidgets(
+        'should initialize the state with the provided "data" if the query has data but the provided "data" is fresh',
+        (tester) async {
+          const fetchDuration = Duration(seconds: 3);
+          const staleDuration = Duration(minutes: 10);
+          final controller = QueryController<String>(
+            data: 'initial data',
+            dataUpdatedAt: clock.ago(minutes: 3),
+          );
+          final client = QueryClient()
+            ..setQueryData(
+              'id',
+              'cached data',
+              clock.ago(minutes: 7),
+            );
+          final widget = QueryBuilder<String>(
+            controller: controller,
+            id: 'id',
+            fetcher: (id) async {
+              await Future.delayed(fetchDuration);
+              return 'data';
+            },
+            staleDuration: staleDuration,
+            refetchOnInit: RefetchMode.never,
+            builder: (context, state, child) {
+              return Column(
+                children: [
+                  Text('status: ${state.status.name}'),
+                  Text('data: ${state.data}'),
+                  Text('error: ${(state.error as TestException?)?.message}'),
+                ],
+              );
+            },
+          );
+
+          await tester.pumpWithQueryClientProvider(widget, client);
+
+          expect(find.text('status: success'), findsOneWidget);
+          expect(find.text('data: initial data'), findsOneWidget);
+          expect(find.text('error: null'), findsOneWidget);
         },
       );
     },
