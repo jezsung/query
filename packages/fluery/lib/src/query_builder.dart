@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:async/async.dart';
 import 'package:equatable/equatable.dart';
+import 'package:fluery/src/conditional_value_listenable_builder.dart';
 import 'package:fluery/src/query_cache.dart';
 import 'package:fluery/src/query_client_provider.dart';
 import 'package:fluery/src/query_status.dart';
@@ -20,6 +21,11 @@ typedef QueryWidgetBuilder<Data> = Widget Function(
   BuildContext context,
   QueryState<Data> state,
   Widget? child,
+);
+
+typedef QueryBuilderCondition<Data> = bool Function(
+  QueryState<Data> previousState,
+  QueryState<Data> currentState,
 );
 
 enum RefetchMode {
@@ -560,6 +566,7 @@ class QueryBuilder<Data> extends StatefulWidget {
     this.refetchOnInit = RefetchMode.stale,
     this.refetchOnResumed = RefetchMode.stale,
     this.refetchIntervalDuration,
+    this.buildWhen,
     required this.builder,
     this.child,
   });
@@ -579,6 +586,7 @@ class QueryBuilder<Data> extends StatefulWidget {
   final RefetchMode refetchOnInit;
   final RefetchMode refetchOnResumed;
   final Duration? refetchIntervalDuration;
+  final QueryBuilderCondition<Data>? buildWhen;
   final QueryWidgetBuilder<Data> builder;
   final Widget? child;
 
@@ -600,6 +608,7 @@ class QueryBuilder<Data> extends StatefulWidget {
     RefetchMode? refetchOnInit,
     RefetchMode? refetchOnResumed,
     Duration? refetchIntervalDuration,
+    QueryBuilderCondition<Data>? buildWhen,
     QueryWidgetBuilder<Data>? builder,
     Widget? child,
   }) {
@@ -622,6 +631,7 @@ class QueryBuilder<Data> extends StatefulWidget {
       refetchOnResumed: refetchOnResumed ?? this.refetchOnResumed,
       refetchIntervalDuration:
           refetchIntervalDuration ?? this.refetchIntervalDuration,
+      buildWhen: buildWhen ?? this.buildWhen,
       builder: builder ?? this.builder,
       child: child ?? this.child,
     );
@@ -791,8 +801,9 @@ class _QueryBuilderState<Data> extends State<QueryBuilder<Data>>
 
   @override
   Widget build(BuildContext context) {
-    return ValueListenableBuilder<QueryState<Data>>(
+    return ConditionalValueListenableBuilder<QueryState<Data>>(
       valueListenable: _effectiveController,
+      buildWhen: widget.buildWhen,
       builder: (context, value, child) {
         return widget.builder(context, value, child);
       },

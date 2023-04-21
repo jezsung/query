@@ -2329,4 +2329,100 @@ void main() {
       );
     },
   );
+
+  group(
+    'when the "buildWhen" is set',
+    () {
+      testWidgets(
+        'should not rebuild the widget if the "buildWhen" returns "false"',
+        (tester) async {
+          const fetchDuration = Duration(seconds: 3);
+          final widget = QueryBuilder<String>(
+            id: 'id',
+            fetcher: (id) async {
+              await Future.delayed(fetchDuration);
+              return 'data';
+            },
+            buildWhen: (prev, curr) {
+              return false;
+            },
+            builder: (context, state, child) {
+              return Column(
+                children: [
+                  Text('status: ${state.status.name}'),
+                  Text('data: ${state.data}'),
+                  Text('error: ${state.error}'),
+                ],
+              );
+            },
+          );
+
+          await tester.pumpWithQueryClientProvider(widget);
+
+          expect(find.text('status: fetching'), findsOneWidget);
+          expect(find.text('data: null'), findsOneWidget);
+          expect(find.text('error: null'), findsOneWidget);
+
+          await tester.pump(fetchDuration);
+
+          expect(find.text('status: fetching'), findsOneWidget);
+          expect(find.text('data: null'), findsOneWidget);
+          expect(find.text('error: null'), findsOneWidget);
+        },
+      );
+
+      testWidgets(
+        'should only rebuild the widget if the "buildWhen" returns "true"',
+        (tester) async {
+          const fetchDuration = Duration(seconds: 3);
+          final controller = QueryController<String>();
+          final widget = QueryBuilder<String>(
+            controller: controller,
+            id: 'id',
+            fetcher: (id) async {
+              await Future.delayed(fetchDuration);
+              return 'data';
+            },
+            buildWhen: (prev, curr) {
+              return prev.status.isFetching && curr.hasData;
+            },
+            builder: (context, state, child) {
+              return Column(
+                children: [
+                  Text('status: ${state.status.name}'),
+                  Text('data: ${state.data}'),
+                  Text('error: ${state.error}'),
+                ],
+              );
+            },
+          );
+
+          await tester.pumpWithQueryClientProvider(widget);
+
+          expect(find.text('status: fetching'), findsOneWidget);
+          expect(find.text('data: null'), findsOneWidget);
+          expect(find.text('error: null'), findsOneWidget);
+
+          await tester.pump(fetchDuration);
+
+          expect(find.text('status: success'), findsOneWidget);
+          expect(find.text('data: data'), findsOneWidget);
+          expect(find.text('error: null'), findsOneWidget);
+
+          controller.refetch();
+          await tester.pump();
+
+          expect(find.text('status: success'), findsOneWidget);
+          expect(find.text('data: data'), findsOneWidget);
+          expect(find.text('error: null'), findsOneWidget);
+
+          await tester.pump(fetchDuration);
+
+          expect(find.text('status: success'), findsOneWidget);
+          expect(find.text('data: data'), findsOneWidget);
+          expect(find.text('error: null'), findsOneWidget);
+        },
+      );
+    },
+  );
 }
