@@ -1,5 +1,6 @@
 import 'package:fluery/src/query_builder.dart';
 import 'package:fluery/src/query_cache.dart';
+import 'package:flutter/foundation.dart';
 
 class QueryClient {
   final QueryCache cache = QueryCache();
@@ -19,6 +20,11 @@ class QueryClient {
     final query = cache.get<Data>(id);
 
     return query?.state;
+  }
+
+  @visibleForTesting
+  Query<Data>? getQuery<Data>(QueryIdentifier id) {
+    return cache.get<Data>(id);
   }
 
   void setQueryData<Data>(

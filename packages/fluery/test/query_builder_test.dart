@@ -2425,4 +2425,193 @@ void main() {
       );
     },
   );
+
+  group(
+    'when the "controller" is changed',
+    () {
+      testWidgets(
+        'should register the new controller if the "controller" is changed from "null"',
+        (tester) async {
+          const fetchDuration = Duration(seconds: 3);
+          final client = QueryClient();
+          final controller = QueryController<String>();
+          final widget = QueryBuilder<String>(
+            id: 'id',
+            fetcher: (id) async {
+              await Future.delayed(fetchDuration);
+              return 'data';
+            },
+            refetchOnInit: RefetchMode.never,
+            builder: (context, state, child) {
+              return Column(
+                children: [
+                  Text('status: ${state.status.name}'),
+                  Text('data: ${state.data}'),
+                  Text('error: ${(state.error as TestException?)?.message}'),
+                ],
+              );
+            },
+          );
+
+          await tester.pumpWithQueryClientProvider(widget, client);
+
+          expect(client.getQuery('id')!.controllers.length, 1);
+          expect(
+            client.getQuery('id')!.controllers.first,
+            isNot(same(controller)),
+          );
+
+          await tester.pumpWithQueryClientProvider(
+            widget.copyWith(controller: controller),
+            client,
+          );
+
+          expect(client.getQuery('id')!.controllers.length, 1);
+          expect(client.getQuery('id')!.controllers.first, same(controller));
+
+          controller.refetch();
+          await tester.pump();
+
+          expect(find.text('status: fetching'), findsOneWidget);
+          expect(find.text('data: null'), findsOneWidget);
+          expect(find.text('error: null'), findsOneWidget);
+
+          await tester.pump(fetchDuration);
+
+          expect(find.text('status: success'), findsOneWidget);
+          expect(find.text('data: data'), findsOneWidget);
+          expect(find.text('error: null'), findsOneWidget);
+        },
+      );
+
+      testWidgets(
+        'should register the new controller if the "controller" is changed from another controller',
+        (tester) async {
+          const fetchDuration = Duration(seconds: 3);
+          final client = QueryClient();
+          final controller1 = QueryController<String>();
+          final controller2 = QueryController<String>();
+          final widget = QueryBuilder<String>(
+            id: 'id',
+            fetcher: (id) async {
+              await Future.delayed(fetchDuration);
+              return 'data';
+            },
+            refetchOnInit: RefetchMode.never,
+            builder: (context, state, child) {
+              return Column(
+                children: [
+                  Text('status: ${state.status.name}'),
+                  Text('data: ${state.data}'),
+                  Text('error: ${(state.error as TestException?)?.message}'),
+                ],
+              );
+            },
+          );
+
+          await tester.pumpWithQueryClientProvider(
+            widget.copyWith(controller: controller1),
+            client,
+          );
+
+          expect(client.getQuery('id')!.controllers.length, 1);
+          expect(client.getQuery('id')!.controllers.first, same(controller1));
+
+          controller1.refetch();
+          await tester.pump();
+
+          expect(find.text('status: fetching'), findsOneWidget);
+          expect(find.text('data: null'), findsOneWidget);
+          expect(find.text('error: null'), findsOneWidget);
+
+          await tester.pump(fetchDuration);
+
+          expect(find.text('status: success'), findsOneWidget);
+          expect(find.text('data: data'), findsOneWidget);
+          expect(find.text('error: null'), findsOneWidget);
+
+          await tester.pumpWithQueryClientProvider(
+            widget.copyWith(controller: controller2),
+            client,
+          );
+
+          expect(client.getQuery('id')!.controllers.length, 1);
+          expect(
+            client.getQuery('id')!.controllers.first,
+            isNot(same(controller1)),
+          );
+          expect(client.getQuery('id')!.controllers.first, same(controller2));
+
+          controller2.refetch();
+          await tester.pump();
+
+          expect(find.text('status: fetching'), findsOneWidget);
+          expect(find.text('data: data'), findsOneWidget);
+          expect(find.text('error: null'), findsOneWidget);
+
+          await tester.pump(fetchDuration);
+
+          expect(find.text('status: success'), findsOneWidget);
+          expect(find.text('data: data'), findsOneWidget);
+          expect(find.text('error: null'), findsOneWidget);
+        },
+      );
+
+      testWidgets(
+        'should unregister the controller if the "controller" is changed from a controller to "null"',
+        (tester) async {
+          const fetchDuration = Duration(seconds: 3);
+          final client = QueryClient();
+          final controller = QueryController<String>();
+          final widget = QueryBuilder<String>(
+            controller: controller,
+            id: 'id',
+            fetcher: (id) async {
+              await Future.delayed(fetchDuration);
+              return 'data';
+            },
+            refetchOnInit: RefetchMode.never,
+            builder: (context, state, child) {
+              return Column(
+                children: [
+                  Text('status: ${state.status.name}'),
+                  Text('data: ${state.data}'),
+                  Text('error: ${(state.error as TestException?)?.message}'),
+                ],
+              );
+            },
+          );
+
+          await tester.pumpWithQueryClientProvider(widget, client);
+
+          expect(client.getQuery('id')!.controllers.length, 1);
+          expect(client.getQuery('id')!.controllers.first, same(controller));
+
+          controller.refetch();
+          await tester.pump();
+
+          expect(find.text('status: fetching'), findsOneWidget);
+          expect(find.text('data: null'), findsOneWidget);
+          expect(find.text('error: null'), findsOneWidget);
+
+          await tester.pump(fetchDuration);
+
+          expect(find.text('status: success'), findsOneWidget);
+          expect(find.text('data: data'), findsOneWidget);
+          expect(find.text('error: null'), findsOneWidget);
+
+          await tester.pumpWithQueryClientProvider(
+            widget.copyWithNull(controller: true),
+            client,
+          );
+
+          expect(client.getQuery('id')!.controllers.length, 1);
+          expect(
+            client.getQuery('id')!.controllers.first,
+            isNot(same(controller)),
+          );
+        },
+      );
+    },
+  );
 }
