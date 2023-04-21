@@ -4,7 +4,7 @@ import 'package:equatable/equatable.dart';
 import 'package:fluery/src/query_cache.dart';
 import 'package:fluery/src/query_client_provider.dart';
 import 'package:fluery/src/query_status.dart';
-import 'package:fluery/src/utils/zoned_timer_interceptor.dart';
+import 'package:fluery/src/timer_interceptor.dart';
 import 'package:flutter/widgets.dart';
 import 'package:clock/clock.dart';
 import 'package:retry/retry.dart';
@@ -84,7 +84,7 @@ class Query<Data> {
 
   QueryState<Data> state = QueryState<Data>();
 
-  final ZonedTimerInterceptor _zonedTimerInterceptor = ZonedTimerInterceptor();
+  final TimerInterceptor _timerInterceptor = TimerInterceptor();
   Timer? _refetchTimer;
   DateTime? _refetchedAt;
   Timer? _garbageCollectionTimer;
@@ -238,7 +238,7 @@ class Query<Data> {
     update(state.copyWith(status: QueryStatus.fetching));
 
     try {
-      final data = await _zonedTimerInterceptor.run(
+      final data = await _timerInterceptor.run(
         () => effectiveFetcher(id),
       );
 
@@ -259,7 +259,7 @@ class Query<Data> {
         ));
 
         try {
-          final data = await _zonedTimerInterceptor.run(
+          final data = await _timerInterceptor.run(
             () => retry(
               () => effectiveFetcher(id),
               retryIf: effectiveRetryWhen,
@@ -408,7 +408,7 @@ class Query<Data> {
   }
 
   void dispose() {
-    _zonedTimerInterceptor.cancel();
+    _timerInterceptor.cancel();
     _refetchTimer?.cancel();
     _garbageCollectionTimer?.cancel();
   }

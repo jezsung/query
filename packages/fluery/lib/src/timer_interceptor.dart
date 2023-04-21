@@ -1,6 +1,6 @@
 import 'dart:async';
 
-class ZonedTimerInterceptor {
+class TimerInterceptor {
   final List<Timer> _timers = [];
 
   List<Timer> get timers => _timers;
