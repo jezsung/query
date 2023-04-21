@@ -2128,4 +2128,205 @@ void main() {
       );
     },
   );
+
+  group(
+    'when a query is canceled',
+    () {
+      testWidgets(
+        'should cancel fetching',
+        (tester) async {
+          const fetchDuration = Duration(seconds: 3);
+          final controller = QueryController<String>();
+          final widget = QueryBuilder<String>(
+            controller: controller,
+            id: 'id',
+            fetcher: (id) async {
+              await Future.delayed(fetchDuration);
+              return 'data';
+            },
+            builder: (context, state, child) {
+              return Column(
+                children: [
+                  Text('status: ${state.status.name}'),
+                  Text('data: ${state.data}'),
+                  Text('error: ${(state.error as TestException?)?.message}'),
+                ],
+              );
+            },
+          );
+
+          await tester.pumpWithQueryClientProvider(widget);
+
+          expect(find.text('status: fetching'), findsOneWidget);
+          expect(find.text('data: null'), findsOneWidget);
+          expect(find.text('error: null'), findsOneWidget);
+
+          await controller.cancel();
+          await tester.pump();
+
+          expect(find.text('status: canceled'), findsOneWidget);
+          expect(find.text('data: null'), findsOneWidget);
+          expect(find.text('error: null'), findsOneWidget);
+
+          await tester.pump(fetchDuration);
+
+          expect(find.text('status: canceled'), findsOneWidget);
+          expect(find.text('data: null'), findsOneWidget);
+          expect(find.text('error: null'), findsOneWidget);
+        },
+      );
+
+      testWidgets(
+        'should cancel retrying',
+        (tester) async {
+          int fetchCount = 0;
+          const fetchDuration = Duration(seconds: 3);
+          final controller = QueryController<String>();
+          final widget = QueryBuilder<String>(
+            controller: controller,
+            id: 'id',
+            fetcher: (id) async {
+              await Future.delayed(fetchDuration);
+              fetchCount++;
+              throw TestException('error');
+            },
+            retryMaxAttempts: 3,
+            retryRandomizationFactor: 0.0,
+            builder: (context, state, child) {
+              return Column(
+                children: [
+                  Text('status: ${state.status.name}'),
+                  Text('data: ${state.data}'),
+                  Text('error: ${(state.error as TestException?)?.message}'),
+                ],
+              );
+            },
+          );
+
+          await tester.pumpWithQueryClientProvider(widget);
+
+          expect(find.text('status: fetching'), findsOneWidget);
+          expect(find.text('data: null'), findsOneWidget);
+          expect(find.text('error: null'), findsOneWidget);
+
+          await tester.pump(fetchDuration);
+
+          expect(find.text('status: retrying'), findsOneWidget);
+          expect(find.text('data: null'), findsOneWidget);
+          expect(find.text('error: error'), findsOneWidget);
+          expect(fetchCount, 1);
+
+          await controller.cancel();
+          await tester.pump();
+
+          expect(find.text('status: canceled'), findsOneWidget);
+          expect(find.text('data: null'), findsOneWidget);
+          expect(find.text('error: error'), findsOneWidget);
+          expect(fetchCount, 1);
+
+          await tester.pump(fetchDuration);
+
+          expect(find.text('status: canceled'), findsOneWidget);
+          expect(find.text('data: null'), findsOneWidget);
+          expect(find.text('error: error'), findsOneWidget);
+
+          // Last retry is expected to be finished even after it has been canceled.
+          expect(fetchCount, 2);
+
+          await tester.pump(fetchDuration);
+
+          // No more retry should occur.
+          expect(fetchCount, 2);
+        },
+      );
+
+      testWidgets(
+        'should populate the data if the "cancel" function is called with the "data"',
+        (tester) async {
+          const fetchDuration = Duration(seconds: 3);
+          final controller = QueryController<String>();
+          final widget = QueryBuilder<String>(
+            controller: controller,
+            id: 'id',
+            fetcher: (id) async {
+              await Future.delayed(fetchDuration);
+              return 'data';
+            },
+            builder: (context, state, child) {
+              return Column(
+                children: [
+                  Text('status: ${state.status.name}'),
+                  Text('data: ${state.data}'),
+                  Text('error: ${(state.error as TestException?)?.message}'),
+                ],
+              );
+            },
+          );
+
+          await tester.pumpWithQueryClientProvider(widget);
+
+          expect(find.text('status: fetching'), findsOneWidget);
+          expect(find.text('data: null'), findsOneWidget);
+          expect(find.text('error: null'), findsOneWidget);
+
+          await controller.cancel(data: 'canceled data');
+          await tester.pump();
+
+          expect(find.text('status: canceled'), findsOneWidget);
+          expect(find.text('data: canceled data'), findsOneWidget);
+          expect(find.text('error: null'), findsOneWidget);
+
+          await tester.pump(fetchDuration);
+
+          expect(find.text('status: canceled'), findsOneWidget);
+          expect(find.text('data: canceled data'), findsOneWidget);
+          expect(find.text('error: null'), findsOneWidget);
+        },
+      );
+
+      testWidgets(
+        'should populate the error if the "cancel" function is called with the "error"',
+        (tester) async {
+          const fetchDuration = Duration(seconds: 3);
+          final controller = QueryController<String>();
+          final widget = QueryBuilder<String>(
+            controller: controller,
+            id: 'id',
+            fetcher: (id) async {
+              await Future.delayed(fetchDuration);
+              return 'data';
+            },
+            builder: (context, state, child) {
+              return Column(
+                children: [
+                  Text('status: ${state.status.name}'),
+                  Text('data: ${state.data}'),
+                  Text('error: ${(state.error as TestException?)?.message}'),
+                ],
+              );
+            },
+          );
+
+          await tester.pumpWithQueryClientProvider(widget);
+
+          expect(find.text('status: fetching'), findsOneWidget);
+          expect(find.text('data: null'), findsOneWidget);
+          expect(find.text('error: null'), findsOneWidget);
+
+          await controller.cancel(error: TestException('canceled error'));
+          await tester.pump();
+
+          expect(find.text('status: canceled'), findsOneWidget);
+          expect(find.text('data: null'), findsOneWidget);
+          expect(find.text('error: canceled error'), findsOneWidget);
+
+          await tester.pump(fetchDuration);
+
+          expect(find.text('status: canceled'), findsOneWidget);
+          expect(find.text('data: null'), findsOneWidget);
+          expect(find.text('error: canceled error'), findsOneWidget);
+        },
+      );
+    },
+  );
 }

@@ -2,6 +2,7 @@ enum QueryStatus {
   idle,
   fetching,
   retrying,
+  canceled,
   success,
   failure,
 }
@@ -14,6 +15,8 @@ extension QueryStatusExtension on QueryStatus {
   bool get isRetrying => this == QueryStatus.retrying;
 
   bool get isLoading => isFetching || isRetrying;
+
+  bool get isCanceled => this == QueryStatus.canceled;
 
   bool get isSuccess => this == QueryStatus.success;
 

@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:async/async.dart';
 import 'package:equatable/equatable.dart';
 import 'package:fluery/src/query_cache.dart';
 import 'package:fluery/src/query_client_provider.dart';
@@ -85,6 +86,7 @@ class Query<Data> {
   QueryState<Data> state = QueryState<Data>();
 
   final TimerInterceptor _timerInterceptor = TimerInterceptor();
+  CancelableOperation<Data>? _cancelableOperation;
   Timer? _refetchTimer;
   DateTime? _refetchedAt;
   Timer? _garbageCollectionTimer;
@@ -238,15 +240,19 @@ class Query<Data> {
     update(state.copyWith(status: QueryStatus.fetching));
 
     try {
-      final data = await _timerInterceptor.run(
-        () => effectiveFetcher(id),
+      _cancelableOperation = CancelableOperation<Data>.fromFuture(
+        _timerInterceptor.run(() => effectiveFetcher(id)),
       );
 
-      update(state.copyWith(
-        status: QueryStatus.success,
-        data: data,
-        dataUpdatedAt: clock.now(),
-      ));
+      final data = await _cancelableOperation!.valueOrCancellation();
+
+      if (!_cancelableOperation!.isCanceled) {
+        update(state.copyWith(
+          status: QueryStatus.success,
+          data: data,
+          dataUpdatedAt: clock.now(),
+        ));
+      }
     } on Exception catch (error) {
       final shouldRetry =
           effectiveRetryMaxAttempts >= 1 && await effectiveRetryWhen(error);
@@ -261,7 +267,11 @@ class Query<Data> {
         try {
           final data = await _timerInterceptor.run(
             () => retry(
-              () => effectiveFetcher(id),
+              () {
+                _cancelableOperation =
+                    CancelableOperation<Data>.fromFuture(effectiveFetcher(id));
+                return _cancelableOperation!.valueOrCancellation();
+              },
               retryIf: effectiveRetryWhen,
               maxAttempts: effectiveRetryMaxAttempts,
               maxDelay: effectiveRetryMaxDelay,
@@ -276,11 +286,13 @@ class Query<Data> {
             ),
           );
 
-          update(state.copyWith(
-            status: QueryStatus.success,
-            data: data,
-            dataUpdatedAt: clock.now(),
-          ));
+          if (!_cancelableOperation!.isCanceled) {
+            update(state.copyWith(
+              status: QueryStatus.success,
+              data: data,
+              dataUpdatedAt: clock.now(),
+            ));
+          }
         } on Exception catch (e) {
           update(state.copyWith(
             status: QueryStatus.failure,
@@ -298,6 +310,23 @@ class Query<Data> {
     } finally {
       setRefetchInterval();
     }
+  }
+
+  Future<void> cancel({
+    Data? data,
+    Exception? error,
+  }) async {
+    if (!state.status.isLoading) return;
+
+    await _cancelableOperation?.cancel();
+
+    update(state.copyWith(
+      status: QueryStatus.canceled,
+      data: data,
+      dataUpdatedAt: data != null ? clock.now() : null,
+      error: error,
+      errorUpdatedAt: error != null ? clock.now() : null,
+    ));
   }
 
   void setData(
@@ -481,6 +510,16 @@ class QueryController<Data> extends ValueNotifier<QueryState<Data>> {
       retryDelayFactor: retryDelayFactor ?? _retryDelayFactor,
       retryRandomizationFactor:
           retryRandomizationFactor ?? _retryRandomizationFactor,
+    );
+  }
+
+  Future<void> cancel({
+    Data? data,
+    Exception? error,
+  }) async {
+    await _query!.cancel(
+      data: data,
+      error: error,
     );
   }
 

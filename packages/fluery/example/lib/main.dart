@@ -128,6 +128,7 @@ class _QueryExamplePageState extends State<QueryExamplePage> {
           builder: (context, state, child) {
             switch (state.status) {
               case QueryStatus.idle:
+              case QueryStatus.canceled:
                 if (state.hasData) {
                   return Text(state.data!);
                 }
@@ -140,8 +141,8 @@ class _QueryExamplePageState extends State<QueryExamplePage> {
               case QueryStatus.retrying:
                 return Column(
                   mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const CircularProgressIndicator(),
+                  children: const [
+                    CircularProgressIndicator(),
                   ],
                 );
               case QueryStatus.success:
@@ -203,6 +204,7 @@ class QueryExample2Page extends StatelessWidget {
               case QueryStatus.idle:
               case QueryStatus.fetching:
               case QueryStatus.retrying:
+              case QueryStatus.canceled:
                 if (state.hasData) {
                   return Text(state.data!);
                 }
