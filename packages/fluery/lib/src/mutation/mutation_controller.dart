@@ -1,8 +1,4 @@
-import 'dart:collection';
-
-import 'package:equatable/equatable.dart';
-import 'package:fluery/src/fluery_error.dart';
-import 'package:flutter/foundation.dart';
+part of 'mutation_builder.dart';
 
 typedef Mutator<Data, Args> = Future<Data> Function(Args? args);
 

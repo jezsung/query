@@ -1,6 +1,4 @@
-import 'package:fluery/fluery.dart';
-import 'package:fluery/src/fluery_error.dart';
-import 'package:flutter/widgets.dart';
+part of 'query_client.dart';
 
 class QueryClientProvider extends StatefulWidget {
   const QueryClientProvider({

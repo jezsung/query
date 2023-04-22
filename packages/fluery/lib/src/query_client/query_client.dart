@@ -1,6 +1,9 @@
-import 'package:fluery/src/query_builder.dart';
-import 'package:fluery/src/query_cache.dart';
-import 'package:flutter/foundation.dart';
+import 'package:fluery/src/fluery_error.dart';
+import 'package:fluery/src/query/query.dart';
+import 'package:flutter/widgets.dart';
+
+part 'query_cache.dart';
+part 'query_client_provider.dart';
 
 class QueryClient {
   final QueryCache cache = QueryCache();

@@ -1,3 +1,5 @@
+part of 'query.dart';
+
 enum QueryStatus {
   idle,
   fetching,

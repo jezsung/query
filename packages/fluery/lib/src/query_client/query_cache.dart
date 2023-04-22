@@ -1,4 +1,4 @@
-import 'package:fluery/fluery.dart';
+part of 'query_client.dart';
 
 class QueryCache {
   final Map<QueryIdentifier, Query> _queries = {};
