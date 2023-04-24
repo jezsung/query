@@ -148,7 +148,7 @@ class _QueryBuilderState<Data> extends State<QueryBuilder<Data>>
     with WidgetsBindingObserver {
   final QueryController<Data> _controller = QueryController<Data>();
 
-  late Query<Data> _query;
+  Query<Data>? _query;
 
   QueryController<Data> get _effectiveController =>
       widget.controller ?? _controller;
@@ -177,8 +177,9 @@ class _QueryBuilderState<Data> extends State<QueryBuilder<Data>>
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    _query = QueryClientProvider.of(context).cache.build(widget.id);
-    _query.addController(_effectiveController);
+    _query?.removeController(_effectiveController);
+    _query = context.watch<QueryClient>().cache.build(widget.id);
+    _query!.addController(_effectiveController);
 
     _initQuery();
   }
@@ -195,15 +196,15 @@ class _QueryBuilderState<Data> extends State<QueryBuilder<Data>>
         widget.controller == null && oldWidget.controller == null;
 
     if (hasController && !hadController) {
-      _query.removeController(_controller);
+      _query!.removeController(_controller);
     } else if (!hasController && hadController) {
-      _query.removeController(oldWidget.controller!);
+      _query!.removeController(oldWidget.controller!);
     } else if (hasController && hadController && !hasHadSameController) {
-      _query.removeController(oldWidget.controller!);
+      _query!.removeController(oldWidget.controller!);
     } else if (hasHadNoController && widget.id != oldWidget.id) {
-      _query.removeController(_controller);
+      _query!.removeController(_controller);
     } else if (hasHadSameController && widget.id != oldWidget.id) {
-      _query.removeController(widget.controller!);
+      _query!.removeController(widget.controller!);
     }
 
     _effectiveController._id = widget.id;
@@ -226,15 +227,15 @@ class _QueryBuilderState<Data> extends State<QueryBuilder<Data>>
     }
 
     if (hasController && !hadController) {
-      _query.addController(widget.controller!);
+      _query!.addController(widget.controller!);
     } else if (!hasController && hadController) {
-      _query.addController(_controller);
+      _query!.addController(_controller);
     } else if (hasController && hadController && !hasHadSameController) {
-      _query.addController(widget.controller!);
+      _query!.addController(widget.controller!);
     } else if (hasHadNoController && widget.id != oldWidget.id) {
-      _query.addController(_controller);
+      _query!.addController(_controller);
     } else if (hasHadSameController && widget.id != oldWidget.id) {
-      _query.addController(widget.controller!);
+      _query!.addController(widget.controller!);
     }
 
     if (widget.id != oldWidget.id || widget.enabled && !oldWidget.enabled) {
@@ -243,7 +244,7 @@ class _QueryBuilderState<Data> extends State<QueryBuilder<Data>>
     }
 
     if (widget.refetchIntervalDuration != oldWidget.refetchIntervalDuration) {
-      _query.setRefetchInterval();
+      _query!.setRefetchInterval();
       return;
     }
   }
@@ -268,7 +269,7 @@ class _QueryBuilderState<Data> extends State<QueryBuilder<Data>>
 
   @override
   void dispose() {
-    _query.removeController(_effectiveController);
+    _query!.removeController(_effectiveController);
     _controller.dispose();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
@@ -277,21 +278,21 @@ class _QueryBuilderState<Data> extends State<QueryBuilder<Data>>
   void _initQuery() {
     if (!widget.enabled) return;
 
-    if (_query.state.status.isIdle) {
+    if (_query!.state.status.isIdle) {
       _fetch();
     } else if (widget.refetchOnInit == RefetchMode.stale) {
       _fetch();
     } else if (widget.refetchOnInit == RefetchMode.always) {
       _fetch(ignoreStaleness: true);
     } else if (widget.refetchIntervalDuration != null) {
-      _query.setRefetchInterval();
+      _query!.setRefetchInterval();
     }
   }
 
   Future<void> _fetch({
     bool ignoreStaleness = false,
   }) async {
-    await _query.fetch(
+    await _query!.fetch(
       fetcher: widget.fetcher,
       staleDuration: ignoreStaleness ? Duration.zero : widget.staleDuration,
       retryWhen: widget.retryWhen,

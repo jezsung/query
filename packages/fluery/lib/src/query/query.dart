@@ -7,6 +7,7 @@ import 'package:fluery/src/conditional_value_listenable_builder.dart';
 import 'package:fluery/src/query_client/query_client.dart';
 import 'package:fluery/src/timer_interceptor.dart';
 import 'package:flutter/widgets.dart';
+import 'package:provider/provider.dart';
 import 'package:retry/retry.dart';
 
 part 'query_builder.dart';
@@ -411,6 +412,8 @@ class Query<Data> {
   }
 
   void addController(QueryController<Data> controller) {
+    if (controllers.contains(controller)) return;
+
     controllers.add(controller);
     controller.onAddedToQuery(this);
 
@@ -420,6 +423,8 @@ class Query<Data> {
   }
 
   void removeController(QueryController<Data> controller) {
+    if (!controllers.contains(controller)) return;
+
     controllers.remove(controller);
     controller.onRemovedFromQuery(this);
 

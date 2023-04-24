@@ -29,6 +29,7 @@ class QueryClientProvider extends SingleChildStatelessWidget {
       return InheritedProvider<QueryClient>(
         create: create!,
         dispose: (context, value) => value.dispose(),
+        updateShouldNotify: (previous, current) => previous != current,
         lazy: lazy,
         child: child,
       );
@@ -37,6 +38,7 @@ class QueryClientProvider extends SingleChildStatelessWidget {
     if (value != null) {
       return InheritedProvider<QueryClient>.value(
         value: value!,
+        updateShouldNotify: (previous, current) => previous != current,
         lazy: lazy,
         child: child,
       );
