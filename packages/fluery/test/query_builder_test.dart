@@ -14,7 +14,7 @@ extension WidgetTesterExtension on WidgetTester {
   ]) async {
     await pumpWidget(
       QueryClientProvider(
-        client: queryClient,
+        create: (context) => queryClient ?? QueryClient(),
         child: MaterialApp(
           home: Builder(
             builder: (context) {

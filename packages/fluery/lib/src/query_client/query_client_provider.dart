@@ -1,75 +1,47 @@
 part of 'query_client.dart';
 
-class QueryClientProvider extends StatefulWidget {
-  const QueryClientProvider({
+class QueryClientProvider extends SingleChildStatelessWidget {
+  QueryClientProvider({
     super.key,
-    this.client,
-    required this.child,
-  });
+    required Create<QueryClient> this.create,
+    this.lazy,
+    super.child,
+  }) : value = null;
 
-  final QueryClient? client;
-  final Widget child;
+  QueryClientProvider.value({
+    super.key,
+    required QueryClient this.value,
+    this.lazy,
+    super.child,
+  }) : create = null;
 
-  static QueryClient? maybeOf(BuildContext context) {
-    return context
-        .dependOnInheritedWidgetOfExactType<_QueryClientScope>()
-        ?.queryClient;
+  final Create<QueryClient>? create;
+  final QueryClient? value;
+  final bool? lazy;
+
+  static QueryClient of(BuildContext context, {bool listen = true}) {
+    return Provider.of<QueryClient>(context, listen: listen);
   }
 
-  static QueryClient of(BuildContext context) {
-    final QueryClient? queryClient = QueryClientProvider.maybeOf(context);
-
-    if (queryClient == null) {
-      throw FlueryError(
-        '''
-        QueryClientProvider.of() called with a context that does not contain a QueryClientProvider.
-        ''',
+  @override
+  Widget buildWithChild(BuildContext context, Widget? child) {
+    if (create != null) {
+      return InheritedProvider<QueryClient>(
+        create: create!,
+        dispose: (context, value) => value.dispose(),
+        lazy: lazy,
+        child: child,
       );
     }
 
-    return queryClient;
-  }
+    if (value != null) {
+      return InheritedProvider<QueryClient>.value(
+        value: value!,
+        lazy: lazy,
+        child: child,
+      );
+    }
 
-  @override
-  State<QueryClientProvider> createState() => _QueryClientProviderState();
-}
-
-class _QueryClientProviderState extends State<QueryClientProvider> {
-  late final QueryClient _queryClient;
-
-  @override
-  void initState() {
-    super.initState();
-    _queryClient = widget.client ?? QueryClient();
-  }
-
-  @override
-  void dispose() {
-    _queryClient.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return _QueryClientScope(
-      queryClient: _queryClient,
-      child: widget.child,
-    );
-  }
-}
-
-class _QueryClientScope extends InheritedWidget {
-  _QueryClientScope({
-    Key? key,
-    required this.queryClient,
-    required Widget child,
-  }) : super(key: key, child: child);
-
-  final QueryClient queryClient;
-
-  @override
-  bool updateShouldNotify(_QueryClientScope oldWidget) {
-    return queryClient != oldWidget.queryClient ||
-        queryClient.cache != oldWidget.queryClient.cache;
+    throw UnimplementedError();
   }
 }

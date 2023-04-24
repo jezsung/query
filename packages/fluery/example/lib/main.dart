@@ -3,8 +3,9 @@ import 'package:fluery/fluery.dart';
 
 void main() {
   runApp(
-    const QueryClientProvider(
-      child: MyApp(),
+    QueryClientProvider(
+      create: (context) => QueryClient(),
+      child: const MyApp(),
     ),
   );
 }
