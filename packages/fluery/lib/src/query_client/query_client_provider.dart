@@ -1,4 +1,9 @@
-part of 'query_client.dart';
+import 'package:fluery/fluery.dart';
+import 'package:flutter/widgets.dart';
+import 'package:provider/single_child_widget.dart';
+import 'package:provider/provider.dart';
+
+import '../core/query_client.dart';
 
 class QueryClientProvider extends SingleChildStatelessWidget {
   QueryClientProvider({

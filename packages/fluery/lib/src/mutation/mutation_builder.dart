@@ -1,7 +1,7 @@
 import 'dart:collection';
 
 import 'package:equatable/equatable.dart';
-import 'package:fluery/src/fluery_error.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 
 part 'mutation_controller.dart';

@@ -116,6 +116,7 @@ void main() {
       const staleDuration = Duration(minutes: 10);
       const fetchDuration = Duration(seconds: 3);
       final widget = QueryBuilder<String>(
+        key: Key('key'),
         id: 'id',
         fetcher: (id) async {
           await Future.delayed(fetchDuration);
@@ -156,263 +157,6 @@ void main() {
       expect(find.text('status: success'), findsOneWidget);
       expect(find.text('data: data'), findsOneWidget);
       expect(find.text('error: null'), findsOneWidget);
-    },
-  );
-
-  group(
-    'when the "controller" is set',
-    () {
-      testWidgets(
-        'should succeed',
-        (tester) async {
-          final controller = QueryController<String>();
-
-          const fetchDuration = Duration(seconds: 3);
-
-          await tester.pumpWithQueryClientProvider(
-            QueryBuilder<String>(
-              controller: controller,
-              id: 'id',
-              fetcher: (id) async {
-                await Future.delayed(fetchDuration);
-                return 'data';
-              },
-              builder: (context, state, child) {
-                return Column(
-                  children: [
-                    Text('status: ${state.status.name}'),
-                    Text('data: ${state.data}'),
-                    Text('error: ${state.error}'),
-                  ],
-                );
-              },
-            ),
-          );
-
-          expect(find.text('status: fetching'), findsOneWidget);
-          expect(find.text('data: null'), findsOneWidget);
-          expect(find.text('error: null'), findsOneWidget);
-
-          await tester.pump(fetchDuration);
-
-          expect(find.text('status: success'), findsOneWidget);
-          expect(find.text('data: data'), findsOneWidget);
-          expect(find.text('error: null'), findsOneWidget);
-        },
-      );
-
-      testWidgets(
-        'should fail',
-        (tester) async {
-          final controller = QueryController<String>();
-
-          const fetchDuration = Duration(seconds: 3);
-
-          await tester.pumpWithQueryClientProvider(
-            QueryBuilder<String>(
-              controller: controller,
-              id: 'id',
-              fetcher: (id) async {
-                await Future.delayed(fetchDuration);
-                throw TestException('error');
-              },
-              retryMaxAttempts: 0,
-              builder: (context, state, child) {
-                return Column(
-                  children: [
-                    Text('status: ${state.status.name}'),
-                    Text('data: ${state.data}'),
-                    Text('error: ${(state.error as TestException?)?.message}'),
-                  ],
-                );
-              },
-            ),
-          );
-
-          expect(find.text('status: fetching'), findsOneWidget);
-          expect(find.text('data: null'), findsOneWidget);
-          expect(find.text('error: null'), findsOneWidget);
-
-          await tester.pump(fetchDuration);
-
-          expect(find.text('status: failure'), findsOneWidget);
-          expect(find.text('data: null'), findsOneWidget);
-          expect(find.text('error: error'), findsOneWidget);
-        },
-      );
-
-      testWidgets(
-        'the properties should be initialized by the widget',
-        (tester) async {
-          final id = 'id';
-          // ignore: prefer_function_declarations_over_variables
-          final fetcher = (id) async {
-            return 'data';
-          };
-          final enabled = true;
-          final placeholder = 'placeholder data';
-          const staleDuration = Duration(seconds: 3);
-          const cacheDuration = Duration(minutes: 10);
-          // ignore: prefer_function_declarations_over_variables
-          final retryWhen = (Exception e) => false;
-          final retryMaxAttempts = 8;
-          const retryMaxDelay = Duration(seconds: 40);
-          const retryDelayFactor = Duration(milliseconds: 300);
-          final retryRandomizationFactor = 0.35;
-          const refetchIntervalDuration = Duration(seconds: 3);
-
-          final controller = QueryController<String>();
-          final widget = QueryBuilder<String>(
-            controller: controller,
-            id: id,
-            fetcher: fetcher,
-            enabled: enabled,
-            placeholder: placeholder,
-            staleDuration: staleDuration,
-            cacheDuration: cacheDuration,
-            retryWhen: retryWhen,
-            retryMaxAttempts: retryMaxAttempts,
-            retryMaxDelay: retryMaxDelay,
-            retryDelayFactor: retryDelayFactor,
-            retryRandomizationFactor: retryRandomizationFactor,
-            refetchIntervalDuration: refetchIntervalDuration,
-            builder: (context, state, child) {
-              return Placeholder();
-            },
-          );
-
-          await tester.pumpWithQueryClientProvider(widget);
-
-          expect(controller.id, id);
-
-          expect(controller.fetcher, same(fetcher));
-          expect(controller.enabled, enabled);
-          expect(controller.placeholder, same(placeholder));
-          expect(controller.staleDuration, staleDuration);
-          expect(controller.cacheDuration, cacheDuration);
-          expect(controller.retryWhen, same(retryWhen));
-          expect(controller.retryMaxAttempts, retryMaxAttempts);
-          expect(controller.retryMaxDelay, retryMaxDelay);
-          expect(controller.retryDelayFactor, retryDelayFactor);
-          expect(controller.retryRandomizationFactor, retryRandomizationFactor);
-          expect(controller.refetchIntervalDuration, refetchIntervalDuration);
-        },
-      );
-
-      testWidgets(
-        'should initialize the state with the provided "data"',
-        (tester) async {
-          const fetchDuration = Duration(seconds: 3);
-          final controller = QueryController<String>(
-            data: 'initial data',
-          );
-          final widget = QueryBuilder<String>(
-            controller: controller,
-            id: 'id',
-            fetcher: (id) async {
-              await Future.delayed(fetchDuration);
-              return 'data';
-            },
-            refetchOnInit: RefetchMode.never,
-            builder: (context, state, child) {
-              return Column(
-                children: [
-                  Text('status: ${state.status.name}'),
-                  Text('data: ${state.data}'),
-                  Text('error: ${(state.error as TestException?)?.message}'),
-                ],
-              );
-            },
-          );
-
-          await tester.pumpWithQueryClientProvider(widget);
-
-          expect(find.text('status: success'), findsOneWidget);
-          expect(find.text('data: initial data'), findsOneWidget);
-          expect(find.text('error: null'), findsOneWidget);
-        },
-      );
-
-      testWidgets(
-        'should not initialize the state with the provided "data" if the query has data and the provided "data" is stale',
-        (tester) async {
-          const fetchDuration = Duration(seconds: 3);
-          const staleDuration = Duration(minutes: 10);
-          final controller = QueryController<String>(
-            data: 'initial data',
-            dataUpdatedAt: clock.agoBy(staleDuration),
-          );
-          final client = QueryClient()..setQueryData('id', 'cached data');
-          final widget = QueryBuilder<String>(
-            controller: controller,
-            id: 'id',
-            fetcher: (id) async {
-              await Future.delayed(fetchDuration);
-              return 'data';
-            },
-            staleDuration: staleDuration,
-            refetchOnInit: RefetchMode.never,
-            builder: (context, state, child) {
-              return Column(
-                children: [
-                  Text('status: ${state.status.name}'),
-                  Text('data: ${state.data}'),
-                  Text('error: ${(state.error as TestException?)?.message}'),
-                ],
-              );
-            },
-          );
-
-          await tester.pumpWithQueryClientProvider(widget, client);
-
-          expect(find.text('status: success'), findsOneWidget);
-          expect(find.text('data: cached data'), findsOneWidget);
-          expect(find.text('error: null'), findsOneWidget);
-        },
-      );
-
-      testWidgets(
-        'should initialize the state with the provided "data" if the query has data but the provided "data" is fresh',
-        (tester) async {
-          const fetchDuration = Duration(seconds: 3);
-          const staleDuration = Duration(minutes: 10);
-          final controller = QueryController<String>(
-            data: 'initial data',
-            dataUpdatedAt: clock.ago(minutes: 3),
-          );
-          final client = QueryClient()
-            ..setQueryData(
-              'id',
-              'cached data',
-              clock.ago(minutes: 7),
-            );
-          final widget = QueryBuilder<String>(
-            controller: controller,
-            id: 'id',
-            fetcher: (id) async {
-              await Future.delayed(fetchDuration);
-              return 'data';
-            },
-            staleDuration: staleDuration,
-            refetchOnInit: RefetchMode.never,
-            builder: (context, state, child) {
-              return Column(
-                children: [
-                  Text('status: ${state.status.name}'),
-                  Text('data: ${state.data}'),
-                  Text('error: ${(state.error as TestException?)?.message}'),
-                ],
-              );
-            },
-          );
-
-          await tester.pumpWithQueryClientProvider(widget, client);
-
-          expect(find.text('status: success'), findsOneWidget);
-          expect(find.text('data: initial data'), findsOneWidget);
-          expect(find.text('error: null'), findsOneWidget);
-        },
-      );
     },
   );
 
@@ -797,6 +541,8 @@ void main() {
             expect(find.text('status: success'), findsOneWidget);
             expect(find.text('data: cached data'), findsOneWidget);
             expect(find.text('error: null'), findsOneWidget);
+
+            await tester.pumpWidget(Placeholder());
           }
         },
       );
@@ -834,6 +580,8 @@ void main() {
             expect(find.text('status: success'), findsOneWidget);
             expect(find.text('data: cached data'), findsOneWidget);
             expect(find.text('error: null'), findsOneWidget);
+
+            await tester.pumpWidget(Placeholder());
           }
         },
       );
@@ -1059,6 +807,127 @@ void main() {
 
           expect(find.text('status: fetching'), findsOneWidget);
           expect(find.text('data: cached data'), findsOneWidget);
+          expect(find.text('error: null'), findsOneWidget);
+
+          await tester.pump(fetchDuration);
+
+          expect(find.text('status: success'), findsOneWidget);
+          expect(find.text('data: data'), findsOneWidget);
+          expect(find.text('error: null'), findsOneWidget);
+        },
+      );
+    },
+  );
+
+  group(
+    'when the "initialData" is set',
+    () {
+      testWidgets(
+        'should set the "initialData" if the query has no data',
+        (tester) async {
+          const fetchDuration = Duration(seconds: 3);
+          final widget = QueryBuilder<String>(
+            id: 'id',
+            fetcher: (id) async {
+              await Future.delayed(fetchDuration);
+              return 'data';
+            },
+            initialData: 'initial data',
+            builder: (context, state, child) {
+              return Column(
+                children: [
+                  Text('status: ${state.status.name}'),
+                  Text('data: ${state.data}'),
+                  Text('error: ${state.error}'),
+                ],
+              );
+            },
+          );
+
+          await tester.pumpWithQueryClientProvider(widget);
+
+          expect(find.text('status: fetching'), findsOneWidget);
+          expect(find.text('data: initial data'), findsOneWidget);
+          expect(find.text('error: null'), findsOneWidget);
+
+          await tester.pump(fetchDuration);
+
+          expect(find.text('status: success'), findsOneWidget);
+          expect(find.text('data: data'), findsOneWidget);
+          expect(find.text('error: null'), findsOneWidget);
+        },
+      );
+
+      testWidgets(
+        'should not set the "initialData" if the query alreay has data',
+        (tester) async {
+          const fetchDuration = Duration(seconds: 3);
+          final client = QueryClient()..setQueryData('id', 'cached data');
+          final widget = QueryBuilder<String>(
+            id: 'id',
+            fetcher: (id) async {
+              await Future.delayed(fetchDuration);
+              return 'data';
+            },
+            initialData: 'initial data',
+            builder: (context, state, child) {
+              return Column(
+                children: [
+                  Text('status: ${state.status.name}'),
+                  Text('data: ${state.data}'),
+                  Text('error: ${state.error}'),
+                ],
+              );
+            },
+          );
+
+          await tester.pumpWithQueryClientProvider(widget, client);
+
+          expect(find.text('status: fetching'), findsOneWidget);
+          expect(find.text('data: cached data'), findsOneWidget);
+          expect(find.text('error: null'), findsOneWidget);
+
+          await tester.pump(fetchDuration);
+
+          expect(find.text('status: success'), findsOneWidget);
+          expect(find.text('data: data'), findsOneWidget);
+          expect(find.text('error: null'), findsOneWidget);
+        },
+      );
+
+      testWidgets(
+        'should set the "initialData" if the "initialData" is fresher than the cached one',
+        (tester) async {
+          const fetchDuration = Duration(seconds: 3);
+          final client = QueryClient()
+            ..setQueryData(
+              'id',
+              'cached data',
+              clock.ago(minutes: 5),
+            );
+          final widget = QueryBuilder<String>(
+            id: 'id',
+            fetcher: (id) async {
+              await Future.delayed(fetchDuration);
+              return 'data';
+            },
+            initialData: 'initial data',
+            initialDataUpdatedAt: clock.ago(minutes: 2),
+            builder: (context, state, child) {
+              return Column(
+                children: [
+                  Text('status: ${state.status.name}'),
+                  Text('data: ${state.data}'),
+                  Text('error: ${state.error}'),
+                ],
+              );
+            },
+          );
+
+          await tester.pumpWithQueryClientProvider(widget, client);
+
+          expect(find.text('status: fetching'), findsOneWidget);
+          expect(find.text('data: initial data'), findsOneWidget);
           expect(find.text('error: null'), findsOneWidget);
 
           await tester.pump(fetchDuration);
@@ -1457,10 +1326,7 @@ void main() {
             },
           );
 
-          await tester.pumpWithQueryClientProvider(
-            widget,
-            client,
-          );
+          await tester.pumpWithQueryClientProvider(widget, client);
 
           // The data is not stale yet, the query should not be fetching.
           expect(find.text('status: success'), findsOneWidget);
@@ -1469,7 +1335,7 @@ void main() {
 
           await tester.pump(staleDuration);
 
-          await tester.pumpWidget(Placeholder());
+          await tester.pumpWithQueryClientProvider(null, client);
           await tester.pumpWithQueryClientProvider(widget, client);
 
           // The data is stale, the query should be fetching.
@@ -2136,9 +2002,8 @@ void main() {
         'should cancel fetching',
         (tester) async {
           const fetchDuration = Duration(seconds: 3);
-          final controller = QueryController<String>();
+          final client = QueryClient();
           final widget = QueryBuilder<String>(
-            controller: controller,
             id: 'id',
             fetcher: (id) async {
               await Future.delayed(fetchDuration);
@@ -2155,13 +2020,13 @@ void main() {
             },
           );
 
-          await tester.pumpWithQueryClientProvider(widget);
+          await tester.pumpWithQueryClientProvider(widget, client);
 
           expect(find.text('status: fetching'), findsOneWidget);
           expect(find.text('data: null'), findsOneWidget);
           expect(find.text('error: null'), findsOneWidget);
 
-          await controller.cancel();
+          await client.cancelQuery<String>('id');
           await tester.pump();
 
           expect(find.text('status: canceled'), findsOneWidget);
@@ -2181,9 +2046,8 @@ void main() {
         (tester) async {
           int fetchCount = 0;
           const fetchDuration = Duration(seconds: 3);
-          final controller = QueryController<String>();
+          final client = QueryClient();
           final widget = QueryBuilder<String>(
-            controller: controller,
             id: 'id',
             fetcher: (id) async {
               await Future.delayed(fetchDuration);
@@ -2203,7 +2067,7 @@ void main() {
             },
           );
 
-          await tester.pumpWithQueryClientProvider(widget);
+          await tester.pumpWithQueryClientProvider(widget, client);
 
           expect(find.text('status: fetching'), findsOneWidget);
           expect(find.text('data: null'), findsOneWidget);
@@ -2216,7 +2080,7 @@ void main() {
           expect(find.text('error: error'), findsOneWidget);
           expect(fetchCount, 1);
 
-          await controller.cancel();
+          await client.cancelQuery<String>('id');
           await tester.pump();
 
           expect(find.text('status: canceled'), findsOneWidget);
@@ -2244,9 +2108,8 @@ void main() {
         'should populate the data if the "cancel" function is called with the "data"',
         (tester) async {
           const fetchDuration = Duration(seconds: 3);
-          final controller = QueryController<String>();
+          final client = QueryClient();
           final widget = QueryBuilder<String>(
-            controller: controller,
             id: 'id',
             fetcher: (id) async {
               await Future.delayed(fetchDuration);
@@ -2263,13 +2126,13 @@ void main() {
             },
           );
 
-          await tester.pumpWithQueryClientProvider(widget);
+          await tester.pumpWithQueryClientProvider(widget, client);
 
           expect(find.text('status: fetching'), findsOneWidget);
           expect(find.text('data: null'), findsOneWidget);
           expect(find.text('error: null'), findsOneWidget);
 
-          await controller.cancel(data: 'canceled data');
+          await client.cancelQuery('id', data: 'canceled data');
           await tester.pump();
 
           expect(find.text('status: canceled'), findsOneWidget);
@@ -2288,9 +2151,8 @@ void main() {
         'should populate the error if the "cancel" function is called with the "error"',
         (tester) async {
           const fetchDuration = Duration(seconds: 3);
-          final controller = QueryController<String>();
+          final client = QueryClient();
           final widget = QueryBuilder<String>(
-            controller: controller,
             id: 'id',
             fetcher: (id) async {
               await Future.delayed(fetchDuration);
@@ -2307,13 +2169,16 @@ void main() {
             },
           );
 
-          await tester.pumpWithQueryClientProvider(widget);
+          await tester.pumpWithQueryClientProvider(widget, client);
 
           expect(find.text('status: fetching'), findsOneWidget);
           expect(find.text('data: null'), findsOneWidget);
           expect(find.text('error: null'), findsOneWidget);
 
-          await controller.cancel(error: TestException('canceled error'));
+          await client.cancelQuery(
+            'id',
+            error: TestException('canceled error'),
+          );
           await tester.pump();
 
           expect(find.text('status: canceled'), findsOneWidget);
@@ -2375,9 +2240,8 @@ void main() {
         'should only rebuild the widget if the "buildWhen" returns "true"',
         (tester) async {
           const fetchDuration = Duration(seconds: 3);
-          final controller = QueryController<String>();
+          final client = QueryClient();
           final widget = QueryBuilder<String>(
-            controller: controller,
             id: 'id',
             fetcher: (id) async {
               await Future.delayed(fetchDuration);
@@ -2409,7 +2273,7 @@ void main() {
           expect(find.text('data: data'), findsOneWidget);
           expect(find.text('error: null'), findsOneWidget);
 
-          controller.refetch();
+          client.refetch('id');
           await tester.pump();
 
           expect(find.text('status: success'), findsOneWidget);
@@ -2421,195 +2285,6 @@ void main() {
           expect(find.text('status: success'), findsOneWidget);
           expect(find.text('data: data'), findsOneWidget);
           expect(find.text('error: null'), findsOneWidget);
-        },
-      );
-    },
-  );
-
-  group(
-    'when the "controller" is changed',
-    () {
-      testWidgets(
-        'should register the new controller if the "controller" is changed from "null"',
-        (tester) async {
-          const fetchDuration = Duration(seconds: 3);
-          final client = QueryClient();
-          final controller = QueryController<String>();
-          final widget = QueryBuilder<String>(
-            id: 'id',
-            fetcher: (id) async {
-              await Future.delayed(fetchDuration);
-              return 'data';
-            },
-            refetchOnInit: RefetchMode.never,
-            builder: (context, state, child) {
-              return Column(
-                children: [
-                  Text('status: ${state.status.name}'),
-                  Text('data: ${state.data}'),
-                  Text('error: ${(state.error as TestException?)?.message}'),
-                ],
-              );
-            },
-          );
-
-          await tester.pumpWithQueryClientProvider(widget, client);
-
-          expect(client.getQuery('id')!.controllers.length, 1);
-          expect(
-            client.getQuery('id')!.controllers.first,
-            isNot(same(controller)),
-          );
-
-          await tester.pumpWithQueryClientProvider(
-            widget.copyWith(controller: controller),
-            client,
-          );
-
-          expect(client.getQuery('id')!.controllers.length, 1);
-          expect(client.getQuery('id')!.controllers.first, same(controller));
-
-          controller.refetch();
-          await tester.pump();
-
-          expect(find.text('status: fetching'), findsOneWidget);
-          expect(find.text('data: null'), findsOneWidget);
-          expect(find.text('error: null'), findsOneWidget);
-
-          await tester.pump(fetchDuration);
-
-          expect(find.text('status: success'), findsOneWidget);
-          expect(find.text('data: data'), findsOneWidget);
-          expect(find.text('error: null'), findsOneWidget);
-        },
-      );
-
-      testWidgets(
-        'should register the new controller if the "controller" is changed from another controller',
-        (tester) async {
-          const fetchDuration = Duration(seconds: 3);
-          final client = QueryClient();
-          final controller1 = QueryController<String>();
-          final controller2 = QueryController<String>();
-          final widget = QueryBuilder<String>(
-            id: 'id',
-            fetcher: (id) async {
-              await Future.delayed(fetchDuration);
-              return 'data';
-            },
-            refetchOnInit: RefetchMode.never,
-            builder: (context, state, child) {
-              return Column(
-                children: [
-                  Text('status: ${state.status.name}'),
-                  Text('data: ${state.data}'),
-                  Text('error: ${(state.error as TestException?)?.message}'),
-                ],
-              );
-            },
-          );
-
-          await tester.pumpWithQueryClientProvider(
-            widget.copyWith(controller: controller1),
-            client,
-          );
-
-          expect(client.getQuery('id')!.controllers.length, 1);
-          expect(client.getQuery('id')!.controllers.first, same(controller1));
-
-          controller1.refetch();
-          await tester.pump();
-
-          expect(find.text('status: fetching'), findsOneWidget);
-          expect(find.text('data: null'), findsOneWidget);
-          expect(find.text('error: null'), findsOneWidget);
-
-          await tester.pump(fetchDuration);
-
-          expect(find.text('status: success'), findsOneWidget);
-          expect(find.text('data: data'), findsOneWidget);
-          expect(find.text('error: null'), findsOneWidget);
-
-          await tester.pumpWithQueryClientProvider(
-            widget.copyWith(controller: controller2),
-            client,
-          );
-
-          expect(client.getQuery('id')!.controllers.length, 1);
-          expect(
-            client.getQuery('id')!.controllers.first,
-            isNot(same(controller1)),
-          );
-          expect(client.getQuery('id')!.controllers.first, same(controller2));
-
-          controller2.refetch();
-          await tester.pump();
-
-          expect(find.text('status: fetching'), findsOneWidget);
-          expect(find.text('data: data'), findsOneWidget);
-          expect(find.text('error: null'), findsOneWidget);
-
-          await tester.pump(fetchDuration);
-
-          expect(find.text('status: success'), findsOneWidget);
-          expect(find.text('data: data'), findsOneWidget);
-          expect(find.text('error: null'), findsOneWidget);
-        },
-      );
-
-      testWidgets(
-        'should unregister the controller if the "controller" is changed from a controller to "null"',
-        (tester) async {
-          const fetchDuration = Duration(seconds: 3);
-          final client = QueryClient();
-          final controller = QueryController<String>();
-          final widget = QueryBuilder<String>(
-            controller: controller,
-            id: 'id',
-            fetcher: (id) async {
-              await Future.delayed(fetchDuration);
-              return 'data';
-            },
-            refetchOnInit: RefetchMode.never,
-            builder: (context, state, child) {
-              return Column(
-                children: [
-                  Text('status: ${state.status.name}'),
-                  Text('data: ${state.data}'),
-                  Text('error: ${(state.error as TestException?)?.message}'),
-                ],
-              );
-            },
-          );
-
-          await tester.pumpWithQueryClientProvider(widget, client);
-
-          expect(client.getQuery('id')!.controllers.length, 1);
-          expect(client.getQuery('id')!.controllers.first, same(controller));
-
-          controller.refetch();
-          await tester.pump();
-
-          expect(find.text('status: fetching'), findsOneWidget);
-          expect(find.text('data: null'), findsOneWidget);
-          expect(find.text('error: null'), findsOneWidget);
-
-          await tester.pump(fetchDuration);
-
-          expect(find.text('status: success'), findsOneWidget);
-          expect(find.text('data: data'), findsOneWidget);
-          expect(find.text('error: null'), findsOneWidget);
-
-          await tester.pumpWithQueryClientProvider(
-            widget.copyWithNull(controller: true),
-            client,
-          );
-
-          expect(client.getQuery('id')!.controllers.length, 1);
-          expect(
-            client.getQuery('id')!.controllers.first,
-            isNot(same(controller)),
-          );
         },
       );
     },

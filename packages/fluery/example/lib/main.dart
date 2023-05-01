@@ -83,17 +83,17 @@ class QueryExamplePage extends StatefulWidget {
 }
 
 class _QueryExamplePageState extends State<QueryExamplePage> {
-  late final QueryController<String> _controller;
+  // late final QueryController<String> _controller;
 
   @override
   void initState() {
     super.initState();
-    _controller = QueryController<String>();
+    // _controller = QueryController<String>();
   }
 
   @override
   void dispose() {
-    _controller.dispose();
+    // _controller.dispose();
     super.dispose();
   }
 
@@ -116,7 +116,7 @@ class _QueryExamplePageState extends State<QueryExamplePage> {
       ),
       body: Center(
         child: QueryBuilder<String>(
-          controller: _controller,
+          // controller: _controller,
           id: 'example',
           fetcher: (key) async {
             await Future.delayed(const Duration(seconds: 3));
@@ -154,7 +154,8 @@ class _QueryExamplePageState extends State<QueryExamplePage> {
                     Text(data),
                     TextButton(
                       onPressed: () {
-                        QueryClientProvider.of(context).refetch('example');
+                        QueryClientProvider.of(context, listen: false)
+                            .refetch('example');
                       },
                       child: const Text('Refetch'),
                     ),
@@ -168,7 +169,7 @@ class _QueryExamplePageState extends State<QueryExamplePage> {
                     Text(error),
                     TextButton(
                       onPressed: () {
-                        _controller.refetch();
+                        // _controller.refetch();
                         // QueryClientProvider.of(context).refetch('example');
                       },
                       child: const Text('Refetch'),

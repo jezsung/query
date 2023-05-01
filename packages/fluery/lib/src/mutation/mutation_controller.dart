@@ -108,9 +108,7 @@ class MutationController<Data, Args>
       _FunctionQueueExecutor();
 
   Future<void> mutate([Args? args]) async {
-    if (_mutator == null) {
-      throw FlueryError('No mutator function is found');
-    }
+    assert(_mutator != null);
 
     Future<void> execute() async {
       Data? data;
