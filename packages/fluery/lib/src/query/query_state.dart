@@ -15,6 +15,8 @@ class QueryState<T> extends Equatable {
   final DateTime? dataUpdatedAt;
   final DateTime? errorUpdatedAt;
 
+  bool get inProgress => status.isFetching || status.isRetrying;
+
   bool get hasData => data != null;
 
   bool get hasError => error != null;

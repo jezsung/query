@@ -39,8 +39,6 @@ extension QueryStatusExtension on QueryStatus {
 
   bool get isRetrying => this == QueryStatus.retrying;
 
-  bool get isLoading => isFetching || isRetrying;
-
   bool get isCanceled => this == QueryStatus.canceled;
 
   bool get isSuccess => this == QueryStatus.success;
@@ -203,7 +201,7 @@ class Query<T> {
     Duration? retryDelayFactor,
     double? retryRandomizationFactor,
   }) async {
-    if (state.status.isLoading) return;
+    if (state.inProgress) return;
 
     assert(
       fetcher != null || this.fetcher != null,
@@ -299,7 +297,7 @@ class Query<T> {
     T? data,
     Exception? error,
   }) async {
-    if (!state.status.isLoading) return;
+    if (!state.inProgress) return;
 
     await _cancelableOperation?.cancel();
 
@@ -362,7 +360,7 @@ class Query<T> {
 
     if (duration == null) {
       _refetchIntervalTimer?.cancel();
-    } else if (state.status.isLoading) {
+    } else if (state.inProgress) {
       return;
     } else if (lastUpdatedAt == null) {
       fetch();
