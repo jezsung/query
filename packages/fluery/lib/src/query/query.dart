@@ -3,11 +3,19 @@ import 'dart:async';
 import 'package:async/async.dart';
 import 'package:clock/clock.dart';
 import 'package:equatable/equatable.dart';
+import 'package:fluery/src/conditional_value_listenable_builder.dart';
 import 'package:fluery/src/timer_interceptor.dart';
-import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
+import 'package:provider/provider.dart';
+import 'package:provider/single_child_widget.dart';
 import 'package:retry/retry.dart';
 
-import 'query_cache.dart';
+part 'query_builder.dart';
+part 'query_cache.dart';
+part 'query_client_provider.dart';
+part 'query_client.dart';
+part 'query_observer.dart';
+part 'query_state.dart';
 
 typedef QueryIdentifier = String;
 
@@ -40,87 +48,21 @@ extension QueryStatusExtension on QueryStatus {
   bool get isFailure => this == QueryStatus.failure;
 }
 
-class QueryState<T> extends Equatable {
-  const QueryState({
-    this.status = QueryStatus.idle,
-    this.data,
-    this.dataUpdatedAt,
-    this.error,
-    this.errorUpdatedAt,
-  });
+typedef QueryWidgetBuilder<T> = Widget Function(
+  BuildContext context,
+  QueryState<T> state,
+  Widget? child,
+);
 
-  final QueryStatus status;
-  final T? data;
-  final Exception? error;
-  final DateTime? dataUpdatedAt;
-  final DateTime? errorUpdatedAt;
+typedef QueryBuilderCondition<T> = bool Function(
+  QueryState<T> previousState,
+  QueryState<T> currentState,
+);
 
-  bool get hasData => data != null;
-
-  bool get hasError => error != null;
-
-  DateTime? get lastUpdatedAt {
-    if (dataUpdatedAt != null && errorUpdatedAt != null) {
-      return dataUpdatedAt!.isAfter(errorUpdatedAt!)
-          ? dataUpdatedAt
-          : errorUpdatedAt;
-    } else if (dataUpdatedAt != null) {
-      return dataUpdatedAt;
-    } else if (errorUpdatedAt != null) {
-      return errorUpdatedAt;
-    } else {
-      return null;
-    }
-  }
-
-  QueryState<T> copyWith({
-    QueryStatus? status,
-    T? data,
-    Exception? error,
-    DateTime? dataUpdatedAt,
-    DateTime? errorUpdatedAt,
-  }) {
-    return QueryState<T>(
-      status: status ?? this.status,
-      data: data ?? this.data,
-      error: error ?? this.error,
-      dataUpdatedAt: dataUpdatedAt ?? this.dataUpdatedAt,
-      errorUpdatedAt: errorUpdatedAt ?? this.errorUpdatedAt,
-    );
-  }
-
-  @override
-  List<Object?> get props => [
-        status,
-        data,
-        error,
-        dataUpdatedAt,
-        errorUpdatedAt,
-      ];
-}
-
-class QueryOptions<T> {
-  QueryOptions({
-    required this.fetcher,
-    required this.staleDuration,
-    required this.cacheDuration,
-    required this.retryWhen,
-    required this.retryMaxAttempts,
-    required this.retryMaxDelay,
-    required this.retryDelayFactor,
-    required this.retryRandomizationFactor,
-    required this.refetchIntervalDuration,
-  });
-
-  final QueryFetcher<T> fetcher;
-  final Duration staleDuration;
-  final Duration cacheDuration;
-  final RetryCondition? retryWhen;
-  final int retryMaxAttempts;
-  final Duration retryMaxDelay;
-  final Duration retryDelayFactor;
-  final double retryRandomizationFactor;
-  final Duration? refetchIntervalDuration;
+enum RefetchMode {
+  never,
+  stale,
+  always,
 }
 
 class Query<T> {
@@ -482,118 +424,5 @@ class Query<T> {
 
   void _cancelGarbageCollection() {
     _garbageCollectionTimer?.cancel();
-  }
-}
-
-class QueryObserver<T> extends ValueNotifier<QueryState<T>> {
-  QueryObserver({
-    required this.fetcher,
-    this.enabled = true,
-    this.placeholder,
-    this.staleDuration = Duration.zero,
-    this.cacheDuration = const Duration(minutes: 5),
-    this.retryWhen,
-    this.retryMaxAttempts = 3,
-    this.retryMaxDelay = const Duration(seconds: 30),
-    this.retryDelayFactor = const Duration(milliseconds: 200),
-    this.retryRandomizationFactor = 0.25,
-    this.refetchIntervalDuration,
-  }) : super(QueryState<T>());
-
-  QueryFetcher<T> fetcher;
-  bool enabled;
-  T? placeholder;
-  Duration staleDuration;
-  Duration cacheDuration;
-  RetryCondition? retryWhen;
-  int retryMaxAttempts;
-  Duration retryMaxDelay;
-  Duration retryDelayFactor;
-  double retryRandomizationFactor;
-  Duration? refetchIntervalDuration;
-
-  Query<T>? _query;
-  StreamSubscription<QueryState<T>>? _subscription;
-
-  @override
-  QueryState<T> get value {
-    QueryState<T> state = super.value;
-
-    if (state.status.isIdle && enabled) {
-      state = state.copyWith(status: QueryStatus.fetching);
-    }
-
-    if (!state.hasData) {
-      state = state.copyWith(data: placeholder);
-    }
-
-    return state;
-  }
-
-  Future<void> fetch({
-    QueryFetcher<T>? fetcher,
-    Duration? staleDuration,
-    RetryCondition? retryWhen,
-    int? retryMaxAttempts,
-    Duration? retryMaxDelay,
-    Duration? retryDelayFactor,
-    double? retryRandomizationFactor,
-  }) async {
-    assert(
-      _query != null,
-      '''
-      Tried to call QueryObserver<${T.runtimeType}>.fetch before it gets bound.
-
-      Bind the QueryObserver<${T.runtimeType}>.
-      ''',
-    );
-
-    if (!enabled) return;
-
-    await _query!.fetch(
-      fetcher: fetcher ?? this.fetcher,
-      staleDuration: staleDuration ?? this.staleDuration,
-      retryWhen: retryWhen ?? this.retryWhen,
-      retryMaxAttempts: retryMaxAttempts ?? this.retryMaxAttempts,
-      retryMaxDelay: retryMaxDelay ?? this.retryMaxDelay,
-      retryDelayFactor: retryDelayFactor ?? this.retryDelayFactor,
-      retryRandomizationFactor:
-          retryRandomizationFactor ?? this.retryRandomizationFactor,
-    );
-  }
-
-  Future<void> cancel({
-    T? data,
-    Exception? error,
-  }) async {
-    assert(
-      _query != null,
-      '''
-      Tried to call QueryObserver<${T.runtimeType}>.cancel before it gets bound.
-
-      Bind the QueryObserver<${T.runtimeType}>.
-      ''',
-    );
-
-    await _query!.cancel(data: data, error: error);
-  }
-
-  void bind(Query<T> query) {
-    _query = query;
-    value = query.state;
-    _subscription = query.stream.listen(_onStateChanged);
-    _query!.addObserver(this);
-  }
-
-  void unbind() {
-    if (_query == null) return;
-
-    _subscription?.cancel();
-    _query!.removeObserver(this);
-    _query = null;
-  }
-
-  void _onStateChanged(QueryState<T> state) {
-    value = state;
   }
 }

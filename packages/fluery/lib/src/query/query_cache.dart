@@ -1,4 +1,4 @@
-import 'query.dart';
+part of 'query.dart';
 
 class QueryCache {
   final Map<QueryIdentifier, Query> _queries = {};

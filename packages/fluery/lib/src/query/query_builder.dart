@@ -1,25 +1,4 @@
-import 'package:fluery/fluery.dart';
-import 'package:fluery/src/conditional_value_listenable_builder.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
-import 'package:provider/provider.dart';
-
-typedef QueryWidgetBuilder<T> = Widget Function(
-  BuildContext context,
-  QueryState<T> state,
-  Widget? child,
-);
-
-typedef QueryBuilderCondition<T> = bool Function(
-  QueryState<T> previousState,
-  QueryState<T> currentState,
-);
-
-enum RefetchMode {
-  never,
-  stale,
-  always,
-}
+part of 'query.dart';
 
 class QueryBuilder<T> extends StatefulWidget {
   const QueryBuilder({

@@ -1,5 +1,4 @@
-import 'query.dart';
-import 'query_cache.dart';
+part of 'query.dart';
 
 class QueryClient {
   final QueryCache cache = QueryCache();
