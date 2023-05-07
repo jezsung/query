@@ -400,12 +400,12 @@ class Query<T> {
         clock.now().isAtSameMomentAs(state.dataUpdatedAt!.add(duration));
   }
 
-  void dispose() {
-    _cancelableOperation?.cancel();
+  Future<void> close() async {
+    await _cancelableOperation?.cancel();
+    await _stateController.close();
     _garbageCollectionTimer?.cancel();
     _refetchIntervalTimer?.cancel();
     _timerInterceptor.cancel();
-    _stateController.close();
   }
 
   void _scheduleGarbageCollection() {
@@ -413,8 +413,8 @@ class Query<T> {
 
     _garbageCollectionTimer = Timer(
       _cacheDuration,
-      () {
-        dispose();
+      () async {
+        await close();
         cache.remove(id);
       },
     );

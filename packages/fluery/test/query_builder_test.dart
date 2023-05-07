@@ -5,34 +5,20 @@ import 'package:fluery/fluery.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-extension WidgetTesterExtension on WidgetTester {
-  Future<void> pumpWithQueryClientProvider(
-    Widget? widget, [
-    QueryClient? queryClient,
-    Duration? duration,
-    EnginePhase enginePhase = EnginePhase.sendSemanticsUpdate,
-  ]) async {
-    await pumpWidget(
-      QueryClientProvider(
-        create: (context) => queryClient ?? QueryClient(),
-        child: MaterialApp(
-          home: Builder(
-            builder: (context) {
-              return widget ?? Placeholder();
-            },
-          ),
-        ),
-      ),
-      duration,
-      enginePhase,
+Widget withQueryClientProvider(Widget? widget, [QueryClient? client]) {
+  if (client != null) {
+    return QueryClientProvider.value(
+      key: Key('query_client_provider'),
+      value: client,
+      child: widget ?? const Placeholder(),
+    );
+  } else {
+    return QueryClientProvider(
+      key: Key('query_client_provider'),
+      create: (context) => QueryClient(),
+      child: widget ?? const Placeholder(),
     );
   }
-}
-
-class TestException implements Exception {
-  TestException(this.message);
-
-  final String message;
 }
 
 void main() {
@@ -40,25 +26,27 @@ void main() {
     'should succeed',
     (tester) async {
       const fetchDuration = Duration(seconds: 3);
-
-      await tester.pumpWithQueryClientProvider(
-        QueryBuilder<String>(
-          id: 'id',
-          fetcher: (id) async {
-            await Future.delayed(fetchDuration);
-            return 'data';
-          },
-          builder: (context, state, child) {
-            return Column(
+      final widget = QueryBuilder(
+        id: 'id',
+        fetcher: (id) async {
+          await Future.delayed(fetchDuration);
+          return 'data';
+        },
+        builder: (context, state, child) {
+          return Directionality(
+            textDirection: TextDirection.ltr,
+            child: Column(
               children: [
                 Text('status: ${state.status.name}'),
                 Text('data: ${state.data}'),
                 Text('error: ${state.error}'),
               ],
-            );
-          },
-        ),
+            ),
+          );
+        },
       );
+
+      await tester.pumpWidget(withQueryClientProvider(widget));
 
       expect(find.text('status: fetching'), findsOneWidget);
       expect(find.text('data: null'), findsOneWidget);
@@ -76,26 +64,28 @@ void main() {
     'should fail',
     (tester) async {
       const fetchDuration = Duration(seconds: 3);
-
-      await tester.pumpWithQueryClientProvider(
-        QueryBuilder<String>(
-          id: 'id',
-          fetcher: (id) async {
-            await Future.delayed(fetchDuration);
-            throw TestException('error');
-          },
-          retryMaxAttempts: 0,
-          builder: (context, state, child) {
-            return Column(
+      final widget = QueryBuilder<String>(
+        id: 'id',
+        fetcher: (id) async {
+          await Future.delayed(fetchDuration);
+          throw TestException('error');
+        },
+        retryMaxAttempts: 0,
+        builder: (context, state, child) {
+          return Directionality(
+            textDirection: TextDirection.ltr,
+            child: Column(
               children: [
                 Text('status: ${state.status.name}'),
                 Text('data: ${state.data}'),
-                Text('error: ${(state.error as TestException?)?.message}'),
+                Text('error: ${state.error}'),
               ],
-            );
-          },
-        ),
+            ),
+          );
+        },
       );
+
+      await tester.pumpWidget(withQueryClientProvider(widget));
 
       expect(find.text('status: fetching'), findsOneWidget);
       expect(find.text('data: null'), findsOneWidget);
@@ -112,11 +102,11 @@ void main() {
   testWidgets(
     'should start fetching when a cached query becomes stale',
     (tester) async {
-      final client = QueryClient()..setQueryData('id', 'cached data');
       const staleDuration = Duration(minutes: 10);
       const fetchDuration = Duration(seconds: 3);
+      final client = QueryClient()..setQueryData('id', 'cached data');
       final widget = QueryBuilder<String>(
-        key: Key('key'),
+        key: Key('query_builder'),
         id: 'id',
         fetcher: (id) async {
           await Future.delayed(fetchDuration);
@@ -124,17 +114,20 @@ void main() {
         },
         staleDuration: staleDuration,
         builder: (context, state, child) {
-          return Column(
-            children: [
-              Text('status: ${state.status.name}'),
-              Text('data: ${state.data}'),
-              Text('error: ${state.error}'),
-            ],
+          return Directionality(
+            textDirection: TextDirection.ltr,
+            child: Column(
+              children: [
+                Text('status: ${state.status.name}'),
+                Text('data: ${state.data}'),
+                Text('error: ${state.error}'),
+              ],
+            ),
           );
         },
       );
 
-      await tester.pumpWithQueryClientProvider(widget, client);
+      await tester.pumpWidget(withQueryClientProvider(widget, client));
 
       // Should show the cached query since the query is still fresh.
       expect(find.text('status: success'), findsOneWidget);
@@ -144,8 +137,8 @@ void main() {
       await tester.pump(staleDuration);
 
       // The widget is initialized again.
-      await tester.pumpWithQueryClientProvider(null, client);
-      await tester.pumpWithQueryClientProvider(widget, client);
+      await tester.pumpWidget(withQueryClientProvider(null, client));
+      await tester.pumpWidget(withQueryClientProvider(widget, client));
 
       // Should start fetching since now the query is stale.
       expect(find.text('status: fetching'), findsOneWidget);
@@ -157,6 +150,8 @@ void main() {
       expect(find.text('status: success'), findsOneWidget);
       expect(find.text('data: data'), findsOneWidget);
       expect(find.text('error: null'), findsOneWidget);
+
+      await client.close();
     },
   );
 
@@ -168,23 +163,27 @@ void main() {
         (tester) async {
           const fetchDuration = Duration(seconds: 3);
           final widget = QueryBuilder<String>(
+            key: Key('query_builder'),
             id: 'id1',
             fetcher: (id) async {
               await Future.delayed(fetchDuration);
               return 'data1';
             },
             builder: (context, state, child) {
-              return Column(
-                children: [
-                  Text('status: ${state.status.name}'),
-                  Text('data: ${state.data}'),
-                  Text('error: ${state.error}'),
-                ],
+              return Directionality(
+                textDirection: TextDirection.ltr,
+                child: Column(
+                  children: [
+                    Text('status: ${state.status.name}'),
+                    Text('data: ${state.data}'),
+                    Text('error: ${state.error}'),
+                  ],
+                ),
               );
             },
           );
 
-          await tester.pumpWithQueryClientProvider(
+          await tester.pumpWidget(withQueryClientProvider(
             widget.copyWith(
               id: 'id1',
               fetcher: (id) async {
@@ -192,7 +191,7 @@ void main() {
                 return 'data1';
               },
             ),
-          );
+          ));
 
           expect(find.text('status: fetching'), findsOneWidget);
           expect(find.text('data: null'), findsOneWidget);
@@ -204,7 +203,7 @@ void main() {
           expect(find.text('data: data1'), findsOneWidget);
           expect(find.text('error: null'), findsOneWidget);
 
-          await tester.pumpWithQueryClientProvider(
+          await tester.pumpWidget(withQueryClientProvider(
             widget.copyWith(
               id: 'id2',
               fetcher: (id) async {
@@ -212,7 +211,7 @@ void main() {
                 return 'data2';
               },
             ),
-          );
+          ));
 
           expect(find.text('status: fetching'), findsOneWidget);
           expect(find.text('data: null'), findsOneWidget);
@@ -229,8 +228,8 @@ void main() {
       testWidgets(
         'should not refetch if a cached query with the new "id" exists and the "refetchOnInit" is set to "RefetchMode.never"',
         (tester) async {
-          final client = QueryClient()..setQueryData('id2', 'cached data2');
           const fetchDuration = Duration(seconds: 3);
+          final client = QueryClient()..setQueryData('id2', 'cached data2');
           final widget = QueryBuilder<String>(
             id: 'id1',
             fetcher: (id) async {
@@ -239,17 +238,20 @@ void main() {
             },
             refetchOnInit: RefetchMode.never,
             builder: (context, state, child) {
-              return Column(
-                children: [
-                  Text('status: ${state.status.name}'),
-                  Text('data: ${state.data}'),
-                  Text('error: ${state.error}'),
-                ],
+              return Directionality(
+                textDirection: TextDirection.ltr,
+                child: Column(
+                  children: [
+                    Text('status: ${state.status.name}'),
+                    Text('data: ${state.data}'),
+                    Text('error: ${state.error}'),
+                  ],
+                ),
               );
             },
           );
 
-          await tester.pumpWithQueryClientProvider(
+          await tester.pumpWidget(withQueryClientProvider(
             widget.copyWith(
               id: 'id1',
               fetcher: (id) async {
@@ -258,7 +260,7 @@ void main() {
               },
             ),
             client,
-          );
+          ));
 
           expect(find.text('status: fetching'), findsOneWidget);
           expect(find.text('data: null'), findsOneWidget);
@@ -270,7 +272,7 @@ void main() {
           expect(find.text('data: data1'), findsOneWidget);
           expect(find.text('error: null'), findsOneWidget);
 
-          await tester.pumpWithQueryClientProvider(
+          await tester.pumpWidget(withQueryClientProvider(
             widget.copyWith(
               id: 'id2',
               fetcher: (id) async {
@@ -279,20 +281,22 @@ void main() {
               },
             ),
             client,
-          );
+          ));
 
           expect(find.text('status: success'), findsOneWidget);
           expect(find.text('data: cached data2'), findsOneWidget);
           expect(find.text('error: null'), findsOneWidget);
+
+          await client.close();
         },
       );
 
       testWidgets(
         'should refetch if a stale cached query with the new "id" exists and the "refetchOnInit" is set to "RefetchMode.stale"',
         (tester) async {
-          final client = QueryClient()..setQueryData('id2', 'cached data2');
           const staleDuration = Duration(minutes: 10);
           const fetchDuration = Duration(seconds: 3);
+          final client = QueryClient()..setQueryData('id2', 'cached data2');
           final widget = QueryBuilder<String>(
             id: 'id1',
             fetcher: (id) async {
@@ -302,17 +306,20 @@ void main() {
             staleDuration: staleDuration,
             refetchOnInit: RefetchMode.stale,
             builder: (context, state, child) {
-              return Column(
-                children: [
-                  Text('status: ${state.status.name}'),
-                  Text('data: ${state.data}'),
-                  Text('error: ${state.error}'),
-                ],
+              return Directionality(
+                textDirection: TextDirection.ltr,
+                child: Column(
+                  children: [
+                    Text('status: ${state.status.name}'),
+                    Text('data: ${state.data}'),
+                    Text('error: ${state.error}'),
+                  ],
+                ),
               );
             },
           );
 
-          await tester.pumpWithQueryClientProvider(
+          await tester.pumpWidget(withQueryClientProvider(
             widget.copyWith(
               id: 'id1',
               fetcher: (id) async {
@@ -321,7 +328,7 @@ void main() {
               },
             ),
             client,
-          );
+          ));
 
           expect(find.text('status: fetching'), findsOneWidget);
           expect(find.text('data: null'), findsOneWidget);
@@ -333,7 +340,7 @@ void main() {
           expect(find.text('data: data1'), findsOneWidget);
           expect(find.text('error: null'), findsOneWidget);
 
-          await tester.pumpWithQueryClientProvider(
+          await tester.pumpWidget(withQueryClientProvider(
             widget.copyWith(
               id: 'id2',
               fetcher: (id) async {
@@ -342,7 +349,7 @@ void main() {
               },
             ),
             client,
-          );
+          ));
 
           // The data is not stale yet, it should not refetch.
           expect(find.text('status: success'), findsOneWidget);
@@ -351,7 +358,7 @@ void main() {
 
           await tester.pump(staleDuration);
 
-          await tester.pumpWithQueryClientProvider(
+          await tester.pumpWidget(withQueryClientProvider(
             widget.copyWith(
               id: 'id1',
               fetcher: (id) async {
@@ -360,8 +367,8 @@ void main() {
               },
             ),
             client,
-          );
-          await tester.pumpWithQueryClientProvider(
+          ));
+          await tester.pumpWidget(withQueryClientProvider(
             widget.copyWith(
               id: 'id2',
               fetcher: (id) async {
@@ -370,7 +377,7 @@ void main() {
               },
             ),
             client,
-          );
+          ));
 
           expect(find.text('status: fetching'), findsOneWidget);
           expect(find.text('data: cached data2'), findsOneWidget);
@@ -381,14 +388,16 @@ void main() {
           expect(find.text('status: success'), findsOneWidget);
           expect(find.text('data: data2'), findsOneWidget);
           expect(find.text('error: null'), findsOneWidget);
+
+          await client.close();
         },
       );
 
       testWidgets(
         'should refetch if a cached query with the new "id" exists and the "refetchOnInit" is set to "RefetchMode.always"',
         (tester) async {
-          final client = QueryClient()..setQueryData('id2', 'cached data2');
           const fetchDuration = Duration(seconds: 3);
+          final client = QueryClient()..setQueryData('id2', 'cached data2');
           final widget = QueryBuilder<String>(
             id: 'id1',
             fetcher: (id) async {
@@ -397,17 +406,20 @@ void main() {
             },
             refetchOnInit: RefetchMode.always,
             builder: (context, state, child) {
-              return Column(
-                children: [
-                  Text('status: ${state.status.name}'),
-                  Text('data: ${state.data}'),
-                  Text('error: ${state.error}'),
-                ],
+              return Directionality(
+                textDirection: TextDirection.ltr,
+                child: Column(
+                  children: [
+                    Text('status: ${state.status.name}'),
+                    Text('data: ${state.data}'),
+                    Text('error: ${state.error}'),
+                  ],
+                ),
               );
             },
           );
 
-          await tester.pumpWithQueryClientProvider(
+          await tester.pumpWidget(withQueryClientProvider(
             widget.copyWith(
               id: 'id1',
               fetcher: (id) async {
@@ -416,7 +428,7 @@ void main() {
               },
             ),
             client,
-          );
+          ));
 
           expect(find.text('status: fetching'), findsOneWidget);
           expect(find.text('data: null'), findsOneWidget);
@@ -428,7 +440,7 @@ void main() {
           expect(find.text('data: data1'), findsOneWidget);
           expect(find.text('error: null'), findsOneWidget);
 
-          await tester.pumpWithQueryClientProvider(
+          await tester.pumpWidget(withQueryClientProvider(
             widget.copyWith(
               id: 'id2',
               fetcher: (id) async {
@@ -437,7 +449,7 @@ void main() {
               },
             ),
             client,
-          );
+          ));
 
           expect(find.text('status: fetching'), findsOneWidget);
           expect(find.text('data: cached data2'), findsOneWidget);
@@ -448,6 +460,8 @@ void main() {
           expect(find.text('status: success'), findsOneWidget);
           expect(find.text('data: data2'), findsOneWidget);
           expect(find.text('error: null'), findsOneWidget);
+
+          await client.close();
         },
       );
     },
@@ -466,17 +480,20 @@ void main() {
             },
             enabled: false,
             builder: (context, state, child) {
-              return Column(
-                children: [
-                  Text('status: ${state.status.name}'),
-                  Text('data: ${state.data}'),
-                  Text('error: ${state.error}'),
-                ],
+              return Directionality(
+                textDirection: TextDirection.ltr,
+                child: Column(
+                  children: [
+                    Text('status: ${state.status.name}'),
+                    Text('data: ${state.data}'),
+                    Text('error: ${state.error}'),
+                  ],
+                ),
               );
             },
           );
 
-          await tester.pumpWithQueryClientProvider(widget);
+          await tester.pumpWidget(withQueryClientProvider(widget));
 
           expect(find.text('status: idle'), findsOneWidget);
           expect(find.text('data: null'), findsOneWidget);
@@ -495,21 +512,26 @@ void main() {
             },
             enabled: false,
             builder: (context, state, child) {
-              return Column(
-                children: [
-                  Text('status: ${state.status.name}'),
-                  Text('data: ${state.data}'),
-                  Text('error: ${state.error}'),
-                ],
+              return Directionality(
+                textDirection: TextDirection.ltr,
+                child: Column(
+                  children: [
+                    Text('status: ${state.status.name}'),
+                    Text('data: ${state.data}'),
+                    Text('error: ${state.error}'),
+                  ],
+                ),
               );
             },
           );
 
-          await tester.pumpWithQueryClientProvider(widget, client);
+          await tester.pumpWidget(withQueryClientProvider(widget, client));
 
           expect(find.text('status: success'), findsOneWidget);
           expect(find.text('data: cached data'), findsOneWidget);
           expect(find.text('error: null'), findsOneWidget);
+
+          await client.close();
         },
       );
 
@@ -526,23 +548,26 @@ void main() {
               enabled: false,
               refetchOnInit: mode,
               builder: (context, state, child) {
-                return Column(
-                  children: [
-                    Text('status: ${state.status.name}'),
-                    Text('data: ${state.data}'),
-                    Text('error: ${state.error}'),
-                  ],
+                return Directionality(
+                  textDirection: TextDirection.ltr,
+                  child: Column(
+                    children: [
+                      Text('status: ${state.status.name}'),
+                      Text('data: ${state.data}'),
+                      Text('error: ${state.error}'),
+                    ],
+                  ),
                 );
               },
             );
 
-            await tester.pumpWithQueryClientProvider(widget, client);
+            await tester.pumpWidget(withQueryClientProvider(widget, client));
 
             expect(find.text('status: success'), findsOneWidget);
             expect(find.text('data: cached data'), findsOneWidget);
             expect(find.text('error: null'), findsOneWidget);
 
-            await tester.pumpWidget(Placeholder());
+            await client.close();
           }
         },
       );
@@ -561,17 +586,20 @@ void main() {
               refetchOnInit: RefetchMode.never,
               refetchOnResumed: mode,
               builder: (context, state, child) {
-                return Column(
-                  children: [
-                    Text('status: ${state.status.name}'),
-                    Text('data: ${state.data}'),
-                    Text('error: ${state.error}'),
-                  ],
+                return Directionality(
+                  textDirection: TextDirection.ltr,
+                  child: Column(
+                    children: [
+                      Text('status: ${state.status.name}'),
+                      Text('data: ${state.data}'),
+                      Text('error: ${state.error}'),
+                    ],
+                  ),
                 );
               },
             );
 
-            await tester.pumpWithQueryClientProvider(widget, client);
+            await tester.pumpWidget(withQueryClientProvider(widget, client));
 
             tester.binding
                 .handleAppLifecycleStateChanged(AppLifecycleState.resumed);
@@ -581,7 +609,7 @@ void main() {
             expect(find.text('data: cached data'), findsOneWidget);
             expect(find.text('error: null'), findsOneWidget);
 
-            await tester.pumpWidget(Placeholder());
+            await client.close();
           }
         },
       );
@@ -589,8 +617,8 @@ void main() {
       testWidgets(
         'should not refetch on intervals even if the "refetchIntervalDuration" is set',
         (tester) async {
-          final client = QueryClient()..setQueryData('id', 'cached data');
           const refetchIntervalDuration = Duration(seconds: 3);
+          final client = QueryClient()..setQueryData('id', 'cached data');
           final widget = QueryBuilder<String>(
             id: 'id',
             fetcher: (id) async {
@@ -601,17 +629,20 @@ void main() {
             refetchOnResumed: RefetchMode.never,
             refetchIntervalDuration: refetchIntervalDuration,
             builder: (context, state, child) {
-              return Column(
-                children: [
-                  Text('status: ${state.status.name}'),
-                  Text('data: ${state.data}'),
-                  Text('error: ${state.error}'),
-                ],
+              return Directionality(
+                textDirection: TextDirection.ltr,
+                child: Column(
+                  children: [
+                    Text('status: ${state.status.name}'),
+                    Text('data: ${state.data}'),
+                    Text('error: ${state.error}'),
+                  ],
+                ),
               );
             },
           );
 
-          await tester.pumpWithQueryClientProvider(widget, client);
+          await tester.pumpWidget(withQueryClientProvider(widget, client));
 
           for (int i = 0; i < 5; i++) {
             expect(find.text('status: success'), findsOneWidget);
@@ -620,6 +651,8 @@ void main() {
 
             await tester.pump(refetchIntervalDuration);
           }
+
+          await client.close();
         },
       );
     },
@@ -640,22 +673,25 @@ void main() {
             },
             enabled: false,
             builder: (context, state, child) {
-              return Column(
-                children: [
-                  Text('status: ${state.status.name}'),
-                  Text('data: ${state.data}'),
-                  Text('error: ${state.error}'),
-                ],
+              return Directionality(
+                textDirection: TextDirection.ltr,
+                child: Column(
+                  children: [
+                    Text('status: ${state.status.name}'),
+                    Text('data: ${state.data}'),
+                    Text('error: ${state.error}'),
+                  ],
+                ),
               );
             },
           );
 
-          await tester.pumpWithQueryClientProvider(
+          await tester.pumpWidget(withQueryClientProvider(
             widget.copyWith(enabled: false),
-          );
-          await tester.pumpWithQueryClientProvider(
+          ));
+          await tester.pumpWidget(withQueryClientProvider(
             widget.copyWith(enabled: true),
-          );
+          ));
 
           expect(find.text('status: fetching'), findsOneWidget);
           expect(find.text('data: null'), findsOneWidget);
@@ -672,8 +708,8 @@ void main() {
       testWidgets(
         'should not refetch if the "refetchOnInit" is set to "RefetchMode.never"',
         (tester) async {
-          final client = QueryClient()..setQueryData('id', 'cached data');
           const fetchDuration = Duration(seconds: 3);
+          final client = QueryClient()..setQueryData('id', 'cached data');
           final widget = QueryBuilder<String>(
             id: 'id',
             fetcher: (id) async {
@@ -683,37 +719,42 @@ void main() {
             enabled: false,
             refetchOnInit: RefetchMode.never,
             builder: (context, state, child) {
-              return Column(
-                children: [
-                  Text('status: ${state.status.name}'),
-                  Text('data: ${state.data}'),
-                  Text('error: ${state.error}'),
-                ],
+              return Directionality(
+                textDirection: TextDirection.ltr,
+                child: Column(
+                  children: [
+                    Text('status: ${state.status.name}'),
+                    Text('data: ${state.data}'),
+                    Text('error: ${state.error}'),
+                  ],
+                ),
               );
             },
           );
 
-          await tester.pumpWithQueryClientProvider(
+          await tester.pumpWidget(withQueryClientProvider(
             widget.copyWith(enabled: false),
             client,
-          );
-          await tester.pumpWithQueryClientProvider(
+          ));
+          await tester.pumpWidget(withQueryClientProvider(
             widget.copyWith(enabled: true),
             client,
-          );
+          ));
 
           expect(find.text('status: success'), findsOneWidget);
           expect(find.text('data: cached data'), findsOneWidget);
           expect(find.text('error: null'), findsOneWidget);
+
+          await client.close();
         },
       );
 
       testWidgets(
         'should refetch if the "refetchOnInit" is set to "RefecthMode.stale" and the data is stale',
         (tester) async {
-          final client = QueryClient()..setQueryData('id', 'cached data');
-          const staleDuration = Duration(minutes: 10);
           const fetchDuration = Duration(seconds: 3);
+          const staleDuration = Duration(minutes: 10);
+          final client = QueryClient()..setQueryData('id', 'cached data');
           final widget = QueryBuilder<String>(
             id: 'id',
             fetcher: (id) async {
@@ -724,24 +765,27 @@ void main() {
             staleDuration: staleDuration,
             refetchOnInit: RefetchMode.stale,
             builder: (context, state, child) {
-              return Column(
-                children: [
-                  Text('status: ${state.status.name}'),
-                  Text('data: ${state.data}'),
-                  Text('error: ${state.error}'),
-                ],
+              return Directionality(
+                textDirection: TextDirection.ltr,
+                child: Column(
+                  children: [
+                    Text('status: ${state.status.name}'),
+                    Text('data: ${state.data}'),
+                    Text('error: ${state.error}'),
+                  ],
+                ),
               );
             },
           );
 
-          await tester.pumpWithQueryClientProvider(
+          await tester.pumpWidget(withQueryClientProvider(
             widget.copyWith(enabled: false),
             client,
-          );
-          await tester.pumpWithQueryClientProvider(
+          ));
+          await tester.pumpWidget(withQueryClientProvider(
             widget.copyWith(enabled: true),
             client,
-          );
+          ));
 
           // The data is not stale yet, the query should not be fetching.
           expect(find.text('status: success'), findsOneWidget);
@@ -749,14 +793,14 @@ void main() {
           expect(find.text('error: null'), findsOneWidget);
 
           await tester.pump(staleDuration);
-          await tester.pumpWithQueryClientProvider(
+          await tester.pumpWidget(withQueryClientProvider(
             widget.copyWith(enabled: false),
             client,
-          );
-          await tester.pumpWithQueryClientProvider(
+          ));
+          await tester.pumpWidget(withQueryClientProvider(
             widget.copyWith(enabled: true),
             client,
-          );
+          ));
 
           // The data is stale, the query should be fetching.
           expect(find.text('status: fetching'), findsOneWidget);
@@ -768,16 +812,18 @@ void main() {
           expect(find.text('status: success'), findsOneWidget);
           expect(find.text('data: data'), findsOneWidget);
           expect(find.text('error: null'), findsOneWidget);
+
+          await client.close();
         },
       );
 
       testWidgets(
         'should refetch if the "refetchOnInit" is set to "RefecthMode.always"',
         (tester) async {
-          final client = QueryClient()..setQueryData('id', 'cached data');
           const fetchDuration = Duration(seconds: 3);
+          final client = QueryClient()..setQueryData('id', 'cached data');
           final widget = QueryBuilder<String>(
-            key: ValueKey('key'),
+            key: Key('query_builder'),
             id: 'id',
             fetcher: (id) async {
               await Future.delayed(fetchDuration);
@@ -786,24 +832,27 @@ void main() {
             enabled: false,
             refetchOnInit: RefetchMode.always,
             builder: (context, state, child) {
-              return Column(
-                children: [
-                  Text('status: ${state.status.name}'),
-                  Text('data: ${state.data}'),
-                  Text('error: ${state.error}'),
-                ],
+              return Directionality(
+                textDirection: TextDirection.ltr,
+                child: Column(
+                  children: [
+                    Text('status: ${state.status.name}'),
+                    Text('data: ${state.data}'),
+                    Text('error: ${state.error}'),
+                  ],
+                ),
               );
             },
           );
 
-          await tester.pumpWithQueryClientProvider(
+          await tester.pumpWidget(withQueryClientProvider(
             widget.copyWith(enabled: false),
             client,
-          );
-          await tester.pumpWithQueryClientProvider(
+          ));
+          await tester.pumpWidget(withQueryClientProvider(
             widget.copyWith(enabled: true),
             client,
-          );
+          ));
 
           expect(find.text('status: fetching'), findsOneWidget);
           expect(find.text('data: cached data'), findsOneWidget);
@@ -814,6 +863,8 @@ void main() {
           expect(find.text('status: success'), findsOneWidget);
           expect(find.text('data: data'), findsOneWidget);
           expect(find.text('error: null'), findsOneWidget);
+
+          await client.close();
         },
       );
     },
@@ -834,17 +885,20 @@ void main() {
             },
             initialData: 'initial data',
             builder: (context, state, child) {
-              return Column(
-                children: [
-                  Text('status: ${state.status.name}'),
-                  Text('data: ${state.data}'),
-                  Text('error: ${state.error}'),
-                ],
+              return Directionality(
+                textDirection: TextDirection.ltr,
+                child: Column(
+                  children: [
+                    Text('status: ${state.status.name}'),
+                    Text('data: ${state.data}'),
+                    Text('error: ${state.error}'),
+                  ],
+                ),
               );
             },
           );
 
-          await tester.pumpWithQueryClientProvider(widget);
+          await tester.pumpWidget(withQueryClientProvider(widget));
 
           expect(find.text('status: fetching'), findsOneWidget);
           expect(find.text('data: initial data'), findsOneWidget);
@@ -871,17 +925,20 @@ void main() {
             },
             initialData: 'initial data',
             builder: (context, state, child) {
-              return Column(
-                children: [
-                  Text('status: ${state.status.name}'),
-                  Text('data: ${state.data}'),
-                  Text('error: ${state.error}'),
-                ],
+              return Directionality(
+                textDirection: TextDirection.ltr,
+                child: Column(
+                  children: [
+                    Text('status: ${state.status.name}'),
+                    Text('data: ${state.data}'),
+                    Text('error: ${state.error}'),
+                  ],
+                ),
               );
             },
           );
 
-          await tester.pumpWithQueryClientProvider(widget, client);
+          await tester.pumpWidget(withQueryClientProvider(widget, client));
 
           expect(find.text('status: fetching'), findsOneWidget);
           expect(find.text('data: cached data'), findsOneWidget);
@@ -892,6 +949,8 @@ void main() {
           expect(find.text('status: success'), findsOneWidget);
           expect(find.text('data: data'), findsOneWidget);
           expect(find.text('error: null'), findsOneWidget);
+
+          await client.close();
         },
       );
 
@@ -914,17 +973,20 @@ void main() {
             initialData: 'initial data',
             initialDataUpdatedAt: clock.ago(minutes: 2),
             builder: (context, state, child) {
-              return Column(
-                children: [
-                  Text('status: ${state.status.name}'),
-                  Text('data: ${state.data}'),
-                  Text('error: ${state.error}'),
-                ],
+              return Directionality(
+                textDirection: TextDirection.ltr,
+                child: Column(
+                  children: [
+                    Text('status: ${state.status.name}'),
+                    Text('data: ${state.data}'),
+                    Text('error: ${state.error}'),
+                  ],
+                ),
               );
             },
           );
 
-          await tester.pumpWithQueryClientProvider(widget, client);
+          await tester.pumpWidget(withQueryClientProvider(widget, client));
 
           expect(find.text('status: fetching'), findsOneWidget);
           expect(find.text('data: initial data'), findsOneWidget);
@@ -935,6 +997,8 @@ void main() {
           expect(find.text('status: success'), findsOneWidget);
           expect(find.text('data: data'), findsOneWidget);
           expect(find.text('error: null'), findsOneWidget);
+
+          await client.close();
         },
       );
     },
@@ -944,10 +1008,10 @@ void main() {
     'when the "cacheDuration" is set',
     () {
       testWidgets(
-        'should schedule garbage collection if there is no "QueryBuilder"ƒ',
+        'should schedule garbage collection if there is no "QueryBuilder"',
         (tester) async {
-          final client = QueryClient();
           const cacheDuration = Duration(minutes: 5);
+          final client = QueryClient();
           final widget = QueryBuilder(
             id: 'id',
             fetcher: (id) async {
@@ -955,35 +1019,40 @@ void main() {
             },
             cacheDuration: cacheDuration,
             builder: (context, state, child) {
-              return Column(
-                children: [
-                  Text('status: ${state.status.name}'),
-                  Text('data: ${state.data}'),
-                  Text('error: ${state.error}'),
-                ],
+              return Directionality(
+                textDirection: TextDirection.ltr,
+                child: Column(
+                  children: [
+                    Text('status: ${state.status.name}'),
+                    Text('data: ${state.data}'),
+                    Text('error: ${state.error}'),
+                  ],
+                ),
               );
             },
           );
 
-          await tester.pumpWithQueryClientProvider(widget, client);
+          await tester.pumpWidget(withQueryClientProvider(widget, client));
 
           expect(client.cache.exist('id'), isTrue);
 
-          await tester.pumpWithQueryClientProvider(Placeholder(), client);
+          await tester.pumpWidget(withQueryClientProvider(null, client));
 
           expect(client.cache.exist('id'), isTrue);
 
           await tester.pump(cacheDuration);
 
           expect(client.cache.exist('id'), isFalse);
+
+          await client.close();
         },
       );
 
       testWidgets(
         'should cancel the garbage collection if a "QueryBuilder" reappears',
         (tester) async {
-          final client = QueryClient();
           const cacheDuration = Duration(minutes: 5);
+          final client = QueryClient();
           final widget = QueryBuilder(
             id: 'id',
             fetcher: (id) async {
@@ -991,31 +1060,36 @@ void main() {
             },
             cacheDuration: cacheDuration,
             builder: (context, state, child) {
-              return Column(
-                children: [
-                  Text('status: ${state.status.name}'),
-                  Text('data: ${state.data}'),
-                  Text('error: ${state.error}'),
-                ],
+              return Directionality(
+                textDirection: TextDirection.ltr,
+                child: Column(
+                  children: [
+                    Text('status: ${state.status.name}'),
+                    Text('data: ${state.data}'),
+                    Text('error: ${state.error}'),
+                  ],
+                ),
               );
             },
           );
 
-          await tester.pumpWithQueryClientProvider(widget, client);
+          await tester.pumpWidget(withQueryClientProvider(widget, client));
 
           expect(client.cache.exist('id'), isTrue);
 
-          await tester.pumpWithQueryClientProvider(Placeholder(), client);
+          await tester.pumpWidget(withQueryClientProvider(null, client));
 
           expect(client.cache.exist('id'), isTrue);
 
-          await tester.pumpWithQueryClientProvider(widget, client);
+          await tester.pumpWidget(withQueryClientProvider(widget, client));
 
           expect(client.cache.exist('id'), isTrue);
 
           await tester.pump(cacheDuration);
 
           expect(client.cache.exist('id'), isTrue);
+
+          await client.close();
         },
       );
     },
@@ -1036,18 +1110,21 @@ void main() {
             },
             placeholder: 'placeholder data',
             builder: (context, state, child) {
-              return Column(
-                children: [
-                  Text('status: ${state.status.name}'),
-                  Text('data: ${state.data}'),
-                  Text('error: ${(state.error as TestException?)?.message}'),
-                ],
+              return Directionality(
+                textDirection: TextDirection.ltr,
+                child: Column(
+                  children: [
+                    Text('status: ${state.status.name}'),
+                    Text('data: ${state.data}'),
+                    Text('error: ${state.error}'),
+                  ],
+                ),
               );
             },
           );
 
           // Tests success case.
-          await tester.pumpWithQueryClientProvider(widget);
+          await tester.pumpWidget(withQueryClientProvider(widget));
 
           expect(find.text('status: fetching'), findsOneWidget);
           expect(find.text('data: placeholder data'), findsOneWidget);
@@ -1060,8 +1137,8 @@ void main() {
           expect(find.text('error: null'), findsOneWidget);
 
           // Tests failure case.
-          await tester.pumpWidget(Placeholder());
-          await tester.pumpWithQueryClientProvider(
+          await tester.pumpWidget(const Placeholder());
+          await tester.pumpWidget(withQueryClientProvider(
             widget.copyWith(
               fetcher: (id) async {
                 await Future.delayed(fetchDuration);
@@ -1069,7 +1146,7 @@ void main() {
               },
               retryMaxAttempts: 1,
             ),
-          );
+          ));
 
           expect(find.text('status: fetching'), findsOneWidget);
           expect(find.text('data: placeholder data'), findsOneWidget);
@@ -1139,17 +1216,20 @@ void main() {
               retryDelayFactor: retryDelayFactor,
               retryRandomizationFactor: 0.0,
               builder: (context, state, child) {
-                return Column(
-                  children: [
-                    Text('status: ${state.status.name}'),
-                    Text('data: ${state.data}'),
-                    Text('error: ${(state.error as TestException?)?.message}'),
-                  ],
+                return Directionality(
+                  textDirection: TextDirection.ltr,
+                  child: Column(
+                    children: [
+                      Text('status: ${state.status.name}'),
+                      Text('data: ${state.data}'),
+                      Text('error: ${state.error}'),
+                    ],
+                  ),
                 );
               },
             );
 
-            await tester.pumpWithQueryClientProvider(widget);
+            await tester.pumpWidget(withQueryClientProvider(widget));
 
             expect(find.text('status: fetching'), findsOneWidget);
             expect(find.text('data: null'), findsOneWidget);
@@ -1177,7 +1257,7 @@ void main() {
         'should not retry if the "retryWhen" returns "false"',
         (tester) async {
           const fetchDuration = Duration(seconds: 3);
-          final widget = QueryBuilder(
+          final widget = QueryBuilder<String>(
             id: 'id',
             fetcher: (id) async {
               await Future.delayed(fetchDuration);
@@ -1186,17 +1266,20 @@ void main() {
             retryWhen: (e) => false,
             retryMaxAttempts: 3,
             builder: (context, state, child) {
-              return Column(
-                children: [
-                  Text('status: ${state.status.name}'),
-                  Text('data: ${state.data}'),
-                  Text('error: ${(state.error as TestException?)?.message}'),
-                ],
+              return Directionality(
+                textDirection: TextDirection.ltr,
+                child: Column(
+                  children: [
+                    Text('status: ${state.status.name}'),
+                    Text('data: ${state.data}'),
+                    Text('error: ${state.error}'),
+                  ],
+                ),
               );
             },
           );
 
-          await tester.pumpWithQueryClientProvider(widget);
+          await tester.pumpWidget(withQueryClientProvider(widget));
 
           expect(find.text('status: fetching'), findsOneWidget);
           expect(find.text('data: null'), findsOneWidget);
@@ -1215,7 +1298,7 @@ void main() {
         (tester) async {
           int attempts = 0;
           const fetchDuration = Duration(seconds: 3);
-          final widget = QueryBuilder(
+          final widget = QueryBuilder<String>(
             id: 'id',
             fetcher: (id) async {
               await Future.delayed(fetchDuration);
@@ -1235,17 +1318,20 @@ void main() {
             },
             retryMaxAttempts: 3,
             builder: (context, state, child) {
-              return Column(
-                children: [
-                  Text('status: ${state.status.name}'),
-                  Text('data: ${state.data}'),
-                  Text('error: ${(state.error as TestException?)?.message}'),
-                ],
+              return Directionality(
+                textDirection: TextDirection.ltr,
+                child: Column(
+                  children: [
+                    Text('status: ${state.status.name}'),
+                    Text('data: ${state.data}'),
+                    Text('error: ${state.error}'),
+                  ],
+                ),
               );
             },
           );
 
-          await tester.pumpWithQueryClientProvider(widget);
+          await tester.pumpWidget(withQueryClientProvider(widget));
 
           expect(find.text('status: fetching'), findsOneWidget);
           expect(find.text('data: null'), findsOneWidget);
@@ -1273,8 +1359,8 @@ void main() {
       testWidgets(
         'should not refetch if the "refetchOnInit" is set to "RefetchMode.never"',
         (tester) async {
-          final client = QueryClient()..setQueryData('id', 'cached data');
           const fetchDuration = Duration(seconds: 3);
+          final client = QueryClient()..setQueryData('id', 'cached data');
           final widget = QueryBuilder<String>(
             id: 'id',
             fetcher: (id) async {
@@ -1283,30 +1369,35 @@ void main() {
             },
             refetchOnInit: RefetchMode.never,
             builder: (context, state, child) {
-              return Column(
-                children: [
-                  Text('status: ${state.status.name}'),
-                  Text('data: ${state.data}'),
-                  Text('error: ${state.error}'),
-                ],
+              return Directionality(
+                textDirection: TextDirection.ltr,
+                child: Column(
+                  children: [
+                    Text('status: ${state.status.name}'),
+                    Text('data: ${state.data}'),
+                    Text('error: ${state.error}'),
+                  ],
+                ),
               );
             },
           );
 
-          await tester.pumpWithQueryClientProvider(widget, client);
+          await tester.pumpWidget(withQueryClientProvider(widget, client));
 
           expect(find.text('status: success'), findsOneWidget);
           expect(find.text('data: cached data'), findsOneWidget);
           expect(find.text('error: null'), findsOneWidget);
+
+          await client.close();
         },
       );
 
       testWidgets(
         'should refetch if the "refetchOnInit" is set to "RefecthMode.stale" and the data is stale',
         (tester) async {
-          final client = QueryClient()..setQueryData('id', 'cached data');
-          const staleDuration = Duration(minutes: 10);
           const fetchDuration = Duration(seconds: 3);
+          const staleDuration = Duration(minutes: 10);
+          final client = QueryClient()..setQueryData('id', 'cached data');
           final widget = QueryBuilder<String>(
             id: 'id',
             fetcher: (id) async {
@@ -1316,17 +1407,20 @@ void main() {
             staleDuration: staleDuration,
             refetchOnInit: RefetchMode.stale,
             builder: (context, state, child) {
-              return Column(
-                children: [
-                  Text('status: ${state.status.name}'),
-                  Text('data: ${state.data}'),
-                  Text('error: ${state.error}'),
-                ],
+              return Directionality(
+                textDirection: TextDirection.ltr,
+                child: Column(
+                  children: [
+                    Text('status: ${state.status.name}'),
+                    Text('data: ${state.data}'),
+                    Text('error: ${state.error}'),
+                  ],
+                ),
               );
             },
           );
 
-          await tester.pumpWithQueryClientProvider(widget, client);
+          await tester.pumpWidget(withQueryClientProvider(widget, client));
 
           // The data is not stale yet, the query should not be fetching.
           expect(find.text('status: success'), findsOneWidget);
@@ -1335,8 +1429,8 @@ void main() {
 
           await tester.pump(staleDuration);
 
-          await tester.pumpWithQueryClientProvider(null, client);
-          await tester.pumpWithQueryClientProvider(widget, client);
+          await tester.pumpWidget(withQueryClientProvider(null, client));
+          await tester.pumpWidget(withQueryClientProvider(widget, client));
 
           // The data is stale, the query should be fetching.
           expect(find.text('status: fetching'), findsOneWidget);
@@ -1348,15 +1442,17 @@ void main() {
           expect(find.text('status: success'), findsOneWidget);
           expect(find.text('data: data'), findsOneWidget);
           expect(find.text('error: null'), findsOneWidget);
+
+          await client.close();
         },
       );
 
       testWidgets(
         'should refetch if the "refetchOnInit" is set to "RefecthMode.always"',
         (tester) async {
-          final client = QueryClient()..setQueryData('id', 'cached data');
-          const staleDuration = Duration(minutes: 10);
           const fetchDuration = Duration(seconds: 3);
+          const staleDuration = Duration(minutes: 10);
+          final client = QueryClient()..setQueryData('id', 'cached data');
           final widget = QueryBuilder<String>(
             id: 'id',
             fetcher: (id) async {
@@ -1366,17 +1462,20 @@ void main() {
             staleDuration: staleDuration,
             refetchOnInit: RefetchMode.always,
             builder: (context, state, child) {
-              return Column(
-                children: [
-                  Text('status: ${state.status.name}'),
-                  Text('data: ${state.data}'),
-                  Text('error: ${state.error}'),
-                ],
+              return Directionality(
+                textDirection: TextDirection.ltr,
+                child: Column(
+                  children: [
+                    Text('status: ${state.status.name}'),
+                    Text('data: ${state.data}'),
+                    Text('error: ${state.error}'),
+                  ],
+                ),
               );
             },
           );
 
-          await tester.pumpWithQueryClientProvider(widget, client);
+          await tester.pumpWidget(withQueryClientProvider(widget, client));
 
           // Should fetch even if the data is not stale.
           expect(find.text('status: fetching'), findsOneWidget);
@@ -1388,6 +1487,8 @@ void main() {
           expect(find.text('status: success'), findsOneWidget);
           expect(find.text('data: data'), findsOneWidget);
           expect(find.text('error: null'), findsOneWidget);
+
+          await client.close();
         },
       );
     },
@@ -1399,8 +1500,8 @@ void main() {
       testWidgets(
         'should not refetch if the "refetchOnResumed" is set to "RefetchMode.never"',
         (tester) async {
-          final client = QueryClient()..setQueryData('id', 'cached data');
           const fetchDuration = Duration(seconds: 3);
+          final client = QueryClient()..setQueryData('id', 'cached data');
           final widget = QueryBuilder<String>(
             id: 'id',
             fetcher: (id) async {
@@ -1410,17 +1511,20 @@ void main() {
             refetchOnInit: RefetchMode.never,
             refetchOnResumed: RefetchMode.never,
             builder: (context, state, child) {
-              return Column(
-                children: [
-                  Text('status: ${state.status.name}'),
-                  Text('data: ${state.data}'),
-                  Text('error: ${state.error}'),
-                ],
+              return Directionality(
+                textDirection: TextDirection.ltr,
+                child: Column(
+                  children: [
+                    Text('status: ${state.status.name}'),
+                    Text('data: ${state.data}'),
+                    Text('error: ${state.error}'),
+                  ],
+                ),
               );
             },
           );
 
-          await tester.pumpWithQueryClientProvider(widget, client);
+          await tester.pumpWidget(withQueryClientProvider(widget, client));
 
           tester.binding
               .handleAppLifecycleStateChanged(AppLifecycleState.resumed);
@@ -1428,15 +1532,17 @@ void main() {
           expect(find.text('status: success'), findsOneWidget);
           expect(find.text('data: cached data'), findsOneWidget);
           expect(find.text('error: null'), findsOneWidget);
+
+          await client.close();
         },
       );
 
       testWidgets(
         'should refetch if the "refetchOnResumed" is set to "RefecthMode.stale" and the data is stale',
         (tester) async {
-          final client = QueryClient()..setQueryData('id', 'cached data');
-          const staleDuration = Duration(minutes: 10);
           const fetchDuration = Duration(seconds: 3);
+          const staleDuration = Duration(minutes: 10);
+          final client = QueryClient()..setQueryData('id', 'cached data');
           final widget = QueryBuilder<String>(
             id: 'id',
             fetcher: (id) async {
@@ -1447,17 +1553,20 @@ void main() {
             refetchOnInit: RefetchMode.never,
             refetchOnResumed: RefetchMode.stale,
             builder: (context, state, child) {
-              return Column(
-                children: [
-                  Text('status: ${state.status.name}'),
-                  Text('data: ${state.data}'),
-                  Text('error: ${state.error}'),
-                ],
+              return Directionality(
+                textDirection: TextDirection.ltr,
+                child: Column(
+                  children: [
+                    Text('status: ${state.status.name}'),
+                    Text('data: ${state.data}'),
+                    Text('error: ${state.error}'),
+                  ],
+                ),
               );
             },
           );
 
-          await tester.pumpWithQueryClientProvider(widget, client);
+          await tester.pumpWidget(withQueryClientProvider(widget, client));
 
           tester.binding
               .handleAppLifecycleStateChanged(AppLifecycleState.resumed);
@@ -1484,15 +1593,17 @@ void main() {
           expect(find.text('status: success'), findsOneWidget);
           expect(find.text('data: data'), findsOneWidget);
           expect(find.text('error: null'), findsOneWidget);
+
+          await client.close();
         },
       );
 
       testWidgets(
         'should refetch if the "refetchOnResumed" is set to "RefecthMode.always"',
         (tester) async {
-          final client = QueryClient()..setQueryData('id', 'cached data');
-          const staleDuration = Duration(minutes: 10);
           const fetchDuration = Duration(seconds: 3);
+          const staleDuration = Duration(minutes: 10);
+          final client = QueryClient()..setQueryData('id', 'cached data');
           final widget = QueryBuilder<String>(
             id: 'id',
             fetcher: (id) async {
@@ -1503,17 +1614,20 @@ void main() {
             refetchOnInit: RefetchMode.never,
             refetchOnResumed: RefetchMode.always,
             builder: (context, state, child) {
-              return Column(
-                children: [
-                  Text('status: ${state.status.name}'),
-                  Text('data: ${state.data}'),
-                  Text('error: ${state.error}'),
-                ],
+              return Directionality(
+                textDirection: TextDirection.ltr,
+                child: Column(
+                  children: [
+                    Text('status: ${state.status.name}'),
+                    Text('data: ${state.data}'),
+                    Text('error: ${state.error}'),
+                  ],
+                ),
               );
             },
           );
 
-          await tester.pumpWithQueryClientProvider(widget, client);
+          await tester.pumpWidget(withQueryClientProvider(widget, client));
 
           tester.binding
               .handleAppLifecycleStateChanged(AppLifecycleState.resumed);
@@ -1529,6 +1643,8 @@ void main() {
           expect(find.text('status: success'), findsOneWidget);
           expect(find.text('data: data'), findsOneWidget);
           expect(find.text('error: null'), findsOneWidget);
+
+          await client.close();
         },
       );
     },
@@ -1550,17 +1666,20 @@ void main() {
             },
             refetchIntervalDuration: refetchIntervalDuration,
             builder: (context, state, child) {
-              return Column(
-                children: [
-                  Text('status: ${state.status.name}'),
-                  Text('data: ${state.data}'),
-                  Text('error: ${state.error}'),
-                ],
+              return Directionality(
+                textDirection: TextDirection.ltr,
+                child: Column(
+                  children: [
+                    Text('status: ${state.status.name}'),
+                    Text('data: ${state.data}'),
+                    Text('error: ${state.error}'),
+                  ],
+                ),
               );
             },
           );
 
-          await tester.pumpWithQueryClientProvider(widget);
+          await tester.pumpWidget(withQueryClientProvider(widget));
 
           expect(find.text('status: fetching'), findsOneWidget);
           expect(find.text('data: null'), findsOneWidget);
@@ -1601,21 +1720,22 @@ void main() {
               return 'data';
             },
             builder: (context, state, child) {
-              return Column(
-                children: [
-                  Text('status: ${state.status.name}'),
-                  Text('data: ${state.data}'),
-                  Text('error: ${state.error}'),
-                ],
+              return Directionality(
+                textDirection: TextDirection.ltr,
+                child: Column(
+                  children: [
+                    Text('status: ${state.status.name}'),
+                    Text('data: ${state.data}'),
+                    Text('error: ${state.error}'),
+                  ],
+                ),
               );
             },
           );
 
-          await tester.pumpWithQueryClientProvider(
-            widget.copyWith(
-              refetchIntervalDuration: refetchIntervalDuration1,
-            ),
-          );
+          await tester.pumpWidget(withQueryClientProvider(
+            widget.copyWith(refetchIntervalDuration: refetchIntervalDuration1),
+          ));
 
           expect(find.text('status: fetching'), findsOneWidget);
           expect(find.text('data: null'), findsOneWidget);
@@ -1643,11 +1763,9 @@ void main() {
 
           await tester.pump(const Duration(seconds: 5));
 
-          await tester.pumpWithQueryClientProvider(
-            widget.copyWith(
-              refetchIntervalDuration: refetchIntervalDuration2,
-            ),
-          );
+          await tester.pumpWidget(withQueryClientProvider(
+            widget.copyWith(refetchIntervalDuration: refetchIntervalDuration2),
+          ));
 
           expect(find.text('status: success'), findsOneWidget);
           expect(find.text('data: data'), findsOneWidget);
@@ -1685,11 +1803,9 @@ void main() {
           expect(find.text('data: data'), findsOneWidget);
           expect(find.text('error: null'), findsOneWidget);
 
-          await tester.pumpWithQueryClientProvider(
-            widget.copyWith(
-              refetchIntervalDuration: refetchIntervalDuration1,
-            ),
-          );
+          await tester.pumpWidget(withQueryClientProvider(
+            widget.copyWith(refetchIntervalDuration: refetchIntervalDuration1),
+          ));
 
           expect(find.text('status: fetching'), findsOneWidget);
           expect(find.text('data: data'), findsOneWidget);
@@ -1723,35 +1839,38 @@ void main() {
           const fetchDuration = Duration(seconds: 3);
           const shortestRefetchIntervalDuration = Duration(seconds: 7);
           const longestRefetchIntervalDuration = Duration(seconds: 17);
-          final baseWidget = QueryBuilder(
+          final widget = QueryBuilder<String>(
             id: 'id',
             fetcher: (id) async {
               await Future.delayed(fetchDuration);
               return 'data';
             },
             builder: (context, state, child) {
-              return Column(
-                children: [
-                  Text('status: ${state.status.name}'),
-                  Text('data: ${state.data}'),
-                  Text('error: ${state.error}'),
-                ],
+              return Directionality(
+                textDirection: TextDirection.ltr,
+                child: Column(
+                  children: [
+                    Text('status: ${state.status.name}'),
+                    Text('data: ${state.data}'),
+                    Text('error: ${state.error}'),
+                  ],
+                ),
               );
             },
           );
 
-          await tester.pumpWithQueryClientProvider(
+          await tester.pumpWidget(withQueryClientProvider(
             Column(
               children: [
-                baseWidget.copyWith(
+                widget.copyWith(
                   refetchIntervalDuration: shortestRefetchIntervalDuration,
                 ),
-                baseWidget.copyWith(
+                widget.copyWith(
                   refetchIntervalDuration: longestRefetchIntervalDuration,
                 ),
               ],
             ),
-          );
+          ));
 
           expect(find.text('status: fetching'), findsNWidgets(2));
           expect(find.text('data: null'), findsNWidgets(2));
@@ -1785,35 +1904,38 @@ void main() {
           const fetchDuration = Duration(seconds: 3);
           const shortestRefetchIntervalDuration = Duration(seconds: 7);
           const longestRefetchIntervalDuration = Duration(seconds: 17);
-          final baseWidget = QueryBuilder(
+          final widget = QueryBuilder(
             id: 'id',
             fetcher: (id) async {
               await Future.delayed(fetchDuration);
               return 'data';
             },
             builder: (context, state, child) {
-              return Column(
-                children: [
-                  Text('status: ${state.status.name}'),
-                  Text('data: ${state.data}'),
-                  Text('error: ${state.error}'),
-                ],
+              return Directionality(
+                textDirection: TextDirection.ltr,
+                child: Column(
+                  children: [
+                    Text('status: ${state.status.name}'),
+                    Text('data: ${state.data}'),
+                    Text('error: ${state.error}'),
+                  ],
+                ),
               );
             },
           );
 
-          await tester.pumpWithQueryClientProvider(
+          await tester.pumpWidget(withQueryClientProvider(
             Column(
               children: [
-                baseWidget.copyWith(
+                widget.copyWith(
                   refetchIntervalDuration: shortestRefetchIntervalDuration,
                 ),
-                baseWidget.copyWith(
+                widget.copyWith(
                   refetchIntervalDuration: longestRefetchIntervalDuration,
                 ),
               ],
             ),
-          );
+          ));
 
           expect(find.text('status: fetching'), findsNWidgets(2));
           expect(find.text('data: null'), findsNWidgets(2));
@@ -1839,15 +1961,15 @@ void main() {
             expect(find.text('error: null'), findsNWidgets(2));
           }
 
-          await tester.pumpWithQueryClientProvider(
+          await tester.pumpWidget(withQueryClientProvider(
             Column(
               children: [
-                baseWidget.copyWith(
+                widget.copyWith(
                   refetchIntervalDuration: longestRefetchIntervalDuration,
                 ),
               ],
             ),
-          );
+          ));
 
           for (int i = 0; i < 10; i++) {
             await tester.pump(longestRefetchIntervalDuration);
@@ -1870,7 +1992,7 @@ void main() {
         (tester) async {
           const fetchDuration = Duration(seconds: 3);
           const refetchIntervalDuration = Duration(seconds: 10);
-          final widget = QueryBuilder(
+          final widget = QueryBuilder<String>(
             id: 'id',
             fetcher: (id) async {
               await Future.delayed(fetchDuration);
@@ -1879,17 +2001,20 @@ void main() {
             refetchOnInit: RefetchMode.never,
             refetchIntervalDuration: refetchIntervalDuration,
             builder: (context, state, child) {
-              return Column(
-                children: [
-                  Text('status: ${state.status.name}'),
-                  Text('data: ${state.data}'),
-                  Text('error: ${state.error}'),
-                ],
+              return Directionality(
+                textDirection: TextDirection.ltr,
+                child: Column(
+                  children: [
+                    Text('status: ${state.status.name}'),
+                    Text('data: ${state.data}'),
+                    Text('error: ${state.error}'),
+                  ],
+                ),
               );
             },
           );
 
-          await tester.pumpWithQueryClientProvider(widget);
+          await tester.pumpWidget(withQueryClientProvider(widget));
 
           expect(find.text('status: fetching'), findsOneWidget);
           expect(find.text('data: null'), findsOneWidget);
@@ -1927,7 +2052,7 @@ void main() {
         (tester) async {
           int fetchCount = 0;
           const fetchDuration = Duration(seconds: 3);
-          final baseInstance = QueryBuilder(
+          final baseInstance = QueryBuilder<String>(
             id: 'id',
             fetcher: (id) async {
               fetchCount++;
@@ -1935,12 +2060,15 @@ void main() {
               return 'data';
             },
             builder: (context, state, child) {
-              return Column(
-                children: [
-                  Text('status: ${state.status.name}'),
-                  Text('data: ${state.data}'),
-                  Text('error: ${state.error}'),
-                ],
+              return Directionality(
+                textDirection: TextDirection.ltr,
+                child: Column(
+                  children: [
+                    Text('status: ${state.status.name}'),
+                    Text('data: ${state.data}'),
+                    Text('error: ${state.error}'),
+                  ],
+                ),
               );
             },
           );
@@ -1948,14 +2076,14 @@ void main() {
           final instance2 = baseInstance.copyWith(key: Key('key2'));
           final instance3 = baseInstance.copyWith(key: Key('key3'));
 
-          await tester.pumpWithQueryClientProvider(
+          await tester.pumpWidget(withQueryClientProvider(
             Column(
               children: [
                 instance1,
                 instance2,
               ],
             ),
-          );
+          ));
 
           expect(find.text('status: fetching'), findsNWidgets(2));
           expect(find.text('data: null'), findsNWidgets(2));
@@ -1969,7 +2097,7 @@ void main() {
 
           expect(fetchCount, 1);
 
-          await tester.pumpWithQueryClientProvider(
+          await tester.pumpWidget(withQueryClientProvider(
             Column(
               children: [
                 instance1,
@@ -1977,7 +2105,7 @@ void main() {
                 instance3,
               ],
             ),
-          );
+          ));
 
           expect(find.text('status: fetching'), findsNWidgets(3));
           expect(find.text('data: data'), findsNWidgets(3));
@@ -2010,17 +2138,20 @@ void main() {
               return 'data';
             },
             builder: (context, state, child) {
-              return Column(
-                children: [
-                  Text('status: ${state.status.name}'),
-                  Text('data: ${state.data}'),
-                  Text('error: ${(state.error as TestException?)?.message}'),
-                ],
+              return Directionality(
+                textDirection: TextDirection.ltr,
+                child: Column(
+                  children: [
+                    Text('status: ${state.status.name}'),
+                    Text('data: ${state.data}'),
+                    Text('error: ${state.error}'),
+                  ],
+                ),
               );
             },
           );
 
-          await tester.pumpWithQueryClientProvider(widget, client);
+          await tester.pumpWidget(withQueryClientProvider(widget, client));
 
           expect(find.text('status: fetching'), findsOneWidget);
           expect(find.text('data: null'), findsOneWidget);
@@ -2038,6 +2169,8 @@ void main() {
           expect(find.text('status: canceled'), findsOneWidget);
           expect(find.text('data: null'), findsOneWidget);
           expect(find.text('error: null'), findsOneWidget);
+
+          await client.close();
         },
       );
 
@@ -2057,17 +2190,20 @@ void main() {
             retryMaxAttempts: 3,
             retryRandomizationFactor: 0.0,
             builder: (context, state, child) {
-              return Column(
-                children: [
-                  Text('status: ${state.status.name}'),
-                  Text('data: ${state.data}'),
-                  Text('error: ${(state.error as TestException?)?.message}'),
-                ],
+              return Directionality(
+                textDirection: TextDirection.ltr,
+                child: Column(
+                  children: [
+                    Text('status: ${state.status.name}'),
+                    Text('data: ${state.data}'),
+                    Text('error: ${state.error}'),
+                  ],
+                ),
               );
             },
           );
 
-          await tester.pumpWithQueryClientProvider(widget, client);
+          await tester.pumpWidget(withQueryClientProvider(widget, client));
 
           expect(find.text('status: fetching'), findsOneWidget);
           expect(find.text('data: null'), findsOneWidget);
@@ -2101,6 +2237,8 @@ void main() {
 
           // No more retry should occur.
           expect(fetchCount, 2);
+
+          await client.close();
         },
       );
 
@@ -2116,17 +2254,20 @@ void main() {
               return 'data';
             },
             builder: (context, state, child) {
-              return Column(
-                children: [
-                  Text('status: ${state.status.name}'),
-                  Text('data: ${state.data}'),
-                  Text('error: ${(state.error as TestException?)?.message}'),
-                ],
+              return Directionality(
+                textDirection: TextDirection.ltr,
+                child: Column(
+                  children: [
+                    Text('status: ${state.status.name}'),
+                    Text('data: ${state.data}'),
+                    Text('error: ${state.error}'),
+                  ],
+                ),
               );
             },
           );
 
-          await tester.pumpWithQueryClientProvider(widget, client);
+          await tester.pumpWidget(withQueryClientProvider(widget, client));
 
           expect(find.text('status: fetching'), findsOneWidget);
           expect(find.text('data: null'), findsOneWidget);
@@ -2144,6 +2285,8 @@ void main() {
           expect(find.text('status: canceled'), findsOneWidget);
           expect(find.text('data: canceled data'), findsOneWidget);
           expect(find.text('error: null'), findsOneWidget);
+
+          await client.close();
         },
       );
 
@@ -2159,17 +2302,20 @@ void main() {
               return 'data';
             },
             builder: (context, state, child) {
-              return Column(
-                children: [
-                  Text('status: ${state.status.name}'),
-                  Text('data: ${state.data}'),
-                  Text('error: ${(state.error as TestException?)?.message}'),
-                ],
+              return Directionality(
+                textDirection: TextDirection.ltr,
+                child: Column(
+                  children: [
+                    Text('status: ${state.status.name}'),
+                    Text('data: ${state.data}'),
+                    Text('error: ${state.error}'),
+                  ],
+                ),
               );
             },
           );
 
-          await tester.pumpWithQueryClientProvider(widget, client);
+          await tester.pumpWidget(withQueryClientProvider(widget, client));
 
           expect(find.text('status: fetching'), findsOneWidget);
           expect(find.text('data: null'), findsOneWidget);
@@ -2190,6 +2336,8 @@ void main() {
           expect(find.text('status: canceled'), findsOneWidget);
           expect(find.text('data: null'), findsOneWidget);
           expect(find.text('error: canceled error'), findsOneWidget);
+
+          await client.close();
         },
       );
     },
@@ -2212,17 +2360,20 @@ void main() {
               return false;
             },
             builder: (context, state, child) {
-              return Column(
-                children: [
-                  Text('status: ${state.status.name}'),
-                  Text('data: ${state.data}'),
-                  Text('error: ${state.error}'),
-                ],
+              return Directionality(
+                textDirection: TextDirection.ltr,
+                child: Column(
+                  children: [
+                    Text('status: ${state.status.name}'),
+                    Text('data: ${state.data}'),
+                    Text('error: ${state.error}'),
+                  ],
+                ),
               );
             },
           );
 
-          await tester.pumpWithQueryClientProvider(widget);
+          await tester.pumpWidget(withQueryClientProvider(widget));
 
           expect(find.text('status: fetching'), findsOneWidget);
           expect(find.text('data: null'), findsOneWidget);
@@ -2251,17 +2402,20 @@ void main() {
               return prev.status.isFetching && curr.hasData;
             },
             builder: (context, state, child) {
-              return Column(
-                children: [
-                  Text('status: ${state.status.name}'),
-                  Text('data: ${state.data}'),
-                  Text('error: ${state.error}'),
-                ],
+              return Directionality(
+                textDirection: TextDirection.ltr,
+                child: Column(
+                  children: [
+                    Text('status: ${state.status.name}'),
+                    Text('data: ${state.data}'),
+                    Text('error: ${state.error}'),
+                  ],
+                ),
               );
             },
           );
 
-          await tester.pumpWithQueryClientProvider(widget);
+          await tester.pumpWidget(withQueryClientProvider(widget));
 
           expect(find.text('status: fetching'), findsOneWidget);
           expect(find.text('data: null'), findsOneWidget);
@@ -2285,8 +2439,21 @@ void main() {
           expect(find.text('status: success'), findsOneWidget);
           expect(find.text('data: data'), findsOneWidget);
           expect(find.text('error: null'), findsOneWidget);
+
+          await client.close();
         },
       );
     },
   );
+}
+
+class TestException implements Exception {
+  TestException(this.message);
+
+  final String message;
+
+  @override
+  String toString() {
+    return message;
+  }
 }

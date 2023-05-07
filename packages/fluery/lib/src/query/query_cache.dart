@@ -30,9 +30,7 @@ class QueryCache {
     _queries.remove(id);
   }
 
-  void dispose() {
-    for (final query in _queries.values) {
-      query.dispose();
-    }
+  Future<void> close() async {
+    await Future.wait([for (final query in _queries.values) query.close()]);
   }
 }

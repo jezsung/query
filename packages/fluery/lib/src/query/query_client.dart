@@ -35,7 +35,7 @@ class QueryClient {
     await cache.get<T>(id)?.cancel(data: data, error: error);
   }
 
-  void dispose() {
-    cache.dispose();
+  Future<void> close() async {
+    await cache.close();
   }
 }
