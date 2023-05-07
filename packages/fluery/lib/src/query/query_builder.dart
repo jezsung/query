@@ -136,26 +136,15 @@ class QueryBuilder<T> extends StatefulWidget {
 
 class _QueryBuilderState<T> extends State<QueryBuilder<T>>
     with WidgetsBindingObserver {
+  late Query<T> _query;
   late final QueryObserver<T> _observer;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-  }
 
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    final query = context.watch<QueryClient>().cache.build<T>(widget.id);
-
-    final initialData = widget.initialData;
-    if (initialData != null) {
-      query.setInitialData(
-        initialData,
-        widget.initialDataUpdatedAt,
-      );
-    }
+    _query = context.read<QueryClient>().cache.build<T>(widget.id);
 
     _observer = QueryObserver<T>(
       fetcher: widget.fetcher,
@@ -169,12 +158,49 @@ class _QueryBuilderState<T> extends State<QueryBuilder<T>>
       retryDelayFactor: widget.retryDelayFactor,
       retryRandomizationFactor: widget.retryRandomizationFactor,
       refetchIntervalDuration: widget.refetchIntervalDuration,
-    )..bind(query);
+    );
 
-    if (query.state.status.isIdle) {
+    if (widget.initialData != null) {
+      _query.setInitialData(
+        widget.initialData!,
+        widget.initialDataUpdatedAt,
+      );
+    }
+
+    _observer.bind(_query);
+
+    if (_query.state.status.isIdle) {
       _observer.fetch();
     } else {
       _refetch(widget.refetchOnInit);
+    }
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+
+    final query = context.watch<QueryClient>().cache.build<T>(widget.id);
+
+    if (query != _query) {
+      _observer.unbind();
+
+      _query = query;
+
+      if (widget.initialData != null) {
+        query.setInitialData(
+          widget.initialData!,
+          widget.initialDataUpdatedAt,
+        );
+      }
+
+      _observer.bind(_query);
+
+      if (query.state.status.isIdle) {
+        _observer.fetch();
+      } else {
+        _refetch(widget.refetchOnInit);
+      }
     }
   }
 
@@ -211,10 +237,11 @@ class _QueryBuilderState<T> extends State<QueryBuilder<T>>
     if (widget.id != oldWidget.id) {
       final query = context.read<QueryClient>().cache.build<T>(widget.id);
 
-      final initialData = widget.initialData;
-      if (initialData != null) {
+      _query = query;
+
+      if (widget.initialData != null) {
         query.setInitialData(
-          initialData,
+          widget.initialData!,
           widget.initialDataUpdatedAt,
         );
       }
@@ -231,9 +258,7 @@ class _QueryBuilderState<T> extends State<QueryBuilder<T>>
     }
 
     if (widget.enabled && !oldWidget.enabled) {
-      final query = context.read<QueryClient>().cache.build<T>(widget.id);
-
-      if (query.state.status.isIdle) {
+      if (_query.state.status.isIdle) {
         _observer.fetch();
       } else {
         _refetch(widget.refetchOnInit);
@@ -243,9 +268,7 @@ class _QueryBuilderState<T> extends State<QueryBuilder<T>>
     }
 
     if (widget.refetchIntervalDuration != oldWidget.refetchIntervalDuration) {
-      final query = context.read<QueryClient>().cache.build<T>(widget.id);
-
-      query.setRefetchInterval();
+      _query.setRefetchInterval();
 
       return;
     }
