@@ -376,29 +376,13 @@ class _MutationExamplePageState extends State<MutationExamplePage> {
   @override
   void initState() {
     super.initState();
-    _controller = MutationController<String, void>(
-      mutator: (args) async {
-        await Future.delayed(const Duration(seconds: 1));
-        // throw 'Mutation Failure';
-        return 'Mutation Success!';
-      },
-      onMutate: (state, args) async {
-        debugPrint('OnMutate');
-        await Future.delayed(const Duration(seconds: 3));
-      },
-      onSuccess: (state, args) async {
-        debugPrint('OnSuccess');
-        await Future.delayed(const Duration(seconds: 3));
-      },
-      onFailure: (state, args) async {
-        debugPrint('OnFailure');
-        await Future.delayed(const Duration(seconds: 1));
-      },
-      onSettled: (state, args) async {
-        debugPrint('OnSettled');
-        await Future.delayed(const Duration(seconds: 1));
-      },
-    );
+    _controller = MutationController<String, void>();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
   }
 
   @override
@@ -415,18 +399,37 @@ class _MutationExamplePageState extends State<MutationExamplePage> {
               },
               child: const Text('Mutate'),
             ),
+            ElevatedButton(
+              onPressed: () {
+                _controller.cancel(data: 'canceled!');
+              },
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                _controller.reset();
+              },
+              child: const Text('Reset'),
+            ),
             MutationBuilder<String, void>(
               controller: _controller,
               mutator: (args) async {
-                await Future.delayed(const Duration(seconds: 1));
-                return 'Mutation on widget Success!';
+                await Future.delayed(const Duration(seconds: 3));
+                return 'Mutation Success!';
               },
+              // listener: (context, state) {
+              //   debugPrint(state.status.name);
+              // },
               builder: (context, state, child) {
                 switch (state.status) {
                   case MutationStatus.idle:
                     return const Text('Idle');
                   case MutationStatus.mutating:
+                  case MutationStatus.retrying:
                     return const Text('Mutating');
+                  case MutationStatus.canceled:
+                    final String data = state.data as String;
+                    return Text('canceled $data');
                   case MutationStatus.success:
                     final String data = state.data as String;
                     return Text(data);

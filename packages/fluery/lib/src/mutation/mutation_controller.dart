@@ -1,164 +1,143 @@
-part of 'mutation_builder.dart';
+part of 'mutation.dart';
 
-typedef Mutator<Data, Args> = Future<Data> Function(Args? args);
+class MutationController<T, A> extends ValueNotifier<MutationState<T>> {
+  MutationController() : super(MutationState<T>());
 
-typedef MutationCallback<Args> = Function(MutationState state, Args? args);
+  final TimerInterceptor _timerInterceptor = TimerInterceptor();
 
-enum MutationStatus {
-  idle,
-  mutating,
-  success,
-  failure,
-}
+  _MutationWidgetState<T, A>? _state;
+  CancelableOperation<T>? _cancelableOperation;
 
-class MutationState<Data> extends Equatable {
-  const MutationState({
-    required this.status,
-    this.data,
-    this.error,
-  });
+  Mutator<T, A> get mutator {
+    assert(_state != null);
 
-  final MutationStatus status;
-  final Data? data;
-  final Object? error;
-
-  MutationState<Data> copyWith({
-    MutationStatus? status,
-    Data? data,
-    Object? error,
-  }) {
-    return MutationState<Data>(
-      status: status ?? this.status,
-      data: data ?? this.data,
-      error: error ?? this.error,
-    );
+    return _state!.mutator;
   }
 
-  @override
-  List<Object?> get props => [
-        status,
-        data,
-        error,
-      ];
-}
+  RetryCondition? get retryWhen {
+    assert(_state != null);
 
-class MutationController<Data, Args>
-    extends ValueNotifier<MutationState<Data>> {
-  MutationController({
-    Mutator<Data, Args>? mutator,
-    MutationCallback<Args>? onMutate,
-    MutationCallback<Args>? onSuccess,
-    MutationCallback<Args>? onFailure,
-    MutationCallback<Args>? onSettled,
-  })  : _mutator = mutator,
-        _onMutate = onMutate,
-        _onSuccess = onSuccess,
-        _onFailure = onFailure,
-        _onSettled = onSettled,
-        _mutatorSetByController = mutator != null,
-        _onMutateSetByController = onMutate != null,
-        _onSuccessSetByController = onSuccess != null,
-        _onFailureSetByController = onFailure != null,
-        _onSettledSetByController = onSettled != null,
-        super(MutationState<Data>(status: MutationStatus.idle));
-
-  Mutator<Data, Args>? _mutator;
-  MutationCallback<Args>? _onMutate;
-  MutationCallback<Args>? _onSuccess;
-  MutationCallback<Args>? _onFailure;
-  MutationCallback<Args>? _onSettled;
-
-  bool _mutatorSetByController;
-  bool _onMutateSetByController;
-  bool _onSuccessSetByController;
-  bool _onFailureSetByController;
-  bool _onSettledSetByController;
-
-  Mutator<Data, Args>? get mutator => _mutator;
-  set mutator(Mutator<Data, Args>? value) {
-    _mutator = value;
-    _mutatorSetByController = true;
+    return _state!.retryWhen;
   }
 
-  MutationCallback<Args>? get onMutate => _onMutate;
-  set onMutate(MutationCallback<Args>? value) {
-    _onMutate = value;
-    _onMutateSetByController = true;
+  int get retryMaxAttempts {
+    assert(_state != null);
+
+    return _state!.retryMaxAttempts;
   }
 
-  MutationCallback<Args>? get onSuccess => _onSuccess;
-  set onSuccess(MutationCallback<Args>? value) {
-    _onSuccess = value;
-    _onSuccessSetByController = true;
+  Duration get retryMaxDelay {
+    assert(_state != null);
+
+    return _state!.retryMaxDelay;
   }
 
-  MutationCallback<Args>? get onFailure => _onFailure;
-  set onFailure(MutationCallback<Args>? value) {
-    _onFailure = value;
-    _onFailureSetByController = true;
+  Duration get retryDelayFactor {
+    assert(_state != null);
+
+    return _state!.retryDelayFactor;
   }
 
-  MutationCallback<Args>? get onSettled => _onSettled;
-  set onSettled(MutationCallback<Args>? value) {
-    _onSettled = value;
-    _onSettledSetByController = true;
+  double get retryRandomizationFactor {
+    assert(_state != null);
+
+    return _state!.retryRandomizationFactor;
   }
 
-  final _FunctionQueueExecutor _functionQueueExecutor =
-      _FunctionQueueExecutor();
+  Future<void> mutate([A? args]) async {
+    assert(_state != null);
 
-  Future<void> mutate([Args? args]) async {
-    assert(_mutator != null);
+    if (value.status.isMutating) return;
 
-    Future<void> execute() async {
-      Data? data;
-      Object? error;
+    value = value.copyWith(status: MutationStatus.mutating);
 
-      value = value.copyWith(status: MutationStatus.mutating);
+    try {
+      _cancelableOperation = CancelableOperation<T>.fromFuture(
+        _timerInterceptor.run(() => mutator(args)),
+      );
 
-      if (_onMutate != null) {
-        _functionQueueExecutor.queue(
-          () async => await _onMutate!(value, args),
-        );
-      }
+      final data = await _cancelableOperation!.valueOrCancellation();
 
-      try {
-        data = await _mutator!(args);
+      if (!_cancelableOperation!.isCanceled) {
         value = value.copyWith(
           status: MutationStatus.success,
           data: data,
+          dataUpdatedAt: clock.now(),
+        );
+      }
+    } on Exception catch (error) {
+      if (retryMaxAttempts >= 1 && (await retryWhen?.call(error) ?? true)) {
+        value = value.copyWith(
+          status: MutationStatus.retrying,
+          error: error,
+          errorUpdatedAt: clock.now(),
         );
 
-        if (_onSuccess != null) {
-          _functionQueueExecutor.queue(
-            () async => await _onSuccess!(value, args),
+        try {
+          final data = await retry(
+            () {
+              _cancelableOperation = CancelableOperation<T>.fromFuture(
+                _timerInterceptor.run(() => mutator(args)),
+              );
+              return _cancelableOperation!.valueOrCancellation();
+            },
+            retryIf: retryWhen,
+            maxAttempts: retryMaxAttempts,
+            delayFactor: retryDelayFactor,
+            randomizationFactor: retryRandomizationFactor,
+            onRetry: (error) {
+              value = value.copyWith(
+                status: MutationStatus.retrying,
+                error: error,
+                errorUpdatedAt: clock.now(),
+              );
+            },
+          );
+
+          if (!_cancelableOperation!.isCanceled) {
+            value = value.copyWith(
+              status: MutationStatus.success,
+              data: data,
+              dataUpdatedAt: clock.now(),
+            );
+          }
+        } on Exception catch (error) {
+          value = value.copyWith(
+            status: MutationStatus.failure,
+            error: error,
+            errorUpdatedAt: clock.now(),
           );
         }
-      } catch (e) {
-        error = e;
+      } else {
         value = value.copyWith(
           status: MutationStatus.failure,
           error: error,
+          errorUpdatedAt: clock.now(),
         );
-
-        if (_onFailure != null) {
-          _functionQueueExecutor.queue(
-            () async => await _onFailure!(value, args),
-          );
-        }
-      } finally {
-        if (_onSettled != null) {
-          _functionQueueExecutor.queue(
-            () async => await _onSettled!(value, args),
-          );
-        }
       }
     }
+  }
 
-    await execute();
+  Future<void> cancel({
+    T? data,
+    Exception? error,
+  }) async {
+    if (!value.status.isMutating) return;
+
+    await _cancelableOperation?.cancel();
+
+    value = value.copyWith(
+      status: MutationStatus.canceled,
+      data: data,
+      dataUpdatedAt: data != null ? clock.now() : null,
+      error: error,
+      errorUpdatedAt: error != null ? clock.now() : null,
+    );
   }
 
   void reset() {
+    if (value.status.isMutating) return;
+
     value = value.copyWith(
       status: MutationStatus.idle,
       data: null,
@@ -166,49 +145,21 @@ class MutationController<Data, Args>
     );
   }
 
-  void mergeOptions({
-    Mutator<Data, Args>? mutator,
-    MutationCallback<Args>? onMutate,
-    MutationCallback<Args>? onSuccess,
-    MutationCallback<Args>? onFailure,
-    MutationCallback<Args>? onSettled,
-  }) {
-    if (!_mutatorSetByController) {
-      _mutator = mutator;
-    }
-    if (!_onMutateSetByController) {
-      _onMutate = onMutate;
-    }
-    if (!_onSuccessSetByController) {
-      _onSuccess = onSuccess;
-    }
-    if (!_onFailureSetByController) {
-      _onFailure = onFailure;
-    }
-    if (!_onSettledSetByController) {
-      _onSettled = onSettled;
-    }
-  }
-}
-
-class _FunctionQueueExecutor {
-  final Queue<Function> _queue = Queue<Function>();
-
-  void queue(Function function) {
-    _queue.add(function);
-
-    if (_queue.length == 1) {
-      execute();
-    }
+  @override
+  void dispose() {
+    _timerInterceptor.cancel();
+    _cancelableOperation?.cancel();
+    super.dispose();
   }
 
-  void execute() async {
-    if (_queue.isEmpty) return;
+  void _attach(_MutationWidgetState<T, A> state) {
+    _state = state;
+  }
 
-    final Function function = _queue.first;
-    await function();
-    _queue.removeFirst();
-
-    execute();
+  void _detach(_MutationWidgetState<T, A> state) {
+    if (_state == state) {
+      _state = null;
+      cancel();
+    }
   }
 }
