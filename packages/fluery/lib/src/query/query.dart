@@ -4,6 +4,7 @@ import 'package:async/async.dart';
 import 'package:clock/clock.dart';
 import 'package:equatable/equatable.dart';
 import 'package:fluery/src/conditional_value_listenable_builder.dart';
+import 'package:fluery/src/streamable.dart';
 import 'package:fluery/src/timer_interceptor.dart';
 import 'package:flutter/widgets.dart';
 import 'package:provider/provider.dart';
@@ -63,18 +64,21 @@ enum RefetchMode {
   always,
 }
 
-class Query<T> {
+class Query<T> extends StateStreamable<QueryState<T>> {
   Query({
     required this.id,
     required this.cache,
     QueryState<T>? initialState,
-  }) : _state = initialState ?? QueryState<T>() {
+  }) : super.broadcast(
+          initialState: initialState ?? QueryState<T>(),
+          sync: true,
+        ) {
     _scheduleGarbageCollection();
 
-    _stateController.onListen = () {
+    streamController.onListen = () {
       _cancelGarbageCollection();
     };
-    _stateController.onCancel = () {
+    streamController.onCancel = () {
       if (!active) {
         _scheduleGarbageCollection();
       }
@@ -83,22 +87,15 @@ class Query<T> {
 
   final QueryIdentifier id;
   final QueryCache cache;
-  final StreamController<QueryState<T>> _stateController =
-      StreamController<QueryState<T>>.broadcast(sync: true);
   final List<QueryObserver<T>> _observers = <QueryObserver<T>>[];
   final TimerInterceptor _timerInterceptor = TimerInterceptor();
 
-  QueryState<T> _state;
   CancelableOperation<T>? _cancelableOperation;
   Duration _cacheDuration = const Duration(minutes: 5);
   Timer? _garbageCollectionTimer;
   Timer? _refetchIntervalTimer;
 
-  Stream<QueryState<T>> get stream => _stateController.stream;
-
-  QueryState<T> get state => _state;
-
-  bool get active => _stateController.hasListener;
+  bool get active => streamController.hasListener;
 
   QueryFetcher<T>? get fetcher {
     if (_observers.isEmpty) return null;
@@ -219,7 +216,7 @@ class Query<T> {
 
     if (!isStale(effectiveStaleDuration)) return;
 
-    setState(state.copyWith(status: QueryStatus.fetching));
+    state = state.copyWith(status: QueryStatus.fetching);
 
     try {
       _cancelableOperation = CancelableOperation<T>.fromFuture(
@@ -229,22 +226,22 @@ class Query<T> {
       final data = await _cancelableOperation!.valueOrCancellation();
 
       if (!_cancelableOperation!.isCanceled) {
-        setState(state.copyWith(
+        state = state.copyWith(
           status: QueryStatus.success,
           data: data,
           dataUpdatedAt: clock.now(),
-        ));
+        );
       }
     } on Exception catch (error) {
       final shouldRetry =
           effectiveRetryMaxAttempts >= 1 && await effectiveRetryWhen(error);
 
       if (shouldRetry) {
-        setState(state.copyWith(
+        state = state.copyWith(
           status: QueryStatus.retrying,
           error: error,
           errorUpdatedAt: clock.now(),
-        ));
+        );
 
         try {
           final data = await retry(
@@ -260,33 +257,33 @@ class Query<T> {
             delayFactor: effectiveRetryDelayFactor,
             randomizationFactor: effectiveRetryRandomizationFactor,
             onRetry: (error) {
-              setState(state.copyWith(
+              state = state.copyWith(
                 error: error,
                 errorUpdatedAt: clock.now(),
-              ));
+              );
             },
           );
 
           if (!_cancelableOperation!.isCanceled) {
-            setState(state.copyWith(
+            state = state.copyWith(
               status: QueryStatus.success,
               data: data,
               dataUpdatedAt: clock.now(),
-            ));
+            );
           }
         } on Exception catch (error) {
-          setState(state.copyWith(
+          state = state.copyWith(
             status: QueryStatus.failure,
             error: error,
             errorUpdatedAt: clock.now(),
-          ));
+          );
         }
       } else {
-        setState(state.copyWith(
+        state = state.copyWith(
           status: QueryStatus.failure,
           error: error,
           errorUpdatedAt: clock.now(),
-        ));
+        );
       }
     } finally {
       setRefetchInterval();
@@ -301,13 +298,13 @@ class Query<T> {
 
     await _cancelableOperation?.cancel();
 
-    setState(state.copyWith(
+    state = state.copyWith(
       status: QueryStatus.canceled,
       data: data,
       dataUpdatedAt: data != null ? clock.now() : null,
       error: error,
       errorUpdatedAt: error != null ? clock.now() : null,
-    ));
+    );
   }
 
   void setInitialData(
@@ -316,11 +313,11 @@ class Query<T> {
   ]) {
     if ((!state.hasData && state.dataUpdatedAt == null) ||
         (updatedAt != null && updatedAt.isAfter(state.dataUpdatedAt!))) {
-      setState(state.copyWith(
+      state = state.copyWith(
         status: QueryStatus.success,
         data: data,
         dataUpdatedAt: updatedAt ?? clock.now(),
-      ));
+      );
     }
   }
 
@@ -341,17 +338,12 @@ class Query<T> {
     }
 
     if (shouldUpdate) {
-      setState(state.copyWith(
+      state = state.copyWith(
         status: QueryStatus.success,
         data: data,
         dataUpdatedAt: updatedAt ?? clock.now(),
-      ));
+      );
     }
-  }
-
-  void setState(QueryState<T> state) {
-    _state = state;
-    _stateController.add(state);
   }
 
   void setRefetchInterval() {
@@ -400,9 +392,10 @@ class Query<T> {
         clock.now().isAtSameMomentAs(state.dataUpdatedAt!.add(duration));
   }
 
+  @override
   Future<void> close() async {
     await _cancelableOperation?.cancel();
-    await _stateController.close();
+    await super.close();
     _garbageCollectionTimer?.cancel();
     _refetchIntervalTimer?.cancel();
     _timerInterceptor.cancel();
