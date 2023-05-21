@@ -65,21 +65,20 @@ enum RefetchMode {
   always,
 }
 
-class Query<T> extends StateStreamable<QueryState<T>> {
-  Query({
+abstract class QueryBase<T> extends StateStreamable<T> {
+  QueryBase({
     required this.id,
     required this.cache,
-    QueryState<T>? initialState,
-  }) : super.broadcast(
-          initialState: initialState ?? QueryState<T>(),
-          sync: true,
-        ) {
+    required super.initialState,
+  }) : super.broadcast(sync: true) {
     _scheduleGarbageCollection();
 
     streamController.onListen = () {
       _cancelGarbageCollection();
     };
     streamController.onCancel = () {
+      if (streamController.isClosed) return;
+
       if (!active) {
         _scheduleGarbageCollection();
       }
@@ -88,15 +87,47 @@ class Query<T> extends StateStreamable<QueryState<T>> {
 
   final QueryIdentifier id;
   final QueryCache cache;
+
+  @protected
+  Duration cacheDuration = const Duration(minutes: 5);
+
+  Timer? _garbageCollectionTimer;
+
+  bool get active => streamController.hasListener;
+
+  @override
+  Future close() async {
+    _cancelGarbageCollection();
+    await super.close();
+  }
+
+  void _scheduleGarbageCollection() {
+    _garbageCollectionTimer = Timer(
+      cacheDuration,
+      () {
+        cache.remove(id);
+        close();
+      },
+    );
+  }
+
+  void _cancelGarbageCollection() {
+    _garbageCollectionTimer?.cancel();
+  }
+}
+
+class Query<T> extends QueryBase<QueryState<T>> {
+  Query({
+    required super.id,
+    required super.cache,
+    QueryState<T>? initialState,
+  }) : super(initialState: initialState ?? QueryState<T>());
+
   final List<QueryObserver<T>> _observers = <QueryObserver<T>>[];
   final TimerInterceptor _timerInterceptor = TimerInterceptor();
 
   CancelableOperation<T>? _cancelableOperation;
-  Duration _cacheDuration = const Duration(minutes: 5);
-  Timer? _garbageCollectionTimer;
   Scheduler? _refetchScheduler;
-
-  bool get active => streamController.hasListener;
 
   QueryFetcher<T>? get fetcher {
     if (_observers.isEmpty) return null;
@@ -114,8 +145,6 @@ class Query<T> extends StateStreamable<QueryState<T>> {
           : staleDuration,
     );
   }
-
-  Duration get cacheDuration => _cacheDuration;
 
   RetryCondition? get retryWhen {
     if (_observers.isEmpty) return null;
@@ -380,7 +409,7 @@ class Query<T> extends StateStreamable<QueryState<T>> {
     _observers.remove(observer);
 
     if (_observers.isEmpty) {
-      _cacheDuration = observer.cacheDuration;
+      cacheDuration = observer.cacheDuration;
     }
 
     setRefetchInterval();
@@ -397,24 +426,7 @@ class Query<T> extends StateStreamable<QueryState<T>> {
   Future<void> close() async {
     await _cancelableOperation?.cancel();
     await super.close();
-    _garbageCollectionTimer?.cancel();
     _refetchScheduler?.cancel();
     _timerInterceptor.cancel();
-  }
-
-  void _scheduleGarbageCollection() {
-    if (active) return;
-
-    _garbageCollectionTimer = Timer(
-      _cacheDuration,
-      () async {
-        await close();
-        cache.remove(id);
-      },
-    );
-  }
-
-  void _cancelGarbageCollection() {
-    _garbageCollectionTimer?.cancel();
   }
 }
