@@ -1658,7 +1658,7 @@ void main() {
         (tester) async {
           const fetchDuration = Duration(seconds: 3);
           const refetchIntervalDuration = Duration(seconds: 10);
-          final widget = QueryBuilder(
+          final widget = QueryBuilder<String>(
             id: 'id',
             fetcher: (id) async {
               await Future.delayed(fetchDuration);
@@ -1692,17 +1692,17 @@ void main() {
           expect(find.text('error: null'), findsOneWidget);
 
           for (int i = 0; i < 10; i++) {
-            await tester.pump(refetchIntervalDuration);
+          await tester.pump(refetchIntervalDuration);
 
-            expect(find.text('status: fetching'), findsOneWidget);
-            expect(find.text('data: data'), findsOneWidget);
-            expect(find.text('error: null'), findsOneWidget);
+          expect(find.text('status: fetching'), findsOneWidget);
+          expect(find.text('data: data'), findsOneWidget);
+          expect(find.text('error: null'), findsOneWidget);
 
-            await tester.pump(fetchDuration);
+          await tester.pump(fetchDuration);
 
-            expect(find.text('status: success'), findsOneWidget);
-            expect(find.text('data: data'), findsOneWidget);
-            expect(find.text('error: null'), findsOneWidget);
+          expect(find.text('status: success'), findsOneWidget);
+          expect(find.text('data: data'), findsOneWidget);
+          expect(find.text('error: null'), findsOneWidget);
           }
         },
       );

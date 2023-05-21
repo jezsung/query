@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:async/async.dart';
 import 'package:clock/clock.dart';
 import 'package:equatable/equatable.dart';
+import 'package:fluery/src/scheduler.dart';
 import 'package:fluery/src/conditional_value_listenable_builder.dart';
 import 'package:fluery/src/streamable.dart';
 import 'package:fluery/src/timer_interceptor.dart';
@@ -93,7 +94,7 @@ class Query<T> extends StateStreamable<QueryState<T>> {
   CancelableOperation<T>? _cancelableOperation;
   Duration _cacheDuration = const Duration(minutes: 5);
   Timer? _garbageCollectionTimer;
-  Timer? _refetchIntervalTimer;
+  Scheduler? _refetchScheduler;
 
   bool get active => streamController.hasListener;
 
@@ -348,24 +349,24 @@ class Query<T> extends StateStreamable<QueryState<T>> {
 
   void setRefetchInterval() {
     final duration = refetchIntervalDuration;
-    final lastUpdatedAt = state.lastUpdatedAt;
+    final scheduled = _refetchScheduler?.isScheduled == true;
 
     if (duration == null) {
-      _refetchIntervalTimer?.cancel();
-    } else if (state.inProgress) {
+      _refetchScheduler?.cancel();
       return;
-    } else if (lastUpdatedAt == null) {
+    }
+
+    if (state.inProgress) return;
+
+    if (state.lastUpdatedAt == null) {
       fetch();
+      return;
+    }
+
+    if (scheduled) {
+      _refetchScheduler!.reschedule(duration);
     } else {
-      _refetchIntervalTimer?.cancel();
-
-      final diff = lastUpdatedAt.add(duration).difference(clock.now());
-
-      if (diff.isNegative || diff == Duration.zero) {
-        fetch();
-      } else {
-        _refetchIntervalTimer = Timer(diff, () => fetch());
-      }
+      _refetchScheduler = Scheduler.run(duration, fetch);
     }
   }
 
@@ -397,7 +398,7 @@ class Query<T> extends StateStreamable<QueryState<T>> {
     await _cancelableOperation?.cancel();
     await super.close();
     _garbageCollectionTimer?.cancel();
-    _refetchIntervalTimer?.cancel();
+    _refetchScheduler?.cancel();
     _timerInterceptor.cancel();
   }
 
