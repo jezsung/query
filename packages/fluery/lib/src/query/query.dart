@@ -124,8 +124,8 @@ class Query<T> extends QueryBase<QueryState<T>> {
   }) : super(initialState: initialState ?? QueryState<T>());
 
   final List<QueryObserver<T>> _observers = <QueryObserver<T>>[];
-  final TimerInterceptor _timerInterceptor = TimerInterceptor();
 
+  TimerInterceptor<T>? _timerInterceptor;
   CancelableOperation<T>? _cancelableOperation;
   Scheduler? _refetchScheduler;
 
@@ -249,8 +249,9 @@ class Query<T> extends QueryBase<QueryState<T>> {
     state = state.copyWith(status: QueryStatus.fetching);
 
     try {
+      _timerInterceptor = TimerInterceptor<T>(() => effectiveFetcher(id));
       _cancelableOperation = CancelableOperation<T>.fromFuture(
-        _timerInterceptor.run(() => effectiveFetcher(id)),
+        _timerInterceptor!.value,
       );
 
       final data = await _cancelableOperation!.valueOrCancellation();
@@ -276,8 +277,11 @@ class Query<T> extends QueryBase<QueryState<T>> {
         try {
           final data = await retry(
             () {
+              _timerInterceptor = TimerInterceptor<T>(
+                () => effectiveFetcher(id),
+              );
               _cancelableOperation = CancelableOperation<T>.fromFuture(
-                _timerInterceptor.run(() => effectiveFetcher(id)),
+                _timerInterceptor!.value,
               );
               return _cancelableOperation!.valueOrCancellation();
             },
@@ -427,6 +431,6 @@ class Query<T> extends QueryBase<QueryState<T>> {
     await _cancelableOperation?.cancel();
     await super.close();
     _refetchScheduler?.cancel();
-    _timerInterceptor.cancel();
+    _timerInterceptor?.timers.forEach((timer) => timer.cancel());
   }
 }

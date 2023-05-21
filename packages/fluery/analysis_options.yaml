@@ -18,6 +18,7 @@ include: package:lints/recommended.yaml
 linter:
   rules:
     null_check_on_nullable_type_parameter: false
+    avoid_function_literals_in_foreach_calls: false
 # analyzer:
 #   exclude:
 #     - path/to/excluded/files/**

@@ -3,9 +3,8 @@ part of 'mutation.dart';
 class MutationController<T, A> extends ValueNotifier<MutationState<T>> {
   MutationController() : super(MutationState<T>());
 
-  final TimerInterceptor _timerInterceptor = TimerInterceptor();
-
   _MutationWidgetState<T, A>? _state;
+  TimerInterceptor<T>? _timerInterceptor;
   CancelableOperation<T>? _cancelableOperation;
 
   Mutator<T, A> get mutator {
@@ -52,8 +51,9 @@ class MutationController<T, A> extends ValueNotifier<MutationState<T>> {
     value = value.copyWith(status: MutationStatus.mutating);
 
     try {
+      _timerInterceptor = TimerInterceptor<T>(() => mutator(args));
       _cancelableOperation = CancelableOperation<T>.fromFuture(
-        _timerInterceptor.run(() => mutator(args)),
+        _timerInterceptor!.value,
       );
 
       final data = await _cancelableOperation!.valueOrCancellation();
@@ -76,8 +76,9 @@ class MutationController<T, A> extends ValueNotifier<MutationState<T>> {
         try {
           final data = await retry(
             () {
+              _timerInterceptor = TimerInterceptor<T>(() => mutator(args));
               _cancelableOperation = CancelableOperation<T>.fromFuture(
-                _timerInterceptor.run(() => mutator(args)),
+                _timerInterceptor!.value,
               );
               return _cancelableOperation!.valueOrCancellation();
             },
@@ -124,6 +125,7 @@ class MutationController<T, A> extends ValueNotifier<MutationState<T>> {
   }) async {
     if (!value.status.isMutating) return;
 
+    _timerInterceptor?.timers.forEach((timer) => timer.cancel());
     await _cancelableOperation?.cancel();
 
     value = value.copyWith(
@@ -147,7 +149,7 @@ class MutationController<T, A> extends ValueNotifier<MutationState<T>> {
 
   @override
   void dispose() {
-    _timerInterceptor.cancel();
+    _timerInterceptor?.timers.forEach((timer) => timer.cancel());
     _cancelableOperation?.cancel();
     super.dispose();
   }
