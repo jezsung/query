@@ -8,6 +8,7 @@ import 'package:fluery/src/scheduler.dart';
 import 'package:fluery/src/conditional_value_listenable_builder.dart';
 import 'package:fluery/src/streamable.dart';
 import 'package:fluery/src/timer_interceptor.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:provider/provider.dart';
 import 'package:provider/single_child_widget.dart';
@@ -17,6 +18,7 @@ part 'query_builder.dart';
 part 'query_cache.dart';
 part 'query_client_provider.dart';
 part 'query_client.dart';
+part 'query_controller.dart';
 part 'query_observer.dart';
 part 'query_state.dart';
 
@@ -61,6 +63,24 @@ enum RefetchMode {
   never,
   stale,
   always,
+}
+
+abstract class _QueryWidgetState<T> {
+  Query<T> get query;
+  QueryIdentifier get id;
+  QueryFetcher<T> get fetcher;
+  bool get enabled;
+  T? get initialData;
+  DateTime? get initialDataUpdatedAt;
+  T? get placeholder;
+  Duration get staleDuration;
+  Duration get cacheDuration;
+  RetryCondition? get retryWhen;
+  int get retryMaxAttempts;
+  Duration get retryMaxDelay;
+  Duration get retryDelayFactor;
+  double get retryRandomizationFactor;
+  Duration? get refetchIntervalDuration;
 }
 
 abstract class QueryBase<T> extends StateStreamable<T> {
@@ -114,30 +134,52 @@ abstract class QueryBase<T> extends StateStreamable<T> {
   }
 }
 
-class Query<T> extends QueryBase<QueryState<T>> {
+mixin QueryObservable<Observer extends QueryObserverBase<T>, T>
+    on QueryBase<T> {
+  final Map<Observer, StreamSubscription> _subscriptions = {};
+
+  Set<Observer> get observers => _subscriptions.keys.toSet();
+
+  @mustCallSuper
+  void addObserver(Observer observer) {
+    observer.onStateChanged(state);
+    _subscriptions[observer] = stream.listen(observer.onStateChanged);
+  }
+
+  @mustCallSuper
+  void removeObserver(Observer observer) {
+    _subscriptions[observer]?.cancel();
+    _subscriptions.remove(observer);
+  }
+}
+
+abstract class QueryObserverBase<T> {
+  void onStateChanged(T data);
+}
+
+class Query<T> extends QueryBase<QueryState<T>>
+    with QueryObservable<QueryObserver<T>, QueryState<T>> {
   Query({
     required super.id,
     required super.cache,
     QueryState<T>? initialState,
   }) : super(initialState: initialState ?? QueryState<T>());
 
-  final List<QueryObserver<T>> _observers = <QueryObserver<T>>[];
-
   TimerInterceptor<T>? _timerInterceptor;
   CancelableOperation<T>? _cancelableOperation;
   Scheduler? _refetchScheduler;
 
   QueryFetcher<T>? get fetcher {
-    if (_observers.isEmpty) return null;
+    if (observers.isEmpty) return null;
 
-    return _observers.first.fetcher;
+    return observers.first.fetcher;
   }
 
   Duration get staleDuration {
-    if (_observers.isEmpty) return Duration.zero;
+    if (observers.isEmpty) return Duration.zero;
 
-    return _observers.fold<Duration>(
-      _observers.first.staleDuration,
+    return observers.fold<Duration>(
+      observers.first.staleDuration,
       (staleDuration, controller) => controller.staleDuration < staleDuration
           ? controller.staleDuration
           : staleDuration,
@@ -145,16 +187,16 @@ class Query<T> extends QueryBase<QueryState<T>> {
   }
 
   RetryCondition? get retryWhen {
-    if (_observers.isEmpty) return null;
+    if (observers.isEmpty) return null;
 
-    return _observers.first.retryWhen;
+    return observers.first.retryWhen;
   }
 
   int get retryMaxAttempts {
-    if (_observers.isEmpty) return 3;
+    if (observers.isEmpty) return 3;
 
-    return _observers.fold<int>(
-      _observers.first.retryMaxAttempts,
+    return observers.fold<int>(
+      observers.first.retryMaxAttempts,
       (retryMaxAttempts, controller) =>
           controller.retryMaxAttempts > retryMaxAttempts
               ? controller.retryMaxAttempts
@@ -163,10 +205,10 @@ class Query<T> extends QueryBase<QueryState<T>> {
   }
 
   Duration get retryMaxDelay {
-    if (_observers.isEmpty) return const Duration(seconds: 30);
+    if (observers.isEmpty) return const Duration(seconds: 30);
 
-    return _observers.fold<Duration>(
-      _observers.first.retryMaxDelay,
+    return observers.fold<Duration>(
+      observers.first.retryMaxDelay,
       (retryMaxDelay, controller) => controller.retryMaxDelay > retryMaxDelay
           ? controller.retryMaxDelay
           : retryMaxDelay,
@@ -174,10 +216,10 @@ class Query<T> extends QueryBase<QueryState<T>> {
   }
 
   Duration get retryDelayFactor {
-    if (_observers.isEmpty) return const Duration(milliseconds: 200);
+    if (observers.isEmpty) return const Duration(milliseconds: 200);
 
-    return _observers.fold<Duration>(
-      _observers.first.retryDelayFactor,
+    return observers.fold<Duration>(
+      observers.first.retryDelayFactor,
       (retryDelayFactor, controller) =>
           controller.retryDelayFactor > retryDelayFactor
               ? controller.retryDelayFactor
@@ -186,10 +228,10 @@ class Query<T> extends QueryBase<QueryState<T>> {
   }
 
   double get retryRandomizationFactor {
-    if (_observers.isEmpty) return 0.25;
+    if (observers.isEmpty) return 0.25;
 
-    return _observers.fold<double>(
-      _observers.first.retryRandomizationFactor,
+    return observers.fold<double>(
+      observers.first.retryRandomizationFactor,
       (retryRandomizationFactor, controller) =>
           controller.retryRandomizationFactor > retryRandomizationFactor
               ? controller.retryRandomizationFactor
@@ -198,10 +240,10 @@ class Query<T> extends QueryBase<QueryState<T>> {
   }
 
   Duration? get refetchIntervalDuration {
-    if (_observers.where((ob) => ob.enabled).isEmpty) return null;
+    if (observers.where((ob) => ob.enabled).isEmpty) return null;
 
-    return _observers.fold<Duration?>(
-      _observers.first.refetchIntervalDuration,
+    return observers.fold<Duration?>(
+      observers.first.refetchIntervalDuration,
       (duration, controller) {
         if (controller.refetchIntervalDuration == null) {
           return duration;
@@ -245,7 +287,6 @@ class Query<T> extends QueryBase<QueryState<T>> {
     if (!isStale(effectiveStaleDuration)) return;
 
     final stateBeforeFetching = state.copyWith();
-    print(stateBeforeFetching.status);
 
     state = state.copyWith(status: QueryStatus.fetching);
 
@@ -264,10 +305,7 @@ class Query<T> extends QueryBase<QueryState<T>> {
           dataUpdatedAt: clock.now(),
         );
       } else {
-        print('called');
         state = stateBeforeFetching;
-        print(state.status.name);
-        print(state.data);
       }
     } on Exception catch (error) {
       final shouldRetry =
@@ -400,16 +438,18 @@ class Query<T> extends QueryBase<QueryState<T>> {
     }
   }
 
+  @override
   void addObserver(QueryObserver<T> observer) {
-    _observers.add(observer);
+    super.addObserver(observer);
 
     setRefetchInterval();
   }
 
+  @override
   void removeObserver(QueryObserver<T> observer) {
-    _observers.remove(observer);
+    super.removeObserver(observer);
 
-    if (_observers.isEmpty) {
+    if (observers.isEmpty) {
       cacheDuration = observer.cacheDuration;
     }
 

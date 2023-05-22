@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:fluery/fluery.dart';
 import 'package:flutter/foundation.dart';
 
 abstract class Streamable<T> {

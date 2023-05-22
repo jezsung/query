@@ -3,6 +3,7 @@ part of 'query.dart';
 class QueryBuilder<T> extends StatefulWidget {
   const QueryBuilder({
     super.key,
+    this.controller,
     required this.id,
     required this.fetcher,
     this.enabled = true,
@@ -24,6 +25,7 @@ class QueryBuilder<T> extends StatefulWidget {
     this.child,
   });
 
+  final QueryController<T>? controller;
   final QueryIdentifier id;
   final QueryFetcher<T> fetcher;
   final bool enabled;
@@ -135,30 +137,20 @@ class QueryBuilder<T> extends StatefulWidget {
 }
 
 class _QueryBuilderState<T> extends State<QueryBuilder<T>>
-    with WidgetsBindingObserver {
+    with WidgetsBindingObserver
+    implements _QueryWidgetState<T> {
   late Query<T> _query;
-  late final QueryObserver<T> _observer;
+
+  QueryController<T>? _internalController;
+
+  QueryController<T> get _controller =>
+      widget.controller ?? _internalController!;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-
     _query = context.read<QueryClient>().cache.build<T>(widget.id);
-
-    _observer = QueryObserver<T>(
-      fetcher: widget.fetcher,
-      enabled: widget.enabled,
-      placeholder: widget.placeholder,
-      staleDuration: widget.staleDuration,
-      cacheDuration: widget.cacheDuration,
-      retryWhen: widget.retryWhen,
-      retryMaxAttempts: widget.retryMaxAttempts,
-      retryMaxDelay: widget.retryMaxDelay,
-      retryDelayFactor: widget.retryDelayFactor,
-      retryRandomizationFactor: widget.retryRandomizationFactor,
-      refetchIntervalDuration: widget.refetchIntervalDuration,
-    );
 
     if (widget.initialData != null) {
       _query.setInitialData(
@@ -167,13 +159,27 @@ class _QueryBuilderState<T> extends State<QueryBuilder<T>>
       );
     }
 
-    _observer.bind(_query);
+    if (widget.controller == null) {
+      _internalController = QueryController<T>().._attach(this);
+    }
+
+    _query.addObserver(_controller);
 
     if (_query.state.status.isIdle) {
-      _observer.fetch();
+      fetch();
     } else {
-      _refetch(widget.refetchOnInit);
+      refetch(widget.refetchOnInit);
     }
+  }
+
+  @override
+  void dispose() {
+    _query.removeObserver(_controller);
+    _controller._detach(this);
+    _internalController?.dispose();
+    _internalController = null;
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
   }
 
   @override
@@ -183,113 +189,106 @@ class _QueryBuilderState<T> extends State<QueryBuilder<T>>
     final query = context.watch<QueryClient>().cache.build<T>(widget.id);
 
     if (query != _query) {
-      _observer.unbind();
+      _query.removeObserver(_controller);
 
       _query = query;
 
       if (widget.initialData != null) {
-        query.setInitialData(
+        _query.setInitialData(
           widget.initialData!,
           widget.initialDataUpdatedAt,
         );
       }
 
-      _observer.bind(_query);
+      _query.addObserver(_controller);
 
-      if (query.state.status.isIdle) {
-        _observer.fetch();
+      if (_query.state.status.isIdle) {
+        fetch();
       } else {
-        _refetch(widget.refetchOnInit);
+        refetch(widget.refetchOnInit);
       }
     }
-  }
-
-  @override
-  void dispose() {
-    _observer
-      ..unbind()
-      ..dispose();
-    WidgetsBinding.instance.removeObserver(this);
-    super.dispose();
   }
 
   @override
   void didUpdateWidget(covariant QueryBuilder<T> oldWidget) {
     super.didUpdateWidget(oldWidget);
 
-    if (widget.id != oldWidget.id) {
-      _observer.unbind();
+    final oldController = oldWidget.controller ?? _internalController!;
+
+    if (oldWidget.controller != widget.controller) {
+      oldWidget.controller?._detach(this);
+      if (widget.controller != null) {
+        _internalController?._detach(this);
+        _internalController?.dispose();
+        _internalController = null;
+        widget.controller?._attach(this);
+      } else {
+        assert(_internalController == null);
+        _internalController = QueryController<T>().._attach(this);
+      }
     }
 
-    _observer
-      ..fetcher = widget.fetcher
-      ..enabled = widget.enabled
-      ..placeholder = widget.placeholder
-      ..staleDuration = widget.staleDuration
-      ..cacheDuration = widget.cacheDuration
-      ..retryWhen = widget.retryWhen
-      ..retryMaxAttempts = widget.retryMaxAttempts
-      ..retryMaxDelay = widget.retryMaxDelay
-      ..retryDelayFactor = widget.retryDelayFactor
-      ..retryRandomizationFactor = widget.retryRandomizationFactor
-      ..refetchIntervalDuration = widget.refetchIntervalDuration;
-
     if (widget.id != oldWidget.id) {
-      final query = context.read<QueryClient>().cache.build<T>(widget.id);
+      _query.removeObserver(oldController);
 
-      _query = query;
+      _query = context.read<QueryClient>().cache.build<T>(widget.id);
 
       if (widget.initialData != null) {
-        query.setInitialData(
+        _query.setInitialData(
           widget.initialData!,
           widget.initialDataUpdatedAt,
         );
       }
 
-      _observer.bind(query);
-
-      if (query.state.status.isIdle) {
-        _observer.fetch();
-      } else {
-        _refetch(widget.refetchOnInit);
-      }
-
-      return;
+      _query.addObserver(_controller);
     }
 
-    if (widget.enabled && !oldWidget.enabled) {
+    if (widget.id != oldWidget.id || widget.enabled && !oldWidget.enabled) {
       if (_query.state.status.isIdle) {
-        _observer.fetch();
+        fetch();
       } else {
-        _refetch(widget.refetchOnInit);
+        refetch(widget.refetchOnInit);
       }
-
-      return;
     }
 
     if (widget.refetchIntervalDuration != oldWidget.refetchIntervalDuration) {
       _query.setRefetchInterval();
-
-      return;
     }
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
-      _refetch(widget.refetchOnResumed);
+      refetch(widget.refetchOnResumed);
     }
   }
 
-  Future<void> _refetch(RefetchMode mode) async {
+  Future fetch({bool ignoreStaleness = false}) async {
+    if (!widget.enabled) {
+      return;
+    }
+
+    await _query.fetch(
+      fetcher: widget.fetcher,
+      staleDuration: ignoreStaleness ? Duration.zero : widget.staleDuration,
+      retryWhen: widget.retryWhen,
+      retryMaxAttempts: widget.retryMaxAttempts,
+      retryMaxDelay: widget.retryMaxDelay,
+      retryDelayFactor: widget.retryDelayFactor,
+      retryRandomizationFactor: widget.retryRandomizationFactor,
+    );
+  }
+
+  Future refetch(RefetchMode mode) async {
     switch (mode) {
       case RefetchMode.never:
         break;
       case RefetchMode.stale:
-        await _observer.fetch();
+        await fetch();
         break;
       case RefetchMode.always:
-        await _observer.fetch(staleDuration: Duration.zero);
+        await fetch(ignoreStaleness: true);
         break;
     }
   }
@@ -297,10 +296,55 @@ class _QueryBuilderState<T> extends State<QueryBuilder<T>>
   @override
   Widget build(BuildContext context) {
     return ConditionalValueListenableBuilder<QueryState<T>>(
-      valueListenable: _observer,
+      valueListenable: _controller,
       buildWhen: widget.buildWhen,
       builder: widget.builder,
       child: widget.child,
     );
   }
+
+  @override
+  Query<T> get query => _query;
+
+  @override
+  QueryIdentifier get id => widget.id;
+
+  @override
+  QueryFetcher<T> get fetcher => widget.fetcher;
+
+  @override
+  bool get enabled => widget.enabled;
+
+  @override
+  get initialData => widget.initialData;
+
+  @override
+  DateTime? get initialDataUpdatedAt => widget.initialDataUpdatedAt;
+
+  @override
+  T? get placeholder => widget.placeholder;
+
+  @override
+  Duration get staleDuration => widget.staleDuration;
+
+  @override
+  Duration get cacheDuration => widget.cacheDuration;
+
+  @override
+  RetryCondition? get retryWhen => widget.retryWhen;
+
+  @override
+  int get retryMaxAttempts => widget.retryMaxAttempts;
+
+  @override
+  Duration get retryMaxDelay => widget.retryMaxDelay;
+
+  @override
+  Duration get retryDelayFactor => widget.retryDelayFactor;
+
+  @override
+  double get retryRandomizationFactor => widget.retryRandomizationFactor;
+
+  @override
+  Duration? get refetchIntervalDuration => widget.refetchIntervalDuration;
 }
