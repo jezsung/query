@@ -1692,17 +1692,17 @@ void main() {
           expect(find.text('error: null'), findsOneWidget);
 
           for (int i = 0; i < 10; i++) {
-          await tester.pump(refetchIntervalDuration);
+            await tester.pump(refetchIntervalDuration);
 
-          expect(find.text('status: fetching'), findsOneWidget);
-          expect(find.text('data: data'), findsOneWidget);
-          expect(find.text('error: null'), findsOneWidget);
+            expect(find.text('status: fetching'), findsOneWidget);
+            expect(find.text('data: data'), findsOneWidget);
+            expect(find.text('error: null'), findsOneWidget);
 
-          await tester.pump(fetchDuration);
+            await tester.pump(fetchDuration);
 
-          expect(find.text('status: success'), findsOneWidget);
-          expect(find.text('data: data'), findsOneWidget);
-          expect(find.text('error: null'), findsOneWidget);
+            expect(find.text('status: success'), findsOneWidget);
+            expect(find.text('data: data'), findsOneWidget);
+            expect(find.text('error: null'), findsOneWidget);
           }
         },
       );
@@ -2157,16 +2157,16 @@ void main() {
           expect(find.text('data: null'), findsOneWidget);
           expect(find.text('error: null'), findsOneWidget);
 
-          await client.cancelQuery<String>('id');
+          await client.cancelQuery('id');
           await tester.pump();
 
-          expect(find.text('status: canceled'), findsOneWidget);
+          expect(find.text('status: idle'), findsOneWidget);
           expect(find.text('data: null'), findsOneWidget);
           expect(find.text('error: null'), findsOneWidget);
 
           await tester.pump(fetchDuration);
 
-          expect(find.text('status: canceled'), findsOneWidget);
+          expect(find.text('status: idle'), findsOneWidget);
           expect(find.text('data: null'), findsOneWidget);
           expect(find.text('error: null'), findsOneWidget);
 
@@ -2216,19 +2216,19 @@ void main() {
           expect(find.text('error: error'), findsOneWidget);
           expect(fetchCount, 1);
 
-          await client.cancelQuery<String>('id');
+          await client.cancelQuery('id');
           await tester.pump();
 
-          expect(find.text('status: canceled'), findsOneWidget);
+          expect(find.text('status: idle'), findsOneWidget);
           expect(find.text('data: null'), findsOneWidget);
-          expect(find.text('error: error'), findsOneWidget);
+          expect(find.text('error: null'), findsOneWidget);
           expect(fetchCount, 1);
 
           await tester.pump(fetchDuration);
 
-          expect(find.text('status: canceled'), findsOneWidget);
+          expect(find.text('status: idle'), findsOneWidget);
           expect(find.text('data: null'), findsOneWidget);
-          expect(find.text('error: error'), findsOneWidget);
+          expect(find.text('error: null'), findsOneWidget);
 
           // Last retry is expected to be finished even after it has been canceled.
           expect(fetchCount, 2);
@@ -2237,105 +2237,6 @@ void main() {
 
           // No more retry should occur.
           expect(fetchCount, 2);
-
-          await client.close();
-        },
-      );
-
-      testWidgets(
-        'should populate the data if the "cancel" function is called with the "data"',
-        (tester) async {
-          const fetchDuration = Duration(seconds: 3);
-          final client = QueryClient();
-          final widget = QueryBuilder<String>(
-            id: 'id',
-            fetcher: (id) async {
-              await Future.delayed(fetchDuration);
-              return 'data';
-            },
-            builder: (context, state, child) {
-              return Directionality(
-                textDirection: TextDirection.ltr,
-                child: Column(
-                  children: [
-                    Text('status: ${state.status.name}'),
-                    Text('data: ${state.data}'),
-                    Text('error: ${state.error}'),
-                  ],
-                ),
-              );
-            },
-          );
-
-          await tester.pumpWidget(withQueryClientProvider(widget, client));
-
-          expect(find.text('status: fetching'), findsOneWidget);
-          expect(find.text('data: null'), findsOneWidget);
-          expect(find.text('error: null'), findsOneWidget);
-
-          await client.cancelQuery('id', data: 'canceled data');
-          await tester.pump();
-
-          expect(find.text('status: canceled'), findsOneWidget);
-          expect(find.text('data: canceled data'), findsOneWidget);
-          expect(find.text('error: null'), findsOneWidget);
-
-          await tester.pump(fetchDuration);
-
-          expect(find.text('status: canceled'), findsOneWidget);
-          expect(find.text('data: canceled data'), findsOneWidget);
-          expect(find.text('error: null'), findsOneWidget);
-
-          await client.close();
-        },
-      );
-
-      testWidgets(
-        'should populate the error if the "cancel" function is called with the "error"',
-        (tester) async {
-          const fetchDuration = Duration(seconds: 3);
-          final client = QueryClient();
-          final widget = QueryBuilder<String>(
-            id: 'id',
-            fetcher: (id) async {
-              await Future.delayed(fetchDuration);
-              return 'data';
-            },
-            builder: (context, state, child) {
-              return Directionality(
-                textDirection: TextDirection.ltr,
-                child: Column(
-                  children: [
-                    Text('status: ${state.status.name}'),
-                    Text('data: ${state.data}'),
-                    Text('error: ${state.error}'),
-                  ],
-                ),
-              );
-            },
-          );
-
-          await tester.pumpWidget(withQueryClientProvider(widget, client));
-
-          expect(find.text('status: fetching'), findsOneWidget);
-          expect(find.text('data: null'), findsOneWidget);
-          expect(find.text('error: null'), findsOneWidget);
-
-          await client.cancelQuery(
-            'id',
-            error: TestException('canceled error'),
-          );
-          await tester.pump();
-
-          expect(find.text('status: canceled'), findsOneWidget);
-          expect(find.text('data: null'), findsOneWidget);
-          expect(find.text('error: canceled error'), findsOneWidget);
-
-          await tester.pump(fetchDuration);
-
-          expect(find.text('status: canceled'), findsOneWidget);
-          expect(find.text('data: null'), findsOneWidget);
-          expect(find.text('error: canceled error'), findsOneWidget);
 
           await client.close();
         },

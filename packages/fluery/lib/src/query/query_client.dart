@@ -27,12 +27,8 @@ class QueryClient {
     cache.build<Data>(id).setData(data, updatedAt);
   }
 
-  Future cancelQuery<T>(
-    QueryIdentifier id, {
-    T? data,
-    Exception? error,
-  }) async {
-    await cache.get<T>(id)?.cancel(data: data, error: error);
+  Future cancelQuery(QueryIdentifier id) async {
+    await cache.get(id)?.cancel();
   }
 
   Future<void> close() async {

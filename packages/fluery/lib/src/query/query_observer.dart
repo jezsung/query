@@ -34,10 +34,6 @@ class QueryObserver<T> extends ValueNotifier<QueryState<T>> {
   QueryState<T> get value {
     QueryState<T> state = super.value;
 
-    if (state.status.isIdle && enabled) {
-      state = state.copyWith(status: QueryStatus.fetching);
-    }
-
     if (!state.hasData) {
       state = state.copyWith(data: placeholder);
     }
@@ -75,22 +71,6 @@ class QueryObserver<T> extends ValueNotifier<QueryState<T>> {
       retryRandomizationFactor:
           retryRandomizationFactor ?? this.retryRandomizationFactor,
     );
-  }
-
-  Future<void> cancel({
-    T? data,
-    Exception? error,
-  }) async {
-    assert(
-      _query != null,
-      '''
-      Tried to call QueryObserver<${T.runtimeType}>.cancel before it gets bound.
-
-      Bind the QueryObserver<${T.runtimeType}>.
-      ''',
-    );
-
-    await _query!.cancel(data: data, error: error);
   }
 
   void bind(Query<T> query) {

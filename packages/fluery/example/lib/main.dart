@@ -129,7 +129,6 @@ class _QueryExamplePageState extends State<QueryExamplePage> {
           builder: (context, state, child) {
             switch (state.status) {
               case QueryStatus.idle:
-              case QueryStatus.canceled:
                 if (state.hasData) {
                   return Text(state.data!);
                 }
@@ -206,7 +205,6 @@ class QueryExample2Page extends StatelessWidget {
               case QueryStatus.idle:
               case QueryStatus.fetching:
               case QueryStatus.retrying:
-              case QueryStatus.canceled:
                 if (state.hasData) {
                   return Text(state.data!);
                 }

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:collection';
 
 import 'package:async/async.dart';
 import 'package:clock/clock.dart';
@@ -29,7 +30,6 @@ enum QueryStatus {
   idle,
   fetching,
   retrying,
-  canceled,
   success,
   failure,
 }
@@ -40,8 +40,6 @@ extension QueryStatusExtension on QueryStatus {
   bool get isFetching => this == QueryStatus.fetching;
 
   bool get isRetrying => this == QueryStatus.retrying;
-
-  bool get isCanceled => this == QueryStatus.canceled;
 
   bool get isSuccess => this == QueryStatus.success;
 
@@ -246,6 +244,9 @@ class Query<T> extends QueryBase<QueryState<T>> {
 
     if (!isStale(effectiveStaleDuration)) return;
 
+    final stateBeforeFetching = state.copyWith();
+    print(stateBeforeFetching.status);
+
     state = state.copyWith(status: QueryStatus.fetching);
 
     try {
@@ -262,6 +263,11 @@ class Query<T> extends QueryBase<QueryState<T>> {
           data: data,
           dataUpdatedAt: clock.now(),
         );
+      } else {
+        print('called');
+        state = stateBeforeFetching;
+        print(state.status.name);
+        print(state.data);
       }
     } on Exception catch (error) {
       final shouldRetry =
@@ -304,6 +310,8 @@ class Query<T> extends QueryBase<QueryState<T>> {
               data: data,
               dataUpdatedAt: clock.now(),
             );
+          } else {
+            state = stateBeforeFetching;
           }
         } on Exception catch (error) {
           state = state.copyWith(
@@ -324,21 +332,10 @@ class Query<T> extends QueryBase<QueryState<T>> {
     }
   }
 
-  Future<void> cancel({
-    T? data,
-    Exception? error,
-  }) async {
+  Future cancel() async {
     if (!state.inProgress) return;
 
     await _cancelableOperation?.cancel();
-
-    state = state.copyWith(
-      status: QueryStatus.canceled,
-      data: data,
-      dataUpdatedAt: data != null ? clock.now() : null,
-      error: error,
-      errorUpdatedAt: error != null ? clock.now() : null,
-    );
   }
 
   void setInitialData(
@@ -427,10 +424,10 @@ class Query<T> extends QueryBase<QueryState<T>> {
   }
 
   @override
-  Future<void> close() async {
+  Future close() async {
     await _cancelableOperation?.cancel();
-    await super.close();
     _refetchScheduler?.cancel();
     _timerInterceptor?.timers.forEach((timer) => timer.cancel());
+    await super.close();
   }
 }
