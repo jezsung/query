@@ -1,9 +1,9 @@
 import 'dart:async';
-import 'dart:collection';
 
 import 'package:async/async.dart';
 import 'package:clock/clock.dart';
 import 'package:equatable/equatable.dart';
+import 'package:fluery/src/paged_query/paged_query.dart';
 import 'package:fluery/src/scheduler.dart';
 import 'package:fluery/src/conditional_value_listenable_builder.dart';
 import 'package:fluery/src/streamable.dart';

@@ -46,17 +46,17 @@ class HomePage extends StatelessWidget {
               },
               child: const Text('Query Example'),
             ),
-            // ElevatedButton(
-            //   onPressed: () {
-            //     Navigator.push(
-            //       context,
-            //       MaterialPageRoute(
-            //         builder: (context) => const InfiniteQueryExamplePage(),
-            //       ),
-            //     );
-            //   },
-            //   child: const Text('Infinite Query Example'),
-            // ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const InfiniteQueryExamplePage(),
+                  ),
+                );
+              },
+              child: const Text('Infinite Query Example'),
+            ),
             ElevatedButton(
               onPressed: () {
                 Navigator.push(
@@ -245,121 +245,116 @@ class QueryExample2Page extends StatelessWidget {
   }
 }
 
-// class InfiniteQueryExamplePage extends StatefulWidget {
-//   const InfiniteQueryExamplePage({super.key});
+class InfiniteQueryExamplePage extends StatefulWidget {
+  const InfiniteQueryExamplePage({super.key});
 
-//   static final examplePages = [
-//     {
-//       'data': 'Hello1',
-//       'nextCursor': 1,
-//     },
-//     {
-//       'data': 'Hello2',
-//       'nextCursor': 2,
-//     },
-//     {
-//       'data': 'Hello3',
-//       'nextCursor': 3,
-//     },
-//     {
-//       'data': 'Hello4',
-//     },
-//   ];
+  static final examplePages = [
+    {
+      'data': 'Hello1',
+      'nextCursor': 1,
+    },
+    {
+      'data': 'Hello2',
+      'nextCursor': 2,
+    },
+    {
+      'data': 'Hello3',
+      'nextCursor': 3,
+    },
+    {
+      'data': 'Hello4',
+      'nextCursor': null,
+    },
+  ];
 
-//   @override
-//   State<InfiniteQueryExamplePage> createState() =>
-//       _InfiniteQueryExamplePageState();
-// }
+  @override
+  State<InfiniteQueryExamplePage> createState() =>
+      _InfiniteQueryExamplePageState();
+}
 
-// class _InfiniteQueryExamplePageState extends State<InfiniteQueryExamplePage> {
-//   late final PagedQueryController<Map<String, dynamic>, int> _controller;
+class _InfiniteQueryExamplePageState extends State<InfiniteQueryExamplePage> {
+  late final PagedQueryController<Map<String, dynamic>, int> _controller;
 
-//   @override
-//   void initState() {
-//     super.initState();
-//     _controller = PagedQueryController<Map<String, dynamic>, int>();
-//   }
+  @override
+  void initState() {
+    super.initState();
+    _controller = PagedQueryController<Map<String, dynamic>, int>();
+  }
 
-//   @override
-//   void dispose() {
-//     _controller.dispose();
-//     super.dispose();
-//   }
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(),
+      body: PagedQueryBuilder<Map<String, dynamic>, int>(
+        controller: _controller,
+        id: 'infinite-query-example',
+        fetcher: (id, cursor) async {
+          await Future.delayed(const Duration(seconds: 2));
+          if (cursor == null) {
+            return InfiniteQueryExamplePage.examplePages[0];
+          }
+          return InfiniteQueryExamplePage.examplePages[cursor];
+        },
+        nextPageParamBuilder: (pages) {
+          return pages.isNotEmpty ? pages.last['nextCursor'] : null;
+        },
+        initialData: const [
+          {
+            'data': 'Hello1',
+            'nextCursor': 1,
+          },
+        ],
+        placeholder: const [
+          {'data': 'Placeholder!'}
+        ],
+        staleDuration: const Duration(seconds: 5),
+        builder: (context, state, child) {
+          if (state.status == QueryStatus.fetching) {
+            if (state.hasData) {
+              return ListView.builder(
+                itemCount: state.pages.length,
+                itemBuilder: (context, i) {
+                  return Text(state.pages[i]['data']);
+                },
+              );
+            }
+            return const Center(
+              child: CircularProgressIndicator(),
+            );
+          }
 
-//   @override
-//   Widget build(BuildContext context) {
-//     return Scaffold(
-//       appBar: AppBar(),
-//       body: PagedQueryBuilder<Map<String, dynamic>, int>(
-//         controller: _controller,
-//         id: 'infinite-query-example',
-//         fetcher: (id, params) async {
-//           await Future.delayed(const Duration(seconds: 2));
-//           if (params == null) {
-//             return InfiniteQueryExamplePage.examplePages[0];
-//           }
-//           return InfiniteQueryExamplePage.examplePages[params];
-//         },
-//         nextPageParamsBuilder: (pages) {
-//           return pages.isNotEmpty ? pages.last['nextCursor'] : null;
-//         },
-//         // initialData: const [
-//         //   {
-//         //     'data': 'Hello1',
-//         //     'nextCursor': 1,
-//         //   },
-//         // ],
-//         placeholderData: const [
-//           {'data': 'Placeholder!'}
-//         ],
-//         staleDuration: const Duration(seconds: 5),
-//         builder: (context, state, child) {
-//           if (state.status == QueryStatus.fetching) {
-//             if (state.hasData) {
-//               return ListView.builder(
-//                 itemCount: state.pages.length,
-//                 itemBuilder: (context, i) {
-//                   return Text(state.pages[i]['data']);
-//                 },
-//               );
-//             }
-//             return const Center(
-//               child: CircularProgressIndicator(),
-//             );
-//           }
-
-//           return ListView.builder(
-//             itemCount: state.pages.length,
-//             itemBuilder: (context, i) {
-//               final data = state.pages[i]['data'];
-//               return Column(
-//                 children: [
-//                   Text(data),
-//                   if (i == state.pages.length - 1 &&
-//                       state.status == QueryStatus.success &&
-//                       state.hasNextPage)
-//                     ElevatedButton(
-//                       onPressed: () {
-//                         _controller.fetchNextPage();
-//                       },
-//                       child: const Text('Load More'),
-//                     ),
-//                   if (i == state.pages.length - 1 && state.isFetchingNextPage)
-//                     Container(
-//                       alignment: Alignment.center,
-//                       padding: const EdgeInsets.all(4),
-//                       height: 32,
-//                       child: const CircularProgressIndicator(),
-//                     )
-//                 ],
-//               );
-//             },
-//           );
-//         },
-//       ),
-//     );
-//   }
-// }
+          return ListView.builder(
+            itemCount: state.pages.length,
+            itemBuilder: (context, i) {
+              final data = state.pages[i]['data'];
+              return Column(
+                children: [
+                  Text(data),
+                  if (i == state.pages.length - 1 &&
+                      state.status == QueryStatus.success &&
+                      state.hasNextPage)
+                    ElevatedButton(
+                      onPressed: () {
+                        _controller.fetchNextPage();
+                      },
+                      child: const Text('Load More'),
+                    ),
+                  if (i == state.pages.length - 1 && state.isFetchingNextPage)
+                    Container(
+                      alignment: Alignment.center,
+                      padding: const EdgeInsets.all(4),
+                      height: 32,
+                      child: const CircularProgressIndicator(),
+                    )
+                ],
+              );
+            },
+          );
+        },
+      ),
+    );
+  }
+}
 
 class MutationExamplePage extends StatefulWidget {
   const MutationExamplePage({super.key});
