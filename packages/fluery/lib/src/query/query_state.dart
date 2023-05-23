@@ -4,17 +4,17 @@ class QueryState<T> extends Equatable {
   const QueryState({
     this.status = QueryStatus.idle,
     this.data,
+    this.isRetrying = false,
+    this.isInvalidated = false,
     this.dataUpdatedAt,
     this.error,
     this.errorUpdatedAt,
-    this.isRetrying = false,
-    this.invalidated = false,
   });
 
   final QueryStatus status;
   final T? data;
   final bool isRetrying;
-  final bool invalidated;
+  final bool isInvalidated;
   final Exception? error;
   final DateTime? dataUpdatedAt;
   final DateTime? errorUpdatedAt;
@@ -41,7 +41,7 @@ class QueryState<T> extends Equatable {
     QueryStatus? status,
     T? data,
     bool? isRetrying,
-    bool? invalidated,
+    bool? isInvalidated,
     Exception? error,
     DateTime? dataUpdatedAt,
     DateTime? errorUpdatedAt,
@@ -50,7 +50,7 @@ class QueryState<T> extends Equatable {
       status: status ?? this.status,
       data: data ?? this.data,
       isRetrying: isRetrying ?? this.isRetrying,
-      invalidated: invalidated ?? this.invalidated,
+      isInvalidated: isInvalidated ?? this.isInvalidated,
       error: error ?? this.error,
       dataUpdatedAt: dataUpdatedAt ?? this.dataUpdatedAt,
       errorUpdatedAt: errorUpdatedAt ?? this.errorUpdatedAt,
@@ -61,10 +61,10 @@ class QueryState<T> extends Equatable {
   List<Object?> get props => [
         status,
         data,
+        isRetrying,
+        isInvalidated,
         error,
         dataUpdatedAt,
         errorUpdatedAt,
-        isRetrying,
-        invalidated,
       ];
 }

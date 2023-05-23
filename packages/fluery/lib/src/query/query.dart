@@ -126,7 +126,7 @@ class Query<T> extends QueryBase<QueryObserver<T>, QueryState<T>> {
     final effectiveRetryRandomizationFactor =
         retryRandomizationFactor ?? this.retryRandomizationFactor;
 
-    if (!isStale(effectiveStaleDuration) && !state.invalidated) return;
+    if (!isStale(effectiveStaleDuration) && !state.isInvalidated) return;
 
     final stateBeforeFetching = state.copyWith();
 
@@ -260,7 +260,7 @@ class Query<T> extends QueryBase<QueryObserver<T>, QueryState<T>> {
   }
 
   void invalidate() {
-    state = state.copyWith(invalidated: true);
+    state = state.copyWith(isInvalidated: true);
   }
 
   void setRefetchInterval() {
