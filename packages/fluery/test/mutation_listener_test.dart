@@ -132,7 +132,7 @@ void main() {
       controller.cancel();
       await tester.pump(Duration(seconds: 1));
 
-      expect(state.status, MutationStatus.canceled);
+      expect(state.status, MutationStatus.idle);
       expect(state.data, isNull);
       expect(state.error, isNull);
 

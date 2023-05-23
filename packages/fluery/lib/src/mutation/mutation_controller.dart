@@ -48,6 +48,8 @@ class MutationController<T, P> extends ValueNotifier<MutationState<T>> {
 
     if (value.status.isMutating) return;
 
+    final stateBeforeMutating = value;
+
     value = value.copyWith(status: MutationStatus.mutating);
 
     try {
@@ -64,6 +66,8 @@ class MutationController<T, P> extends ValueNotifier<MutationState<T>> {
           data: data,
           dataUpdatedAt: clock.now(),
         );
+      } else {
+        value = stateBeforeMutating;
       }
     } on Exception catch (error) {
       if (retryMaxAttempts >= 1 && (await retryWhen?.call(error) ?? true)) {
@@ -101,6 +105,8 @@ class MutationController<T, P> extends ValueNotifier<MutationState<T>> {
               data: data,
               dataUpdatedAt: clock.now(),
             );
+          } else {
+            value = stateBeforeMutating;
           }
         } on Exception catch (error) {
           value = value.copyWith(
@@ -119,22 +125,10 @@ class MutationController<T, P> extends ValueNotifier<MutationState<T>> {
     }
   }
 
-  Future<void> cancel({
-    T? data,
-    Exception? error,
-  }) async {
+  Future<void> cancel() async {
     if (!value.status.isMutating) return;
 
-    _timerInterceptor?.timers.forEach((timer) => timer.cancel());
     await _cancelableOperation?.cancel();
-
-    value = value.copyWith(
-      status: MutationStatus.canceled,
-      data: data,
-      dataUpdatedAt: data != null ? clock.now() : null,
-      error: error,
-      errorUpdatedAt: error != null ? clock.now() : null,
-    );
   }
 
   void reset() {

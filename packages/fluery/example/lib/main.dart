@@ -394,7 +394,7 @@ class _MutationExamplePageState extends State<MutationExamplePage> {
             ),
             ElevatedButton(
               onPressed: () {
-                _controller.cancel(data: 'canceled!');
+                _controller.cancel();
               },
               child: const Text('Cancel'),
             ),
@@ -420,9 +420,6 @@ class _MutationExamplePageState extends State<MutationExamplePage> {
                   case MutationStatus.mutating:
                   case MutationStatus.retrying:
                     return const Text('Mutating');
-                  case MutationStatus.canceled:
-                    final String data = state.data as String;
-                    return Text('canceled $data');
                   case MutationStatus.success:
                     final String data = state.data as String;
                     return Text(data);

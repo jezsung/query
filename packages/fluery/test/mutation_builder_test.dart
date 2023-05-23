@@ -143,7 +143,7 @@ void main() {
       controller.cancel();
       await tester.pump(Duration(seconds: 1));
 
-      expect(find.text('status: canceled'), findsOneWidget);
+      expect(find.text('status: idle'), findsOneWidget);
       expect(find.text('data: null'), findsOneWidget);
       expect(find.text('error: null'), findsOneWidget);
 

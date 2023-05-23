@@ -21,7 +21,6 @@ enum MutationStatus {
   idle,
   mutating,
   retrying,
-  canceled,
   success,
   failure,
 }
@@ -32,8 +31,6 @@ extension MutationStatusExtension on MutationStatus {
   bool get isMutating => this == MutationStatus.mutating;
 
   bool get isRetrying => this == MutationStatus.retrying;
-
-  bool get isCanceled => this == MutationStatus.canceled;
 
   bool get isSuccess => this == MutationStatus.success;
 
