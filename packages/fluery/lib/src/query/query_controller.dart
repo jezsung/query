@@ -16,4 +16,8 @@ class QueryController<T> extends QueryObserver<T> {
   void setData(T data, [DateTime? updatedAt]) {
     query.setData(data, updatedAt);
   }
+
+  void invalidate() {
+    query.invalidate();
+  }
 }

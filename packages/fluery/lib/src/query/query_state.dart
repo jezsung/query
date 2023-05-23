@@ -7,6 +7,7 @@ class QueryState<T> extends Equatable {
     this.dataUpdatedAt,
     this.error,
     this.errorUpdatedAt,
+    this.invalidated = false,
   });
 
   final QueryStatus status;
@@ -14,6 +15,7 @@ class QueryState<T> extends Equatable {
   final Exception? error;
   final DateTime? dataUpdatedAt;
   final DateTime? errorUpdatedAt;
+  final bool invalidated;
 
   bool get inProgress => status.isFetching || status.isRetrying;
 
@@ -41,6 +43,7 @@ class QueryState<T> extends Equatable {
     Exception? error,
     DateTime? dataUpdatedAt,
     DateTime? errorUpdatedAt,
+    bool? invalidated,
   }) {
     return QueryState<T>(
       status: status ?? this.status,
@@ -48,6 +51,7 @@ class QueryState<T> extends Equatable {
       error: error ?? this.error,
       dataUpdatedAt: dataUpdatedAt ?? this.dataUpdatedAt,
       errorUpdatedAt: errorUpdatedAt ?? this.errorUpdatedAt,
+      invalidated: invalidated ?? this.invalidated,
     );
   }
 
@@ -58,5 +62,6 @@ class QueryState<T> extends Equatable {
         error,
         dataUpdatedAt,
         errorUpdatedAt,
+        invalidated,
       ];
 }

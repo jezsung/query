@@ -38,6 +38,7 @@ class PagedQueryState<T, P> extends QueryState<Pages<T>> {
     Exception? error,
     DateTime? dataUpdatedAt,
     DateTime? errorUpdatedAt,
+    bool? invalidated,
   }) {
     return PagedQueryState<T, P>(
       status: status ?? this.status,

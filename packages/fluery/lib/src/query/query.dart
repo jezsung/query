@@ -284,7 +284,7 @@ class Query<T> extends QueryBase<QueryState<T>>
     final effectiveRetryRandomizationFactor =
         retryRandomizationFactor ?? this.retryRandomizationFactor;
 
-    if (!isStale(effectiveStaleDuration)) return;
+    if (!isStale(effectiveStaleDuration) && !state.invalidated) return;
 
     final stateBeforeFetching = state.copyWith();
 
@@ -413,6 +413,10 @@ class Query<T> extends QueryBase<QueryState<T>>
         dataUpdatedAt: updatedAt ?? clock.now(),
       );
     }
+  }
+
+  void invalidate() {
+    state = state.copyWith(invalidated: true);
   }
 
   void setRefetchInterval() {
