@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:async/async.dart';
 import 'package:clock/clock.dart';
 import 'package:fluery/src/conditional_value_listenable_builder.dart';
-import 'package:fluery/src/query/query.dart';
+import 'package:fluery/src/query/index.dart';
 import 'package:fluery/src/timer_interceptor.dart';
 import 'package:flutter/widgets.dart';
 import 'package:provider/provider.dart';

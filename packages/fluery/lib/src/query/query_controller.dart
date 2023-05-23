@@ -1,4 +1,4 @@
-part of 'query.dart';
+part of 'index.dart';
 
 class QueryController<T> extends QueryObserver<T> {
   Future refetch() async {

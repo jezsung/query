@@ -1,4 +1,4 @@
-part of 'query.dart';
+part of 'index.dart';
 
 class QueryClient {
   final QueryCache cache = QueryCache();
