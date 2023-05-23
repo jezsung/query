@@ -160,8 +160,9 @@ class _QueryBuilderState<T> extends State<QueryBuilder<T>>
     }
 
     if (widget.controller == null) {
-      _internalController = QueryController<T>().._attach(this);
+      _internalController = QueryController<T>();
     }
+    _controller._attach(this);
 
     _query.addListener(_controller);
 
