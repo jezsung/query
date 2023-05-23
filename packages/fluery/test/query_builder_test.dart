@@ -2260,6 +2260,70 @@ void main() {
   );
 
   group(
+    'when a query is invalidated',
+    () {
+      testWidgets(
+        'should ignore staleness',
+        (tester) async {
+          const fetchDuration = Duration(seconds: 3);
+          const staleDuration = Duration(minutes: 10);
+          final controller = QueryController<String>();
+          final widget = QueryBuilder<String>(
+            controller: controller,
+            id: 'id',
+            fetcher: (id) async {
+              await Future.delayed(fetchDuration);
+              return 'data';
+            },
+            staleDuration: staleDuration,
+            builder: (context, state, child) {
+              return QueryResult<String>(state);
+            },
+          );
+
+          QueryState<String> getState() => tester
+              .widget<QueryResult<String>>(find.byType(QueryResult<String>))
+              .state;
+
+          await tester.pumpWidget(withQueryClientProvider(widget));
+
+          expect(getState().status, equals(QueryStatus.fetching));
+          expect(getState().data, isNull);
+          expect(getState().isInvalidated, isFalse);
+
+          await tester.pump(fetchDuration);
+
+          expect(getState().status, equals(QueryStatus.success));
+          expect(getState().data, equals('data'));
+          expect(getState().isInvalidated, isFalse);
+
+          controller.invalidate();
+          await tester.pump();
+
+          expect(getState().status, equals(QueryStatus.success));
+          expect(getState().data, equals('data'));
+          expect(getState().isInvalidated, isTrue);
+
+          controller.refetch();
+          await tester.pump();
+
+          expect(getState().status, equals(QueryStatus.fetching));
+          expect(getState().data, equals('data'));
+          expect(getState().isInvalidated, isFalse);
+
+          await tester.pump(fetchDuration);
+
+          expect(getState().status, equals(QueryStatus.success));
+          expect(getState().data, equals('data'));
+          expect(getState().isInvalidated, isFalse);
+
+          controller.dispose();
+        },
+      );
+    },
+  );
+
+  group(
     'when the "buildWhen" is set',
     () {
       testWidgets(
@@ -2371,5 +2435,19 @@ class TestException implements Exception {
   @override
   String toString() {
     return message;
+  }
+}
+
+class QueryResult<T> extends StatelessWidget {
+  const QueryResult(
+    this.state, {
+    super.key,
+  });
+
+  final QueryState<T> state;
+
+  @override
+  Widget build(BuildContext context) {
+    return const Placeholder();
   }
 }
