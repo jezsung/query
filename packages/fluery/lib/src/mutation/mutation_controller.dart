@@ -43,7 +43,7 @@ class MutationController<T, P> extends ValueNotifier<MutationState<T>> {
     return _state!.retryRandomizationFactor;
   }
 
-  Future<void> mutate([P? param]) async {
+  Future mutate([P? param]) async {
     assert(_state != null);
 
     if (value.status.isMutating) return;
@@ -125,7 +125,7 @@ class MutationController<T, P> extends ValueNotifier<MutationState<T>> {
     }
   }
 
-  Future<void> cancel() async {
+  Future cancel() async {
     if (!value.status.isMutating) return;
 
     await _cancelableOperation?.cancel();
