@@ -130,7 +130,10 @@ class Query<T> extends QueryBase<QueryObserver<T>, QueryState<T>> {
 
     final stateBeforeFetching = state.copyWith();
 
-    state = state.copyWith(status: QueryStatus.fetching);
+    state = state.copyWith(
+      status: QueryStatus.fetching,
+      isInvalidated: false,
+    );
 
     try {
       _timerInterceptor = TimerInterceptor<T>(() => effectiveFetcher(id));
