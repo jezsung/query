@@ -1,13 +1,13 @@
 part of 'mutation.dart';
 
-class MutationController<T, A> extends ValueNotifier<MutationState<T>> {
+class MutationController<T, P> extends ValueNotifier<MutationState<T>> {
   MutationController() : super(MutationState<T>());
 
-  _MutationWidgetState<T, A>? _state;
+  _MutationWidgetState<T, P>? _state;
   TimerInterceptor<T>? _timerInterceptor;
   CancelableOperation<T>? _cancelableOperation;
 
-  Mutator<T, A> get mutator {
+  Mutator<T, P> get mutator {
     assert(_state != null);
 
     return _state!.mutator;
@@ -43,7 +43,7 @@ class MutationController<T, A> extends ValueNotifier<MutationState<T>> {
     return _state!.retryRandomizationFactor;
   }
 
-  Future<void> mutate([A? args]) async {
+  Future<void> mutate([P? param]) async {
     assert(_state != null);
 
     if (value.status.isMutating) return;
@@ -51,7 +51,7 @@ class MutationController<T, A> extends ValueNotifier<MutationState<T>> {
     value = value.copyWith(status: MutationStatus.mutating);
 
     try {
-      _timerInterceptor = TimerInterceptor<T>(() => mutator(args));
+      _timerInterceptor = TimerInterceptor<T>(() => mutator(param));
       _cancelableOperation = CancelableOperation<T>.fromFuture(
         _timerInterceptor!.value,
       );
@@ -76,7 +76,7 @@ class MutationController<T, A> extends ValueNotifier<MutationState<T>> {
         try {
           final data = await retry(
             () {
-              _timerInterceptor = TimerInterceptor<T>(() => mutator(args));
+              _timerInterceptor = TimerInterceptor<T>(() => mutator(param));
               _cancelableOperation = CancelableOperation<T>.fromFuture(
                 _timerInterceptor!.value,
               );
@@ -154,11 +154,11 @@ class MutationController<T, A> extends ValueNotifier<MutationState<T>> {
     super.dispose();
   }
 
-  void _attach(_MutationWidgetState<T, A> state) {
+  void _attach(_MutationWidgetState<T, P> state) {
     _state = state;
   }
 
-  void _detach(_MutationWidgetState<T, A> state) {
+  void _detach(_MutationWidgetState<T, P> state) {
     if (_state == state) {
       _state = null;
       cancel();

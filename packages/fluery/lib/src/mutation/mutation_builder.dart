@@ -1,6 +1,6 @@
 part of 'mutation.dart';
 
-class MutationBuilder<T, A> extends StatefulWidget {
+class MutationBuilder<T, P> extends StatefulWidget {
   const MutationBuilder({
     super.key,
     required this.controller,
@@ -15,8 +15,8 @@ class MutationBuilder<T, A> extends StatefulWidget {
     this.child,
   });
 
-  final MutationController<T, A> controller;
-  final Mutator<T, A> mutator;
+  final MutationController<T, P> controller;
+  final Mutator<T, P> mutator;
   final RetryCondition? retryWhen;
   final int retryMaxAttempts;
   final Duration retryMaxDelay;
@@ -27,10 +27,10 @@ class MutationBuilder<T, A> extends StatefulWidget {
   final Widget? child;
 
   @visibleForTesting
-  MutationBuilder<T, A> copyWith({
+  MutationBuilder<T, P> copyWith({
     Key? key,
-    MutationController<T, A>? controller,
-    Mutator<T, A>? mutator,
+    MutationController<T, P>? controller,
+    Mutator<T, P>? mutator,
     RetryCondition? retryWhen,
     int? retryMaxAttempts,
     Duration? retryMaxDelay,
@@ -40,7 +40,7 @@ class MutationBuilder<T, A> extends StatefulWidget {
     MutationWidgetBuilder<T>? builder,
     Widget? child,
   }) {
-    return MutationBuilder<T, A>(
+    return MutationBuilder<T, P>(
       key: key ?? this.key,
       controller: controller ?? this.controller,
       mutator: mutator ?? this.mutator,
@@ -57,10 +57,10 @@ class MutationBuilder<T, A> extends StatefulWidget {
   }
 
   @override
-  State<MutationBuilder<T, A>> createState() => _MutationBuilderState<T, A>();
+  State<MutationBuilder<T, P>> createState() => _MutationBuilderState<T, P>();
 }
 
-class _MutationBuilderState<T, A> extends State<MutationBuilder<T, A>> {
+class _MutationBuilderState<T, P> extends State<MutationBuilder<T, P>> {
   late MutationState<T> _state;
 
   @override
@@ -71,7 +71,7 @@ class _MutationBuilderState<T, A> extends State<MutationBuilder<T, A>> {
 
   @override
   Widget build(BuildContext context) {
-    return MutationListener<T, A>(
+    return MutationListener<T, P>(
       controller: widget.controller,
       mutator: widget.mutator,
       retryWhen: widget.retryWhen,

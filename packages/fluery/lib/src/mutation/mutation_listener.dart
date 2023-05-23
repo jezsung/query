@@ -1,6 +1,6 @@
 part of 'mutation.dart';
 
-class MutationListener<T, A> extends StatefulWidget {
+class MutationListener<T, P> extends StatefulWidget {
   const MutationListener({
     super.key,
     required this.controller,
@@ -15,8 +15,8 @@ class MutationListener<T, A> extends StatefulWidget {
     required this.child,
   });
 
-  final MutationController<T, A> controller;
-  final Mutator<T, A> mutator;
+  final MutationController<T, P> controller;
+  final Mutator<T, P> mutator;
   final RetryCondition? retryWhen;
   final int retryMaxAttempts;
   final Duration retryMaxDelay;
@@ -27,10 +27,10 @@ class MutationListener<T, A> extends StatefulWidget {
   final Widget child;
 
   @visibleForTesting
-  MutationListener<T, A> copyWith({
+  MutationListener<T, P> copyWith({
     Key? key,
-    MutationController<T, A>? controller,
-    Mutator<T, A>? mutator,
+    MutationController<T, P>? controller,
+    Mutator<T, P>? mutator,
     RetryCondition? retryWhen,
     int? retryMaxAttempts,
     Duration? retryMaxDelay,
@@ -40,7 +40,7 @@ class MutationListener<T, A> extends StatefulWidget {
     MutationWidgetListener<T>? listener,
     Widget? child,
   }) {
-    return MutationListener<T, A>(
+    return MutationListener<T, P>(
       key: key ?? this.key,
       controller: controller ?? this.controller,
       mutator: mutator ?? this.mutator,
@@ -57,13 +57,13 @@ class MutationListener<T, A> extends StatefulWidget {
   }
 
   @override
-  State<MutationListener<T, A>> createState() => _MutationListenerState<T, A>();
+  State<MutationListener<T, P>> createState() => _MutationListenerState<T, P>();
 }
 
-class _MutationListenerState<T, A> extends State<MutationListener<T, A>>
-    with _MutationWidgetState<T, A> {
+class _MutationListenerState<T, P> extends State<MutationListener<T, P>>
+    with _MutationWidgetState<T, P> {
   @override
-  Mutator<T, A> get mutator => widget.mutator;
+  Mutator<T, P> get mutator => widget.mutator;
 
   @override
   RetryCondition? get retryWhen => widget.retryWhen;
@@ -93,7 +93,7 @@ class _MutationListenerState<T, A> extends State<MutationListener<T, A>>
   }
 
   @override
-  void didUpdateWidget(covariant MutationListener<T, A> oldWidget) {
+  void didUpdateWidget(covariant MutationListener<T, P> oldWidget) {
     super.didUpdateWidget(oldWidget);
 
     if (widget.controller != oldWidget.controller) {

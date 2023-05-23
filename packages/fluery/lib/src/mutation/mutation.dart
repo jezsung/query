@@ -15,7 +15,7 @@ part 'mutation_controller.dart';
 part 'mutation_listener.dart';
 part 'mutation_state.dart';
 
-typedef Mutator<T, A> = Future<T> Function(A? args);
+typedef Mutator<T, P> = Future<T> Function(P? param);
 
 enum MutationStatus {
   idle,

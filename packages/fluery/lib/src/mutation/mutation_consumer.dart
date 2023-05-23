@@ -1,6 +1,6 @@
 part of 'mutation.dart';
 
-class MutationConsumer<T, A> extends StatefulWidget {
+class MutationConsumer<T, P> extends StatefulWidget {
   const MutationConsumer({
     super.key,
     required this.controller,
@@ -17,8 +17,8 @@ class MutationConsumer<T, A> extends StatefulWidget {
     this.child,
   });
 
-  final MutationController<T, A> controller;
-  final Mutator<T, A> mutator;
+  final MutationController<T, P> controller;
+  final Mutator<T, P> mutator;
   final RetryCondition? retryWhen;
   final int retryMaxAttempts;
   final Duration retryMaxDelay;
@@ -31,13 +31,13 @@ class MutationConsumer<T, A> extends StatefulWidget {
   final Widget? child;
 
   @override
-  State<MutationConsumer<T, A>> createState() => _MutationConsumerState<T, A>();
+  State<MutationConsumer<T, P>> createState() => _MutationConsumerState<T, P>();
 }
 
-class _MutationConsumerState<T, A> extends State<MutationConsumer<T, A>>
-    with _MutationWidgetState<T, A> {
+class _MutationConsumerState<T, P> extends State<MutationConsumer<T, P>>
+    with _MutationWidgetState<T, P> {
   @override
-  Mutator<T, A> get mutator => widget.mutator;
+  Mutator<T, P> get mutator => widget.mutator;
 
   @override
   RetryCondition? get retryWhen => widget.retryWhen;
@@ -67,7 +67,7 @@ class _MutationConsumerState<T, A> extends State<MutationConsumer<T, A>>
   }
 
   @override
-  void didUpdateWidget(covariant MutationConsumer<T, A> oldWidget) {
+  void didUpdateWidget(covariant MutationConsumer<T, P> oldWidget) {
     super.didUpdateWidget(oldWidget);
 
     if (widget.controller != oldWidget.controller) {
