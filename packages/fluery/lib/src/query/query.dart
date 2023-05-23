@@ -1,7 +1,6 @@
 part of 'index.dart';
 
-class Query<T> extends QueryBase<QueryState<T>>
-    with QueryObservable<QueryObserver<T>, QueryState<T>> {
+class Query<T> extends QueryBase<QueryObserver<T>, QueryState<T>> {
   Query({
     required super.id,
     required super.cache,
@@ -286,18 +285,18 @@ class Query<T> extends QueryBase<QueryState<T>>
   }
 
   @override
-  void addObserver(QueryObserver<T> observer) {
-    super.addObserver(observer);
+  void addListener(QueryObserver<T> listener) {
+    super.addListener(listener);
 
     setRefetchInterval();
   }
 
   @override
-  void removeObserver(QueryObserver<T> observer) {
-    super.removeObserver(observer);
+  void removeListener(QueryObserver<T> listener) {
+    super.removeListener(listener);
 
     if (observers.isEmpty) {
-      cacheDuration = observer.cacheDuration;
+      cacheDuration = listener.cacheDuration;
     }
 
     setRefetchInterval();

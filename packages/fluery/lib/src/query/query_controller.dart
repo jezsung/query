@@ -1,8 +1,13 @@
 part of 'index.dart';
 
 class QueryController<T> extends QueryObserver<T> {
+  Query<T> get _query {
+    assert(_widgetState != null);
+    return _widgetState!.query;
+  }
+
   Future refetch() async {
-    await query.fetch(
+    await _query.fetch(
       fetcher: fetcher,
       staleDuration: staleDuration,
       retryWhen: retryWhen,
@@ -14,10 +19,10 @@ class QueryController<T> extends QueryObserver<T> {
   }
 
   void setData(T data, [DateTime? updatedAt]) {
-    query.setData(data, updatedAt);
+    _query.setData(data, updatedAt);
   }
 
   void invalidate() {
-    query.invalidate();
+    _query.invalidate();
   }
 }

@@ -1,6 +1,7 @@
 part of 'paged_query.dart';
 
-class PagedQueryObserver<T, P> extends ValueNotifier<PagedQueryState<T, P>> {
+class PagedQueryObserver<T, P> extends ValueNotifier<PagedQueryState<T, P>>
+    implements StateListener<PagedQueryState<T, P>> {
   PagedQueryObserver({
     required this.fetcher,
     this.enabled = true,
@@ -61,6 +62,11 @@ class PagedQueryObserver<T, P> extends ValueNotifier<PagedQueryState<T, P>> {
   }
 
   void _onStateChanged(PagedQueryState<T, P> state) {
+    value = state;
+  }
+
+  @override
+  void onListen(PagedQueryState<T, P> state) {
     value = state;
   }
 }

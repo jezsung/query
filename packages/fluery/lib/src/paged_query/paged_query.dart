@@ -45,7 +45,8 @@ mixin _PagedQueryWidgetState {
   Future fetchPreviousPage();
 }
 
-class PagedQuery<T, P> extends QueryBase<PagedQueryState<T, P>> {
+class PagedQuery<T, P>
+    extends QueryBase<PagedQueryObserver<T, P>, PagedQueryState<T, P>> {
   PagedQuery({
     required super.id,
     required super.cache,

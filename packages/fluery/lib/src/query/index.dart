@@ -83,26 +83,3 @@ abstract class _QueryWidgetState<T> {
   double get retryRandomizationFactor;
   Duration? get refetchIntervalDuration;
 }
-
-mixin QueryObservable<Observer extends QueryObserverBase<T>, T>
-    on QueryBase<T> {
-  final Map<Observer, StreamSubscription> _subscriptions = {};
-
-  Set<Observer> get observers => _subscriptions.keys.toSet();
-
-  @mustCallSuper
-  void addObserver(Observer observer) {
-    observer.onStateChanged(state);
-    _subscriptions[observer] = stream.listen(observer.onStateChanged);
-  }
-
-  @mustCallSuper
-  void removeObserver(Observer observer) {
-    _subscriptions[observer]?.cancel();
-    _subscriptions.remove(observer);
-  }
-}
-
-abstract class QueryObserverBase<T> {
-  void onStateChanged(T data);
-}

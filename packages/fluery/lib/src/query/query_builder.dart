@@ -163,7 +163,7 @@ class _QueryBuilderState<T> extends State<QueryBuilder<T>>
       _internalController = QueryController<T>().._attach(this);
     }
 
-    _query.addObserver(_controller);
+    _query.addListener(_controller);
 
     if (_query.state.status.isIdle) {
       fetch();
@@ -174,7 +174,7 @@ class _QueryBuilderState<T> extends State<QueryBuilder<T>>
 
   @override
   void dispose() {
-    _query.removeObserver(_controller);
+    _query.removeListener(_controller);
     _controller._detach(this);
     _internalController?.dispose();
     _internalController = null;
@@ -189,7 +189,7 @@ class _QueryBuilderState<T> extends State<QueryBuilder<T>>
     final query = context.watch<QueryClient>().cache.build<T>(widget.id);
 
     if (query != _query) {
-      _query.removeObserver(_controller);
+      _query.removeListener(_controller);
 
       _query = query;
 
@@ -200,7 +200,7 @@ class _QueryBuilderState<T> extends State<QueryBuilder<T>>
         );
       }
 
-      _query.addObserver(_controller);
+      _query.addListener(_controller);
 
       if (_query.state.status.isIdle) {
         fetch();
@@ -230,7 +230,7 @@ class _QueryBuilderState<T> extends State<QueryBuilder<T>>
     }
 
     if (widget.id != oldWidget.id) {
-      _query.removeObserver(oldController);
+      _query.removeListener(oldController);
 
       _query = context.read<QueryClient>().cache.build<T>(widget.id);
 
@@ -241,7 +241,7 @@ class _QueryBuilderState<T> extends State<QueryBuilder<T>>
         );
       }
 
-      _query.addObserver(_controller);
+      _query.addListener(_controller);
     }
 
     if (widget.id != oldWidget.id || widget.enabled && !oldWidget.enabled) {

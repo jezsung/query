@@ -1,16 +1,10 @@
 part of 'index.dart';
 
 class QueryObserver<T> extends ValueNotifier<QueryState<T>>
-    implements QueryObserverBase<QueryState<T>> {
+    implements StateListener<QueryState<T>> {
   QueryObserver() : super(QueryState<T>());
 
   _QueryWidgetState<T>? _widgetState;
-
-  @protected
-  Query<T> get query {
-    assert(_widgetState != null);
-    return _widgetState!.query;
-  }
 
   QueryIdentifier get id {
     assert(_widgetState != null);
@@ -94,7 +88,7 @@ class QueryObserver<T> extends ValueNotifier<QueryState<T>>
   }
 
   @override
-  void onStateChanged(QueryState<T> state) {
+  void onListen(QueryState<T> state) {
     value = state;
   }
 
