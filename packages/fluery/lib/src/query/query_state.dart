@@ -7,17 +7,17 @@ class QueryState<T> extends Equatable {
     this.dataUpdatedAt,
     this.error,
     this.errorUpdatedAt,
+    this.isRetrying = false,
     this.invalidated = false,
   });
 
   final QueryStatus status;
   final T? data;
+  final bool isRetrying;
+  final bool invalidated;
   final Exception? error;
   final DateTime? dataUpdatedAt;
   final DateTime? errorUpdatedAt;
-  final bool invalidated;
-
-  bool get inProgress => status.isFetching || status.isRetrying;
 
   bool get hasData => data != null;
 
@@ -40,18 +40,20 @@ class QueryState<T> extends Equatable {
   QueryState<T> copyWith({
     QueryStatus? status,
     T? data,
+    bool? isRetrying,
+    bool? invalidated,
     Exception? error,
     DateTime? dataUpdatedAt,
     DateTime? errorUpdatedAt,
-    bool? invalidated,
   }) {
     return QueryState<T>(
       status: status ?? this.status,
       data: data ?? this.data,
+      isRetrying: isRetrying ?? this.isRetrying,
+      invalidated: invalidated ?? this.invalidated,
       error: error ?? this.error,
       dataUpdatedAt: dataUpdatedAt ?? this.dataUpdatedAt,
       errorUpdatedAt: errorUpdatedAt ?? this.errorUpdatedAt,
-      invalidated: invalidated ?? this.invalidated,
     );
   }
 
@@ -62,6 +64,7 @@ class QueryState<T> extends Equatable {
         error,
         dataUpdatedAt,
         errorUpdatedAt,
+        isRetrying,
         invalidated,
       ];
 }

@@ -1117,6 +1117,7 @@ void main() {
                     Text('status: ${state.status.name}'),
                     Text('data: ${state.data}'),
                     Text('error: ${state.error}'),
+                    Text('isRetrying: ${state.isRetrying}'),
                   ],
                 ),
               );
@@ -1154,15 +1155,17 @@ void main() {
 
           await tester.pump(fetchDuration);
 
-          expect(find.text('status: retrying'), findsOneWidget);
+          expect(find.text('status: fetching'), findsOneWidget);
           expect(find.text('data: placeholder data'), findsOneWidget);
           expect(find.text('error: error'), findsOneWidget);
+          expect(find.text('isRetrying: true'), findsOneWidget);
 
           await tester.pump(fetchDuration);
 
           expect(find.text('status: failure'), findsOneWidget);
           expect(find.text('data: placeholder data'), findsOneWidget);
           expect(find.text('error: error'), findsOneWidget);
+          expect(find.text('isRetrying: false'), findsOneWidget);
         },
       );
     },
@@ -1223,6 +1226,7 @@ void main() {
                       Text('status: ${state.status.name}'),
                       Text('data: ${state.data}'),
                       Text('error: ${state.error}'),
+                      Text('isRetrying: ${state.isRetrying}'),
                     ],
                   ),
                 );
@@ -1234,13 +1238,15 @@ void main() {
             expect(find.text('status: fetching'), findsOneWidget);
             expect(find.text('data: null'), findsOneWidget);
             expect(find.text('error: null'), findsOneWidget);
+            expect(find.text('isRetrying: false'), findsOneWidget);
 
             await tester.pump(fetchDuration);
 
             for (int i = 1; i <= retryMaxAttempts; i++) {
-              expect(find.text('status: retrying'), findsOneWidget);
+              expect(find.text('status: fetching'), findsOneWidget);
               expect(find.text('data: null'), findsOneWidget);
               expect(find.text('error: error'), findsOneWidget);
+              expect(find.text('isRetrying: true'), findsOneWidget);
 
               await tester.pump(fetchDuration);
               await tester.pump(retryDelayFactor * pow(2, i));
@@ -1249,6 +1255,7 @@ void main() {
             expect(find.text('status: failure'), findsOneWidget);
             expect(find.text('data: null'), findsOneWidget);
             expect(find.text('error: error'), findsOneWidget);
+            expect(find.text('isRetrying: false'), findsOneWidget);
           },
         );
       }
@@ -1325,6 +1332,7 @@ void main() {
                     Text('status: ${state.status.name}'),
                     Text('data: ${state.data}'),
                     Text('error: ${state.error}'),
+                    Text('isRetrying: ${state.isRetrying}'),
                   ],
                 ),
               );
@@ -1336,18 +1344,21 @@ void main() {
           expect(find.text('status: fetching'), findsOneWidget);
           expect(find.text('data: null'), findsOneWidget);
           expect(find.text('error: null'), findsOneWidget);
+          expect(find.text('isRetrying: false'), findsOneWidget);
 
           await tester.pump(fetchDuration);
 
-          expect(find.text('status: retrying'), findsOneWidget);
+          expect(find.text('status: fetching'), findsOneWidget);
           expect(find.text('data: null'), findsOneWidget);
           expect(find.text('error: error1'), findsOneWidget);
+          expect(find.text('isRetrying: true'), findsOneWidget);
 
           await tester.pump(fetchDuration);
 
           expect(find.text('status: failure'), findsOneWidget);
           expect(find.text('data: null'), findsOneWidget);
           expect(find.text('error: error'), findsOneWidget);
+          expect(find.text('isRetrying: false'), findsOneWidget);
         },
       );
     },
@@ -2197,6 +2208,7 @@ void main() {
                     Text('status: ${state.status.name}'),
                     Text('data: ${state.data}'),
                     Text('error: ${state.error}'),
+                    Text('isRetrying: ${state.isRetrying}'),
                   ],
                 ),
               );
@@ -2211,9 +2223,10 @@ void main() {
 
           await tester.pump(fetchDuration);
 
-          expect(find.text('status: retrying'), findsOneWidget);
+          expect(find.text('status: fetching'), findsOneWidget);
           expect(find.text('data: null'), findsOneWidget);
           expect(find.text('error: error'), findsOneWidget);
+          expect(find.text('isRetrying: true'), findsOneWidget);
           expect(fetchCount, 1);
 
           await client.cancelQuery('id');
@@ -2222,6 +2235,7 @@ void main() {
           expect(find.text('status: idle'), findsOneWidget);
           expect(find.text('data: null'), findsOneWidget);
           expect(find.text('error: null'), findsOneWidget);
+          expect(find.text('isRetrying: false'), findsOneWidget);
           expect(fetchCount, 1);
 
           await tester.pump(fetchDuration);
@@ -2229,6 +2243,7 @@ void main() {
           expect(find.text('status: idle'), findsOneWidget);
           expect(find.text('data: null'), findsOneWidget);
           expect(find.text('error: null'), findsOneWidget);
+          expect(find.text('isRetrying: false'), findsOneWidget);
 
           // Last retry is expected to be finished even after it has been canceled.
           expect(fetchCount, 2);

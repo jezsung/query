@@ -217,7 +217,7 @@ class PagedQuery<T, P>
   }
 
   Future cancel() async {
-    if (!state.inProgress) return;
+    if (!state.status.isFetching) return;
 
     await _cancelableOperation?.cancel();
   }
@@ -236,7 +236,7 @@ class PagedQuery<T, P>
   }) async {
     switch (fetchMode) {
       case FetchMode.initial:
-        if (state.inProgress) return;
+        if (state.status.isFetching) return;
         break;
       case FetchMode.next:
         if (state.isFetchingNextPage || !state.hasNextPage) return;
@@ -335,7 +335,7 @@ class PagedQuery<T, P>
 
       if (shouldRetry) {
         state = state.copyWith(
-          status: QueryStatus.retrying,
+          isRetrying: true,
           error: error,
           errorUpdatedAt: clock.now(),
         );
@@ -388,6 +388,7 @@ class PagedQuery<T, P>
                   data: pages,
                   isFetchingNextPage: false,
                   isFetchingPreviousPage: false,
+                  isRetrying: false,
                   nextPageParam: nextPageParam,
                   previousPageParam: previousPageParam,
                   dataUpdatedAt: clock.now(),
@@ -404,6 +405,7 @@ class PagedQuery<T, P>
             status: QueryStatus.failure,
             isFetchingNextPage: false,
             isFetchingPreviousPage: false,
+            isRetrying: false,
             error: error,
             errorUpdatedAt: clock.now(),
           );

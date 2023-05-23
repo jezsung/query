@@ -32,7 +32,6 @@ typedef RetryCondition = FutureOr<bool> Function(Exception e);
 enum QueryStatus {
   idle,
   fetching,
-  retrying,
   success,
   failure,
 }
@@ -41,8 +40,6 @@ extension QueryStatusExtension on QueryStatus {
   bool get isIdle => this == QueryStatus.idle;
 
   bool get isFetching => this == QueryStatus.fetching;
-
-  bool get isRetrying => this == QueryStatus.retrying;
 
   bool get isSuccess => this == QueryStatus.success;
 

@@ -138,13 +138,7 @@ class _QueryExamplePageState extends State<QueryExamplePage> {
                   return Text(state.data!);
                 }
                 return const CircularProgressIndicator();
-              case QueryStatus.retrying:
-                return Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: const [
-                    CircularProgressIndicator(),
-                  ],
-                );
+
               case QueryStatus.success:
                 final String data = state.data!;
                 return Column(
@@ -204,7 +198,6 @@ class QueryExample2Page extends StatelessWidget {
             switch (state.status) {
               case QueryStatus.idle:
               case QueryStatus.fetching:
-              case QueryStatus.retrying:
                 if (state.hasData) {
                   return Text(state.data!);
                 }

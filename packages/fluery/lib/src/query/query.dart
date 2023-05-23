@@ -110,7 +110,7 @@ class Query<T> extends QueryBase<QueryObserver<T>, QueryState<T>> {
     Duration? retryDelayFactor,
     double? retryRandomizationFactor,
   }) async {
-    if (state.inProgress) return;
+    if (state.status.isFetching) return;
 
     assert(
       fetcher != null || this.fetcher != null,
@@ -155,7 +155,7 @@ class Query<T> extends QueryBase<QueryObserver<T>, QueryState<T>> {
 
       if (shouldRetry) {
         state = state.copyWith(
-          status: QueryStatus.retrying,
+          isRetrying: true,
           error: error,
           errorUpdatedAt: clock.now(),
         );
@@ -188,6 +188,7 @@ class Query<T> extends QueryBase<QueryObserver<T>, QueryState<T>> {
             state = state.copyWith(
               status: QueryStatus.success,
               data: data,
+              isRetrying: false,
               dataUpdatedAt: clock.now(),
             );
           } else {
@@ -196,6 +197,7 @@ class Query<T> extends QueryBase<QueryObserver<T>, QueryState<T>> {
         } on Exception catch (error) {
           state = state.copyWith(
             status: QueryStatus.failure,
+            isRetrying: false,
             error: error,
             errorUpdatedAt: clock.now(),
           );
@@ -213,7 +215,7 @@ class Query<T> extends QueryBase<QueryObserver<T>, QueryState<T>> {
   }
 
   Future cancel() async {
-    if (!state.inProgress) return;
+    if (!state.status.isFetching) return;
 
     await _cancelableOperation?.cancel();
   }
@@ -270,7 +272,7 @@ class Query<T> extends QueryBase<QueryObserver<T>, QueryState<T>> {
       return;
     }
 
-    if (state.inProgress) return;
+    if (state.status.isFetching) return;
 
     if (state.lastUpdatedAt == null) {
       fetch();

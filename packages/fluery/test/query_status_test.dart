@@ -11,10 +11,6 @@ void main() {
       expect(QueryStatus.fetching.isFetching, isTrue);
     });
 
-    test('isRetrying returns true for retrying status', () {
-      expect(QueryStatus.retrying.isRetrying, isTrue);
-    });
-
     test('isSuccess returns true for success status', () {
       expect(QueryStatus.success.isSuccess, isTrue);
     });
