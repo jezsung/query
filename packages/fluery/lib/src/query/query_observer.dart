@@ -77,19 +77,14 @@ class QueryObserver<T> extends ValueNotifier<QueryState<T>>
   }
 
   @override
-  QueryState<T> get value {
-    QueryState<T> state = super.value;
+  void onListen(QueryState<T> state) {
+    QueryState<T> filteredState = state;
 
-    if (!state.hasData) {
-      state = state.copyWith(data: placeholder);
+    if (!filteredState.hasData) {
+      filteredState = filteredState.copyWith(data: placeholder);
     }
 
-    return state;
-  }
-
-  @override
-  void onListen(QueryState<T> state) {
-    value = state;
+    value = filteredState;
   }
 
   void _attach(_QueryWidgetState<T> widgetState) {
