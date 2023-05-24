@@ -9,7 +9,7 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  fluery:
+  flutter_query:
     path: ../
 
 dev_dependencies:

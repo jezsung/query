@@ -1,6 +1,6 @@
 import 'dart:math';
 
-import 'package:fluery/fluery.dart';
+import 'package:flutter_query/flutter_query.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 

@@ -3,9 +3,9 @@ import 'dart:async';
 import 'package:async/async.dart';
 import 'package:clock/clock.dart';
 import 'package:equatable/equatable.dart';
-import 'package:fluery/src/conditional_value_listenable_builder.dart';
-import 'package:fluery/src/conditional_value_listenable_listener.dart';
-import 'package:fluery/src/timer_interceptor.dart';
+import 'package:flutter_query/src/conditional_value_listenable_builder.dart';
+import 'package:flutter_query/src/conditional_value_listenable_listener.dart';
+import 'package:flutter_query/src/timer_interceptor.dart';
 import 'package:flutter/widgets.dart';
 import 'package:retry/retry.dart';
 
