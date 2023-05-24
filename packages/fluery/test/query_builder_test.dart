@@ -156,6 +156,266 @@ void main() {
   );
 
   group(
+    'when the "controller" is set',
+    () {
+      testWidgets(
+        'getters should be the same instance of provided properties',
+        (tester) async {
+          final controller = QueryController<String>();
+          final id = 'id';
+          // ignore: prefer_function_declarations_over_variables
+          final fetcher = (id) async => 'data';
+          final staleDuration = Duration(minutes: 3);
+          final cacheDuration = Duration(minutes: 20);
+          final placeholder = 'placeholder';
+          // ignore: prefer_function_declarations_over_variables
+          final retryWhen = (e) => true;
+          final retryMaxAttempts = 4;
+          final retryMaxDelay = Duration(minutes: 1);
+          final retryDelayFactor = Duration(seconds: 1);
+          final retryRandomizationFactor = 0.5;
+          final refetchIntervalDuration = Duration(seconds: 30);
+
+          final widget = QueryBuilder<String>(
+            controller: controller,
+            id: id,
+            fetcher: fetcher,
+            placeholder: placeholder,
+            staleDuration: staleDuration,
+            cacheDuration: cacheDuration,
+            retryWhen: retryWhen,
+            retryMaxAttempts: retryMaxAttempts,
+            retryMaxDelay: retryMaxDelay,
+            retryDelayFactor: retryDelayFactor,
+            retryRandomizationFactor: retryRandomizationFactor,
+            refetchIntervalDuration: refetchIntervalDuration,
+            builder: (context, state, child) {
+              return QueryResult<String>(state);
+            },
+          );
+
+          await tester.pumpWidget(withQueryClientProvider(widget));
+
+          expect(controller.id, same(id));
+          expect(controller.fetcher, same(fetcher));
+          expect(controller.placeholder, same(placeholder));
+          expect(controller.staleDuration, same(staleDuration));
+          expect(controller.cacheDuration, same(cacheDuration));
+          expect(controller.retryWhen, same(retryWhen));
+          expect(controller.retryMaxAttempts, same(retryMaxAttempts));
+          expect(controller.retryMaxDelay, same(retryMaxDelay));
+          expect(controller.retryDelayFactor, same(retryDelayFactor));
+          expect(
+            controller.retryRandomizationFactor,
+            same(retryRandomizationFactor),
+          );
+          expect(
+            controller.refetchIntervalDuration,
+            same(refetchIntervalDuration),
+          );
+
+          controller.dispose();
+        },
+      );
+
+      testWidgets(
+        'should refetch if the refetch function is called through the controller',
+        (tester) async {
+          const fetchDuration = Duration(seconds: 3);
+          final controller = QueryController<String>();
+          final widget = QueryBuilder<String>(
+            controller: controller,
+            id: 'id',
+            fetcher: (id) async {
+              await Future.delayed(fetchDuration);
+              return 'data';
+            },
+            builder: (context, state, child) {
+              return QueryResult<String>(state);
+            },
+          );
+
+          QueryState<String> getState() => tester
+              .widget<QueryResult<String>>(find.byType(QueryResult<String>))
+              .state;
+
+          await tester.pumpWidget(withQueryClientProvider(widget));
+
+          expect(getState().status, equals(QueryStatus.fetching));
+          expect(getState().data, isNull);
+
+          await tester.pump(fetchDuration);
+
+          expect(getState().status, equals(QueryStatus.success));
+          expect(getState().data, equals('data'));
+
+          controller.refetch();
+          await tester.pump();
+
+          expect(getState().status, equals(QueryStatus.fetching));
+          expect(getState().data, equals('data'));
+
+          await tester.pump(fetchDuration);
+
+          expect(getState().status, equals(QueryStatus.success));
+          expect(getState().data, equals('data'));
+
+          controller.dispose();
+        },
+      );
+
+      testWidgets(
+        'should set data if the setData is called',
+        (tester) async {
+          const fetchDuration = Duration(seconds: 3);
+          final controller = QueryController<String>();
+          final widget = QueryBuilder<String>(
+            controller: controller,
+            id: 'id',
+            fetcher: (id) async {
+              await Future.delayed(fetchDuration);
+              return 'data';
+            },
+            builder: (context, state, child) {
+              return QueryResult<String>(state);
+            },
+          );
+
+          QueryState<String> getState() => tester
+              .widget<QueryResult<String>>(find.byType(QueryResult<String>))
+              .state;
+
+          await tester.pumpWidget(withQueryClientProvider(widget));
+
+          expect(getState().status, equals(QueryStatus.fetching));
+          expect(getState().data, isNull);
+
+          await tester.pump(fetchDuration);
+
+          expect(getState().status, equals(QueryStatus.success));
+          expect(getState().data, equals('data'));
+
+          controller.setData('new data');
+          await tester.pump();
+
+          expect(getState().status, equals(QueryStatus.success));
+          expect(getState().data, equals('new data'));
+
+          controller.dispose();
+        },
+      );
+
+      testWidgets(
+        'should synchronize the state',
+        (tester) async {
+          const fetchDuration = Duration(seconds: 3);
+          final controller = QueryController<String>();
+          final widget = QueryBuilder<String>(
+            key: Key('key'),
+            controller: controller,
+            id: 'id',
+            fetcher: (id) async {
+              await Future.delayed(fetchDuration);
+              return 'data';
+            },
+            builder: (context, state, child) {
+              return QueryResult<String>(state);
+            },
+          );
+
+          QueryState<String> getState() => tester
+              .widget<QueryResult<String>>(find.byType(QueryResult<String>))
+              .state;
+
+          await tester.pumpWidget(withQueryClientProvider(widget));
+
+          expect(controller.value, equals(getState()));
+
+          await tester.pump(fetchDuration);
+
+          expect(controller.value, equals(getState()));
+
+          controller.dispose();
+        },
+      );
+
+      testWidgets(
+        'should synchronize the state even if the controller is added later',
+        (tester) async {
+          const fetchDuration = Duration(seconds: 3);
+          final controller = QueryController<String>();
+          final widget = QueryBuilder<String>(
+            key: Key('key'),
+            id: 'id',
+            fetcher: (id) async {
+              await Future.delayed(fetchDuration);
+              return 'data';
+            },
+            builder: (context, state, child) {
+              return QueryResult<String>(state);
+            },
+          );
+
+          QueryState<String> getState() => tester
+              .widget<QueryResult<String>>(find.byType(QueryResult<String>))
+              .state;
+
+          await tester.pumpWidget(withQueryClientProvider(widget));
+          await tester.pumpWidget(withQueryClientProvider(
+            widget.copyWith(controller: controller),
+          ));
+
+          expect(controller.value, equals(getState()));
+
+          await tester.pump(fetchDuration);
+
+          expect(controller.value, equals(getState()));
+
+          controller.dispose();
+        },
+      );
+
+      testWidgets(
+        'should synchronize the state even if the controller is added later',
+        (tester) async {
+          const fetchDuration = Duration(seconds: 3);
+          final controller = QueryController<String>();
+          final widget = QueryBuilder<String>(
+            key: Key('key'),
+            controller: controller,
+            id: 'id',
+            fetcher: (id) async {
+              await Future.delayed(fetchDuration);
+              return 'data';
+            },
+            builder: (context, state, child) {
+              return QueryResult<String>(state);
+            },
+          );
+
+          QueryState<String> getState() => tester
+              .widget<QueryResult<String>>(find.byType(QueryResult<String>))
+              .state;
+
+          await tester.pumpWidget(withQueryClientProvider(widget));
+
+          expect(controller.value, equals(getState()));
+
+          await tester.pumpWidget(withQueryClientProvider(
+            widget.copyWithNull(controller: true),
+          ));
+
+          await tester.pump(fetchDuration);
+
+          expect(controller.value, isNot(equals(getState())));
+
+          controller.dispose();
+        },
+      );
+    },
+  );
+
+  group(
     'when the "id" is changed',
     () {
       testWidgets(
