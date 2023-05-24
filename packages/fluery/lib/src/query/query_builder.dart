@@ -49,6 +49,7 @@ class QueryBuilder<T> extends StatefulWidget {
   @visibleForTesting
   QueryBuilder<T> copyWith({
     Key? key,
+    QueryController<T>? controller,
     QueryIdentifier? id,
     QueryFetcher<T>? fetcher,
     bool? enabled,
@@ -71,6 +72,7 @@ class QueryBuilder<T> extends StatefulWidget {
   }) {
     return QueryBuilder<T>(
       key: key ?? this.key,
+      controller: controller ?? this.controller,
       id: id ?? this.id,
       fetcher: fetcher ?? this.fetcher,
       enabled: enabled ?? this.enabled,
@@ -98,6 +100,7 @@ class QueryBuilder<T> extends StatefulWidget {
   @visibleForTesting
   QueryBuilder<T> copyWithNull({
     bool key = false,
+    bool controller = false,
     bool initialData = false,
     bool initialDataUpdatedAt = false,
     bool placeholder = false,
@@ -108,6 +111,7 @@ class QueryBuilder<T> extends StatefulWidget {
   }) {
     return QueryBuilder<T>(
       key: key ? null : this.key,
+      controller: controller ? null : this.controller,
       id: this.id,
       fetcher: this.fetcher,
       enabled: this.enabled,
@@ -218,12 +222,18 @@ class _QueryBuilderState<T> extends State<QueryBuilder<T>>
     final oldController = oldWidget.controller ?? _internalController!;
 
     if (oldWidget.controller != widget.controller) {
-      oldWidget.controller?._detach(this);
+      if (oldWidget.controller != null) {
+        _query.removeListener(oldWidget.controller!);
+        oldWidget.controller!._detach(this);
+      }
       if (widget.controller != null) {
-        _internalController?._detach(this);
-        _internalController?.dispose();
-        _internalController = null;
-        widget.controller?._attach(this);
+        if (_internalController != null) {
+          _query.removeListener(_internalController!);
+          _internalController?._detach(this);
+          _internalController?.dispose();
+          _internalController = null;
+        }
+        widget.controller!._attach(this);
       } else {
         assert(_internalController == null);
         _internalController = QueryController<T>().._attach(this);
