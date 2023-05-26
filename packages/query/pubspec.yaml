@@ -1,6 +1,7 @@
 name: query
 description: A new Flutter package project.
 version: 0.0.1
+repository: https://github.com/jezsung/query/tree/main/packages/query
 
 environment:
   sdk: ">=2.13.0 <4.0.0"
