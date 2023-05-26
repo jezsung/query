@@ -18,6 +18,7 @@ class QueryObserver<T> implements Observer<QueryState<T>> {
   @override
   void onAdded(covariant Query<T> query) {
     this._query = query;
+    _state = query.state;
   }
 
   @override
