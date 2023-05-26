@@ -1,5 +1,3 @@
-import 'dart:collection';
-
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 
@@ -20,14 +18,14 @@ typedef ValueWidgetListener<T> = void Function(
 
 class ConditionalValueListenableConsumer<T> extends StatefulWidget {
   const ConditionalValueListenableConsumer({
-    super.key,
+    Key? key,
     required this.valueListenable,
     this.listenWhen,
     required this.listener,
     this.buildWhen,
     required this.builder,
     this.child,
-  });
+  }) : super(key: key);
 
   final ValueListenable<T> valueListenable;
   final ValueListenableListenerCondition<T>? listenWhen;
@@ -103,39 +101,5 @@ class _ConditionalValueListenableConsumerState<T>
   @override
   Widget build(BuildContext context) {
     return widget.builder(context, value, widget.child);
-  }
-}
-
-class _CallbackQueue {
-  _CallbackQueue({
-    // ignore: unused_element
-    this.enabled = true,
-  });
-
-  final Queue<Function> _queue = Queue<Function>();
-
-  bool enabled;
-
-  void call(Function callback) {
-    if (!enabled) {
-      callback();
-      return;
-    }
-
-    _queue.add(callback);
-
-    if (_queue.length == 1) {
-      _execute();
-    }
-  }
-
-  void _execute() async {
-    if (_queue.isEmpty) return;
-
-    final Function function = _queue.first;
-    await function();
-    _queue.removeFirst();
-
-    _execute();
   }
 }

@@ -13,12 +13,12 @@ typedef ValueWidgetListener<T> = void Function(
 
 class ConditionalValueListenableListener<T> extends StatefulWidget {
   const ConditionalValueListenableListener({
-    super.key,
+    Key? key,
     required this.valueListenable,
     this.listenWhen,
     required this.listener,
     required this.child,
-  });
+  }) : super(key: key);
 
   final ValueListenable<T> valueListenable;
   final ValueListenableListenerCondition<T>? listenWhen;

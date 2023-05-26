@@ -1,19 +1,24 @@
-part of 'index.dart';
+import 'package:flutter_query/flutter_query.dart';
+import 'package:flutter/widgets.dart';
+import 'package:provider/provider.dart';
+import 'package:provider/single_child_widget.dart';
 
 class QueryClientProvider extends SingleChildStatelessWidget {
   QueryClientProvider({
-    super.key,
+    Key? key,
     required Create<QueryClient> this.create,
     this.lazy,
-    super.child,
-  }) : value = null;
+    Widget? child,
+  })  : value = null,
+        super(key: key, child: child);
 
   QueryClientProvider.value({
-    super.key,
+    Key? key,
     required QueryClient this.value,
     this.lazy,
-    super.child,
-  }) : create = null;
+    Widget? child,
+  })  : create = null,
+        super(key: key, child: child);
 
   final Create<QueryClient>? create;
   final QueryClient? value;

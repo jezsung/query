@@ -8,12 +8,12 @@ typedef ValueListenableBuilderCondition<T> = bool Function(
 
 class ConditionalValueListenableBuilder<T> extends StatefulWidget {
   const ConditionalValueListenableBuilder({
-    super.key,
+    Key? key,
     required this.valueListenable,
     this.buildWhen,
     required this.builder,
     this.child,
-  });
+  }) : super(key: key);
 
   final ValueListenable<T> valueListenable;
   final ValueListenableBuilderCondition<T>? buildWhen;
