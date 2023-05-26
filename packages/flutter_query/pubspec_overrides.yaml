@@ -1,0 +1,3 @@
+dependency_overrides:
+  query:
+    path: ../query
