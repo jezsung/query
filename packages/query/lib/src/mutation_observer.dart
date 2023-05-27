@@ -1,18 +1,18 @@
 part of 'mutation.dart';
 
 class MutationObserver<T, P> implements Observer<MutationState<T>> {
-  MutationObserver(this._state);
+  MutationObserver(this._widgetState);
 
   Mutation<T, P>? _mutation;
-  MutationState<T> _state;
+  MutationState<T> _widgetState;
 
   Mutation<T, P>? get mutation => _mutation;
 
-  MutationState<T> get state => _state;
+  MutationState<T> get state => _widgetState;
 
   @override
   void onNotified(MutationState<T> state) {
-    this._state = state;
+    this._widgetState = state;
   }
 
   @override

@@ -41,7 +41,7 @@ class Mutation<T, P> with Observable<MutationObserver<T, P>, MutationState<T>> {
 
   Future mutate({
     required Mutator<T, P> mutator,
-    required P param,
+    required P? param,
   }) async {
     if (state.status.isMutating) return;
 
