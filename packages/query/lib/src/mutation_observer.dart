@@ -6,6 +6,8 @@ class MutationObserver<T, P> implements Observer<MutationState<T>> {
   Mutation<T, P>? _mutation;
   MutationState<T> _state;
 
+  Mutation<T, P>? get mutation => _mutation;
+
   MutationState<T> get state => _state;
 
   @override
