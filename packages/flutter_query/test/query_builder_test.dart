@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:clock/clock.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_query/flutter_query.dart';
@@ -134,6 +136,63 @@ void main() {
           isInvalidated: false,
         )),
       );
+    },
+  );
+
+  testWidgets(
+    'should cancel and revert the state back',
+    (tester) async {
+      const fetchDuration = Duration(seconds: 3);
+      final controller = QueryController<String>();
+      final widget = QueryBuilder<String>(
+        key: Key('query_builder'),
+        controller: controller,
+        id: 'id',
+        fetcher: (id) async {
+          await Future.delayed(fetchDuration);
+          return 'data';
+        },
+        builder: (context, state, child) {
+          return Container(key: ValueKey(state));
+        },
+      );
+
+      QueryState<String> state() {
+        final container = tester.widget<Container>(find.byType(Container));
+        final key = container.key as ValueKey<QueryState<String>>;
+        return key.value;
+      }
+
+      await tester.pumpWidget(withQueryClientProvider(widget));
+
+      expect(
+        state(),
+        equals(QueryState<String>(
+          status: QueryStatus.fetching,
+          data: null,
+          error: null,
+          dataUpdatedAt: null,
+          errorUpdatedAt: null,
+          isInvalidated: false,
+        )),
+      );
+
+      await controller.cancel();
+      await tester.pump();
+
+      expect(
+        state(),
+        equals(QueryState<String>(
+          status: QueryStatus.idle,
+          data: null,
+          error: null,
+          dataUpdatedAt: null,
+          errorUpdatedAt: null,
+          isInvalidated: false,
+        )),
+      );
+
+      await tester.binding.delayed(fetchDuration);
     },
   );
 }
