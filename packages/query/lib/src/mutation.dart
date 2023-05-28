@@ -93,4 +93,8 @@ class Mutation<T, P> with Observable<MutationObserver<T, P>, MutationState<T>> {
           errorUpdatedAt: true,
         );
   }
+
+  Future close() async {
+    _cancelableOperation?.cancel();
+  }
 }
