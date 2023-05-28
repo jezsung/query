@@ -20,20 +20,6 @@ Widget withQueryClientProvider(Widget widget, [QueryClient? client]) {
   }
 }
 
-class Wrapper<T> extends StatelessWidget {
-  const Wrapper({
-    Key? key,
-    required this.value,
-  }) : super(key: key);
-
-  final T value;
-
-  @override
-  Widget build(BuildContext context) {
-    return const Placeholder();
-  }
-}
-
 class TestException implements Exception {
   const TestException(this.message);
 
@@ -49,7 +35,6 @@ void main() {
   testWidgets(
     'should start fetching and succeed after the fetch duration',
     (tester) async {
-      const wrapperKey = Key('wrapper');
       const fetchDuration = Duration(seconds: 3);
       final widget = QueryBuilder<String>(
         key: Key('query_builder'),
@@ -59,16 +44,15 @@ void main() {
           return 'data';
         },
         builder: (context, state, child) {
-          return Wrapper(
-            key: wrapperKey,
-            value: state,
-          );
+          return Container(key: ValueKey(state));
         },
       );
 
-      QueryState<String> state() => tester
-          .widget<Wrapper<QueryState<String>>>(find.byKey(wrapperKey))
-          .value;
+      QueryState<String> state() {
+        final container = tester.widget<Container>(find.byType(Container));
+        final key = container.key as ValueKey<QueryState<String>>;
+        return key.value;
+      }
 
       await tester.pumpWidget(withQueryClientProvider(widget));
 
@@ -103,7 +87,6 @@ void main() {
   testWidgets(
     'should start fetching and fail after the fetch duration',
     (tester) async {
-      const wrapperKey = Key('wrapper');
       const fetchDuration = Duration(seconds: 3);
       const error = TestException('error');
       final widget = QueryBuilder<String>(
@@ -114,16 +97,15 @@ void main() {
           throw error;
         },
         builder: (context, state, child) {
-          return Wrapper(
-            key: wrapperKey,
-            value: state,
-          );
+          return Container(key: ValueKey(state));
         },
       );
 
-      QueryState<String> state() => tester
-          .widget<Wrapper<QueryState<String>>>(find.byKey(wrapperKey))
-          .value;
+      QueryState<String> state() {
+        final container = tester.widget<Container>(find.byType(Container));
+        final key = container.key as ValueKey<QueryState<String>>;
+        return key.value;
+      }
 
       await tester.pumpWidget(withQueryClientProvider(widget));
 
