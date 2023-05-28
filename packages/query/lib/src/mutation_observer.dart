@@ -17,7 +17,7 @@ class MutationObserver<T, P> implements Observer<MutationState<T>> {
 
   @override
   void onAdded(covariant Mutation<T, P> mutatoin) {
-    this._mutation = _mutation;
+    this._mutation = mutatoin;
     _state = mutatoin.state;
   }
 
