@@ -58,28 +58,28 @@ void main() {
 
       expect(
         state(),
-        equals(QueryState<String>(
+        QueryState<String>(
           status: QueryStatus.fetching,
           data: null,
           error: null,
           dataUpdatedAt: null,
           errorUpdatedAt: null,
           isInvalidated: false,
-        )),
+        ),
       );
 
       await tester.pump(fetchDuration);
 
       expect(
         state(),
-        equals(QueryState<String>(
+        QueryState<String>(
           status: QueryStatus.success,
           data: 'data',
           error: null,
           dataUpdatedAt: clock.now(),
           errorUpdatedAt: null,
           isInvalidated: false,
-        )),
+        ),
       );
     },
   );
@@ -111,28 +111,28 @@ void main() {
 
       expect(
         state(),
-        equals(QueryState<String>(
+        QueryState<String>(
           status: QueryStatus.fetching,
           data: null,
           error: null,
           dataUpdatedAt: null,
           errorUpdatedAt: null,
           isInvalidated: false,
-        )),
+        ),
       );
 
       await tester.pump(fetchDuration);
 
       expect(
         state(),
-        equals(QueryState<String>(
+        QueryState<String>(
           status: QueryStatus.failure,
           data: null,
           error: error,
           dataUpdatedAt: null,
           errorUpdatedAt: clock.now(),
           isInvalidated: false,
-        )),
+        ),
       );
     },
   );
@@ -236,14 +236,14 @@ void main() {
 
           expect(
             state(),
-            equals(QueryState<String>(
+            QueryState<String>(
               status: QueryStatus.fetching,
               data: null,
               error: null,
               dataUpdatedAt: null,
               errorUpdatedAt: null,
               isInvalidated: false,
-            )),
+            ),
           );
 
           await controller.cancel();
@@ -251,14 +251,14 @@ void main() {
 
           expect(
             state(),
-            equals(QueryState<String>(
+            QueryState<String>(
               status: QueryStatus.idle,
               data: null,
               error: null,
               dataUpdatedAt: null,
               errorUpdatedAt: null,
               isInvalidated: false,
-            )),
+            ),
           );
 
           await tester.binding.delayed(fetchDuration);
