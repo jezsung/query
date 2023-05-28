@@ -33,7 +33,7 @@ class TestException implements Exception {
 
 void main() {
   testWidgets(
-    'should start fetching and succeed after the fetch duration',
+    'should start fetching and succeed',
     (tester) async {
       const fetchDuration = Duration(seconds: 3);
       final widget = QueryBuilder<String>(
@@ -85,7 +85,7 @@ void main() {
   );
 
   testWidgets(
-    'should start fetching and fail after the fetch duration',
+    'should start fetching and fail',
     (tester) async {
       const fetchDuration = Duration(seconds: 3);
       const error = TestException('error');
