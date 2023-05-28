@@ -299,6 +299,7 @@ class _QueryBuilderState<T> extends State<QueryBuilder<T>>
           _internalController!.dispose();
           _internalController = null;
         }
+        _query.addObserver(widget.controller!);
         widget.controller!._attach(this);
       } else {
         assert(_internalController == null);
