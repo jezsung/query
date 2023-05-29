@@ -3,6 +3,9 @@ import 'package:clock/clock.dart';
 import 'package:equatable/equatable.dart';
 import 'package:query/src/utils/observer.dart';
 
+part 'paged_query.dart';
+part 'paged_query_observer.dart';
+part 'paged_query_state.dart';
 part 'query_observer.dart';
 part 'query_state.dart';
 
