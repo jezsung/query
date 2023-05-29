@@ -1,4 +1,5 @@
-import 'package:query/query.dart';
+part of 'query.dart';
+
 
 class QueryCacheStorage {
   final Map<QueryId, Query> _queries = <QueryId, Query>{};

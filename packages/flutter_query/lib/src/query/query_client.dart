@@ -1,5 +1,4 @@
-import 'package:flutter_query/flutter_query.dart';
-import 'package:query/query.dart';
+part of 'query.dart';
 
 class QueryClient {
   final QueryCacheStorage cacheStorage = QueryCacheStorage();

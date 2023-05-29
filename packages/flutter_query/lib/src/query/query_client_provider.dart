@@ -1,7 +1,5 @@
-import 'package:flutter_query/flutter_query.dart';
-import 'package:flutter/widgets.dart';
-import 'package:provider/provider.dart';
-import 'package:provider/single_child_widget.dart';
+part of 'query.dart';
+
 
 class QueryClientProvider extends SingleChildStatelessWidget {
   QueryClientProvider({
