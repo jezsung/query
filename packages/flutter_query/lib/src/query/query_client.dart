@@ -4,7 +4,7 @@ class QueryClient {
   final QueryCacheStorage cacheStorage = QueryCacheStorage();
 
   Future refetch(QueryId id) async {
-    final query = cacheStorage.get(id);
+    final query = cacheStorage.getQuery(id);
 
     if (query == null) return;
 
@@ -24,7 +24,7 @@ class QueryClient {
   }
 
   Future cancel(QueryId id) async {
-    final query = cacheStorage.get(id);
+    final query = cacheStorage.getQuery(id);
 
     await query?.cancel();
   }
@@ -34,7 +34,7 @@ class QueryClient {
     T data, [
     DateTime? updatedAt,
   ]) {
-    final query = cacheStorage.build<T>(id);
+    final query = cacheStorage.buildQuery<T>(id);
 
     query.setData(data, updatedAt);
   }

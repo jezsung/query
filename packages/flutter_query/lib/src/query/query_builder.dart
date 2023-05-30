@@ -125,7 +125,7 @@ class _QueryBuilderState<T> extends State<QueryBuilder<T>>
 
     _controller._attach(this);
 
-    _query = context.read<QueryClient>().cacheStorage.build<T>(widget.id);
+    _query = context.read<QueryClient>().cacheStorage.buildQuery<T>(widget.id);
 
     if (!_query.state.status.isIdle) {
       refetch(widget.refetchOnInit);
@@ -148,7 +148,8 @@ class _QueryBuilderState<T> extends State<QueryBuilder<T>>
   void didChangeDependencies() {
     super.didChangeDependencies();
 
-    final query = context.watch<QueryClient>().cacheStorage.build<T>(widget.id);
+    final query =
+        context.watch<QueryClient>().cacheStorage.buildQuery<T>(widget.id);
 
     if (query != _query) {
       _query.removeObserver(_controller);
@@ -192,7 +193,8 @@ class _QueryBuilderState<T> extends State<QueryBuilder<T>>
     if (widget.id != oldWidget.id) {
       _query.removeObserver(oldController);
 
-      _query = context.read<QueryClient>().cacheStorage.build<T>(widget.id);
+      _query =
+          context.read<QueryClient>().cacheStorage.buildQuery<T>(widget.id);
 
       if (!_query.state.status.isIdle) {
         refetch(widget.refetchOnInit);
