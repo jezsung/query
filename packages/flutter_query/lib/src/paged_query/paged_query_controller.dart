@@ -103,6 +103,8 @@ class PagedQueryController<T, P> extends PagedQueryObserver<T, P>
   void onAdded(covariant PagedQuery<T, P> query) {
     super.onAdded(query);
 
+    _widgetState!.cacheStorage.cancelGarbageCollection(id);
+
     if (query.state.status.isIdle) {
       query.fetch(
         fetcher: fetcher,
@@ -111,6 +113,15 @@ class PagedQueryController<T, P> extends PagedQueryObserver<T, P>
         previousPageParamBuilder: previousPageParamBuilder,
         staleDuration: staleDuration,
       );
+    }
+  }
+
+  @override
+  void onRemoved(covariant PagedQuery<T, P> query) {
+    super.onRemoved(query);
+
+    if (query.observers.isEmpty) {
+      _widgetState!.cacheStorage.scheduleGarbageCollection(id, cacheDuration);
     }
   }
 

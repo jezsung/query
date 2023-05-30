@@ -31,7 +31,17 @@ class QueryCacheStorage {
   PagedQuery<T, P> buildPagedQuery<T, P>(QueryId id) {
     assert(_queries[id] is! Query);
 
-    return (_queries[id] ??= PagedQuery<T, P>(id)) as PagedQuery<T, P>;
+    PagedQuery<T, P>? query = _queries[id] as PagedQuery<T, P>?;
+
+    if (query != null) {
+      return query;
+    }
+
+    query = _queries[id] = PagedQuery<T, P>(id);
+
+    scheduleGarbageCollection(id, const Duration(minutes: 5));
+
+    return query;
   }
 
   PagedQuery<T, P>? getPagedQuery<T, P>(QueryId id) {

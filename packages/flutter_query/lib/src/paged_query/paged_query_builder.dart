@@ -116,12 +116,15 @@ class PagedQueryBuilder<T, P> extends StatefulWidget {
 class _PagedQueryBuilder<T, P> extends State<PagedQueryBuilder<T, P>>
     with WidgetsBindingObserver
     implements _PagedQueryWidgetState<T, P> {
+  late QueryCacheStorage _cacheStorage;
   late PagedQuery<T, P> _query;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+
+    _cacheStorage = context.read<QueryClient>().cacheStorage;
 
     _query = context
         .read<QueryClient>()
@@ -174,6 +177,8 @@ class _PagedQueryBuilder<T, P> extends State<PagedQueryBuilder<T, P>>
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+
+    _cacheStorage = context.watch<QueryClient>().cacheStorage;
 
     final query = context
         .watch<QueryClient>()
@@ -234,6 +239,9 @@ class _PagedQueryBuilder<T, P> extends State<PagedQueryBuilder<T, P>>
   }
 
   @override
+  QueryCacheStorage get cacheStorage => _cacheStorage;
+
+  @override
   QueryId get id => widget.id;
 
   @override
@@ -260,6 +268,7 @@ class _PagedQueryBuilder<T, P> extends State<PagedQueryBuilder<T, P>>
 }
 
 abstract class _PagedQueryWidgetState<T, P> {
+  QueryCacheStorage get cacheStorage;
   QueryId get id;
   PagedQueryFetcher<T, P> get fetcher;
   P get initialPageParam;
