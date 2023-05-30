@@ -45,6 +45,7 @@ class PagedQueryBuilder<T, P> extends StatefulWidget {
   final PagedQueryWidgetBuilder<T> builder;
   final Widget? child;
 
+  @visibleForTesting
   PagedQueryBuilder<T, P> copyWith({
     PagedQueryController<T, P>? controller,
     QueryId? id,
@@ -80,6 +81,7 @@ class PagedQueryBuilder<T, P> extends StatefulWidget {
     );
   }
 
+  @visibleForTesting
   PagedQueryBuilder<T, P> copyWithNull({
     bool nextPageParamBuilder = false,
     bool previousPageParamBuilder = false,
