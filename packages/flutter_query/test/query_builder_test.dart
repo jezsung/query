@@ -2,7 +2,6 @@ import 'package:clock/clock.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_query/flutter_query.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:query/query.dart';
 
 Widget withQueryClientProvider(Widget widget, [QueryClient? client]) {
   if (client != null) {
