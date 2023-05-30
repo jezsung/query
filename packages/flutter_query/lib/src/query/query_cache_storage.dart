@@ -7,6 +7,8 @@ class QueryCacheStorage {
   List<QueryBase> get queries => _queries.values.toList();
 
   Query<T> buildQuery<T>(QueryId id) {
+    assert(_queries[id] is! PagedQuery);
+
     Query<T>? query = _queries[id] as Query<T>?;
 
     if (query != null) {
@@ -21,14 +23,20 @@ class QueryCacheStorage {
   }
 
   Query<T>? getQuery<T>(QueryId id) {
+    assert(_queries[id] is! PagedQuery);
+
     return _queries[id] as Query<T>?;
   }
 
   PagedQuery<T, P> buildPagedQuery<T, P>(QueryId id) {
+    assert(_queries[id] is! Query);
+
     return (_queries[id] ??= PagedQuery<T, P>(id)) as PagedQuery<T, P>;
   }
 
   PagedQuery<T, P>? getPagedQuery<T, P>(QueryId id) {
+    assert(_queries[id] is! Query);
+
     return _queries[id] as PagedQuery<T, P>?;
   }
 
