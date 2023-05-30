@@ -9,11 +9,11 @@ typedef PagedQueryFetcher<T, P> = Future<T> Function(
 
 typedef PagedQueryParamBuilder<T, P> = P? Function(Pages<T> pages);
 
-class PagedQuery<T, P>
+class PagedQuery<T, P> extends QueryBase
     with Observable<PagedQueryObserver<T, P>, PagedQueryState<T>> {
-  PagedQuery(this.id) : _state = PagedQueryState<T>();
-
-  final QueryId id;
+  PagedQuery(QueryId id)
+      : _state = PagedQueryState<T>(),
+        super(id);
 
   PagedQueryState<T> _state;
 
@@ -183,6 +183,7 @@ class PagedQuery<T, P>
     return now.isAfter(staleAt) || now.isAtSameMomentAs(staleAt);
   }
 
+  @override
   Future close() async {
     await _cancelableOperation?.cancel();
   }

@@ -30,10 +30,19 @@ typedef QueryId = String;
 
 typedef QueryFetcher<Data> = Future<Data> Function(QueryId id);
 
-class Query<T> with Observable<QueryObserver<T>, QueryState<T>> {
-  Query(this.id) : _state = QueryState<T>();
+abstract class QueryBase {
+  QueryBase(this.id);
 
   final QueryId id;
+
+  Future close();
+}
+
+class Query<T> extends QueryBase
+    with Observable<QueryObserver<T>, QueryState<T>> {
+  Query(QueryId id)
+      : _state = QueryState<T>(),
+        super(id);
 
   QueryState<T> _state;
 
@@ -135,6 +144,7 @@ class Query<T> with Observable<QueryObserver<T>, QueryState<T>> {
     return now.isAfter(staleAt) || now.isAtSameMomentAs(staleAt);
   }
 
+  @override
   Future close() async {
     await _cancelableOperation?.cancel();
   }
