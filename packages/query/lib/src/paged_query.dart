@@ -2,7 +2,7 @@ part of 'query.dart';
 
 typedef Pages<T> = List<T>;
 
-typedef PagedQueryFetcher<T, P> = Future<T> Function(QueryId id, P? param);
+typedef PagedQueryFetcher<T, P> = Future<T> Function(QueryId id, P param);
 
 typedef PagedQueryParamBuilder<T, P> = P? Function(Pages<T> pages);
 
@@ -91,9 +91,10 @@ class PagedQuery<T, P> extends QueryBase
 
     try {
       final param = nextPageParamBuilder(state.pages);
+      assert(param != null);
 
       _cancelableOperation = CancelableOperation<T>.fromFuture(
-        fetcher(id, param),
+        fetcher(id, param!),
       );
 
       final data = await _cancelableOperation!.valueOrCancellation();
@@ -144,9 +145,10 @@ class PagedQuery<T, P> extends QueryBase
 
     try {
       final param = previousPageParamBuilder(state.pages);
+      assert(param != null);
 
       _cancelableOperation = CancelableOperation<T>.fromFuture(
-        fetcher(id, param),
+        fetcher(id, param!),
       );
 
       final data = await _cancelableOperation!.valueOrCancellation();
