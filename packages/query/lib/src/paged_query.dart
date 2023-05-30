@@ -2,10 +2,7 @@ part of 'query.dart';
 
 typedef Pages<T> = List<T>;
 
-typedef PagedQueryFetcher<T, P> = Future<T> Function(
-  QueryId id,
-  P? param,
-);
+typedef PagedQueryFetcher<T, P> = Future<T> Function(QueryId id, P? param);
 
 typedef PagedQueryParamBuilder<T, P> = P? Function(Pages<T> pages);
 
@@ -28,6 +25,7 @@ class PagedQuery<T, P> extends QueryBase
 
   Future fetch({
     required PagedQueryFetcher<T, P> fetcher,
+    required P initialPageParam,
     required PagedQueryParamBuilder<T, P>? nextPageParamBuilder,
     required PagedQueryParamBuilder<T, P>? previousPageParamBuilder,
     required Duration staleDuration,
@@ -45,7 +43,7 @@ class PagedQuery<T, P> extends QueryBase
 
     try {
       _cancelableOperation =
-          CancelableOperation<T>.fromFuture(fetcher(id, null));
+          CancelableOperation<T>.fromFuture(fetcher(id, initialPageParam));
 
       final data = await _cancelableOperation!.valueOrCancellation();
 
@@ -87,6 +85,7 @@ class PagedQuery<T, P> extends QueryBase
 
     state = state.copyWith(
       status: QueryStatus.fetching,
+      isFetchingNextPage: true,
       isInvalidated: false,
     );
 
@@ -112,6 +111,7 @@ class PagedQuery<T, P> extends QueryBase
         status: QueryStatus.success,
         data: pages,
         dataUpdatedAt: clock.now(),
+        isFetchingNextPage: false,
         hasNextPage: hasNextPage,
         hasPreviousPage: hasPreviousPage,
       );
@@ -120,6 +120,7 @@ class PagedQuery<T, P> extends QueryBase
         status: QueryStatus.failure,
         error: error,
         errorUpdatedAt: clock.now(),
+        isFetchingNextPage: false,
       );
     }
   }
@@ -137,6 +138,7 @@ class PagedQuery<T, P> extends QueryBase
 
     state = state.copyWith(
       status: QueryStatus.fetching,
+      isFetchingPreviousPage: true,
       isInvalidated: false,
     );
 
@@ -162,6 +164,7 @@ class PagedQuery<T, P> extends QueryBase
         status: QueryStatus.success,
         data: pages,
         dataUpdatedAt: clock.now(),
+        isFetchingPreviousPage: false,
         hasNextPage: hasNextPage,
         hasPreviousPage: hasPreviousPage,
       );
@@ -170,6 +173,7 @@ class PagedQuery<T, P> extends QueryBase
         status: QueryStatus.failure,
         error: error,
         errorUpdatedAt: clock.now(),
+        isFetchingPreviousPage: false,
       );
     }
   }
