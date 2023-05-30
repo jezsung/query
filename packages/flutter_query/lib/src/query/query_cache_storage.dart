@@ -2,11 +2,22 @@ part of 'query.dart';
 
 class QueryCacheStorage {
   final Map<QueryId, QueryBase> _queries = <QueryId, QueryBase>{};
+  final Map<QueryId, Timer> _garbageCollectionTimers = <QueryId, Timer>{};
 
   List<QueryBase> get queries => _queries.values.toList();
 
   Query<T> buildQuery<T>(QueryId id) {
-    return (_queries[id] ??= Query<T>(id)) as Query<T>;
+    Query<T>? query = _queries[id] as Query<T>?;
+
+    if (query != null) {
+      return query;
+    }
+
+    query = _queries[id] = Query<T>(id);
+
+    scheduleGarbageCollection(id, const Duration(minutes: 5));
+
+    return query;
   }
 
   Query<T>? getQuery<T>(QueryId id) {
@@ -27,5 +38,23 @@ class QueryCacheStorage {
 
   void remove(QueryId id) {
     _queries.remove(id);
+  }
+
+  void scheduleGarbageCollection(QueryId id, Duration duration) {
+    _garbageCollectionTimers[id] = Timer(
+      duration,
+      () {
+        _queries[id]?.close();
+        remove(id);
+      },
+    );
+  }
+
+  void cancelGarbageCollection(QueryId id) {
+    _garbageCollectionTimers[id]?.cancel();
+  }
+
+  void dispose() {
+    _garbageCollectionTimers.values.forEach((timer) => timer.cancel());
   }
 }

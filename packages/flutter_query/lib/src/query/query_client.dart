@@ -41,5 +41,6 @@ class QueryClient {
 
   Future close() async {
     await Future.wait(cacheStorage.queries.map((q) => q.close()));
+    cacheStorage.dispose();
   }
 }

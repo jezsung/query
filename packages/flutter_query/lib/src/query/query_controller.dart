@@ -86,6 +86,8 @@ class QueryController<T> extends QueryObserver<T>
   void onAdded(covariant Query<T> query) {
     super.onAdded(query);
 
+    _state!.cacheStorage.cancelGarbageCollection(id);
+
     if (_initialData != null) {
       query.setInitialData(
         _initialData!,
@@ -98,6 +100,15 @@ class QueryController<T> extends QueryObserver<T>
         fetcher: fetcher,
         staleDuration: staleDuration,
       );
+    }
+  }
+
+  @override
+  void onRemoved(covariant Query<T> query) {
+    super.onRemoved(query);
+
+    if (query.observers.isEmpty) {
+      _state!.cacheStorage.scheduleGarbageCollection(id, cacheDuration);
     }
   }
 

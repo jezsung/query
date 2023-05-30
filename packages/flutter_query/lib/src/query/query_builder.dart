@@ -108,6 +108,7 @@ class QueryBuilder<T> extends StatefulWidget {
 class _QueryBuilderState<T> extends State<QueryBuilder<T>>
     with WidgetsBindingObserver
     implements _QueryWidgetState<T> {
+  late QueryCacheStorage _cacheStorage;
   late Query<T> _query;
 
   QueryController<T>? _internalController;
@@ -118,6 +119,8 @@ class _QueryBuilderState<T> extends State<QueryBuilder<T>>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+
+    _cacheStorage = context.read<QueryClient>().cacheStorage;
 
     if (widget.controller == null) {
       _internalController = QueryController<T>();
@@ -147,6 +150,8 @@ class _QueryBuilderState<T> extends State<QueryBuilder<T>>
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+
+    _cacheStorage = context.watch<QueryClient>().cacheStorage;
 
     final query =
         context.watch<QueryClient>().cacheStorage.buildQuery<T>(widget.id);
@@ -182,8 +187,8 @@ class _QueryBuilderState<T> extends State<QueryBuilder<T>>
           _internalController!.dispose();
           _internalController = null;
         }
-        _query.addObserver(widget.controller!);
         widget.controller!._attach(this);
+        _query.addObserver(widget.controller!);
       } else {
         assert(_internalController == null);
         _internalController = QueryController<T>().._attach(this);
@@ -242,6 +247,9 @@ class _QueryBuilderState<T> extends State<QueryBuilder<T>>
   }
 
   @override
+  QueryCacheStorage get cacheStorage => _cacheStorage;
+
+  @override
   QueryId get id => widget.id;
 
   @override
@@ -258,6 +266,7 @@ class _QueryBuilderState<T> extends State<QueryBuilder<T>>
 }
 
 abstract class _QueryWidgetState<T> {
+  QueryCacheStorage get cacheStorage;
   QueryId get id;
   QueryFetcher<T> get fetcher;
   T? get placeholder;
