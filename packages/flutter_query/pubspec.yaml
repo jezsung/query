@@ -1,5 +1,5 @@
 name: flutter_query
-description: A starting point for Dart libraries or applications.
+description: Widgets that help state management of asynchronous operations such as sending HTTP requests, getting the response, and caching the result.
 version: 0.2.0
 repository: https://github.com/jezsung/query/tree/main/packages/flutter_query
 
