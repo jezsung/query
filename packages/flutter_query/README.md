@@ -1,39 +1,54 @@
-<!-- 
-This README describes the package. If you publish this package to pub.dev,
-this README's contents appear on the landing page for your package.
+A Flutter package that is equivalent to the [React Query](https://tanstack.com/query/v3/) library in the [React](https://react.dev/) ecosystem.
 
-For information about how to write a good package README, see the guide for
-[writing package pages](https://dart.dev/guides/libraries/writing-package-pages). 
+This package utilizes the power of Widgets in Flutter. As React Query provides its APIs with Hooks, flutter_query does it with Widgets.
 
-For general information about developing packages, see the Dart guide for
-[creating packages](https://dart.dev/guides/libraries/create-library-packages)
-and the Flutter guide for
-[developing packages and plugins](https://flutter.dev/developing-packages). 
--->
+## Motivation
 
-TODO: Put a short description of the package here that helps potential users
-know whether this package might be useful for them.
+There are a variety of state management packages in Flutter, but those packages lack abstraction for common asynchronous operations.
 
-## Features
+Asynchronous operations are mostly used when communicating with remote APIs such as sending HTTP requests to servers.
 
-TODO: List what your package can do. Maybe include images, gifs, or videos.
+These kind of operations lead to the repetitive state management pattern.
 
-## Getting started
-
-TODO: List prerequisites and provide or point to information on how to
-start using the package.
+This package helps reducing this common pattern by providing high level state management APIs.
 
 ## Usage
 
-TODO: Include short and useful examples for package users. Add longer examples
-to `/example` folder. 
+Wrap your app with the `QueryClientProvider`. The `QueryClient` is used to control the `Query`s in the app.
 
 ```dart
-const like = 'sample';
+runApp(
+  QueryClientProvider(
+    create: (context) => QueryClient(),
+    child: MyApp(),
+  ),
+);
 ```
 
-## Additional information
+Give an unique string to the `id` and a method to the `fetcher` that runs asynchronous operations.
 
-TODO: Tell users more about the package: where to find more information, how to 
-contribute to the package, how to file issues, what response they can expect 
-from the package authors, and more.
+The `state` is the type of `QueryState`. The `QueryState` has a `QueryStatus` that represents the current status of the operation.
+
+```dart
+QueryBuilder<String>(
+  id: '1',
+  fetcher: (id) async {
+    final todoId = id;
+    final todoTitle = getTodoTitleById(todoId);
+    return todoTitle;
+  },
+  builder: (context, state, child) {
+    switch(state.status) {
+      case QueryStatus.idle:
+        return Text('Ready to load data');
+      case QueryStatus.fetching:
+        return Text('Loading...');
+      case QueryStatus.success:
+        final todoTitle = state.data!;
+        return Text(todoTitle);
+      case QueryStatus.failure:
+        return Text('Something went wrong...')
+    }
+  },
+)
+```
