@@ -1,7 +1,7 @@
 import 'package:async/async.dart';
 import 'package:clock/clock.dart';
 import 'package:equatable/equatable.dart';
-import 'package:query/src/utils/observer.dart';
+import 'package:query_core/src/utils/observer.dart';
 
 part 'mutation_observer.dart';
 part 'mutation_state.dart';

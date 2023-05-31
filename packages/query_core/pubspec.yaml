@@ -1,4 +1,4 @@
-name: query
+name: query_core
 description: The core package flutter_query depends on.
 version: 0.0.1
 repository: https://github.com/jezsung/query/tree/main/packages/query
