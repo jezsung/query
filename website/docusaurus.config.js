@@ -104,7 +104,7 @@ const config = {
             ],
           },
         ],
-        copyright: `Copyright © ${new Date().getFullYear()} My Project, Inc. Built with Docusaurus.`,
+        copyright: `Copyright © Jaesung Hong. Built with Docusaurus.`,
       },
       prism: {
         theme: lightCodeTheme,
