@@ -1,6 +1,16 @@
 ### What is Flutter Query?
 
-Flutter Query simplifies state management that involves asynchronous operations, such as API requests. Flutter Query provides comprehensive supports for data fetching, updating, caching, and sychronization.
+Flutter Query provides declarative ways of fetching data from a server and displaying the data. With Flutter Query, you can easily:
+
+- Fetch data from a server
+- Handle the loading state while fetching
+- Handle the error state when the fetching failed
+- Cache the fetched data
+- Access the cached data from anywhere in the widget tree
+- Set when the data becomes stale and have to be refetched
+- Reduce redundant API calls
+- Cancel the ongoing fetch and revert the state
+- Update UI instantly as the fetching succeeds
 
 ### Motivation
 
