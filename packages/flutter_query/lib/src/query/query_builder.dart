@@ -130,11 +130,13 @@ class _QueryBuilderState<T> extends State<QueryBuilder<T>>
 
     _query = context.read<QueryClient>().cacheStorage.buildQuery<T>(widget.id);
 
-    if (!_query.state.status.isIdle) {
+    _query.addObserver(_controller);
+
+    if (_query.state.status.isIdle) {
+      fetch();
+    } else {
       refetch(widget.refetchOnInit);
     }
-
-    _query.addObserver(_controller);
   }
 
   @override
@@ -161,11 +163,13 @@ class _QueryBuilderState<T> extends State<QueryBuilder<T>>
 
       _query = query;
 
-      if (!_query.state.status.isIdle) {
+      _query.addObserver(_controller);
+
+      if (_query.state.status.isIdle) {
+        fetch();
+      } else {
         refetch(widget.refetchOnInit);
       }
-
-      _query.addObserver(_controller);
     }
   }
 
@@ -201,7 +205,9 @@ class _QueryBuilderState<T> extends State<QueryBuilder<T>>
       _query =
           context.read<QueryClient>().cacheStorage.buildQuery<T>(widget.id);
 
-      if (!_query.state.status.isIdle) {
+      if (_query.state.status.isIdle) {
+        fetch();
+      } else {
         refetch(widget.refetchOnInit);
       }
 
@@ -217,6 +223,13 @@ class _QueryBuilderState<T> extends State<QueryBuilder<T>>
   }
 
   Future fetch({bool ignoreStaleness = false}) async {
+    if (!mounted) return;
+
+    if (SchedulerBinding.instance.schedulerPhase != SchedulerPhase.idle) {
+      await SchedulerBinding.instance.endOfFrame;
+      if (!mounted) return;
+    }
+
     await _query.fetch(
       fetcher: widget.fetcher,
       staleDuration: ignoreStaleness ? Duration.zero : widget.staleDuration,

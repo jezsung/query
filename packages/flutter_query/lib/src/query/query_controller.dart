@@ -94,13 +94,6 @@ class QueryController<T> extends QueryObserver<T>
         _initialDataUpdatedAt,
       );
     }
-
-    if (query.state.status.isIdle) {
-      query.fetch(
-        fetcher: fetcher,
-        staleDuration: staleDuration,
-      );
-    }
   }
 
   @override

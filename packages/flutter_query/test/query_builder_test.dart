@@ -1,5 +1,5 @@
 import 'package:clock/clock.dart';
-import 'package:flutter/widgets.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_query/flutter_query.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -58,6 +58,20 @@ void main() {
       expect(
         state(),
         QueryState<String>(
+          status: QueryStatus.idle,
+          data: null,
+          error: null,
+          dataUpdatedAt: null,
+          errorUpdatedAt: null,
+          isInvalidated: false,
+        ),
+      );
+
+      await tester.pump();
+
+      expect(
+        state(),
+        QueryState<String>(
           status: QueryStatus.fetching,
           data: null,
           error: null,
@@ -111,6 +125,20 @@ void main() {
       expect(
         state(),
         QueryState<String>(
+          status: QueryStatus.idle,
+          data: null,
+          error: null,
+          dataUpdatedAt: null,
+          errorUpdatedAt: null,
+          isInvalidated: false,
+        ),
+      );
+
+      await tester.pump();
+
+      expect(
+        state(),
+        QueryState<String>(
           status: QueryStatus.fetching,
           data: null,
           error: null,
@@ -133,6 +161,279 @@ void main() {
           isInvalidated: false,
         ),
       );
+    },
+  );
+
+  testWidgets(
+    'should start refetching and succeed when a new QueryBuilder is created',
+    (tester) async {
+      const fetchDuration = Duration(seconds: 3);
+      final id = 'id';
+      final data = 'data';
+      final widget = QueryBuilder<String>(
+        id: id,
+        fetcher: (id) async {
+          await Future.delayed(fetchDuration);
+          return data;
+        },
+        builder: (context, state, child) {
+          return Container(key: ValueKey(state));
+        },
+      );
+
+      List<QueryState<String>> states() {
+        return tester
+            .widgetList<Container>(find.byType(Container))
+            .map((widget) => widget.key)
+            .cast<ValueKey>()
+            .map((key) => key.value)
+            .cast<QueryState<String>>()
+            .toList();
+      }
+
+      await tester.pumpWidget(withQueryClientProvider(
+        Column(
+          key: Key('column'),
+          children: [
+            widget.copyWith(key: Key('1')),
+          ],
+        ),
+      ));
+
+      states().forEach((state) {
+        expect(
+          state,
+          QueryState<String>(
+            status: QueryStatus.idle,
+            data: null,
+            error: null,
+            dataUpdatedAt: null,
+            errorUpdatedAt: null,
+            isInvalidated: false,
+          ),
+        );
+      });
+
+      await tester.pump();
+
+      states().forEach((state) {
+        expect(
+          state,
+          QueryState<String>(
+            status: QueryStatus.fetching,
+            data: null,
+            error: null,
+            dataUpdatedAt: null,
+            errorUpdatedAt: null,
+            isInvalidated: false,
+          ),
+        );
+      });
+
+      await tester.pump(fetchDuration);
+
+      states().forEach((state) {
+        expect(
+          state,
+          QueryState<String>(
+            status: QueryStatus.success,
+            data: data,
+            error: null,
+            dataUpdatedAt: clock.now(),
+            errorUpdatedAt: null,
+            isInvalidated: false,
+          ),
+        );
+      });
+
+      await tester.pumpWidget(withQueryClientProvider(
+        Column(
+          key: Key('column'),
+          children: [
+            widget.copyWith(key: Key('1')),
+            widget.copyWith(key: Key('2')),
+          ],
+        ),
+      ));
+
+      await tester.pump();
+
+      states().forEach((state) {
+        expect(
+          state,
+          QueryState<String>(
+            status: QueryStatus.fetching,
+            data: data,
+            error: null,
+            dataUpdatedAt: clock.now(),
+            errorUpdatedAt: null,
+            isInvalidated: false,
+          ),
+        );
+      });
+
+      await tester.pump(fetchDuration);
+
+      states().forEach((state) {
+        expect(
+          state,
+          QueryState<String>(
+            status: QueryStatus.success,
+            data: data,
+            error: null,
+            dataUpdatedAt: clock.now(),
+            errorUpdatedAt: null,
+            isInvalidated: false,
+          ),
+        );
+      });
+    },
+  );
+
+  testWidgets(
+    'should start refetching and succeed when navigated to a new screen and a new QueryBuilder is created',
+    (tester) async {
+      const fetchDuration = Duration(seconds: 3);
+      final id = 'id';
+      final data = 'data';
+      final queryBuilder = QueryBuilder<String>(
+        id: id,
+        fetcher: (id) async {
+          await Future.delayed(fetchDuration);
+          return data;
+        },
+        builder: (context, state, child) {
+          return Container(key: ValueKey(state));
+        },
+      );
+      final widget = MaterialApp(
+        home: Builder(
+          builder: (context) {
+            return Scaffold(
+              body: Column(
+                children: [
+                  queryBuilder.copyWith(key: Key('1')),
+                  TextButton(
+                    key: Key('navigate'),
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        PageRouteBuilder(
+                          pageBuilder: (context, animation1, animation2) {
+                            return Scaffold(
+                              body: queryBuilder.copyWith(key: Key('2')),
+                            );
+                          },
+                          transitionDuration: Duration.zero,
+                          reverseTransitionDuration: Duration.zero,
+                        ),
+                      );
+                    },
+                    child: Text('Navigate'),
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
+      );
+
+      List<QueryState<String>> states() {
+        return tester
+            .widgetList<Container>(find.byType(Container))
+            .map((widget) => widget.key)
+            .cast<ValueKey>()
+            .map((key) => key.value)
+            .cast<QueryState<String>>()
+            .toList();
+      }
+
+      Future navigate() async {
+        await tester.tap(find.byType(TextButton));
+      }
+
+      await tester.pumpWidget(withQueryClientProvider(widget));
+
+      states().forEach((state) {
+        expect(
+          state,
+          QueryState<String>(
+            status: QueryStatus.idle,
+            data: null,
+            error: null,
+            dataUpdatedAt: null,
+            errorUpdatedAt: null,
+            isInvalidated: false,
+          ),
+        );
+      });
+
+      await tester.pump();
+
+      states().forEach((state) {
+        expect(
+          state,
+          QueryState<String>(
+            status: QueryStatus.fetching,
+            data: null,
+            error: null,
+            dataUpdatedAt: null,
+            errorUpdatedAt: null,
+            isInvalidated: false,
+          ),
+        );
+      });
+
+      await tester.pump(fetchDuration);
+
+      states().forEach((state) {
+        expect(
+          state,
+          QueryState<String>(
+            status: QueryStatus.success,
+            data: data,
+            error: null,
+            dataUpdatedAt: clock.now(),
+            errorUpdatedAt: null,
+            isInvalidated: false,
+          ),
+        );
+      });
+
+      await navigate();
+      await tester.pump();
+
+      await tester.pump();
+
+      states().forEach((state) {
+        expect(
+          state,
+          QueryState<String>(
+            status: QueryStatus.fetching,
+            data: data,
+            error: null,
+            dataUpdatedAt: clock.now(),
+            errorUpdatedAt: null,
+            isInvalidated: false,
+          ),
+        );
+      });
+
+      await tester.pump(fetchDuration);
+
+      states().forEach((state) {
+        expect(
+          state,
+          QueryState<String>(
+            status: QueryStatus.success,
+            data: data,
+            error: null,
+            dataUpdatedAt: clock.now(),
+            errorUpdatedAt: null,
+            isInvalidated: false,
+          ),
+        );
+      });
     },
   );
 
@@ -232,6 +533,20 @@ void main() {
           }
 
           await tester.pumpWidget(withQueryClientProvider(widget));
+
+          expect(
+            state(),
+            QueryState<String>(
+              status: QueryStatus.idle,
+              data: null,
+              error: null,
+              dataUpdatedAt: null,
+              errorUpdatedAt: null,
+              isInvalidated: false,
+            ),
+          );
+
+          await tester.pump();
 
           expect(
             state(),
