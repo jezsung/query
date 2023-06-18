@@ -1,5 +1,5 @@
 class Repository {
-  Repository({
+  const Repository({
     required this.name,
     required this.description,
     required this.watcherCount,
