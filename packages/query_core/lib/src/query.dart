@@ -1,12 +1,11 @@
+import 'dart:async';
+
 import 'package:async/async.dart';
 import 'package:clock/clock.dart';
 import 'package:equatable/equatable.dart';
-import 'package:query_core/src/utils/observer.dart';
 
 part 'paged_query.dart';
-part 'paged_query_observer.dart';
 part 'paged_query_state.dart';
-part 'query_observer.dart';
 part 'query_state.dart';
 
 enum QueryStatus {
@@ -30,27 +29,19 @@ typedef QueryId = String;
 
 typedef QueryFetcher<Data> = Future<Data> Function(QueryId id);
 
-abstract class QueryBase {
-  QueryBase(this.id);
+class Query<T> {
+  Query(this.id) : _state = QueryState<T>();
 
   final QueryId id;
 
-  Future close();
-}
-
-class Query<T> extends QueryBase
-    with Observable<QueryObserver<T>, QueryState<T>> {
-  Query(QueryId id)
-      : _state = QueryState<T>(),
-        super(id);
+  final _stateController = StreamController<QueryState<T>>.broadcast();
+  Stream<QueryState<T>> get stream => _stateController.stream;
 
   QueryState<T> _state;
-
   QueryState<T> get state => _state;
-
-  set state(value) {
+  set state(QueryState<T> value) {
     _state = value;
-    notify(value);
+    _stateController.add(value);
   }
 
   CancelableOperation<T>? _cancelableOperation;
@@ -144,8 +135,8 @@ class Query<T> extends QueryBase
     return now.isAfter(staleAt) || now.isAtSameMomentAs(staleAt);
   }
 
-  @override
   Future close() async {
     await _cancelableOperation?.cancel();
+    await _stateController.close();
   }
 }

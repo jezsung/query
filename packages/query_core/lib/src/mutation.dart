@@ -1,9 +1,9 @@
+import 'dart:async';
+
 import 'package:async/async.dart';
 import 'package:clock/clock.dart';
 import 'package:equatable/equatable.dart';
-import 'package:query_core/src/utils/observer.dart';
 
-part 'mutation_observer.dart';
 part 'mutation_state.dart';
 
 typedef Mutator<T, P> = Future<T> Function(P? param);
@@ -25,16 +25,17 @@ extension MutationStatusExtension on MutationStatus {
   bool get isFailure => this == MutationStatus.failure;
 }
 
-class Mutation<T, P> with Observable<MutationObserver<T, P>, MutationState<T>> {
+class Mutation<T, P> {
   Mutation() : _state = MutationState<T>();
 
+  final _stateController = StreamController<MutationState<T>>.broadcast();
+  Stream<MutationState<T>> get stream => _stateController.stream;
+
   MutationState<T> _state;
-
   MutationState<T> get state => _state;
-
-  set state(value) {
+  set state(MutationState<T> value) {
     _state = value;
-    notify(value);
+    _stateController.add(value);
   }
 
   CancelableOperation<T>? _cancelableOperation;
