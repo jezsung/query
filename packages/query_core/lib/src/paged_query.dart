@@ -2,14 +2,14 @@ part of 'query.dart';
 
 typedef Pages<T> = List<T>;
 
-typedef PagedQueryFetcher<T, P> = Future<T> Function(QueryId id, P param);
+typedef PagedQueryFetcher<T, P> = Future<T> Function(QueryKey key, P param);
 
 typedef PagedQueryParamBuilder<T, P> = P? Function(Pages<T> pages);
 
 class PagedQuery<T, P> {
-  PagedQuery(this.id) : _state = PagedQueryState<T>();
+  PagedQuery(this.key) : _state = PagedQueryState<T>();
 
-  final QueryId id;
+  final QueryKey key;
 
   final _stateController = StreamController<PagedQueryState<T>>.broadcast();
   Stream<PagedQueryState<T>> get stream => _stateController.stream;
@@ -43,7 +43,7 @@ class PagedQuery<T, P> {
 
     try {
       _cancelableOperation =
-          CancelableOperation<T>.fromFuture(fetcher(id, initialPageParam));
+          CancelableOperation<T>.fromFuture(fetcher(key, initialPageParam));
 
       final data = await _cancelableOperation!.valueOrCancellation();
 
@@ -94,7 +94,7 @@ class PagedQuery<T, P> {
       assert(param != null);
 
       _cancelableOperation = CancelableOperation<T>.fromFuture(
-        fetcher(id, param!),
+        fetcher(key, param!),
       );
 
       final data = await _cancelableOperation!.valueOrCancellation();
@@ -148,7 +148,7 @@ class PagedQuery<T, P> {
       assert(param != null);
 
       _cancelableOperation = CancelableOperation<T>.fromFuture(
-        fetcher(id, param!),
+        fetcher(key, param!),
       );
 
       final data = await _cancelableOperation!.valueOrCancellation();
