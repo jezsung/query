@@ -11,8 +11,8 @@ enum RefetchBehavior {
 
 typedef Refetch = Future Function();
 
-class QueryResult<T> {
-  QueryResult({
+class UseQueryResult<T> {
+  UseQueryResult({
     required this.state,
     required this.refetch,
   });
@@ -41,7 +41,7 @@ class QueryOptions<T> {
   final RefetchBehavior refetchOnResumed;
 }
 
-QueryResult<T> useQuery<T>(
+UseQueryResult<T> useQuery<T>(
   QueryKey key,
   QueryFetcher<T> fetcher, {
   T? placeholder,
@@ -104,7 +104,7 @@ QueryResult<T> useQuery<T>(
     },
   );
 
-  return QueryResult(
+  return UseQueryResult(
     state: stateSnapshot.requireData.copyWith(
       data: stateSnapshot.requireData.data ?? placeholder,
     ),
