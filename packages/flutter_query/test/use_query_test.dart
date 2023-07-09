@@ -158,122 +158,311 @@ void main() {
     },
   );
 
-  testWidgets(
-    'should refetch when the data is stale',
-    (tester) async {
-      final key = 'key';
-      final data = 'data';
-      const fetchDuration = Duration(seconds: 3);
-      const staleDuration = Duration(minutes: 5);
-      late DateTime dataUpdatedAt;
-      late QueryState<String> state;
+  group(
+    'given refetchOnInit is',
+    () {
+      testWidgets(
+        '${RefetchBehavior.never}, it should NOT refetch',
+        (tester) async {
+          final key = 'key';
+          final data1 = 'data1';
+          final data2 = 'data2';
+          const fetchDuration = Duration(seconds: 3);
+          const staleDuration = Duration(minutes: 5);
+          late DateTime dataUpdatedAt;
+          late QueryState<String> state;
 
-      await tester.pumpWidget(withQueryClientProvider(
-        Column(
-          children: [
-            HookBuilder(
-              key: Key('hook_builder1'),
-              builder: (context) {
-                useQuery<String>(
-                  key,
-                  (key) async {
-                    await Future.delayed(fetchDuration);
-                    return data;
-                  },
-                  staleDuration: staleDuration,
-                );
+          final hook1 = HookBuilder(
+            key: Key('hook_builder1'),
+            builder: (context) {
+              useQuery<String>(
+                key,
+                (key) async {
+                  await Future.delayed(fetchDuration);
+                  return data1;
+                },
+                staleDuration: staleDuration,
+              );
+              return Container();
+            },
+          );
+          final hook2 = HookBuilder(
+            key: Key('hook_builder2'),
+            builder: (context) {
+              final result = useQuery<String>(
+                key,
+                (key) async {
+                  await Future.delayed(fetchDuration);
+                  return data2;
+                },
+                staleDuration: staleDuration,
+                refetchOnInit: RefetchBehavior.never,
+              );
 
-                return Container();
-              },
+              state = result.state;
+
+              return Container();
+            },
+          );
+
+          await tester.pumpWidget(withQueryClientProvider(
+            Column(
+              key: Key('column'),
+              children: [hook1],
             ),
-          ],
-        ),
-      ));
+          ));
 
-      await tester.pump(fetchDuration);
+          await tester.pump(fetchDuration);
 
-      dataUpdatedAt = clock.now();
+          dataUpdatedAt = clock.now();
 
-      await tester.pump(staleDuration);
+          await tester.pump(staleDuration);
 
-      await tester.pumpWidget(withQueryClientProvider(
-        Column(
-          children: [
-            HookBuilder(
-              key: Key('hook_builder1'),
-              builder: (context) {
-                useQuery<String>(
-                  key,
-                  (key) async {
-                    await Future.delayed(fetchDuration);
-                    return data;
-                  },
-                  staleDuration: staleDuration,
-                );
-
-                return Container();
-              },
+          await tester.pumpWidget(withQueryClientProvider(
+            Column(
+              key: Key('column'),
+              children: [hook1, hook2],
             ),
-            HookBuilder(
-              key: Key('hook_builder2'),
-              builder: (context) {
-                final result = useQuery<String>(
-                  key,
-                  (key) async {
-                    await Future.delayed(fetchDuration);
-                    return data;
-                  },
-                  staleDuration: staleDuration,
-                  refetchOnInit: RefetchBehavior.stale,
-                );
+          ));
 
-                state = result.state;
-
-                return Container();
-              },
+          expect(
+            state,
+            QueryState<String>(
+              status: QueryStatus.success,
+              data: data1,
+              error: null,
+              dataUpdatedAt: dataUpdatedAt,
+              errorUpdatedAt: null,
+              isInvalidated: false,
             ),
-          ],
-        ),
-      ));
+          );
 
-      expect(
-        state,
-        QueryState<String>(
-          status: QueryStatus.success,
-          data: data,
-          error: null,
-          dataUpdatedAt: dataUpdatedAt,
-          errorUpdatedAt: null,
-          isInvalidated: false,
-        ),
+          await tester.pump(fetchDuration);
+
+          expect(
+            state,
+            QueryState<String>(
+              status: QueryStatus.success,
+              data: data1,
+              error: null,
+              dataUpdatedAt: dataUpdatedAt,
+              errorUpdatedAt: null,
+              isInvalidated: false,
+            ),
+          );
+        },
       );
 
-      await tester.pump();
+      testWidgets(
+        '${RefetchBehavior.stale}, it should refetch when data is stale',
+        (tester) async {
+          final key = 'key';
+          final data1 = 'data1';
+          final data2 = 'data2';
+          const fetchDuration = Duration(seconds: 3);
+          const staleDuration = Duration(minutes: 5);
+          late DateTime dataUpdatedAt;
+          late QueryState<String> state;
 
-      expect(
-        state,
-        QueryState<String>(
-          status: QueryStatus.fetching,
-          data: data,
-          error: null,
-          dataUpdatedAt: dataUpdatedAt,
-          errorUpdatedAt: null,
-          isInvalidated: false,
-        ),
+          final hook1 = HookBuilder(
+            key: Key('hook_builder1'),
+            builder: (context) {
+              useQuery<String>(
+                key,
+                (key) async {
+                  await Future.delayed(fetchDuration);
+                  return data1;
+                },
+                staleDuration: staleDuration,
+              );
+
+              return Container();
+            },
+          );
+          final hook2 = HookBuilder(
+            key: Key('hook_builder2'),
+            builder: (context) {
+              final result = useQuery<String>(
+                key,
+                (key) async {
+                  await Future.delayed(fetchDuration);
+                  return data2;
+                },
+                staleDuration: staleDuration,
+                refetchOnInit: RefetchBehavior.stale,
+              );
+
+              state = result.state;
+
+              return Container();
+            },
+          );
+
+          await tester.pumpWidget(withQueryClientProvider(
+            Column(
+              key: Key('column'),
+              children: [hook1],
+            ),
+          ));
+
+          await tester.pump(fetchDuration);
+
+          dataUpdatedAt = clock.now();
+
+          await tester.pump(staleDuration);
+
+          await tester.pumpWidget(withQueryClientProvider(
+            Column(
+              key: Key('column'),
+              children: [hook1, hook2],
+            ),
+          ));
+
+          expect(
+            state,
+            QueryState<String>(
+              status: QueryStatus.success,
+              data: data1,
+              error: null,
+              dataUpdatedAt: dataUpdatedAt,
+              errorUpdatedAt: null,
+              isInvalidated: false,
+            ),
+          );
+
+          await tester.pump();
+
+          expect(
+            state,
+            QueryState<String>(
+              status: QueryStatus.fetching,
+              data: data1,
+              error: null,
+              dataUpdatedAt: dataUpdatedAt,
+              errorUpdatedAt: null,
+              isInvalidated: false,
+            ),
+          );
+
+          await tester.pump(fetchDuration);
+
+          expect(
+            state,
+            QueryState<String>(
+              status: QueryStatus.success,
+              data: data2,
+              error: null,
+              dataUpdatedAt: dataUpdatedAt = clock.now(),
+              errorUpdatedAt: null,
+              isInvalidated: false,
+            ),
+          );
+        },
       );
 
-      await tester.pump(fetchDuration);
+      testWidgets(
+        '${RefetchBehavior.always}, it should refetch when data is not stale',
+        (tester) async {
+          final key = 'key';
+          final data1 = 'data1';
+          final data2 = 'data2';
+          const fetchDuration = Duration(seconds: 3);
+          const staleDuration = Duration(minutes: 5);
+          late DateTime dataUpdatedAt;
+          late QueryState<String> state;
 
-      expect(
-        state,
-        QueryState<String>(
-          status: QueryStatus.success,
-          data: data,
-          error: null,
-          dataUpdatedAt: dataUpdatedAt = clock.now(),
-          errorUpdatedAt: null,
-          isInvalidated: false,
-        ),
+          final hook1 = HookBuilder(
+            key: Key('hook_builder1'),
+            builder: (context) {
+              useQuery<String>(
+                key,
+                (key) async {
+                  await Future.delayed(fetchDuration);
+                  return data1;
+                },
+                staleDuration: staleDuration,
+              );
+
+              return Container();
+            },
+          );
+          final hook2 = HookBuilder(
+            key: Key('hook_builder2'),
+            builder: (context) {
+              final result = useQuery<String>(
+                key,
+                (key) async {
+                  await Future.delayed(fetchDuration);
+                  return data2;
+                },
+                staleDuration: staleDuration,
+                refetchOnInit: RefetchBehavior.always,
+              );
+
+              state = result.state;
+
+              return Container();
+            },
+          );
+
+          await tester.pumpWidget(withQueryClientProvider(
+            Column(
+              key: Key('column'),
+              children: [hook1],
+            ),
+          ));
+
+          await tester.pump(fetchDuration);
+
+          dataUpdatedAt = clock.now();
+
+          await tester.pumpWidget(withQueryClientProvider(
+            Column(
+              key: Key('column'),
+              children: [hook1, hook2],
+            ),
+          ));
+
+          expect(
+            state,
+            QueryState<String>(
+              status: QueryStatus.success,
+              data: data1,
+              error: null,
+              dataUpdatedAt: dataUpdatedAt,
+              errorUpdatedAt: null,
+              isInvalidated: false,
+            ),
+          );
+
+          await tester.pump();
+
+          expect(
+            state,
+            QueryState<String>(
+              status: QueryStatus.fetching,
+              data: data1,
+              error: null,
+              dataUpdatedAt: dataUpdatedAt,
+              errorUpdatedAt: null,
+              isInvalidated: false,
+            ),
+          );
+
+          await tester.pump(fetchDuration);
+
+          expect(
+            state,
+            QueryState<String>(
+              status: QueryStatus.success,
+              data: data2,
+              error: null,
+              dataUpdatedAt: dataUpdatedAt = clock.now(),
+              errorUpdatedAt: null,
+              isInvalidated: false,
+            ),
+          );
+        },
       );
     },
   );
