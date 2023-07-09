@@ -579,7 +579,8 @@ void main() {
 
           await tester.pump(staleDuration);
 
-          tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+          tester.binding
+              .handleAppLifecycleStateChanged(AppLifecycleState.resumed);
           await tester.pump();
 
           expect(
@@ -661,7 +662,8 @@ void main() {
 
           await tester.pump(staleDuration);
 
-          tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+          tester.binding
+              .handleAppLifecycleStateChanged(AppLifecycleState.resumed);
           await tester.pump();
 
           expect(
@@ -741,7 +743,8 @@ void main() {
 
           dataUpdatedAt = clock.now();
 
-          tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+          tester.binding
+              .handleAppLifecycleStateChanged(AppLifecycleState.resumed);
           await tester.pump();
 
           expect(
@@ -785,6 +788,80 @@ void main() {
           );
         },
       );
+    },
+  );
+
+  testWidgets(
+    'should cancel and revert state back when cancel is called manually',
+    (tester) async {
+      final key = 'key';
+      final data = 'data';
+      const fetchDuration = Duration(seconds: 3);
+
+      late QueryState<String> state;
+      late Cancel cancel;
+
+      await tester.pumpWidget(withQueryClientProvider(
+        HookBuilder(
+          builder: (context) {
+            final result = useQuery<String>(
+              key,
+              (key) async {
+                await Future.delayed(fetchDuration);
+                return data;
+              },
+            );
+
+            state = result.state;
+            cancel = result.cancel;
+
+            return Container();
+          },
+        ),
+      ));
+
+      expect(
+        state,
+        QueryState<String>(
+          status: QueryStatus.idle,
+          data: null,
+          error: null,
+          dataUpdatedAt: null,
+          errorUpdatedAt: null,
+          isInvalidated: false,
+        ),
+      );
+
+      await tester.pump();
+
+      expect(
+        state,
+        QueryState<String>(
+          status: QueryStatus.fetching,
+          data: null,
+          error: null,
+          dataUpdatedAt: null,
+          errorUpdatedAt: null,
+          isInvalidated: false,
+        ),
+      );
+
+      await cancel();
+      await tester.pump();
+
+      expect(
+        state,
+        QueryState<String>(
+          status: QueryStatus.idle,
+          data: null,
+          error: null,
+          dataUpdatedAt: null,
+          errorUpdatedAt: null,
+          isInvalidated: false,
+        ),
+      );
+
+      await tester.binding.delayed(fetchDuration);
     },
   );
 
