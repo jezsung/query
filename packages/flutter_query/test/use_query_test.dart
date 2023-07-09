@@ -1,5 +1,5 @@
 import 'package:clock/clock.dart';
-import 'package:flutter/widgets.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:flutter_query/flutter_query.dart';
 import 'package:flutter_query/src/hooks/use_query.dart';
@@ -797,6 +797,125 @@ void main() {
           data: data,
           error: null,
           dataUpdatedAt: clock.now(),
+          errorUpdatedAt: null,
+          isInvalidated: false,
+        ),
+      );
+    },
+  );
+
+  testWidgets(
+    'should refetch and succeed when navigated',
+    (tester) async {
+      final queryKey = 'key';
+      final data1 = 'data1';
+      final data2 = 'data2';
+      const fetchDuration = Duration(seconds: 3);
+
+      late QueryState<String> state;
+      late DateTime dataUpdatedAt;
+
+      final hookBuilder1 = HookBuilder(
+        key: Key('hook_builder1'),
+        builder: (context) {
+          useQuery(
+            queryKey,
+            (key) async {
+              await Future.delayed(fetchDuration);
+              return data1;
+            },
+          );
+          return Container();
+        },
+      );
+      final hookBuilder2 = HookBuilder(
+        key: Key('hook_builder2'),
+        builder: (context) {
+          final result = useQuery(
+            queryKey,
+            (key) async {
+              await Future.delayed(fetchDuration);
+              return data2;
+            },
+          );
+          state = result.state;
+          return Container();
+        },
+      );
+      final widget = MaterialApp(
+        home: Builder(
+          builder: (context) {
+            return Scaffold(
+              body: Column(
+                children: [
+                  hookBuilder1,
+                  TextButton(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) {
+                            return Scaffold(
+                              body: hookBuilder2,
+                            );
+                          },
+                        ),
+                      );
+                    },
+                    child: Text('Navigate'),
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
+      );
+
+      Future navigate() async {
+        await tester.tap(find.byType(TextButton));
+      }
+
+      await tester.pumpWidget(withQueryClientProvider(widget));
+      await tester.pump(fetchDuration);
+      dataUpdatedAt = clock.now();
+      await navigate();
+      await tester.pump();
+
+      expect(
+        state,
+        QueryState<String>(
+          status: QueryStatus.success,
+          data: data1,
+          error: null,
+          dataUpdatedAt: dataUpdatedAt,
+          errorUpdatedAt: null,
+          isInvalidated: false,
+        ),
+      );
+
+      await tester.pump();
+
+      expect(
+        state,
+        QueryState<String>(
+          status: QueryStatus.fetching,
+          data: data1,
+          error: null,
+          dataUpdatedAt: dataUpdatedAt,
+          errorUpdatedAt: null,
+          isInvalidated: false,
+        ),
+      );
+
+      await tester.pump(fetchDuration);
+
+      expect(
+        state,
+        QueryState<String>(
+          status: QueryStatus.success,
+          data: data2,
+          error: null,
+          dataUpdatedAt: dataUpdatedAt = clock.now(),
           errorUpdatedAt: null,
           isInvalidated: false,
         ),
