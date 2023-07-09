@@ -11,14 +11,18 @@ enum RefetchBehavior {
 
 typedef Refetch = Future Function();
 
+typedef Cancel = Future Function();
+
 class UseQueryResult<T> {
   UseQueryResult({
     required this.state,
     required this.refetch,
+    required this.cancel,
   });
 
   final QueryState<T> state;
   final Refetch refetch;
+  final Cancel cancel;
 }
 
 class QueryOptions<T> {
@@ -109,5 +113,6 @@ UseQueryResult<T> useQuery<T>(
       data: stateSnapshot.requireData.data ?? placeholder,
     ),
     refetch: fetch,
+    cancel: query.cancel,
   );
 }
