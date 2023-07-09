@@ -361,7 +361,7 @@ void main() {
       );
 
       testWidgets(
-        '${RefetchBehavior.always}, it should refetch when data is not stale',
+        '${RefetchBehavior.always}, it should refetch even when data is not stale',
         (tester) async {
           final key = 'key';
           final data1 = 'data1';
@@ -456,6 +456,255 @@ void main() {
             QueryState<String>(
               status: QueryStatus.success,
               data: data2,
+              error: null,
+              dataUpdatedAt: dataUpdatedAt = clock.now(),
+              errorUpdatedAt: null,
+              isInvalidated: false,
+            ),
+          );
+        },
+      );
+    },
+  );
+
+  group(
+    'given refetchOnResumed is',
+    () {
+      testWidgets(
+        '${RefetchBehavior.never}, it should NOT refetch',
+        (tester) async {
+          final key = 'key';
+          final data = 'data';
+          const fetchDuration = Duration(seconds: 3);
+          const staleDuration = Duration(minutes: 5);
+          late DateTime dataUpdatedAt;
+          late QueryState<String> state;
+
+          final hook = HookBuilder(
+            key: Key('hook_builder'),
+            builder: (context) {
+              final result = useQuery<String>(
+                key,
+                (key) async {
+                  await Future.delayed(fetchDuration);
+                  return data;
+                },
+                staleDuration: staleDuration,
+                refetchOnResumed: RefetchBehavior.never,
+              );
+
+              state = result.state;
+
+              return Container();
+            },
+          );
+
+          await tester.pumpWidget(withQueryClientProvider(hook));
+
+          await tester.pump(fetchDuration);
+
+          dataUpdatedAt = clock.now();
+
+          await tester.pump(staleDuration);
+
+          tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+          await tester.pump();
+
+          expect(
+            state,
+            QueryState<String>(
+              status: QueryStatus.success,
+              data: data,
+              error: null,
+              dataUpdatedAt: dataUpdatedAt,
+              errorUpdatedAt: null,
+              isInvalidated: false,
+            ),
+          );
+
+          await tester.pump();
+
+          expect(
+            state,
+            QueryState<String>(
+              status: QueryStatus.success,
+              data: data,
+              error: null,
+              dataUpdatedAt: dataUpdatedAt,
+              errorUpdatedAt: null,
+              isInvalidated: false,
+            ),
+          );
+
+          await tester.pump(fetchDuration);
+
+          expect(
+            state,
+            QueryState<String>(
+              status: QueryStatus.success,
+              data: data,
+              error: null,
+              dataUpdatedAt: dataUpdatedAt,
+              errorUpdatedAt: null,
+              isInvalidated: false,
+            ),
+          );
+        },
+      );
+
+      testWidgets(
+        '${RefetchBehavior.stale}, it should refetch when data is stale',
+        (tester) async {
+          final key = 'key';
+          final data = 'data';
+          const fetchDuration = Duration(seconds: 3);
+          const staleDuration = Duration(minutes: 5);
+          late DateTime dataUpdatedAt;
+          late QueryState<String> state;
+
+          final hook = HookBuilder(
+            key: Key('hook_builder'),
+            builder: (context) {
+              final result = useQuery<String>(
+                key,
+                (key) async {
+                  await Future.delayed(fetchDuration);
+                  return data;
+                },
+                staleDuration: staleDuration,
+                refetchOnResumed: RefetchBehavior.stale,
+              );
+
+              state = result.state;
+
+              return Container();
+            },
+          );
+
+          await tester.pumpWidget(withQueryClientProvider(hook));
+
+          await tester.pump(fetchDuration);
+
+          dataUpdatedAt = clock.now();
+
+          await tester.pump(staleDuration);
+
+          tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+          await tester.pump();
+
+          expect(
+            state,
+            QueryState<String>(
+              status: QueryStatus.success,
+              data: data,
+              error: null,
+              dataUpdatedAt: dataUpdatedAt,
+              errorUpdatedAt: null,
+              isInvalidated: false,
+            ),
+          );
+
+          await tester.pump();
+
+          expect(
+            state,
+            QueryState<String>(
+              status: QueryStatus.fetching,
+              data: data,
+              error: null,
+              dataUpdatedAt: dataUpdatedAt,
+              errorUpdatedAt: null,
+              isInvalidated: false,
+            ),
+          );
+
+          await tester.pump(fetchDuration);
+
+          expect(
+            state,
+            QueryState<String>(
+              status: QueryStatus.success,
+              data: data,
+              error: null,
+              dataUpdatedAt: dataUpdatedAt = clock.now(),
+              errorUpdatedAt: null,
+              isInvalidated: false,
+            ),
+          );
+        },
+      );
+
+      testWidgets(
+        '${RefetchBehavior.always}, it should refetch even when data is not stale',
+        (tester) async {
+          final key = 'key';
+          final data = 'data';
+          const fetchDuration = Duration(seconds: 3);
+          const staleDuration = Duration(minutes: 5);
+          late DateTime dataUpdatedAt;
+          late QueryState<String> state;
+
+          final hook = HookBuilder(
+            key: Key('hook_builder'),
+            builder: (context) {
+              final result = useQuery<String>(
+                key,
+                (key) async {
+                  await Future.delayed(fetchDuration);
+                  return data;
+                },
+                staleDuration: staleDuration,
+                refetchOnResumed: RefetchBehavior.always,
+              );
+
+              state = result.state;
+
+              return Container();
+            },
+          );
+
+          await tester.pumpWidget(withQueryClientProvider(hook));
+
+          await tester.pump(fetchDuration);
+
+          dataUpdatedAt = clock.now();
+
+          tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+          await tester.pump();
+
+          expect(
+            state,
+            QueryState<String>(
+              status: QueryStatus.success,
+              data: data,
+              error: null,
+              dataUpdatedAt: dataUpdatedAt,
+              errorUpdatedAt: null,
+              isInvalidated: false,
+            ),
+          );
+
+          await tester.pump();
+
+          expect(
+            state,
+            QueryState<String>(
+              status: QueryStatus.fetching,
+              data: data,
+              error: null,
+              dataUpdatedAt: dataUpdatedAt,
+              errorUpdatedAt: null,
+              isInvalidated: false,
+            ),
+          );
+
+          await tester.pump(fetchDuration);
+
+          expect(
+            state,
+            QueryState<String>(
+              status: QueryStatus.success,
+              data: data,
               error: null,
               dataUpdatedAt: dataUpdatedAt = clock.now(),
               errorUpdatedAt: null,
