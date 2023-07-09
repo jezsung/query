@@ -158,6 +158,78 @@ void main() {
     },
   );
 
+  testWidgets(
+    'should populate data with placholder until data is fetched',
+    (tester) async {
+      final key = 'key';
+      final data = 'data';
+      final placholder = 'placeholder';
+      const fetchDuration = Duration(seconds: 3);
+
+      late QueryState<String> state;
+
+      final hookBuilder = HookBuilder(
+        key: Key('hook_builder'),
+        builder: (context) {
+          final result = useQuery<String>(
+            key,
+            (key) async {
+              await Future.delayed(fetchDuration);
+              return data;
+            },
+            placeholder: placholder,
+          );
+
+          state = result.state;
+
+          return Container();
+        },
+      );
+
+      await tester.pumpWidget(withQueryClientProvider(hookBuilder));
+
+      expect(
+        state,
+        QueryState<String>(
+          status: QueryStatus.idle,
+          data: placholder,
+          error: null,
+          dataUpdatedAt: null,
+          errorUpdatedAt: null,
+          isInvalidated: false,
+        ),
+      );
+
+      await tester.pump();
+
+      expect(
+        state,
+        QueryState<String>(
+          status: QueryStatus.fetching,
+          data: placholder,
+          error: null,
+          dataUpdatedAt: null,
+          errorUpdatedAt: null,
+          isInvalidated: false,
+        ),
+      );
+
+      await tester.pump(fetchDuration);
+
+      expect(
+        state,
+        QueryState<String>(
+          status: QueryStatus.success,
+          data: data,
+          error: null,
+          dataUpdatedAt: clock.now(),
+          errorUpdatedAt: null,
+          isInvalidated: false,
+        ),
+      );
+    },
+  );
+
   group(
     'given refetchOnInit is',
     () {
