@@ -715,4 +715,92 @@ void main() {
       );
     },
   );
+
+  testWidgets(
+    'should refetch when refetech is called manually',
+    (tester) async {
+      final key = 'key';
+      final data = 'data';
+      const fetchDuration = Duration(seconds: 3);
+      late QueryState<String> state;
+      late Refetch refetch;
+
+      await tester.pumpWidget(withQueryClientProvider(
+        HookBuilder(
+          builder: (context) {
+            final result = useQuery<String>(
+              key,
+              (key) async {
+                await Future.delayed(fetchDuration);
+                return data;
+              },
+            );
+
+            state = result.state;
+            refetch = result.refetch;
+
+            return Container();
+          },
+        ),
+      ));
+
+      await tester.pump(fetchDuration);
+
+      expect(
+        state,
+        QueryState<String>(
+          status: QueryStatus.success,
+          data: data,
+          error: null,
+          dataUpdatedAt: clock.now(),
+          errorUpdatedAt: null,
+          isInvalidated: false,
+        ),
+      );
+
+      refetch();
+
+      await tester.pump();
+
+      expect(
+        state,
+        QueryState<String>(
+          status: QueryStatus.success,
+          data: data,
+          error: null,
+          dataUpdatedAt: clock.now(),
+          errorUpdatedAt: null,
+          isInvalidated: false,
+        ),
+      );
+
+      await tester.pump();
+
+      expect(
+        state,
+        QueryState<String>(
+          status: QueryStatus.fetching,
+          data: data,
+          error: null,
+          dataUpdatedAt: clock.now(),
+          errorUpdatedAt: null,
+          isInvalidated: false,
+        ),
+      );
+
+      await tester.pump(fetchDuration);
+
+      expect(
+        state,
+        QueryState<String>(
+          status: QueryStatus.success,
+          data: data,
+          error: null,
+          dataUpdatedAt: clock.now(),
+          errorUpdatedAt: null,
+          isInvalidated: false,
+        ),
+      );
+    },
+  );
 }
