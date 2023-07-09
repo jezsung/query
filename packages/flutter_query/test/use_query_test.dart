@@ -23,7 +23,7 @@ Widget withQueryClientProvider(Widget widget, [QueryClient? client]) {
 
 void main() {
   testWidgets(
-    'should start fetching and succeed',
+    'should fetch and succeed',
     (tester) async {
       final key = 'key';
       final data = 'data';
@@ -91,7 +91,7 @@ void main() {
   );
 
   testWidgets(
-    'should start fetching and fail',
+    'should fetch and fail',
     (tester) async {
       final key = 'key';
       final error = Exception();
