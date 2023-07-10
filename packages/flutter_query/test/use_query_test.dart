@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:flutter_query/flutter_query.dart';
 import 'package:flutter_query/src/hooks/use_query.dart';
+import 'package:flutter_query/src/hooks/use_query_client.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 Widget withQueryClientProvider(Widget widget, [QueryClient? client]) {
@@ -1068,6 +1069,102 @@ void main() {
           errorUpdatedAt: null,
           isInvalidated: false,
         ),
+      );
+    },
+  );
+
+  group(
+    'given QueryClient is used,',
+    () {
+      testWidgets(
+        'should refetch when refetch is called',
+        (tester) async {
+          final key = 'key';
+          final data = 'data';
+          const fetchDuration = Duration(seconds: 3);
+
+          late QueryClient queryClient;
+          late QueryState<String> state;
+          late DateTime dataUpdatedAt;
+
+          await tester.pumpWidget(withQueryClientProvider(
+            HookBuilder(
+              builder: (context) {
+                queryClient = useQueryClient();
+                final result = useQuery<String>(
+                  key,
+                  (key) async {
+                    await Future.delayed(fetchDuration);
+                    return data;
+                  },
+                );
+
+                state = result.state;
+
+                return Container();
+              },
+            ),
+          ));
+
+          expect(
+            state,
+            QueryState<String>(
+              status: QueryStatus.idle,
+              data: null,
+              error: null,
+              dataUpdatedAt: null,
+              errorUpdatedAt: null,
+              isInvalidated: false,
+            ),
+          );
+
+          await tester.pump(fetchDuration);
+
+          dataUpdatedAt = clock.now();
+
+          queryClient.refetch(key);
+          await tester.pump();
+
+          expect(
+            state,
+            QueryState<String>(
+              status: QueryStatus.success,
+              data: data,
+              error: null,
+              dataUpdatedAt: dataUpdatedAt,
+              errorUpdatedAt: null,
+              isInvalidated: false,
+            ),
+          );
+
+          await tester.pump();
+
+          expect(
+            state,
+            QueryState<String>(
+              status: QueryStatus.fetching,
+              data: data,
+              error: null,
+              dataUpdatedAt: dataUpdatedAt,
+              errorUpdatedAt: null,
+              isInvalidated: false,
+            ),
+          );
+
+          await tester.pump(fetchDuration);
+
+          expect(
+            state,
+            QueryState<String>(
+              status: QueryStatus.success,
+              data: data,
+              error: null,
+              dataUpdatedAt: dataUpdatedAt = clock.now(),
+              errorUpdatedAt: null,
+              isInvalidated: false,
+            ),
+          );
+        },
       );
     },
   );

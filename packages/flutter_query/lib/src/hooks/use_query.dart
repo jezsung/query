@@ -25,13 +25,12 @@ class UseQueryResult<T> {
   final Cancel cancel;
 }
 
-class QueryOptions<T> {
-  QueryOptions({
+class QueryParameter<T> {
+  QueryParameter({
     required this.key,
     required this.fetcher,
     required this.placeholder,
     required this.staleDuration,
-    required this.cacheDuration,
     required this.refetchOnInit,
     required this.refetchOnResumed,
   });
@@ -40,7 +39,6 @@ class QueryOptions<T> {
   final QueryFetcher<T> fetcher;
   final T? placeholder;
   final Duration staleDuration;
-  final Duration cacheDuration;
   final RefetchBehavior refetchOnInit;
   final RefetchBehavior refetchOnResumed;
 }
@@ -82,6 +80,35 @@ UseQueryResult<T> useQuery<T>(
     },
     [fetch],
   );
+
+  final parameter = useMemoized<QueryParameter<T>>(
+    () => QueryParameter<T>(
+      key: key,
+      fetcher: fetcher,
+      placeholder: placeholder,
+      staleDuration: staleDuration,
+      refetchOnInit: refetchOnInit,
+      refetchOnResumed: refetchOnResumed,
+    ),
+    [
+      key,
+      fetcher,
+      placeholder,
+      staleDuration,
+      refetchOnInit,
+      refetchOnResumed,
+    ],
+  );
+  useEffect(
+    () {
+      client.parameters.add(parameter);
+      return () {
+        client.parameters.remove(parameter);
+      };
+    },
+    [parameter],
+  );
+
   final stateSnapshot = useStream<QueryState<T>>(
     query.stream,
     initialData: query.state,
