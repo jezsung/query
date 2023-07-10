@@ -27,6 +27,13 @@ class QueryClient {
     );
   }
 
+  Future cancel(QueryKey key) async {
+    final query = cache.getQuery(key);
+    if (query == null) return;
+
+    await query.cancel();
+  }
+
   Future close() async {
     await Future.wait(cache.queries.map((q) => q.close()));
   }

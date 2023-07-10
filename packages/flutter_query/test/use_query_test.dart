@@ -1166,6 +1166,80 @@ void main() {
           );
         },
       );
+
+      testWidgets(
+        'should cancel and revert state back when cancel is called',
+        (tester) async {
+          final key = 'key';
+          final data = 'data';
+          const fetchDuration = Duration(seconds: 3);
+
+          late QueryClient queryClient;
+          late QueryState<String> state;
+
+          await tester.pumpWidget(withQueryClientProvider(
+            HookBuilder(
+              builder: (context) {
+                queryClient = useQueryClient();
+                final result = useQuery<String>(
+                  key,
+                  (key) async {
+                    await Future.delayed(fetchDuration);
+                    return data;
+                  },
+                );
+
+                state = result.state;
+
+                return Container();
+              },
+            ),
+          ));
+
+          expect(
+            state,
+            QueryState<String>(
+              status: QueryStatus.idle,
+              data: null,
+              error: null,
+              dataUpdatedAt: null,
+              errorUpdatedAt: null,
+              isInvalidated: false,
+            ),
+          );
+
+          await tester.pump();
+
+          expect(
+            state,
+            QueryState<String>(
+              status: QueryStatus.fetching,
+              data: null,
+              error: null,
+              dataUpdatedAt: null,
+              errorUpdatedAt: null,
+              isInvalidated: false,
+            ),
+          );
+
+          await queryClient.cancel(key);
+          await tester.pump();
+
+          expect(
+            state,
+            QueryState<String>(
+              status: QueryStatus.idle,
+              data: null,
+              error: null,
+              dataUpdatedAt: null,
+              errorUpdatedAt: null,
+              isInvalidated: false,
+            ),
+          );
+
+          await tester.binding.delayed(fetchDuration);
+        },
+      );
     },
   );
 }
