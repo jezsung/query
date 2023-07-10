@@ -1,6 +1,6 @@
 import 'package:flutter_query/flutter_query.dart';
 
-class QueryCacheStorage {
+class QueryCache {
   final Map<QueryKey, Query> _queries = <QueryKey, Query>{};
 
   List<Query> get queries => _queries.values.toList();

@@ -2,12 +2,12 @@ import 'package:flutter_query/flutter_query.dart';
 import 'package:flutter_query/src/hooks/use_query.dart';
 
 class QueryClient {
-  final QueryCacheStorage cacheStorage = QueryCacheStorage();
+  final QueryCache cache = QueryCache();
 
   final List<QueryParameter> parameters = [];
 
   Future refetch(QueryKey key) async {
-    final query = cacheStorage.getQuery(key);
+    final query = cache.getQuery(key);
     if (query == null) return;
 
     final paramsByKey = parameters.where((param) => param.key == key).toList();
@@ -28,6 +28,6 @@ class QueryClient {
   }
 
   Future close() async {
-    await Future.wait(cacheStorage.queries.map((q) => q.close()));
+    await Future.wait(cache.queries.map((q) => q.close()));
   }
 }

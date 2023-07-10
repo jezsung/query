@@ -53,7 +53,7 @@ UseQueryResult<T> useQuery<T>(
 }) {
   final client = useQueryClient();
   final query = useMemoized<Query<T>>(
-    () => client.cacheStorage.buildQuery<T>(key),
+    () => client.cache.buildQuery<T>(key),
     [key, client],
   );
   final fetch = useCallback(
