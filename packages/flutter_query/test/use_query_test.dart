@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:flutter_query/flutter_query.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_hooks_test/flutter_hooks_test.dart';
 
 Widget withQueryScope(Widget widget) {
   return QueryScope(
@@ -148,6 +149,203 @@ void main() {
     },
   );
 
+  testWidgets(
+    'should NOT fetch when enabled is false',
+    (tester) async {
+      final key = 'key';
+      final data = 'data';
+
+      late int fetchCount = 0;
+
+      final result = await buildHook(
+        (_) => useQuery(
+          key,
+          (key) async {
+            fetchCount++;
+            return data;
+          },
+          enabled: false,
+        ),
+        provide: (hookBuilder) => withQueryScope(hookBuilder),
+      );
+
+      expect(
+        result.current.state,
+        QueryState<String>(
+          status: QueryStatus.idle,
+          data: null,
+          error: null,
+          dataUpdatedAt: null,
+          errorUpdatedAt: null,
+          isInvalidated: false,
+        ),
+      );
+
+      await tester.pump();
+
+      expect(
+        result.current.state,
+        QueryState<String>(
+          status: QueryStatus.idle,
+          data: null,
+          error: null,
+          dataUpdatedAt: null,
+          errorUpdatedAt: null,
+          isInvalidated: false,
+        ),
+      );
+
+      expect(fetchCount, isZero);
+    },
+  );
+
+  testWidgets(
+    'should fetch when enabled is changed from false to true',
+    (tester) async {
+      final key = 'key';
+      final data = 'data';
+      const fetchDuration = Duration(seconds: 3);
+
+      final result = await buildHook<QueryResult<String>, bool>(
+        (enabled) => useQuery(
+          key,
+          (key) async {
+            await Future.delayed(fetchDuration);
+            return data;
+          },
+          enabled: enabled!,
+        ),
+        initialProps: false,
+        provide: (hookBuilder) => withQueryScope(hookBuilder),
+      );
+
+      expect(
+        result.current.state,
+        QueryState<String>(
+          status: QueryStatus.idle,
+          data: null,
+          error: null,
+          dataUpdatedAt: null,
+          errorUpdatedAt: null,
+          isInvalidated: false,
+        ),
+      );
+
+      await tester.pump();
+
+      expect(
+        result.current.state,
+        QueryState<String>(
+          status: QueryStatus.idle,
+          data: null,
+          error: null,
+          dataUpdatedAt: null,
+          errorUpdatedAt: null,
+          isInvalidated: false,
+        ),
+      );
+
+      await result.rebuild(true);
+      await tester.pump();
+
+      expect(
+        result.current.state,
+        QueryState<String>(
+          status: QueryStatus.fetching,
+          data: null,
+          error: null,
+          dataUpdatedAt: null,
+          errorUpdatedAt: null,
+          isInvalidated: false,
+        ),
+      );
+
+      await tester.pump(fetchDuration);
+
+      expect(
+        result.current.state,
+        QueryState<String>(
+          status: QueryStatus.success,
+          data: data,
+          error: null,
+          dataUpdatedAt: clock.now(),
+          errorUpdatedAt: null,
+          isInvalidated: false,
+        ),
+      );
+    },
+  );
+
+  testWidgets(
+    'should refetch when enabled is changed from false to true',
+    (tester) async {
+      final data = 'data';
+      const fetchDuration = Duration(seconds: 3);
+
+      late DateTime dataUpdatedAt;
+      late int fetchCount = 0;
+
+      final result = await buildHook<QueryResult<String>, bool>(
+        (enabled) => useQuery(
+          'key',
+          (key) async {
+            fetchCount++;
+            await Future.delayed(fetchDuration);
+            return data;
+          },
+          enabled: enabled!,
+        ),
+        initialProps: true,
+        provide: (hookBuilder) => withQueryScope(hookBuilder),
+      );
+
+      await tester.pump(fetchDuration);
+
+      expect(
+        result.current.state,
+        QueryState<String>(
+          status: QueryStatus.success,
+          data: data,
+          error: null,
+          dataUpdatedAt: dataUpdatedAt = clock.now(),
+          errorUpdatedAt: null,
+          isInvalidated: false,
+        ),
+      );
+      expect(fetchCount, 1);
+
+      await result.rebuild(false);
+      await result.rebuild(true);
+      await tester.pump();
+
+      expect(
+        result.current.state,
+        QueryState<String>(
+          status: QueryStatus.fetching,
+          data: data,
+          error: null,
+          dataUpdatedAt: dataUpdatedAt,
+          errorUpdatedAt: null,
+          isInvalidated: false,
+        ),
+      );
+
+      await tester.pump(fetchDuration);
+
+      expect(
+        result.current.state,
+        QueryState<String>(
+          status: QueryStatus.success,
+          data: data,
+          error: null,
+          dataUpdatedAt: dataUpdatedAt = clock.now(),
+          errorUpdatedAt: null,
+          isInvalidated: false,
+        ),
+      );
+      expect(fetchCount, 2);
+    },
+  );
   testWidgets(
     'should populate data with placholder until data is fetched',
     (tester) async {

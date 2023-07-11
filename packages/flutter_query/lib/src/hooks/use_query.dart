@@ -45,6 +45,7 @@ class QueryParameter<T> {
 QueryResult<T> useQuery<T>(
   QueryKey key,
   QueryFetcher<T> fetcher, {
+  bool enabled = true,
   T? placeholder,
   Duration staleDuration = Duration.zero,
   RefetchBehavior refetchOnInit = RefetchBehavior.stale,
@@ -115,7 +116,7 @@ QueryResult<T> useQuery<T>(
   );
 
   useEffect(() {
-    if (query.state.status.isFetching) return;
+    if (!enabled || query.state.status.isFetching) return;
 
     if (query.state.status.isIdle) {
       fetch();
@@ -124,7 +125,7 @@ QueryResult<T> useQuery<T>(
     }
 
     return;
-  }, [query]);
+  }, [query, enabled]);
 
   useOnAppLifecycleStateChange(
     (previous, current) {
