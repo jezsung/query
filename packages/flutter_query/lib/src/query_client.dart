@@ -1,5 +1,4 @@
 import 'package:flutter_query/flutter_query.dart';
-import 'package:flutter_query/src/hooks/use_query.dart';
 
 class QueryClient {
   final QueryCache cache = QueryCache();

@@ -1,7 +1,6 @@
 import 'package:flutter/widgets.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:flutter_query/flutter_query.dart';
-import 'package:flutter_query/src/hooks/use_query_client.dart';
 
 enum RefetchBehavior {
   never,
