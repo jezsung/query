@@ -2,6 +2,7 @@ import 'package:flutter_query/flutter_query.dart';
 
 class QueryCache {
   final Map<QueryKey, Query> _queries = <QueryKey, Query>{};
+  final Map<QueryKey, PagedQuery> _pagedQueries = <QueryKey, PagedQuery>{};
 
   List<Query> get queries => _queries.values.toList();
 
@@ -15,6 +16,18 @@ class QueryCache {
     }
 
     query = _queries[key] = Query<T>(key);
+
+    return query;
+  }
+
+  PagedQuery<T, P> buildPagedQuery<T extends Object, P>(QueryKey key) {
+    PagedQuery<T, P>? query = _pagedQueries[key] as PagedQuery<T, P>?;
+
+    if (query != null) {
+      return query;
+    }
+
+    query = _pagedQueries[key] = PagedQuery<T, P>(key);
 
     return query;
   }
