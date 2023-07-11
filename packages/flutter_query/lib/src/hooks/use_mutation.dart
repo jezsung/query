@@ -3,14 +3,18 @@ import 'package:flutter_query/flutter_query.dart';
 
 typedef Mutate<A> = Future<void> Function([A arg]);
 
+typedef MutationCancel = Future<void> Function();
+
 class MutationResult<T, A> {
   MutationResult({
     required this.state,
     required this.mutate,
+    required this.cancel,
   });
 
   final MutationState<T> state;
   final Mutate<A> mutate;
+  final MutationCancel cancel;
 }
 
 MutationResult<T, A> useMutation<T, A>(
@@ -39,5 +43,6 @@ MutationResult<T, A> useMutation<T, A>(
   return MutationResult<T, A>(
     state: stateSnapshot.requireData,
     mutate: mutate,
+    cancel: mutation.cancel,
   );
 }
