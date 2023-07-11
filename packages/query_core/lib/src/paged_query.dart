@@ -179,6 +179,21 @@ class PagedQuery<T, P> {
     }
   }
 
+  void setInitialData(
+    Pages<T> data, [
+    DateTime? updatedAt,
+  ]) {
+    if (state.hasData) {
+      return;
+    }
+
+    state = state.copyWith(
+      status: QueryStatus.success,
+      data: data,
+      dataUpdatedAt: updatedAt ?? clock.now(),
+    );
+  }
+
   bool isStale(Duration duration) {
     if (!state.hasData || state.dataUpdatedAt == null) return true;
 
