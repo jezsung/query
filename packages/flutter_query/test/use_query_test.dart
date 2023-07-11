@@ -346,6 +346,217 @@ void main() {
       expect(fetchCount, 2);
     },
   );
+
+  group(
+    'given initialData is set,',
+    () {
+      testWidgets(
+        'should set status to ${QueryStatus.success} and data to initialData',
+        (tester) async {
+          final initialData = 'initial data';
+
+          final result = await buildHook(
+            (_) => useQuery(
+              'key',
+              (key) async => 'data',
+              initialData: initialData,
+            ),
+            provide: (hookBuilder) => withQueryScope(hookBuilder),
+          );
+
+          expect(
+            result.current.state,
+            QueryState(
+              status: QueryStatus.success,
+              data: initialData,
+              error: null,
+              dataUpdatedAt: clock.now(),
+              errorUpdatedAt: null,
+              isInvalidated: false,
+            ),
+          );
+        },
+      );
+
+      testWidgets(
+        'should refetch immediately when initialDataUpdatedAt is not set',
+        (tester) async {
+          final initialData = 'initial data';
+          final data = 'data';
+          const fetchDuration = Duration(seconds: 3);
+
+          final result = await buildHook(
+            (_) => useQuery<String>(
+              'key',
+              (key) async {
+                await Future.delayed(fetchDuration);
+                return data;
+              },
+              initialData: initialData,
+            ),
+            provide: (hookBuilder) => withQueryScope(hookBuilder),
+          );
+
+          expect(
+            result.current.state,
+            QueryState(
+              status: QueryStatus.success,
+              data: initialData,
+              error: null,
+              dataUpdatedAt: clock.now(),
+              errorUpdatedAt: null,
+              isInvalidated: false,
+            ),
+          );
+
+          await tester.pump();
+
+          expect(
+            result.current.state,
+            QueryState(
+              status: QueryStatus.fetching,
+              data: initialData,
+              error: null,
+              dataUpdatedAt: clock.now(),
+              errorUpdatedAt: null,
+              isInvalidated: false,
+            ),
+          );
+
+          await tester.pump(fetchDuration);
+
+          expect(
+            result.current.state,
+            QueryState(
+              status: QueryStatus.success,
+              data: data,
+              error: null,
+              dataUpdatedAt: clock.now(),
+              errorUpdatedAt: null,
+              isInvalidated: false,
+            ),
+          );
+        },
+      );
+
+      testWidgets(
+        'should NOT refetch when initialDataUpdatedAt is set and data is not stale',
+        (tester) async {
+          final initialData = 'initial data';
+          final initialDataUpdatedAt = clock.ago(minutes: 3);
+          final data = 'data';
+          const fetchDuration = Duration(seconds: 3);
+          const staleDuraiton = Duration(minutes: 5);
+
+          final result = await buildHook(
+            (_) => useQuery<String>(
+              'key',
+              (key) async {
+                await Future.delayed(fetchDuration);
+                return data;
+              },
+              initialData: initialData,
+              initialDataUpdatedAt: initialDataUpdatedAt,
+              staleDuration: staleDuraiton,
+            ),
+            provide: (hookBuilder) => withQueryScope(hookBuilder),
+          );
+
+          expect(
+            result.current.state,
+            QueryState(
+              status: QueryStatus.success,
+              data: initialData,
+              error: null,
+              dataUpdatedAt: initialDataUpdatedAt,
+              errorUpdatedAt: null,
+              isInvalidated: false,
+            ),
+          );
+
+          await tester.pump();
+
+          expect(
+            result.current.state,
+            QueryState(
+              status: QueryStatus.success,
+              data: initialData,
+              error: null,
+              dataUpdatedAt: initialDataUpdatedAt,
+              errorUpdatedAt: null,
+              isInvalidated: false,
+            ),
+          );
+        },
+      );
+
+      testWidgets(
+        'should refetch when initialDataUpdatedAt is set and data is stale',
+        (tester) async {
+          final initialData = 'initial data';
+          final initialDataUpdatedAt = clock.ago(minutes: 3);
+          final data = 'data';
+          const fetchDuration = Duration(seconds: 3);
+          const staleDuraiton = Duration(minutes: 2);
+
+          final result = await buildHook(
+            (_) => useQuery<String>(
+              'key',
+              (key) async {
+                await Future.delayed(fetchDuration);
+                return data;
+              },
+              initialData: initialData,
+              initialDataUpdatedAt: initialDataUpdatedAt,
+              staleDuration: staleDuraiton,
+            ),
+            provide: (hookBuilder) => withQueryScope(hookBuilder),
+          );
+
+          expect(
+            result.current.state,
+            QueryState(
+              status: QueryStatus.success,
+              data: initialData,
+              error: null,
+              dataUpdatedAt: initialDataUpdatedAt,
+              errorUpdatedAt: null,
+              isInvalidated: false,
+            ),
+          );
+
+          await tester.pump();
+
+          expect(
+            result.current.state,
+            QueryState(
+              status: QueryStatus.fetching,
+              data: initialData,
+              error: null,
+              dataUpdatedAt: initialDataUpdatedAt,
+              errorUpdatedAt: null,
+              isInvalidated: false,
+            ),
+          );
+
+          await tester.pump(fetchDuration);
+
+          expect(
+            result.current.state,
+            QueryState(
+              status: QueryStatus.success,
+              data: data,
+              error: null,
+              dataUpdatedAt: clock.now(),
+              errorUpdatedAt: null,
+              isInvalidated: false,
+            ),
+          );
+        },
+      );
+    },
+  );
+
   testWidgets(
     'should populate data with placholder until data is fetched',
     (tester) async {

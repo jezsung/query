@@ -46,6 +46,8 @@ QueryResult<T> useQuery<T>(
   QueryKey key,
   QueryFetcher<T> fetcher, {
   bool enabled = true,
+  T? initialData,
+  DateTime? initialDataUpdatedAt,
   T? placeholder,
   Duration staleDuration = Duration.zero,
   RefetchBehavior refetchOnInit = RefetchBehavior.stale,
@@ -53,7 +55,13 @@ QueryResult<T> useQuery<T>(
 }) {
   final client = useQueryClient();
   final query = useMemoized<Query<T>>(
-    () => client.cache.buildQuery<T>(key),
+    () {
+      final query_ = client.cache.buildQuery<T>(key);
+      if (initialData != null) {
+        query_.setInitialData(initialData, initialDataUpdatedAt);
+      }
+      return query_;
+    },
     [key, client],
   );
   final fetch = useCallback(
