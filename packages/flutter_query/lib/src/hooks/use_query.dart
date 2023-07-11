@@ -12,8 +12,8 @@ typedef Refetch = Future Function();
 
 typedef Cancel = Future Function();
 
-class UseQueryResult<T> {
-  UseQueryResult({
+class QueryResult<T> {
+  QueryResult({
     required this.state,
     required this.refetch,
     required this.cancel,
@@ -42,7 +42,7 @@ class QueryParameter<T> {
   final RefetchBehavior refetchOnResumed;
 }
 
-UseQueryResult<T> useQuery<T>(
+QueryResult<T> useQuery<T>(
   QueryKey key,
   QueryFetcher<T> fetcher, {
   T? placeholder,
@@ -134,7 +134,7 @@ UseQueryResult<T> useQuery<T>(
     },
   );
 
-  return UseQueryResult(
+  return QueryResult(
     state: stateSnapshot.requireData.copyWith(
       data: stateSnapshot.requireData.data ?? placeholder,
     ),
