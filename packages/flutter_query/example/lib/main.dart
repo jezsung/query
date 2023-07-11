@@ -3,8 +3,7 @@ import 'package:flutter_query/flutter_query.dart';
 
 void main() {
   runApp(
-    QueryClientProvider(
-      create: (context) => QueryClient(),
+    QueryScope(
       child: const App(),
     ),
   );

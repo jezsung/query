@@ -4,20 +4,11 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:flutter_query/flutter_query.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-Widget withQueryClientProvider(Widget widget, [QueryClient? client]) {
-  if (client != null) {
-    return QueryClientProvider.value(
-      key: Key('query_client_provider'),
-      value: client,
-      child: widget,
-    );
-  } else {
-    return QueryClientProvider(
-      key: Key('query_client_provider'),
-      create: (context) => QueryClient(),
-      child: widget,
-    );
-  }
+Widget withQueryScope(Widget widget) {
+  return QueryScope(
+    key: Key('query_scope'),
+    child: widget,
+  );
 }
 
 void main() {
@@ -29,7 +20,7 @@ void main() {
       const fetchDuration = Duration(seconds: 3);
       late QueryState<String> state;
 
-      await tester.pumpWidget(withQueryClientProvider(
+      await tester.pumpWidget(withQueryScope(
         HookBuilder(
           builder: (context) {
             final result = useQuery<String>(
@@ -97,7 +88,7 @@ void main() {
       const fetchDuration = Duration(seconds: 3);
       late QueryState<String> state;
 
-      await tester.pumpWidget(withQueryClientProvider(
+      await tester.pumpWidget(withQueryScope(
         HookBuilder(
           builder: (context) {
             final result = useQuery<String>(
@@ -185,7 +176,7 @@ void main() {
         },
       );
 
-      await tester.pumpWidget(withQueryClientProvider(hookBuilder));
+      await tester.pumpWidget(withQueryScope(hookBuilder));
 
       expect(
         state,
@@ -276,7 +267,7 @@ void main() {
             },
           );
 
-          await tester.pumpWidget(withQueryClientProvider(
+          await tester.pumpWidget(withQueryScope(
             Column(
               key: Key('column'),
               children: [hook1],
@@ -289,7 +280,7 @@ void main() {
 
           await tester.pump(staleDuration);
 
-          await tester.pumpWidget(withQueryClientProvider(
+          await tester.pumpWidget(withQueryScope(
             Column(
               key: Key('column'),
               children: [hook1, hook2],
@@ -369,7 +360,7 @@ void main() {
             },
           );
 
-          await tester.pumpWidget(withQueryClientProvider(
+          await tester.pumpWidget(withQueryScope(
             Column(
               key: Key('column'),
               children: [hook1],
@@ -382,7 +373,7 @@ void main() {
 
           await tester.pump(staleDuration);
 
-          await tester.pumpWidget(withQueryClientProvider(
+          await tester.pumpWidget(withQueryScope(
             Column(
               key: Key('column'),
               children: [hook1, hook2],
@@ -476,7 +467,7 @@ void main() {
             },
           );
 
-          await tester.pumpWidget(withQueryClientProvider(
+          await tester.pumpWidget(withQueryScope(
             Column(
               key: Key('column'),
               children: [hook1],
@@ -487,7 +478,7 @@ void main() {
 
           dataUpdatedAt = clock.now();
 
-          await tester.pumpWidget(withQueryClientProvider(
+          await tester.pumpWidget(withQueryScope(
             Column(
               key: Key('column'),
               children: [hook1, hook2],
@@ -570,7 +561,7 @@ void main() {
             },
           );
 
-          await tester.pumpWidget(withQueryClientProvider(hook));
+          await tester.pumpWidget(withQueryScope(hook));
 
           await tester.pump(fetchDuration);
 
@@ -653,7 +644,7 @@ void main() {
             },
           );
 
-          await tester.pumpWidget(withQueryClientProvider(hook));
+          await tester.pumpWidget(withQueryScope(hook));
 
           await tester.pump(fetchDuration);
 
@@ -736,7 +727,7 @@ void main() {
             },
           );
 
-          await tester.pumpWidget(withQueryClientProvider(hook));
+          await tester.pumpWidget(withQueryScope(hook));
 
           await tester.pump(fetchDuration);
 
@@ -800,7 +791,7 @@ void main() {
       late QueryState<String> state;
       late Cancel cancel;
 
-      await tester.pumpWidget(withQueryClientProvider(
+      await tester.pumpWidget(withQueryScope(
         HookBuilder(
           builder: (context) {
             final result = useQuery<String>(
@@ -873,7 +864,7 @@ void main() {
       late QueryState<String> state;
       late Refetch refetch;
 
-      await tester.pumpWidget(withQueryClientProvider(
+      await tester.pumpWidget(withQueryScope(
         HookBuilder(
           builder: (context) {
             final result = useQuery<String>(
@@ -1023,7 +1014,7 @@ void main() {
         await tester.tap(find.byType(TextButton));
       }
 
-      await tester.pumpWidget(withQueryClientProvider(widget));
+      await tester.pumpWidget(withQueryScope(widget));
       await tester.pump(fetchDuration);
       dataUpdatedAt = clock.now();
       await navigate();
@@ -1085,7 +1076,7 @@ void main() {
           late QueryState<String> state;
           late DateTime dataUpdatedAt;
 
-          await tester.pumpWidget(withQueryClientProvider(
+          await tester.pumpWidget(withQueryScope(
             HookBuilder(
               builder: (context) {
                 queryClient = useQueryClient();
@@ -1175,7 +1166,7 @@ void main() {
           late QueryClient queryClient;
           late QueryState<String> state;
 
-          await tester.pumpWidget(withQueryClientProvider(
+          await tester.pumpWidget(withQueryScope(
             HookBuilder(
               builder: (context) {
                 queryClient = useQueryClient();
