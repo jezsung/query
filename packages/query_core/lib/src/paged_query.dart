@@ -6,7 +6,7 @@ typedef PagedQueryFetcher<T, P> = Future<T> Function(QueryKey key, P? param);
 
 typedef PagedQueryParamBuilder<T, P> = P? Function(Pages<T> pages);
 
-class PagedQuery<T, P> {
+class PagedQuery<T extends Object, P> {
   PagedQuery(this.key) : _state = PagedQueryState<T>();
 
   final QueryKey key;
