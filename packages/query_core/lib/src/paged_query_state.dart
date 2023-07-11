@@ -29,6 +29,9 @@ class PagedQueryState<T> extends QueryState<Pages<T>> {
   Pages<T> get pages => data as Pages<T>;
 
   @override
+  bool get hasData => pages.isNotEmpty;
+
+  @override
   PagedQueryState<T> copyWith({
     QueryStatus? status,
     Pages<T>? data,
