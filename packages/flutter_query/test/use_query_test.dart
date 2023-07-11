@@ -789,7 +789,7 @@ void main() {
       const fetchDuration = Duration(seconds: 3);
 
       late QueryState<String> state;
-      late Cancel cancel;
+      late QueryCancel cancel;
 
       await tester.pumpWidget(withQueryScope(
         HookBuilder(
@@ -862,7 +862,7 @@ void main() {
       final data = 'data';
       const fetchDuration = Duration(seconds: 3);
       late QueryState<String> state;
-      late Refetch refetch;
+      late QueryRefetch refetch;
 
       await tester.pumpWidget(withQueryScope(
         HookBuilder(
