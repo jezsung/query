@@ -6,7 +6,7 @@ import 'package:equatable/equatable.dart';
 
 part 'mutation_state.dart';
 
-typedef Mutator<T, P> = Future<T> Function(P? param);
+typedef Mutator<T, A> = Future<T> Function(A? arg);
 
 enum MutationStatus {
   idle,
@@ -25,7 +25,7 @@ extension MutationStatusExtension on MutationStatus {
   bool get isFailure => this == MutationStatus.failure;
 }
 
-class Mutation<T, P> {
+class Mutation<T, A> {
   Mutation() : _state = MutationState<T>();
 
   final _stateController = StreamController<MutationState<T>>.broadcast();
@@ -41,8 +41,8 @@ class Mutation<T, P> {
   CancelableOperation<T>? _cancelableOperation;
 
   Future mutate({
-    required Mutator<T, P> mutator,
-    required P? param,
+    required Mutator<T, A> mutator,
+    required A? arg,
   }) async {
     if (state.status.isMutating) return;
 
@@ -51,7 +51,7 @@ class Mutation<T, P> {
     state = state.copyWith(status: MutationStatus.mutating);
 
     try {
-      _cancelableOperation = CancelableOperation<T>.fromFuture(mutator(param));
+      _cancelableOperation = CancelableOperation<T>.fromFuture(mutator(arg));
 
       final data = await _cancelableOperation!.valueOrCancellation();
 
