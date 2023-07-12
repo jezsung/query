@@ -66,9 +66,18 @@ class QueryClient {
 
   Future cancel(QueryKey key) async {
     final query = cache.getQuery(key);
-    if (query == null) return;
+    final pagedQuery = cache.getPagedQuery(key);
 
-    await query.cancel();
+    assert(
+      !(query != null && pagedQuery != null),
+      'Duplicate keys are found for both $Query and $PagedQuery',
+    );
+
+    if (query != null) {
+      await query.cancel();
+    } else if (pagedQuery != null) {
+      await pagedQuery.cancel();
+    }
   }
 
   Future close() async {
