@@ -7,7 +7,10 @@ class QueryCache {
   List<Query> get queries => _queries.values.toList();
 
   Query<T> buildQuery<T>(QueryKey key) {
-    assert(_queries[key] is! PagedQuery);
+    assert(
+      _pagedQueries[key] == null,
+      'The key $key is already used by a $PagedQuery',
+    );
 
     Query<T>? query = _queries[key] as Query<T>?;
 
@@ -21,6 +24,11 @@ class QueryCache {
   }
 
   PagedQuery<T, P> buildPagedQuery<T extends Object, P>(QueryKey key) {
+    assert(
+      _queries[key] == null,
+      'The key $key is already used by a $PagedQuery',
+    );
+
     PagedQuery<T, P>? query = _pagedQueries[key] as PagedQuery<T, P>?;
 
     if (query != null) {
