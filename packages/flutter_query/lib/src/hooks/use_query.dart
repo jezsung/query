@@ -118,8 +118,14 @@ QueryResult<T> useQuery<T>(
   );
 
   final stateSnapshot = useStream<QueryState<T>>(
-    query.stream,
-    initialData: query.state,
+    query.stream.map(
+      (state) => state.copyWith(
+        data: state.hasData ? state.data : placeholder,
+      ),
+    ),
+    initialData: query.state.copyWith(
+      data: query.state.hasData ? query.state.data : placeholder,
+    ),
     preserveState: false,
   );
 
@@ -144,9 +150,7 @@ QueryResult<T> useQuery<T>(
   );
 
   return QueryResult(
-    state: stateSnapshot.requireData.copyWith(
-      data: stateSnapshot.requireData.data ?? placeholder,
-    ),
+    state: stateSnapshot.requireData,
     refetch: fetch,
     cancel: query.cancel,
   );
