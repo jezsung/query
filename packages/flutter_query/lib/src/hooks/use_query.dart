@@ -114,7 +114,7 @@ QueryResult<T> useQuery<T>(
         client.parameters.remove(parameter);
       };
     },
-    [parameter],
+    [client, parameter],
   );
 
   final stateSnapshot = useStream<QueryState<T>>(
