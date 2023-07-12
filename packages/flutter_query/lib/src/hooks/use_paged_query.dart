@@ -16,6 +16,34 @@ class PagedQueryResult<T, P> {
   final Future<void> Function() fetchPreviousPage;
 }
 
+class PagedQueryParameter<T extends Object, P> {
+  PagedQueryParameter({
+    required this.key,
+    required this.fetcher,
+    required this.nextPageParamBuilder,
+    required this.previousPageParamBuilder,
+    required this.enabled,
+    required this.initialData,
+    required this.initialDataUpdatedAt,
+    required this.placeholder,
+    required this.staleDuration,
+    required this.refetchOnInit,
+    required this.refetchOnResumed,
+  });
+
+  final QueryKey key;
+  final PagedQueryFetcher<T, P> fetcher;
+  final PagedQueryParamBuilder<T, P>? nextPageParamBuilder;
+  final PagedQueryParamBuilder<T, P>? previousPageParamBuilder;
+  final bool enabled;
+  final Pages<T>? initialData;
+  final DateTime? initialDataUpdatedAt;
+  final Pages<T>? placeholder;
+  final Duration staleDuration;
+  final RefetchBehavior refetchOnInit;
+  final RefetchBehavior refetchOnResumed;
+}
+
 PagedQueryResult<T, P> usePagedQuery<T extends Object, P>(
   QueryKey key,
   PagedQueryFetcher<T, P> fetcher, {
@@ -89,6 +117,44 @@ PagedQueryResult<T, P> usePagedQuery<T extends Object, P>(
       }
     },
     [fetch],
+  );
+
+  final parameter = useMemoized<PagedQueryParameter<T, P>>(
+    () => PagedQueryParameter<T, P>(
+      key: key,
+      fetcher: fetcher,
+      nextPageParamBuilder: nextPageParamBuilder,
+      previousPageParamBuilder: previousPageParamBuilder,
+      enabled: enabled,
+      initialData: initialData,
+      initialDataUpdatedAt: initialDataUpdatedAt,
+      placeholder: placeholder,
+      staleDuration: staleDuration,
+      refetchOnInit: refetchOnInit,
+      refetchOnResumed: refetchOnResumed,
+    ),
+    [
+      key,
+      fetcher,
+      nextPageParamBuilder,
+      previousPageParamBuilder,
+      enabled,
+      initialData,
+      initialDataUpdatedAt,
+      placeholder,
+      staleDuration,
+      refetchOnInit,
+      refetchOnResumed,
+    ],
+  );
+  useEffect(
+    () {
+      client.pagedQueryParameters.add(parameter);
+      return () {
+        client.pagedQueryParameters.remove(parameter);
+      };
+    },
+    [client, parameter],
   );
 
   final stateSnapshot = useStream<PagedQueryState<T>>(
