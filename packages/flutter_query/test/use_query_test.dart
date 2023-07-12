@@ -1247,6 +1247,7 @@ void main() {
 
       await cancel();
       await tester.pump();
+      await tester.pump();
 
       expect(
         state,
@@ -1621,6 +1622,7 @@ void main() {
           );
 
           await queryClient.cancel(key);
+          await tester.pump();
           await tester.pump();
 
           expect(
