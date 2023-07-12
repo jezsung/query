@@ -46,6 +46,10 @@ class QueryCache {
     return _queries[key] as Query<T>?;
   }
 
+  PagedQuery<T, P>? getPagedQuery<T extends Object, P>(QueryKey key) {
+    return _pagedQueries[key] as PagedQuery<T, P>?;
+  }
+
   bool exist(QueryKey key) {
     return _queries[key] != null;
   }
