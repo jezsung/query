@@ -179,6 +179,12 @@ class PagedQuery<T extends Object, P> {
     }
   }
 
+  Future<void> cancel() async {
+    if (!state.status.isFetching) return;
+
+    await _cancelableOperation?.cancel();
+  }
+
   void setInitialData(
     Pages<T> data, [
     DateTime? updatedAt,
