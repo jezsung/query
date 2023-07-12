@@ -54,7 +54,7 @@ class Query<T> {
 
     if (!isStale(staleDuration) && !state.isInvalidated) return;
 
-    _stateBeforeFetching = state.copyWith();
+    QueryState<T> stateBeforeFetching = state.copyWith();
 
     state = state.copyWith(
       status: QueryStatus.fetching,
@@ -66,13 +66,16 @@ class Query<T> {
 
       final data = await _cancelableOperation!.valueOrCancellation();
 
-      if (!_cancelableOperation!.isCanceled) {
-        state = state.copyWith(
-          status: QueryStatus.success,
-          data: data,
-          dataUpdatedAt: clock.now(),
-        );
+      if (_cancelableOperation!.isCanceled) {
+        state = stateBeforeFetching;
+        return;
       }
+
+      state = state.copyWith(
+        status: QueryStatus.success,
+        data: data,
+        dataUpdatedAt: clock.now(),
+      );
     } on Exception catch (error) {
       state = state.copyWith(
         status: QueryStatus.failure,
@@ -82,13 +85,8 @@ class Query<T> {
     }
   }
 
-  QueryState<T>? _stateBeforeFetching;
-
   Future cancel() async {
     if (!state.status.isFetching) return;
-    state = _stateBeforeFetching!;
-
-    _stateBeforeFetching = null;
 
     await _cancelableOperation?.cancel();
   }
