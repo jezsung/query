@@ -1,3 +1,7 @@
+## 0.3.1 (2023-07-15)
+
+- Fix refetching on resumed when enabled is false
+
 ## 0.3.0 (2023-07-12)
 
 - Dropped widget-based API
