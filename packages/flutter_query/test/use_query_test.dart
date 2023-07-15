@@ -347,6 +347,56 @@ void main() {
     },
   );
 
+  testWidgets(
+    'refetches manually when enabled is false',
+    (tester) async {
+      final data = 42;
+      const fetchDuration = Duration(seconds: 3);
+
+      final result = await buildHook<QueryResult<int>, bool>(
+        (_) => useQuery(
+          'key',
+          (key) async {
+            await Future.delayed(fetchDuration);
+            return data;
+          },
+          enabled: false,
+        ),
+        provide: (hookBuilder) => withQueryScope(hookBuilder),
+      );
+
+      await tester.pump(fetchDuration);
+
+      await act(() => result.current.refetch());
+
+      expect(
+        result.current.state,
+        QueryState<int>(
+          status: QueryStatus.fetching,
+          data: null,
+          error: null,
+          dataUpdatedAt: null,
+          errorUpdatedAt: null,
+          isInvalidated: false,
+        ),
+      );
+
+      await tester.pump(fetchDuration);
+
+      expect(
+        result.current.state,
+        QueryState<int>(
+          status: QueryStatus.success,
+          data: data,
+          error: null,
+          dataUpdatedAt: clock.now(),
+          errorUpdatedAt: null,
+          isInvalidated: false,
+        ),
+      );
+    },
+  );
+
   group(
     'given initialData is set,',
     () {
