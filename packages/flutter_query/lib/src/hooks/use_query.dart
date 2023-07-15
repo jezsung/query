@@ -149,7 +149,7 @@ QueryResult<T> useQuery<T>(
     },
   );
 
-  return QueryResult(
+  return QueryResult<T>(
     state: stateSnapshot.requireData,
     refetch: fetch,
     cancel: query.cancel,
