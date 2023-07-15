@@ -66,14 +66,12 @@ QueryResult<T> useQuery<T>(
   );
   final fetch = useCallback(
     ({bool ignoreStaleness = false}) async {
-      if (!enabled) return;
-
       await query.fetch(
         fetcher: fetcher,
         staleDuration: ignoreStaleness ? Duration.zero : staleDuration,
       );
     },
-    [query, enabled],
+    [query],
   );
   final refetch = useCallback(
     (RefetchBehavior behavior) async {
