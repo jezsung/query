@@ -323,6 +323,35 @@ void main() {
   );
 
   testWidgets(
+    'does NOT refetch on resumed when enabled is false',
+    (tester) async {
+      const fetchDuration = Duration(seconds: 3);
+
+      final result = await buildHook(
+        (props) => usePagedQuery<String, String>(
+          'key',
+          (key, param) async {
+            await Future.delayed(fetchDuration);
+            return 'data';
+          },
+          nextPageParamBuilder: (pages) {
+            return 'data';
+          },
+          enabled: false,
+        ),
+        provide: (hookBuilder) => withQueryScope(hookBuilder),
+      );
+
+      expect(result.current.state.status, QueryStatus.idle);
+
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      await tester.pump(fetchDuration);
+
+      expect(result.current.state.status, QueryStatus.idle);
+    },
+  );
+
+  testWidgets(
     'fetches when enabled is changed from false to true',
     (tester) async {
       const fetchDuration = Duration(seconds: 3);

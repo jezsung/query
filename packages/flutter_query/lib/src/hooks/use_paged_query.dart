@@ -183,6 +183,8 @@ PagedQueryResult<T, P> usePagedQuery<T extends Object, P>(
 
   useOnAppLifecycleStateChange(
     (previous, current) {
+      if (!enabled) return;
+
       if (current == AppLifecycleState.resumed) {
         refetch(refetchOnResumed);
       }
