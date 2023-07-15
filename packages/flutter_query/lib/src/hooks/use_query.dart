@@ -143,6 +143,8 @@ QueryResult<T> useQuery<T>(
 
   useOnAppLifecycleStateChange(
     (previous, current) {
+      if (!enabled) return;
+
       if (current == AppLifecycleState.resumed) {
         refetch(refetchOnResumed);
       }
