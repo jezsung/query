@@ -2,14 +2,17 @@ part of 'query.dart';
 
 typedef Pages<T> = List<T>;
 
-typedef PagedQueryFetcher<T, P> = Future<T> Function(QueryKey key, P? param);
+typedef PagedQueryFetcher<T, K, P> = Future<T> Function(
+  QueryKey<K> key,
+  P? param,
+);
 
 typedef PagedQueryParamBuilder<T, P> = P? Function(Pages<T> pages);
 
-class PagedQuery<T extends Object, P> {
+class PagedQuery<T extends Object, K, P> {
   PagedQuery(this.key) : _state = PagedQueryState<T>();
 
-  final QueryKey key;
+  final QueryKey<K> key;
 
   final _stateController = StreamController<PagedQueryState<T>>.broadcast();
   Stream<PagedQueryState<T>> get stream => _stateController.stream;
@@ -24,7 +27,7 @@ class PagedQuery<T extends Object, P> {
   CancelableOperation<T>? _cancelableOperation;
 
   Future fetch({
-    required PagedQueryFetcher<T, P> fetcher,
+    required PagedQueryFetcher<T, K, P> fetcher,
     required PagedQueryParamBuilder<T, P>? nextPageParamBuilder,
     required PagedQueryParamBuilder<T, P>? previousPageParamBuilder,
     required Duration staleDuration,
@@ -72,7 +75,7 @@ class PagedQuery<T extends Object, P> {
   }
 
   Future fetchNextPage({
-    required PagedQueryFetcher<T, P> fetcher,
+    required PagedQueryFetcher<T, K, P> fetcher,
     required PagedQueryParamBuilder<T, P> nextPageParamBuilder,
     required PagedQueryParamBuilder<T, P>? previousPageParamBuilder,
   }) async {
@@ -126,7 +129,7 @@ class PagedQuery<T extends Object, P> {
   }
 
   Future fetchPreviousPage({
-    required PagedQueryFetcher<T, P> fetcher,
+    required PagedQueryFetcher<T, K, P> fetcher,
     required PagedQueryParamBuilder<T, P>? nextPageParamBuilder,
     required PagedQueryParamBuilder<T, P> previousPageParamBuilder,
   }) async {

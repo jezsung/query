@@ -25,14 +25,14 @@ extension QueryStatusExtension on QueryStatus {
   bool get isFailure => this == QueryStatus.failure;
 }
 
-typedef QueryKey = String;
+typedef QueryKey<K> = K;
 
-typedef QueryFetcher<Data> = Future<Data> Function(QueryKey key);
+typedef QueryFetcher<T, K> = Future<T> Function(K key);
 
-class Query<T> {
+class Query<T, K> {
   Query(this.key) : _state = QueryState<T>();
 
-  final QueryKey key;
+  final QueryKey<K> key;
 
   final _stateController = StreamController<QueryState<T>>.broadcast();
   Stream<QueryState<T>> get stream => _stateController.stream;
@@ -47,7 +47,7 @@ class Query<T> {
   CancelableOperation<T>? _cancelableOperation;
 
   Future fetch({
-    required QueryFetcher<T> fetcher,
+    required QueryFetcher<T, K> fetcher,
     Duration staleDuration = Duration.zero,
   }) async {
     if (state.status.isFetching) return;
