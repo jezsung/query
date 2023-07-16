@@ -24,7 +24,7 @@ void main() {
       await tester.pumpWidget(withQueryScope(
         HookBuilder(
           builder: (context) {
-            final result = useQuery<String>(
+            final result = useQuery(
               key,
               (key) async {
                 await Future.delayed(fetchDuration);
@@ -92,7 +92,7 @@ void main() {
       await tester.pumpWidget(withQueryScope(
         HookBuilder(
           builder: (context) {
-            final result = useQuery<String>(
+            final result = useQuery<String, String>(
               key,
               (key) async {
                 await Future.delayed(fetchDuration);
@@ -436,7 +436,7 @@ void main() {
           const fetchDuration = Duration(seconds: 3);
 
           final result = await buildHook(
-            (_) => useQuery<String>(
+            (_) => useQuery(
               'key',
               (key) async {
                 await Future.delayed(fetchDuration);
@@ -499,7 +499,7 @@ void main() {
           const staleDuraiton = Duration(minutes: 5);
 
           final result = await buildHook(
-            (_) => useQuery<String>(
+            (_) => useQuery(
               'key',
               (key) async {
                 await Future.delayed(fetchDuration);
@@ -550,7 +550,7 @@ void main() {
           const staleDuraiton = Duration(minutes: 2);
 
           final result = await buildHook(
-            (_) => useQuery<String>(
+            (_) => useQuery(
               'key',
               (key) async {
                 await Future.delayed(fetchDuration);
@@ -620,7 +620,7 @@ void main() {
       final hookBuilder = HookBuilder(
         key: Key('hook_builder'),
         builder: (context) {
-          final result = useQuery<String>(
+          final result = useQuery(
             key,
             (key) async {
               await Future.delayed(fetchDuration);
@@ -696,7 +696,7 @@ void main() {
           final hook1 = HookBuilder(
             key: Key('hook_builder1'),
             builder: (context) {
-              useQuery<String>(
+              useQuery(
                 key,
                 (key) async {
                   await Future.delayed(fetchDuration);
@@ -710,7 +710,7 @@ void main() {
           final hook2 = HookBuilder(
             key: Key('hook_builder2'),
             builder: (context) {
-              final result = useQuery<String>(
+              final result = useQuery(
                 key,
                 (key) async {
                   await Future.delayed(fetchDuration);
@@ -788,7 +788,7 @@ void main() {
           final hook1 = HookBuilder(
             key: Key('hook_builder1'),
             builder: (context) {
-              useQuery<String>(
+              useQuery(
                 key,
                 (key) async {
                   await Future.delayed(fetchDuration);
@@ -803,7 +803,7 @@ void main() {
           final hook2 = HookBuilder(
             key: Key('hook_builder2'),
             builder: (context) {
-              final result = useQuery<String>(
+              final result = useQuery(
                 key,
                 (key) async {
                   await Future.delayed(fetchDuration);
@@ -895,7 +895,7 @@ void main() {
           final hook1 = HookBuilder(
             key: Key('hook_builder1'),
             builder: (context) {
-              useQuery<String>(
+              useQuery(
                 key,
                 (key) async {
                   await Future.delayed(fetchDuration);
@@ -910,7 +910,7 @@ void main() {
           final hook2 = HookBuilder(
             key: Key('hook_builder2'),
             builder: (context) {
-              final result = useQuery<String>(
+              final result = useQuery(
                 key,
                 (key) async {
                   await Future.delayed(fetchDuration);
@@ -1004,7 +1004,7 @@ void main() {
           final hook = HookBuilder(
             key: Key('hook_builder'),
             builder: (context) {
-              final result = useQuery<String>(
+              final result = useQuery(
                 key,
                 (key) async {
                   await Future.delayed(fetchDuration);
@@ -1087,7 +1087,7 @@ void main() {
           final hook = HookBuilder(
             key: Key('hook_builder'),
             builder: (context) {
-              final result = useQuery<String>(
+              final result = useQuery(
                 key,
                 (key) async {
                   await Future.delayed(fetchDuration);
@@ -1170,7 +1170,7 @@ void main() {
           final hook = HookBuilder(
             key: Key('hook_builder'),
             builder: (context) {
-              final result = useQuery<String>(
+              final result = useQuery(
                 key,
                 (key) async {
                   await Future.delayed(fetchDuration);
@@ -1253,7 +1253,7 @@ void main() {
       await tester.pumpWidget(withQueryScope(
         HookBuilder(
           builder: (context) {
-            final result = useQuery<String>(
+            final result = useQuery(
               key,
               (key) async {
                 await Future.delayed(fetchDuration);
@@ -1327,7 +1327,7 @@ void main() {
       await tester.pumpWidget(withQueryScope(
         HookBuilder(
           builder: (context) {
-            final result = useQuery<String>(
+            final result = useQuery(
               key,
               (key) async {
                 await Future.delayed(fetchDuration);
@@ -1540,7 +1540,7 @@ void main() {
             HookBuilder(
               builder: (context) {
                 queryClient = useQueryClient();
-                final result = useQuery<String>(
+                final result = useQuery(
                   key,
                   (key) async {
                     await Future.delayed(fetchDuration);
@@ -1630,7 +1630,7 @@ void main() {
             HookBuilder(
               builder: (context) {
                 queryClient = useQueryClient();
-                final result = useQuery<String>(
+                final result = useQuery(
                   key,
                   (key) async {
                     await Future.delayed(fetchDuration);

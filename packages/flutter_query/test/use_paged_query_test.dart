@@ -20,7 +20,7 @@ void main() {
       const fetchDuration = Duration(seconds: 3);
 
       final result = await buildHook(
-        (props) => usePagedQuery<String, Never>(
+        (props) => usePagedQuery(
           'key',
           (key, _) async {
             await Future.delayed(fetchDuration);
@@ -92,7 +92,7 @@ void main() {
       const fetchDuration = Duration(seconds: 3);
 
       final result = await buildHook(
-        (props) => usePagedQuery<String, String>(
+        (props) => usePagedQuery(
           'key',
           (key, param) async {
             await Future.delayed(fetchDuration);
@@ -154,7 +154,7 @@ void main() {
       late Object? initialParam;
 
       await buildHook(
-        (props) => usePagedQuery<String, Object?>(
+        (props) => usePagedQuery(
           'key',
           (key, param) async {
             initialParam = param;
@@ -175,7 +175,7 @@ void main() {
       late String receivedParam;
 
       final result = await buildHook(
-        (props) => usePagedQuery<String, String>(
+        (props) => usePagedQuery<String, String, String>(
           'key',
           (key, param) async {
             if (param != null) {
@@ -200,7 +200,7 @@ void main() {
     'hasNextPage is true when nextPageParam returns value',
     (tester) async {
       final result = await buildHook(
-        (props) => usePagedQuery<String, String>(
+        (props) => usePagedQuery<String, String, String>(
           'key',
           (key, param) async {
             return 'data';
@@ -222,7 +222,7 @@ void main() {
     'hasNextPage is false when nextPageParam returns null',
     (tester) async {
       final result = await buildHook(
-        (props) => usePagedQuery<String, String>(
+        (props) => usePagedQuery<String, String, String>(
           'key',
           (key, param) async {
             return 'data';
@@ -246,7 +246,7 @@ void main() {
       const fetchDuration = Duration(seconds: 3);
 
       final result = await buildHook(
-        (props) => usePagedQuery<String, String>(
+        (props) => usePagedQuery<String, String, String>(
           'key',
           (key, param) async {
             await Future.delayed(fetchDuration);
@@ -271,7 +271,7 @@ void main() {
       const fetchDuration = Duration(seconds: 3);
 
       final result = await buildHook(
-        (props) => usePagedQuery<String, String>(
+        (props) => usePagedQuery<String, String, String>(
           'key',
           (key, param) async {
             await Future.delayed(fetchDuration);
@@ -300,7 +300,7 @@ void main() {
       const fetchDuration = Duration(seconds: 3);
 
       final result = await buildHook(
-        (props) => usePagedQuery<String, String>(
+        (props) => usePagedQuery<String, String, String>(
           'key',
           (key, param) async {
             await Future.delayed(fetchDuration);
@@ -328,7 +328,7 @@ void main() {
       const fetchDuration = Duration(seconds: 3);
 
       final result = await buildHook(
-        (props) => usePagedQuery<String, String>(
+        (props) => usePagedQuery<String, String, String>(
           'key',
           (key, param) async {
             await Future.delayed(fetchDuration);
@@ -357,7 +357,7 @@ void main() {
       const fetchDuration = Duration(seconds: 3);
 
       final result = await buildHook<PagedQueryResult<String, String>, bool>(
-        (enabled) => usePagedQuery<String, String>(
+        (enabled) => usePagedQuery<String, String, String>(
           'key',
           (key, param) async {
             await Future.delayed(fetchDuration);
@@ -397,7 +397,7 @@ void main() {
 
           final result =
               await buildHook<PagedQueryResult<String, String>, bool>(
-            (_) => usePagedQuery<String, String>(
+            (_) => usePagedQuery<String, String, String>(
               'key',
               (key, param) async {
                 await Future.delayed(fetchDuration);
@@ -428,7 +428,7 @@ void main() {
 
           final result =
               await buildHook<PagedQueryResult<String, String>, bool>(
-            (_) => usePagedQuery<String, String>(
+            (_) => usePagedQuery<String, String, String>(
               'key',
               (key, param) async {
                 await Future.delayed(fetchDuration);
@@ -467,7 +467,7 @@ void main() {
 
           final result =
               await buildHook<PagedQueryResult<String, String>, bool>(
-            (_) => usePagedQuery<String, String>(
+            (_) => usePagedQuery<String, String, String>(
               'key',
               (key, param) async {
                 await Future.delayed(fetchDuration);
@@ -502,7 +502,7 @@ void main() {
 
           final result =
               await buildHook<PagedQueryResult<String, String>, bool>(
-            (_) => usePagedQuery<String, String>(
+            (_) => usePagedQuery<String, String, String>(
               'key',
               (key, param) async {
                 await Future.delayed(fetchDuration);
@@ -546,7 +546,7 @@ void main() {
 
           final result =
               await buildHook<PagedQueryResult<String, String>, bool>(
-            (_) => usePagedQuery<String, String>(
+            (_) => usePagedQuery<String, String, String>(
               'key',
               (key, param) async {
                 await Future.delayed(fetchDuration);

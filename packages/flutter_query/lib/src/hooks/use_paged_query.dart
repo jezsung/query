@@ -16,7 +16,7 @@ class PagedQueryResult<T, P> {
   final Future<void> Function() fetchPreviousPage;
 }
 
-class PagedQueryParameter<T extends Object, P> {
+class PagedQueryParameter<T extends Object, K, P> {
   PagedQueryParameter({
     required this.key,
     required this.fetcher,
@@ -32,7 +32,7 @@ class PagedQueryParameter<T extends Object, P> {
   });
 
   final QueryKey key;
-  final PagedQueryFetcher<T, P> fetcher;
+  final PagedQueryFetcher<T, K, P> fetcher;
   final PagedQueryParamBuilder<T, P>? nextPageParamBuilder;
   final PagedQueryParamBuilder<T, P>? previousPageParamBuilder;
   final bool enabled;
@@ -44,9 +44,9 @@ class PagedQueryParameter<T extends Object, P> {
   final RefetchBehavior refetchOnResumed;
 }
 
-PagedQueryResult<T, P> usePagedQuery<T extends Object, P>(
+PagedQueryResult<T, P> usePagedQuery<T extends Object, K, P>(
   QueryKey key,
-  PagedQueryFetcher<T, P> fetcher, {
+  PagedQueryFetcher<T, K, P> fetcher, {
   PagedQueryParamBuilder<T, P>? nextPageParamBuilder,
   PagedQueryParamBuilder<T, P>? previousPageParamBuilder,
   bool enabled = true,
@@ -58,9 +58,9 @@ PagedQueryResult<T, P> usePagedQuery<T extends Object, P>(
   RefetchBehavior refetchOnResumed = RefetchBehavior.stale,
 }) {
   final client = useQueryClient();
-  final query = useMemoized<PagedQuery<T, P>>(
+  final query = useMemoized<PagedQuery<T, K, P>>(
     () {
-      final query_ = client.cache.buildPagedQuery<T, P>(key);
+      final query_ = client.cache.buildPagedQuery<T, K, P>(key);
       if (initialData != null) {
         query_.setInitialData(initialData, initialDataUpdatedAt);
       }
@@ -119,8 +119,8 @@ PagedQueryResult<T, P> usePagedQuery<T extends Object, P>(
     [fetch],
   );
 
-  final parameter = useMemoized<PagedQueryParameter<T, P>>(
-    () => PagedQueryParameter<T, P>(
+  final parameter = useMemoized<PagedQueryParameter<T, K, P>>(
+    () => PagedQueryParameter<T, K, P>(
       key: key,
       fetcher: fetcher,
       nextPageParamBuilder: nextPageParamBuilder,

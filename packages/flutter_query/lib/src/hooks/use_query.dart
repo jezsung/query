@@ -24,7 +24,7 @@ class QueryResult<T> {
   final QueryCancel cancel;
 }
 
-class QueryParameter<T> {
+class QueryParameter<T, K> {
   QueryParameter({
     required this.key,
     required this.fetcher,
@@ -35,16 +35,16 @@ class QueryParameter<T> {
   });
 
   final QueryKey key;
-  final QueryFetcher<T> fetcher;
+  final QueryFetcher<T, K> fetcher;
   final T? placeholder;
   final Duration staleDuration;
   final RefetchBehavior refetchOnInit;
   final RefetchBehavior refetchOnResumed;
 }
 
-QueryResult<T> useQuery<T>(
-  QueryKey key,
-  QueryFetcher<T> fetcher, {
+QueryResult<T> useQuery<T, K>(
+  QueryKey<K> key,
+  QueryFetcher<T, K> fetcher, {
   bool enabled = true,
   T? initialData,
   DateTime? initialDataUpdatedAt,
@@ -54,12 +54,14 @@ QueryResult<T> useQuery<T>(
   RefetchBehavior refetchOnResumed = RefetchBehavior.stale,
 }) {
   final client = useQueryClient();
-  final query = useMemoized<Query<T>>(
+  final query = useMemoized<Query<T, K>>(
     () {
-      final query_ = client.cache.buildQuery<T>(key);
+      final query_ = client.cache.buildQuery<T, K>(key);
+
       if (initialData != null) {
         query_.setInitialData(initialData, initialDataUpdatedAt);
       }
+
       return query_;
     },
     [key, client],
@@ -89,8 +91,8 @@ QueryResult<T> useQuery<T>(
     [fetch],
   );
 
-  final parameter = useMemoized<QueryParameter<T>>(
-    () => QueryParameter<T>(
+  final parameter = useMemoized<QueryParameter<T, K>>(
+    () => QueryParameter<T, K>(
       key: key,
       fetcher: fetcher,
       placeholder: placeholder,

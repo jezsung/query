@@ -6,48 +6,52 @@ class QueryCache {
 
   List<Query> get queries => _queries.values.toList();
 
-  Query<T> buildQuery<T>(QueryKey key) {
+  Query<T, K> buildQuery<T, K>(QueryKey<K> key) {
     assert(
       _pagedQueries[key] == null,
       'The key $key is already used by a $PagedQuery',
     );
 
-    Query<T>? query = _queries[key] as Query<T>?;
+    Query<T, K>? query = _queries[key] as Query<T, K>?;
 
     if (query != null) {
       return query;
     }
 
-    query = _queries[key] = Query<T>(key);
+    query = _queries[key] = Query<T, K>(key);
 
     return query;
   }
 
-  PagedQuery<T, P> buildPagedQuery<T extends Object, P>(QueryKey key) {
+  PagedQuery<T, K, P> buildPagedQuery<T extends Object, K, P>(
+    QueryKey<K> key,
+  ) {
     assert(
       _queries[key] == null,
       'The key $key is already used by a $PagedQuery',
     );
 
-    PagedQuery<T, P>? query = _pagedQueries[key] as PagedQuery<T, P>?;
+    PagedQuery<T, K, P>? query = _pagedQueries[key] as PagedQuery<T, K, P>?;
 
     if (query != null) {
       return query;
     }
 
-    query = _pagedQueries[key] = PagedQuery<T, P>(key);
+    query = _pagedQueries[key] = PagedQuery<T, K, P>(key);
 
     return query;
   }
 
-  Query<T>? getQuery<T>(QueryKey key) {
+  Query<T, K>? getQuery<T, K>(QueryKey<K> key) {
     assert(_queries[key] is! PagedQuery);
 
-    return _queries[key] as Query<T>?;
+    return _queries[key] as Query<T, K>?;
   }
 
-  PagedQuery<T, P>? getPagedQuery<T extends Object, P>(QueryKey key) {
-    return _pagedQueries[key] as PagedQuery<T, P>?;
+  PagedQuery<T, K, P>? getPagedQuery<T extends Object, K, P>(
+    QueryKey<K> key,
+  ) {
+    return _pagedQueries[key] as PagedQuery<T, K, P>?;
   }
 
   bool exist(QueryKey key) {
