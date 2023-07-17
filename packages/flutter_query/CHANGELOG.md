@@ -1,3 +1,8 @@
+## 0.3.2 (2023-07-17)
+
+- Make query key generic type
+- Add `useImperativeQuery` hook
+
 ## 0.3.1 (2023-07-15)
 
 - Fix refetching on resumed when enabled is false
