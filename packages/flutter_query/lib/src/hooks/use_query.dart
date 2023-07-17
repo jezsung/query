@@ -28,6 +28,9 @@ class QueryParameter<T, K> {
   QueryParameter({
     required this.key,
     required this.fetcher,
+    required this.enabled,
+    required this.initialData,
+    required this.initialDataUpdatedAt,
     required this.placeholder,
     required this.staleDuration,
     required this.refetchOnInit,
@@ -36,6 +39,9 @@ class QueryParameter<T, K> {
 
   final QueryKey key;
   final QueryFetcher<T, K> fetcher;
+  final bool enabled;
+  final T? initialData;
+  final DateTime? initialDataUpdatedAt;
   final T? placeholder;
   final Duration staleDuration;
   final RefetchBehavior refetchOnInit;
@@ -95,6 +101,9 @@ QueryResult<T> useQuery<T, K>(
     () => QueryParameter<T, K>(
       key: key,
       fetcher: fetcher,
+      enabled: enabled,
+      initialData: initialData,
+      initialDataUpdatedAt: initialDataUpdatedAt,
       placeholder: placeholder,
       staleDuration: staleDuration,
       refetchOnInit: refetchOnInit,
@@ -103,6 +112,9 @@ QueryResult<T> useQuery<T, K>(
     [
       key,
       fetcher,
+      enabled,
+      initialData,
+      initialDataUpdatedAt,
       placeholder,
       staleDuration,
       refetchOnInit,
