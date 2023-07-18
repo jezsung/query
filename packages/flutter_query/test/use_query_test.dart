@@ -206,7 +206,7 @@ void main() {
       final data = 'data';
       const fetchDuration = Duration(seconds: 3);
 
-      final result = await buildHook<QueryResult<String>, bool>(
+      final result = await buildHook<QueryHandler<String, String>, bool>(
         (enabled) => useQuery(
           key,
           (key) async {
@@ -285,7 +285,7 @@ void main() {
       late DateTime dataUpdatedAt;
       late int fetchCount = 0;
 
-      final result = await buildHook<QueryResult<String>, bool>(
+      final result = await buildHook<QueryHandler<String, String>, bool>(
         (enabled) => useQuery(
           'key',
           (key) async {
@@ -353,7 +353,7 @@ void main() {
       final data = 42;
       const fetchDuration = Duration(seconds: 3);
 
-      final result = await buildHook<QueryResult<int>, bool>(
+      final result = await buildHook<QueryHandler<int, String>, bool>(
         (_) => useQuery(
           'key',
           (key) async {

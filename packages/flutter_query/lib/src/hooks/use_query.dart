@@ -48,7 +48,47 @@ class QueryParameter<T, K> {
   final RefetchBehavior refetchOnResumed;
 }
 
-QueryResult<T> useQuery<T, K>(
+class QueryHandler<T, K> {
+  QueryHandler({
+    required this.query,
+    required this.fetcher,
+    required this.enabled,
+    required this.initialData,
+    required this.initialDataUpdatedAt,
+    required this.placeholder,
+    required this.staleDuration,
+    required this.refetchOnInit,
+    required this.refetchOnResumed,
+    required this.state,
+  });
+
+  final Query<T, K> query;
+  QueryKey<K> get key => query.key;
+
+  final QueryFetcher<T, K> fetcher;
+  final bool enabled;
+  final T? initialData;
+  final DateTime? initialDataUpdatedAt;
+  final T? placeholder;
+  final Duration staleDuration;
+  final RefetchBehavior refetchOnInit;
+  final RefetchBehavior refetchOnResumed;
+
+  final QueryState<T> state;
+
+  Future<void> refetch() async {
+    await query.fetch(
+      fetcher: fetcher,
+      staleDuration: staleDuration,
+    );
+  }
+
+  Future<void> cancel() async {
+    await query.cancel();
+  }
+}
+
+QueryHandler<T, K> useQuery<T, K>(
   QueryKey<K> key,
   QueryFetcher<T, K> fetcher, {
   bool enabled = true,
@@ -72,65 +112,6 @@ QueryResult<T> useQuery<T, K>(
     },
     [key, client],
   );
-  final fetch = useCallback(
-    ({bool ignoreStaleness = false}) async {
-      await query.fetch(
-        fetcher: fetcher,
-        staleDuration: ignoreStaleness ? Duration.zero : staleDuration,
-      );
-    },
-    [query],
-  );
-  final refetch = useCallback(
-    (RefetchBehavior behavior) async {
-      switch (behavior) {
-        case RefetchBehavior.never:
-          break;
-        case RefetchBehavior.stale:
-          await fetch();
-          break;
-        case RefetchBehavior.always:
-          await fetch(ignoreStaleness: true);
-          break;
-      }
-    },
-    [fetch],
-  );
-
-  final parameter = useMemoized<QueryParameter<T, K>>(
-    () => QueryParameter<T, K>(
-      key: key,
-      fetcher: fetcher,
-      enabled: enabled,
-      initialData: initialData,
-      initialDataUpdatedAt: initialDataUpdatedAt,
-      placeholder: placeholder,
-      staleDuration: staleDuration,
-      refetchOnInit: refetchOnInit,
-      refetchOnResumed: refetchOnResumed,
-    ),
-    [
-      key,
-      fetcher,
-      enabled,
-      initialData,
-      initialDataUpdatedAt,
-      placeholder,
-      staleDuration,
-      refetchOnInit,
-      refetchOnResumed,
-    ],
-  );
-  useEffect(
-    () {
-      client.parameters.add(parameter);
-      return () {
-        client.parameters.remove(parameter);
-      };
-    },
-    [client, parameter],
-  );
-
   final stateSnapshot = useStream<QueryState<T>>(
     query.stream.map(
       (state) => state.copyWith(
@@ -142,14 +123,66 @@ QueryResult<T> useQuery<T, K>(
     ),
     preserveState: false,
   );
+  final queryHandler = useMemoized(
+    () => QueryHandler<T, K>(
+      query: query,
+      fetcher: fetcher,
+      enabled: enabled,
+      initialData: initialData,
+      initialDataUpdatedAt: initialDataUpdatedAt,
+      placeholder: placeholder,
+      staleDuration: staleDuration,
+      refetchOnInit: refetchOnInit,
+      refetchOnResumed: refetchOnResumed,
+      state: stateSnapshot.requireData,
+    ),
+    [
+      query,
+      enabled,
+      initialData,
+      initialDataUpdatedAt,
+      placeholder,
+      staleDuration,
+      refetchOnInit,
+      refetchOnResumed,
+      stateSnapshot.requireData,
+    ],
+  );
+  useEffect(
+    () {
+      client.addQueryHandler(queryHandler);
+      return () {
+        client.removeQueryHandler(queryHandler);
+      };
+    },
+    [client, queryHandler],
+  );
 
   useEffect(() {
     if (!enabled || query.state.status.isFetching) return;
 
     if (query.state.status.isIdle) {
-      fetch();
+      query.fetch(
+        fetcher: fetcher,
+        staleDuration: staleDuration,
+      );
     } else {
-      refetch(refetchOnInit);
+      switch (refetchOnInit) {
+        case RefetchBehavior.never:
+          break;
+        case RefetchBehavior.stale:
+          query.fetch(
+            fetcher: fetcher,
+            staleDuration: staleDuration,
+          );
+          break;
+        case RefetchBehavior.always:
+          query.fetch(
+            fetcher: fetcher,
+            staleDuration: Duration.zero,
+          );
+          break;
+      }
     }
 
     return;
@@ -160,14 +193,25 @@ QueryResult<T> useQuery<T, K>(
       if (!enabled) return;
 
       if (current == AppLifecycleState.resumed) {
-        refetch(refetchOnResumed);
+        switch (refetchOnResumed) {
+          case RefetchBehavior.never:
+            break;
+          case RefetchBehavior.stale:
+            query.fetch(
+              fetcher: fetcher,
+              staleDuration: staleDuration,
+            );
+            break;
+          case RefetchBehavior.always:
+            query.fetch(
+              fetcher: fetcher,
+              staleDuration: Duration.zero,
+            );
+            break;
+        }
       }
     },
   );
 
-  return QueryResult<T>(
-    state: stateSnapshot.requireData,
-    refetch: fetch,
-    cancel: query.cancel,
-  );
+  return queryHandler;
 }

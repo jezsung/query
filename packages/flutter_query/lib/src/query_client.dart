@@ -7,6 +7,8 @@ class QueryClient {
   final List<QueryParameter> parameters = [];
   final List<PagedQueryParameter> pagedQueryParameters = [];
 
+  final Map<QueryKey, Set<QueryHandler>> _queryHandlers = {};
+
   Future refetch(QueryKey key) async {
     final query = cache.getQuery(key);
     final pagedQuery = cache.getPagedQuery(key);
@@ -17,13 +19,12 @@ class QueryClient {
     );
 
     if (query != null) {
-      final paramsByKey =
-          parameters.where((param) => param.key == key).toList();
-      if (paramsByKey.isEmpty) return;
+      final handlers = _queryHandlers[key] ?? {};
+      if (handlers.isEmpty) return;
 
-      final fetcher = paramsByKey.first.fetcher;
-      final staleDuration = paramsByKey.fold<Duration>(
-        paramsByKey.first.staleDuration,
+      final fetcher = handlers.first.fetcher;
+      final staleDuration = handlers.fold<Duration>(
+        handlers.first.staleDuration,
         (staleDuration, param) => param.staleDuration < staleDuration
             ? param.staleDuration
             : staleDuration,
@@ -78,6 +79,14 @@ class QueryClient {
     } else if (pagedQuery != null) {
       await pagedQuery.cancel();
     }
+  }
+
+  void addQueryHandler(QueryHandler handler) {
+    _queryHandlers[handler.key] = {...?_queryHandlers[handler.key], handler};
+  }
+
+  void removeQueryHandler(QueryHandler handler) {
+    _queryHandlers[handler.key]?.remove(handler);
   }
 
   Future close() async {
