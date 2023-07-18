@@ -1692,4 +1692,38 @@ void main() {
       );
     },
   );
+
+  testWidgets(
+    'removes inactive cached query from cache after gcDuration',
+    (tester) async {
+      final key = 'key';
+      const gcDuration = Duration(minutes: 10);
+
+      late QueryClient client;
+
+      await tester.pumpWidget(withQueryScope(
+        HookBuilder(
+          builder: (context) {
+            client = useQueryClient();
+            useQuery(
+              key,
+              (key) async => 42,
+              gcDuration: gcDuration,
+            );
+            return const SizedBox();
+          },
+        ),
+      ));
+
+      expect(client.cache.getQuery(key), isNotNull);
+
+      await tester.pumpWidget(withQueryScope(const SizedBox()));
+
+      expect(client.cache.getQuery(key), isNotNull);
+
+      await tester.pump(gcDuration);
+
+      expect(client.cache.getQuery(key), isNull);
+    },
+  );
 }

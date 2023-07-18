@@ -89,6 +89,10 @@ class QueryClient {
     _queryHandlers[handler.key]?.remove(handler);
   }
 
+  Set<QueryHandler>? getQueryHandlers(QueryKey key) {
+    return _queryHandlers[key];
+  }
+
   Future close() async {
     await Future.wait(cache.queries.map((q) => q.close()));
   }

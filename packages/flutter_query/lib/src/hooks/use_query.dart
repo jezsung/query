@@ -57,6 +57,7 @@ class QueryHandler<T, K> {
     required this.initialDataUpdatedAt,
     required this.placeholder,
     required this.staleDuration,
+    required this.gcDuration,
     required this.refetchOnInit,
     required this.refetchOnResumed,
     required this.state,
@@ -71,6 +72,7 @@ class QueryHandler<T, K> {
   final DateTime? initialDataUpdatedAt;
   final T? placeholder;
   final Duration staleDuration;
+  final Duration gcDuration;
   final RefetchBehavior refetchOnInit;
   final RefetchBehavior refetchOnResumed;
 
@@ -96,6 +98,7 @@ QueryHandler<T, K> useQuery<T, K>(
   DateTime? initialDataUpdatedAt,
   T? placeholder,
   Duration staleDuration = Duration.zero,
+  Duration gcDuration = const Duration(minutes: 5),
   RefetchBehavior refetchOnInit = RefetchBehavior.stale,
   RefetchBehavior refetchOnResumed = RefetchBehavior.stale,
 }) {
@@ -132,6 +135,7 @@ QueryHandler<T, K> useQuery<T, K>(
       initialDataUpdatedAt: initialDataUpdatedAt,
       placeholder: placeholder,
       staleDuration: staleDuration,
+      gcDuration: gcDuration,
       refetchOnInit: refetchOnInit,
       refetchOnResumed: refetchOnResumed,
       state: stateSnapshot.requireData,
@@ -143,11 +147,26 @@ QueryHandler<T, K> useQuery<T, K>(
       initialDataUpdatedAt,
       placeholder,
       staleDuration,
+      gcDuration,
       refetchOnInit,
       refetchOnResumed,
       stateSnapshot.requireData,
     ],
   );
+
+  useEffect(
+    () {
+      client.cache.cancelGc(key);
+      return () {
+        final handlers = client.getQueryHandlers(key);
+        if (handlers == null || handlers.isEmpty) {
+          client.cache.scheduleGc(key, gcDuration);
+        }
+      };
+    },
+    [client],
+  );
+
   useEffect(
     () {
       client.addQueryHandler(queryHandler);

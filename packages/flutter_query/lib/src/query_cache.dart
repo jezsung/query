@@ -1,8 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter_query/flutter_query.dart';
 
 class QueryCache {
   final Map<QueryKey, Query> _queries = <QueryKey, Query>{};
   final Map<QueryKey, PagedQuery> _pagedQueries = <QueryKey, PagedQuery>{};
+  final Map<QueryKey, Timer> _gcTimers = {};
 
   List<Query> get queries => _queries.values.toList();
 
@@ -58,7 +61,29 @@ class QueryCache {
     return _queries[key] != null;
   }
 
-  void remove(QueryKey key) {
+  Future<void> remove(QueryKey key) async {
+    await Future.wait([
+      _queries[key]?.close(),
+      _pagedQueries[key]?.close(),
+    ].whereType<Future>());
     _queries.remove(key);
+    _pagedQueries.remove(key);
+  }
+
+  void scheduleGc(QueryKey key, Duration duration) {
+    if (_queries[key] == null && _pagedQueries[key] == null) return;
+
+    if (duration == Duration.zero) {
+      remove(key);
+    } else {
+      _gcTimers[key] = Timer(duration, () {
+        remove(key);
+      });
+    }
+  }
+
+  void cancelGc(QueryKey key) {
+    _gcTimers[key]?.cancel();
+    _gcTimers.remove(key);
   }
 }
