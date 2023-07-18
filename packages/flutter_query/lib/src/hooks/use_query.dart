@@ -29,6 +29,7 @@ class QueryOptions<T, K> {
     required this.initialDataUpdatedAt,
     required this.placeholder,
     required this.staleDuration,
+    required this.gcDuration,
     required this.refetchOnInit,
     required this.refetchOnResumed,
   });
@@ -40,6 +41,7 @@ class QueryOptions<T, K> {
   final DateTime? initialDataUpdatedAt;
   final T? placeholder;
   final Duration staleDuration;
+  final Duration gcDuration;
   final RefetchBehavior refetchOnInit;
   final RefetchBehavior refetchOnResumed;
 }
@@ -78,6 +80,7 @@ QueryResult<T> useQuery<T, K>(
       initialDataUpdatedAt: initialDataUpdatedAt,
       placeholder: placeholder,
       staleDuration: staleDuration,
+      gcDuration: gcDuration,
       refetchOnInit: refetchOnInit,
       refetchOnResumed: refetchOnResumed,
     ),
@@ -89,6 +92,7 @@ QueryResult<T> useQuery<T, K>(
       initialDataUpdatedAt,
       placeholder,
       staleDuration,
+      gcDuration,
       refetchOnInit,
       refetchOnResumed,
     ],

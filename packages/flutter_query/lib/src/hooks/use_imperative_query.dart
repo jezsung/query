@@ -9,6 +9,7 @@ typedef ImperativeQueryFetch<T, K> = void Function(
   DateTime? initialDataUpdatedAt,
   T? placeholder,
   Duration? staleDuration,
+  Duration? gcDuration,
   RefetchBehavior? refetchOnInit,
   RefetchBehavior? refetchOnResumed,
 });
@@ -33,6 +34,7 @@ ImperativeQueryResult<T, K> useImperativeQuery<T, K>({
   DateTime? initialDataUpdatedAt,
   T? placeholder,
   Duration staleDuration = Duration.zero,
+  Duration gcDuration = const Duration(minutes: 5),
   RefetchBehavior refetchOnInit = RefetchBehavior.stale,
   RefetchBehavior refetchOnResumed = RefetchBehavior.stale,
 }) {
@@ -41,6 +43,7 @@ ImperativeQueryResult<T, K> useImperativeQuery<T, K>({
   final initialDataUpdatedAtDefault = initialDataUpdatedAt;
   final placeholderDefault = placeholder;
   final staleDurationDefault = staleDuration;
+  final gcDurationDefault = gcDuration;
   final refetchOnInitDefault = refetchOnInit;
   final refetchOnResumedDefault = refetchOnResumed;
 
@@ -65,6 +68,23 @@ ImperativeQueryResult<T, K> useImperativeQuery<T, K>({
     [client, queryOptions.value],
   );
   final queryState = useState(query?.state);
+
+  useEffect(
+    () {
+      final options = queryOptions.value;
+      if (options == null) return null;
+
+      final key = options.key;
+      client.cache.cancelGc(key);
+      return () {
+        final options = client.getQueryOptions(key);
+        if (options == null || options.isEmpty) {
+          client.cache.scheduleGc(key, gcDuration);
+        }
+      };
+    },
+    [client, queryOptions.value],
+  );
 
   useEffect(
     () {
@@ -162,6 +182,7 @@ ImperativeQueryResult<T, K> useImperativeQuery<T, K>({
       initialDataUpdatedAt,
       placeholder,
       staleDuration,
+      gcDuration,
       refetchOnInit,
       refetchOnResumed,
     }) {
@@ -176,6 +197,7 @@ ImperativeQueryResult<T, K> useImperativeQuery<T, K>({
             initialDataUpdatedAt ?? initialDataUpdatedAtDefault,
         placeholder: placeholder ?? placeholderDefault,
         staleDuration: staleDuration ?? staleDurationDefault,
+        gcDuration: gcDuration ?? gcDurationDefault,
         refetchOnInit: refetchOnInit ?? refetchOnInitDefault,
         refetchOnResumed: refetchOnResumed ?? refetchOnResumedDefault,
       );

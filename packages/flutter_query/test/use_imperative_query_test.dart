@@ -1,5 +1,6 @@
 import 'package:clock/clock.dart';
 import 'package:flutter/widgets.dart';
+import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:flutter_hooks_test/flutter_hooks_test.dart';
 import 'package:flutter_query/flutter_query.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -18,8 +19,8 @@ void main() {
       const fetchDuration = Duration(seconds: 3);
 
       final result = await buildHook(
-        (_) => useImperativeQuery<String, String>(
-          fetcher: (String key) async {
+        (_) => useImperativeQuery(
+          fetcher: (key) async {
             await Future.delayed(fetchDuration);
             return key;
           },
@@ -112,6 +113,44 @@ void main() {
           isInvalidated: false,
         ),
       );
+    },
+  );
+
+  testWidgets(
+    'removes inactive cached query from cache after gcDuration',
+    (tester) async {
+      final key = 'key';
+      const gcDuration = Duration(minutes: 10);
+
+      late QueryClient client;
+      late ImperativeQueryResult<int, String> result;
+
+      await tester.pumpWidget(withQueryScope(
+        HookBuilder(
+          builder: (context) {
+            client = useQueryClient();
+            result = useImperativeQuery<int, String>(
+              fetcher: (key) async => 42,
+              gcDuration: gcDuration,
+            );
+            return const SizedBox();
+          },
+        ),
+      ));
+
+      result.fetch(key);
+
+      await tester.pump();
+
+      expect(client.cache.getQuery(key), isNotNull);
+
+      await tester.pumpWidget(withQueryScope(const SizedBox()));
+
+      expect(client.cache.getQuery(key), isNotNull);
+
+      await tester.pump(gcDuration);
+
+      expect(client.cache.getQuery(key), isNull);
     },
   );
 }
