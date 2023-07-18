@@ -4,7 +4,6 @@ import 'package:flutter_query/src/hooks/use_paged_query.dart';
 class QueryClient {
   final QueryCache cache = QueryCache();
 
-  final List<QueryOptions> parameters = [];
   final List<PagedQueryParameter> pagedQueryParameters = [];
 
   final Map<QueryKey, Set<QueryOptions>> _queryOptions = {};
