@@ -8,10 +8,6 @@ enum RefetchBehavior {
   always,
 }
 
-typedef QueryRefetch = Future<void> Function();
-
-typedef QueryCancel = Future<void> Function();
-
 class QueryResult<T> {
   QueryResult({
     required this.state,
@@ -20,8 +16,8 @@ class QueryResult<T> {
   });
 
   final QueryState<T> state;
-  final QueryRefetch refetch;
-  final QueryCancel cancel;
+  final Future<void> Function() refetch;
+  final Future<void> Function() cancel;
 }
 
 class QueryOptions<T, K> {
