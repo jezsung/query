@@ -38,7 +38,7 @@ ImperativeQueryResult<T, K> useImperativeQuery<T, K>({
 }) {
   final client = useQueryClient();
 
-  final parameter = useState<QueryParameter<T, K>?>(null);
+  final parameter = useState<QueryOptions<T, K>?>(null);
 
   final fetcherDefault = fetcher;
   final initialDataDefault = initialData;
@@ -61,7 +61,7 @@ ImperativeQueryResult<T, K> useImperativeQuery<T, K>({
     }) {
       assert(fetcher != null || fetcherDefault != null);
 
-      parameter.value = QueryParameter<T, K>(
+      parameter.value = QueryOptions<T, K>(
         key: key,
         fetcher: fetcher ?? fetcherDefault!,
         enabled: true,

@@ -86,4 +86,14 @@ class QueryCache {
     _gcTimers[key]?.cancel();
     _gcTimers.remove(key);
   }
+
+  Future<void> close() async {
+    for (final timer in _gcTimers.values) {
+      timer.cancel();
+    }
+    await Future.wait([
+      ..._queries.values.map((e) => e.close()),
+      ..._pagedQueries.values.map((e) => e.close()),
+    ]);
+  }
 }

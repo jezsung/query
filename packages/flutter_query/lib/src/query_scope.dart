@@ -22,6 +22,7 @@ class QueryScope extends SingleChildStatelessWidget {
         prepare?.call(queryClient);
         return queryClient;
       },
+      dispose: (context, value) => value.cache.close(),
       updateShouldNotify: (previous, current) => previous != current,
       lazy: lazy,
       child: child,

@@ -4,10 +4,10 @@ import 'package:flutter_query/src/hooks/use_paged_query.dart';
 class QueryClient {
   final QueryCache cache = QueryCache();
 
-  final List<QueryParameter> parameters = [];
+  final List<QueryOptions> parameters = [];
   final List<PagedQueryParameter> pagedQueryParameters = [];
 
-  final Map<QueryKey, Set<QueryHandler>> _queryHandlers = {};
+  final Map<QueryKey, Set<QueryOptions>> _queryOptions = {};
 
   Future refetch(QueryKey key) async {
     final query = cache.getQuery(key);
@@ -19,12 +19,12 @@ class QueryClient {
     );
 
     if (query != null) {
-      final handlers = _queryHandlers[key] ?? {};
-      if (handlers.isEmpty) return;
+      final options = _queryOptions[key] ?? {};
+      if (options.isEmpty) return;
 
-      final fetcher = handlers.first.fetcher;
-      final staleDuration = handlers.fold<Duration>(
-        handlers.first.staleDuration,
+      final fetcher = options.first.fetcher;
+      final staleDuration = options.fold<Duration>(
+        options.first.staleDuration,
         (staleDuration, param) => param.staleDuration < staleDuration
             ? param.staleDuration
             : staleDuration,
@@ -81,19 +81,15 @@ class QueryClient {
     }
   }
 
-  void addQueryHandler(QueryHandler handler) {
-    _queryHandlers[handler.key] = {...?_queryHandlers[handler.key], handler};
+  void addQueryOptions(QueryOptions options) {
+    _queryOptions[options.key] = {...?_queryOptions[options.key], options};
   }
 
-  void removeQueryHandler(QueryHandler handler) {
-    _queryHandlers[handler.key]?.remove(handler);
+  void removeQueryOptions(QueryOptions options) {
+    _queryOptions[options.key]?.remove(options);
   }
 
-  Set<QueryHandler>? getQueryHandlers(QueryKey key) {
-    return _queryHandlers[key];
-  }
-
-  Future close() async {
-    await Future.wait(cache.queries.map((q) => q.close()));
+  Set<QueryOptions>? getQueryOptions(QueryKey key) {
+    return _queryOptions[key];
   }
 }
