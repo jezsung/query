@@ -36,10 +36,6 @@ ImperativeQueryResult<T, K> useImperativeQuery<T, K>({
   RefetchBehavior refetchOnInit = RefetchBehavior.stale,
   RefetchBehavior refetchOnResumed = RefetchBehavior.stale,
 }) {
-  final client = useQueryClient();
-
-  final parameter = useState<QueryOptions<T, K>?>(null);
-
   final fetcherDefault = fetcher;
   final initialDataDefault = initialData;
   final initialDataUpdatedAtDefault = initialDataUpdatedAt;
@@ -47,6 +43,116 @@ ImperativeQueryResult<T, K> useImperativeQuery<T, K>({
   final staleDurationDefault = staleDuration;
   final refetchOnInitDefault = refetchOnInit;
   final refetchOnResumedDefault = refetchOnResumed;
+
+  final client = useQueryClient();
+  final queryOptions = useState<QueryOptions<T, K>?>(null);
+  final query = useMemoized(
+    () {
+      final options = queryOptions.value;
+      if (options == null) return null;
+
+      final query_ = client.cache.buildQuery<T, K>(options.key);
+
+      if (options.initialData != null) {
+        query_.setInitialData(
+          options.initialData!,
+          options.initialDataUpdatedAt,
+        );
+      }
+
+      return query_;
+    },
+    [client, queryOptions.value],
+  );
+  final queryState = useState(query?.state);
+
+  useEffect(
+    () {
+      final options = queryOptions.value;
+      if (options == null) return null;
+
+      client.addQueryOptions(options);
+      return () {
+        client.removeQueryOptions(options);
+      };
+    },
+    [client, queryOptions.value],
+  );
+
+  useEffect(
+    () {
+      queryState.value = query?.state;
+      final subscription = query?.stream.listen((data) {
+        queryState.value = data;
+      });
+      return () {
+        subscription?.cancel();
+      };
+    },
+    [query],
+  );
+
+  useEffect(
+    () {
+      final options = queryOptions.value;
+      if (query == null || options == null) return;
+      if (query.state.status.isFetching) return;
+
+      if (query.state.status.isIdle) {
+        query.fetch(
+          fetcher: options.fetcher,
+          staleDuration: options.staleDuration,
+        );
+      } else {
+        switch (options.refetchOnInit) {
+          case RefetchBehavior.never:
+            break;
+          case RefetchBehavior.stale:
+            query.fetch(
+              fetcher: options.fetcher,
+              staleDuration: options.staleDuration,
+            );
+            break;
+          case RefetchBehavior.always:
+            query.fetch(
+              fetcher: options.fetcher,
+              staleDuration: Duration.zero,
+            );
+            break;
+        }
+      }
+
+      return;
+    },
+    [query],
+  );
+
+  useOnAppLifecycleStateChange(
+    (previous, current) {
+      if (current == AppLifecycleState.resumed) {
+        final options = queryOptions.value;
+        if (query == null || options == null) return;
+        if (query.state.status.isFetching) return;
+
+        switch (options.refetchOnInit) {
+          case RefetchBehavior.never:
+            break;
+          case RefetchBehavior.stale:
+            query.fetch(
+              fetcher: options.fetcher,
+              staleDuration: Duration.zero,
+            );
+            break;
+          case RefetchBehavior.always:
+            query.fetch(
+              fetcher: options.fetcher,
+              staleDuration: Duration.zero,
+            );
+            break;
+        }
+      }
+    },
+  );
 
   final fetch = useCallback<ImperativeQueryFetch<T, K>>(
     (
@@ -61,7 +167,7 @@ ImperativeQueryResult<T, K> useImperativeQuery<T, K>({
     }) {
       assert(fetcher != null || fetcherDefault != null);
 
-      parameter.value = QueryOptions<T, K>(
+      queryOptions.value = QueryOptions<T, K>(
         key: key,
         fetcher: fetcher ?? fetcherDefault!,
         enabled: true,
@@ -74,49 +180,24 @@ ImperativeQueryResult<T, K> useImperativeQuery<T, K>({
         refetchOnResumed: refetchOnResumed ?? refetchOnResumedDefault,
       );
     },
-  );
-
-  useEffect(
-    () {
-      if (parameter.value == null) return null;
-
-      client.parameters.add(parameter.value!);
-
-      return () {
-        client.parameters.remove(parameter.value);
-      };
-    },
-    [client, parameter],
-  );
-
-  final query = useMemoized<Query<T, K>?>(
-    () {
-      final param = parameter.value;
-      if (param == null) return null;
-
-      final query_ = client.cache.buildQuery<T, K>(param.key);
-
-      if (param.initialData != null) {
-        query_.setInitialData(
-          param.initialData!,
-          param.initialDataUpdatedAt,
-        );
-      }
-
-      return query_;
-    },
-    [parameter.value, client],
+    [
+      fetcherDefault,
+      initialDataDefault,
+      initialDataUpdatedAtDefault,
+      placeholderDefault,
+      staleDurationDefault,
+      refetchOnInitDefault,
+      refetchOnResumedDefault,
+    ],
   );
   final refetch = useCallback(
-    ({
-      Duration? staleDuration,
-    }) async {
-      final param = parameter.value;
-      if (query == null || param == null) return;
+    () async {
+      final options = queryOptions.value;
+      if (query == null || options == null) return;
 
       await query.fetch(
-        fetcher: param.fetcher,
-        staleDuration: staleDuration ?? param.staleDuration,
+        fetcher: options.fetcher,
+        staleDuration: options.staleDuration,
       );
     },
     [query],
@@ -127,72 +208,20 @@ ImperativeQueryResult<T, K> useImperativeQuery<T, K>({
     },
     [query],
   );
-
-  final queryState = useState(query?.state);
-  useEffect(
-    () {
-      queryState.value = query?.state;
-      final subscription = query?.stream.listen((data) {
-        queryState.value = data;
-      });
-      return () {
-        subscription?.cancel();
-      };
-    },
-    [query],
+  final result = useMemoized(
+    () => ImperativeQueryResult<T, K>(
+      state: queryState.value,
+      fetch: fetch,
+      refetch: refetch,
+      cancel: cancel,
+    ),
+    [
+      queryState.value,
+      fetch,
+      refetch,
+      cancel,
+    ],
   );
 
-  useEffect(() {
-    final param = parameter.value;
-    if (query == null || param == null) return;
-    if (query.state.status.isFetching) return;
-
-    if (query.state.status.isIdle) {
-      query.fetch(
-        fetcher: parameter.value!.fetcher,
-        staleDuration: parameter.value!.staleDuration,
-      );
-    } else {
-      switch (param.refetchOnInit) {
-        case RefetchBehavior.never:
-          break;
-        case RefetchBehavior.stale:
-          refetch();
-          break;
-        case RefetchBehavior.always:
-          refetch(staleDuration: Duration.zero);
-          break;
-      }
-    }
-
-    return;
-  }, [query]);
-
-  useOnAppLifecycleStateChange(
-    (previous, current) {
-      if (current == AppLifecycleState.resumed) {
-        final param = parameter.value;
-
-        if (param == null) return;
-
-        switch (param.refetchOnInit) {
-          case RefetchBehavior.never:
-            break;
-          case RefetchBehavior.stale:
-            refetch();
-            break;
-          case RefetchBehavior.always:
-            refetch(staleDuration: Duration.zero);
-            break;
-        }
-      }
-    },
-  );
-
-  return ImperativeQueryResult<T, K>(
-    state: queryState.value,
-    fetch: fetch,
-    refetch: refetch,
-    cancel: cancel,
-  );
+  return result;
 }
