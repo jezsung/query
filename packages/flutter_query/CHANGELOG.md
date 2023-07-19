@@ -1,3 +1,7 @@
+## 0.3.4 (2023-07-19)
+
+- Inactive cached query will be removed after the `gcDuration`
+
 ## 0.3.3 (2023-07-17)
 
 - Add `useImperativeQuery` hook
