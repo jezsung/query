@@ -1,5 +1,6 @@
 import 'package:clock/clock.dart';
 import 'package:flutter/widgets.dart';
+import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:flutter_hooks_test/flutter_hooks_test.dart';
 import 'package:flutter_query/flutter_query.dart';
 import 'package:flutter_query/src/hooks/use_paged_query.dart';
@@ -577,6 +578,70 @@ void main() {
           expect(result.current.state.dataUpdatedAt, clock.now());
         },
       );
+    },
+  );
+
+  testWidgets(
+    'removes inactive cached query after gcDuration',
+    (tester) async {
+      final key = 'key';
+      const gcDuration = Duration(minutes: 10);
+
+      late QueryClient client;
+
+      await tester.pumpWidget(withQueryScope(
+        HookBuilder(
+          builder: (context) {
+            client = useQueryClient();
+            usePagedQuery<int, String, Never>(
+              key,
+              (key, _) async => 42,
+              gcDuration: gcDuration,
+            );
+            return const SizedBox();
+          },
+        ),
+      ));
+
+      expect(client.cache.getPagedQuery(key), isNotNull);
+
+      await tester.pumpWidget(withQueryScope(const SizedBox()));
+
+      expect(client.cache.getPagedQuery(key), isNotNull);
+
+      await tester.pump(gcDuration);
+
+      expect(client.cache.getPagedQuery(key), isNull);
+    },
+  );
+
+  testWidgets(
+    'removes inactive cached query immediately when gcDuration is Duration.zero',
+    (tester) async {
+      final key = 'key';
+      const gcDuration = Duration.zero;
+
+      late QueryClient client;
+
+      await tester.pumpWidget(withQueryScope(
+        HookBuilder(
+          builder: (context) {
+            client = useQueryClient();
+            usePagedQuery<int, String, Never>(
+              key,
+              (key, _) async => 42,
+              gcDuration: gcDuration,
+            );
+            return const SizedBox();
+          },
+        ),
+      ));
+
+      expect(client.cache.getPagedQuery(key), isNotNull);
+
+      await tester.pumpWidget(withQueryScope(const SizedBox()));
+
+      expect(client.cache.getPagedQuery(key), isNull);
     },
   );
 }

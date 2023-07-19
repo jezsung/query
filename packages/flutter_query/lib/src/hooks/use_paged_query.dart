@@ -27,6 +27,7 @@ class PagedQueryOptions<T extends Object, K, P> {
     required this.initialDataUpdatedAt,
     required this.placeholder,
     required this.staleDuration,
+    required this.gcDuration,
     required this.refetchOnInit,
     required this.refetchOnResumed,
   });
@@ -40,6 +41,7 @@ class PagedQueryOptions<T extends Object, K, P> {
   final DateTime? initialDataUpdatedAt;
   final Pages<T>? placeholder;
   final Duration staleDuration;
+  final Duration gcDuration;
   final RefetchBehavior refetchOnInit;
   final RefetchBehavior refetchOnResumed;
 }
@@ -54,6 +56,7 @@ PagedQueryResult<T, P> usePagedQuery<T extends Object, K, P>(
   DateTime? initialDataUpdatedAt,
   Pages<T>? placeholder,
   Duration staleDuration = Duration.zero,
+  Duration gcDuration = const Duration(minutes: 5),
   RefetchBehavior refetchOnInit = RefetchBehavior.stale,
   RefetchBehavior refetchOnResumed = RefetchBehavior.stale,
 }) {
@@ -79,6 +82,7 @@ PagedQueryResult<T, P> usePagedQuery<T extends Object, K, P>(
       initialDataUpdatedAt: initialDataUpdatedAt,
       placeholder: placeholder,
       staleDuration: staleDuration,
+      gcDuration: gcDuration,
       refetchOnInit: refetchOnInit,
       refetchOnResumed: refetchOnResumed,
     ),
@@ -92,6 +96,7 @@ PagedQueryResult<T, P> usePagedQuery<T extends Object, K, P>(
       initialDataUpdatedAt,
       placeholder,
       staleDuration,
+      gcDuration,
       refetchOnInit,
       refetchOnResumed,
     ],
@@ -106,6 +111,19 @@ PagedQueryResult<T, P> usePagedQuery<T extends Object, K, P>(
       data: query.state.hasData ? query.state.pages : placeholder,
     ),
     preserveState: false,
+  );
+
+  useEffect(
+    () {
+      client.cache.cancelGc(key);
+      return () {
+        final options = client.getPagedQueryOptions(key);
+        if (options == null || options.isEmpty) {
+          client.cache.scheduleGc(key, gcDuration);
+        }
+      };
+    },
+    [client],
   );
 
   useEffect(

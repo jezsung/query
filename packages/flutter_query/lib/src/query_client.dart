@@ -99,4 +99,8 @@ class QueryClient {
   Set<QueryOptions>? getQueryOptions(QueryKey key) {
     return _queryOptions[key];
   }
+
+  Set<PagedQueryOptions>? getPagedQueryOptions(QueryKey key) {
+    return _pagedQueryOptions[key];
+  }
 }
