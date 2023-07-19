@@ -4,9 +4,8 @@ import 'package:flutter_query/src/hooks/use_paged_query.dart';
 class QueryClient {
   final QueryCache cache = QueryCache();
 
-  final List<PagedQueryParameter> pagedQueryParameters = [];
-
   final Map<QueryKey, Set<QueryOptions>> _queryOptions = {};
+  final Map<QueryKey, Set<PagedQueryOptions>> _pagedQueryOptions = {};
 
   Future refetch(QueryKey key) async {
     final query = cache.getQuery(key);
@@ -38,16 +37,14 @@ class QueryClient {
     }
 
     if (pagedQuery != null) {
-      final paramsByKey =
-          pagedQueryParameters.where((param) => param.key == key).toList();
-      if (paramsByKey.isEmpty) return;
+      final options = _pagedQueryOptions[key] ?? {};
+      if (options.isEmpty) return;
 
-      final fetcher = paramsByKey.first.fetcher;
-      final nextPageParamBuilder = paramsByKey.first.nextPageParamBuilder;
-      final previousPageParamBuilder =
-          paramsByKey.first.previousPageParamBuilder;
-      final staleDuration = paramsByKey.fold<Duration>(
-        paramsByKey.first.staleDuration,
+      final fetcher = options.first.fetcher;
+      final nextPageParamBuilder = options.first.nextPageParamBuilder;
+      final previousPageParamBuilder = options.first.previousPageParamBuilder;
+      final staleDuration = options.fold<Duration>(
+        options.first.staleDuration,
         (staleDuration, param) => param.staleDuration < staleDuration
             ? param.staleDuration
             : staleDuration,
@@ -86,6 +83,17 @@ class QueryClient {
 
   void removeQueryOptions(QueryOptions options) {
     _queryOptions[options.key]?.remove(options);
+  }
+
+  void addPagedQueryOptions(PagedQueryOptions options) {
+    _pagedQueryOptions[options.key] = {
+      ...?_pagedQueryOptions[options.key],
+      options
+    };
+  }
+
+  void removePagedQueryOptions(PagedQueryOptions options) {
+    _pagedQueryOptions[options.key]?.remove(options);
   }
 
   Set<QueryOptions>? getQueryOptions(QueryKey key) {
