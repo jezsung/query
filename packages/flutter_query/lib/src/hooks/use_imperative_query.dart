@@ -154,7 +154,7 @@ ImperativeQueryResult<T, K> useImperativeQuery<T, K>({
         if (query == null || options == null) return;
         if (query.state.status.isFetching) return;
 
-        switch (options.refetchOnInit) {
+        switch (options.refetchOnResumed) {
           case RefetchBehavior.never:
             break;
           case RefetchBehavior.stale:
