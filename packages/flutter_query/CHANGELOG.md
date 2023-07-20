@@ -1,3 +1,9 @@
+## 0.3.5 (2023-07-20)
+
+- Fixed `refetchOnResumed` issue on `useImperativeQuery`
+- Added `gcDuration` to `usePagedQuery`
+- Removed intermittent `QueryStatus.idle`
+
 ## 0.3.4 (2023-07-19)
 
 - Inactive cached query will be removed after the `gcDuration`
