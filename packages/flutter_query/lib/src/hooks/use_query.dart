@@ -98,12 +98,18 @@ QueryResult<T> useQuery<T, K>(
     ],
   );
   final stateSnapshot = useStream(
-    query.stream.map(
-      (state) => state.copyWith(
-        data: state.hasData ? state.data : placeholder,
+    useMemoized(
+      () => query.stream.map(
+        (state) => state.copyWith(
+          data: state.hasData ? state.data : placeholder,
+        ),
       ),
+      [query],
     ),
     initialData: query.state.copyWith(
+      status: query.state.status.isIdle && enabled
+          ? QueryStatus.fetching
+          : query.state.status,
       data: query.state.hasData ? query.state.data : placeholder,
     ),
     preserveState: false,

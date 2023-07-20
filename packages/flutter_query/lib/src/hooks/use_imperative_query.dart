@@ -101,7 +101,11 @@ ImperativeQueryResult<T, K> useImperativeQuery<T, K>({
 
   useEffect(
     () {
-      queryState.value = query?.state;
+      queryState.value = query?.state.copyWith(
+        status: query.state.status.isIdle
+            ? QueryStatus.fetching
+            : query.state.status,
+      );
       final subscription = query?.stream.listen((data) {
         queryState.value = data;
       });
