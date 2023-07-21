@@ -1,3 +1,7 @@
+## 0.3.7 (2023-07-21)
+
+- Fix: `useQuery` schedules cache removal after `gcDuration` when key is changed
+
 ## 0.3.6 (2023-07-21)
 
 - `useImperativeQuery`'s `fetch` refetches when called with same key

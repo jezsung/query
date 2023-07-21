@@ -1756,4 +1756,94 @@ void main() {
       expect(client.cache.getQuery(key), isNull);
     },
   );
+
+  testWidgets(
+    'schedules inactive cached query removal when key is changed',
+    (tester) async {
+      final key = 'key';
+      final newKey = 'new key';
+      const gcDuration = Duration(minutes: 10);
+
+      late QueryClient client;
+
+      await tester.pumpWidget(withQueryScope(
+        HookBuilder(
+          builder: (context) {
+            client = useQueryClient();
+            useQuery(
+              key,
+              (key) async => 42,
+              gcDuration: gcDuration,
+            );
+            return const SizedBox();
+          },
+        ),
+      ));
+
+      expect(client.cache.getQuery(key), isNotNull);
+
+      await tester.pumpWidget(withQueryScope(
+        HookBuilder(
+          builder: (context) {
+            client = useQueryClient();
+            useQuery(
+              newKey,
+              (key) async => 42,
+              gcDuration: gcDuration,
+            );
+            return const SizedBox();
+          },
+        ),
+      ));
+
+      expect(client.cache.getQuery(key), isNotNull);
+
+      await tester.pump(gcDuration);
+
+      expect(client.cache.getQuery(key), isNull);
+    },
+  );
+
+  testWidgets(
+    'removes inactive cached query immediately when key is changed and gcDuration is Duration.zero',
+    (tester) async {
+      final key = 'key';
+      final newKey = 'new key';
+      const gcDuration = Duration.zero;
+
+      late QueryClient client;
+
+      await tester.pumpWidget(withQueryScope(
+        HookBuilder(
+          builder: (context) {
+            client = useQueryClient();
+            useQuery(
+              key,
+              (key) async => 42,
+              gcDuration: gcDuration,
+            );
+            return const SizedBox();
+          },
+        ),
+      ));
+
+      expect(client.cache.getQuery(key), isNotNull);
+
+      await tester.pumpWidget(withQueryScope(
+        HookBuilder(
+          builder: (context) {
+            client = useQueryClient();
+            useQuery(
+              newKey,
+              (key) async => 42,
+              gcDuration: gcDuration,
+            );
+            return const SizedBox();
+          },
+        ),
+      ));
+
+      expect(client.cache.getQuery(key), isNull);
+    },
+  );
 }

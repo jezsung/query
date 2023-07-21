@@ -125,7 +125,7 @@ QueryResult<T> useQuery<T, K>(
         }
       };
     },
-    [client],
+    [client, key],
   );
 
   useEffect(
