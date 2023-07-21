@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/scheduler.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:flutter_query/flutter_query.dart';
@@ -49,25 +51,8 @@ ImperativeQueryResult<T, K> useImperativeQuery<T, K>({
 
   final client = useQueryClient();
   final queryOptions = useState<QueryOptions<T, K>?>(null);
-  final query = useMemoized(
-    () {
-      final options = queryOptions.value;
-      if (options == null) return null;
-
-      final query_ = client.cache.buildQuery<T, K>(options.key);
-
-      if (options.initialData != null) {
-        query_.setInitialData(
-          options.initialData!,
-          options.initialDataUpdatedAt,
-        );
-      }
-
-      return query_;
-    },
-    [client, queryOptions.value],
-  );
-  final queryState = useState(query?.state);
+  final query = useState<Query<T, K>?>(null);
+  final queryState = useState(query.value?.state);
 
   useEffect(
     () {
@@ -83,7 +68,7 @@ ImperativeQueryResult<T, K> useImperativeQuery<T, K>({
         }
       };
     },
-    [client, queryOptions.value],
+    [client, queryOptions.value?.key],
   );
 
   useEffect(
@@ -101,74 +86,39 @@ ImperativeQueryResult<T, K> useImperativeQuery<T, K>({
 
   useEffect(
     () {
-      queryState.value = query?.state.copyWith(
-        status: query.state.status.isIdle
+      queryState.value = query.value?.state.copyWith(
+        status: query.value!.state.status.isIdle
             ? QueryStatus.fetching
-            : query.state.status,
+            : query.value!.state.status,
       );
-      final subscription = query?.stream.listen((data) {
+      final subscription = query.value?.stream.listen((data) {
         queryState.value = data;
       });
       return () {
         subscription?.cancel();
       };
     },
-    [query],
-  );
-
-  useEffect(
-    () {
-      final options = queryOptions.value;
-      if (query == null || options == null) return;
-      if (query.state.status.isFetching) return;
-
-      if (query.state.status.isIdle) {
-        query.fetch(
-          fetcher: options.fetcher,
-          staleDuration: options.staleDuration,
-        );
-      } else {
-        switch (options.refetchOnInit) {
-          case RefetchBehavior.never:
-            break;
-          case RefetchBehavior.stale:
-            query.fetch(
-              fetcher: options.fetcher,
-              staleDuration: options.staleDuration,
-            );
-            break;
-          case RefetchBehavior.always:
-            query.fetch(
-              fetcher: options.fetcher,
-              staleDuration: Duration.zero,
-            );
-            break;
-        }
-      }
-
-      return;
-    },
-    [query],
+    [query.value],
   );
 
   useOnAppLifecycleStateChange(
     (previous, current) {
       if (current == AppLifecycleState.resumed) {
         final options = queryOptions.value;
-        if (query == null || options == null) return;
-        if (query.state.status.isFetching) return;
+        if (query.value == null || options == null) return;
+        if (query.value!.state.status.isFetching) return;
 
         switch (options.refetchOnResumed) {
           case RefetchBehavior.never:
             break;
           case RefetchBehavior.stale:
-            query.fetch(
+            query.value!.fetch(
               fetcher: options.fetcher,
               staleDuration: Duration.zero,
             );
             break;
           case RefetchBehavior.always:
-            query.fetch(
+            query.value!.fetch(
               fetcher: options.fetcher,
               staleDuration: Duration.zero,
             );
@@ -189,10 +139,10 @@ ImperativeQueryResult<T, K> useImperativeQuery<T, K>({
       gcDuration,
       refetchOnInit,
       refetchOnResumed,
-    }) {
+    }) async {
       assert(fetcher != null || fetcherDefault != null);
 
-      queryOptions.value = QueryOptions<T, K>(
+      final options = QueryOptions<T, K>(
         key: key,
         fetcher: fetcher ?? fetcherDefault!,
         enabled: true,
@@ -205,6 +155,23 @@ ImperativeQueryResult<T, K> useImperativeQuery<T, K>({
         refetchOnInit: refetchOnInit ?? refetchOnInitDefault,
         refetchOnResumed: refetchOnResumed ?? refetchOnResumedDefault,
       );
+
+      queryOptions.value = options;
+      query.value = client.cache.buildQuery<T, K>(key);
+
+      if (options.initialData != null) {
+        query.value!.setInitialData(
+          options.initialData!,
+          options.initialDataUpdatedAt,
+        );
+      }
+
+      if (!query.value!.state.status.isFetching) {
+        await query.value!.fetch(
+          fetcher: options.fetcher,
+          staleDuration: options.staleDuration,
+        );
+      }
     },
     [
       fetcherDefault,
@@ -212,6 +179,7 @@ ImperativeQueryResult<T, K> useImperativeQuery<T, K>({
       initialDataUpdatedAtDefault,
       placeholderDefault,
       staleDurationDefault,
+      gcDurationDefault,
       refetchOnInitDefault,
       refetchOnResumedDefault,
     ],
@@ -219,20 +187,20 @@ ImperativeQueryResult<T, K> useImperativeQuery<T, K>({
   final refetch = useCallback(
     () async {
       final options = queryOptions.value;
-      if (query == null || options == null) return;
+      if (query.value == null || options == null) return;
 
-      await query.fetch(
+      await query.value!.fetch(
         fetcher: options.fetcher,
         staleDuration: options.staleDuration,
       );
     },
-    [query],
+    [query.value],
   );
   final cancel = useCallback(
     () async {
-      await query?.cancel();
+      await query.value?.cancel();
     },
-    [query],
+    [query.value],
   );
   final result = useMemoized(
     () => ImperativeQueryResult<T, K>(

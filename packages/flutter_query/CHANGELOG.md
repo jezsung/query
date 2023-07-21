@@ -1,3 +1,7 @@
+## 0.3.6 (2023-07-21)
+
+- `useImperativeQuery`'s `fetch` refetches when called with same key
+
 ## 0.3.5 (2023-07-20)
 
 - Fixed `refetchOnResumed` issue on `useImperativeQuery`

@@ -117,6 +117,81 @@ void main() {
   );
 
   testWidgets(
+    'refetches when fetch is called with same key',
+    (tester) async {
+      const fetchDuration = Duration(seconds: 3);
+
+      final result = await buildHook(
+        (_) => useImperativeQuery<String, String>(
+          fetcher: (key) async {
+            await Future.delayed(fetchDuration);
+            return key;
+          },
+        ),
+        provide: (hookBuilder) => withQueryScope(hookBuilder),
+      );
+
+      expect(result.current.state, isNull);
+
+      await act(() => result.current.fetch('first'));
+
+      expect(
+        result.current.state,
+        QueryState<String>(
+          status: QueryStatus.fetching,
+          data: null,
+          error: null,
+          dataUpdatedAt: null,
+          errorUpdatedAt: null,
+          isInvalidated: false,
+        ),
+      );
+
+      await tester.pump(fetchDuration);
+
+      expect(
+        result.current.state,
+        QueryState<String>(
+          status: QueryStatus.success,
+          data: 'first',
+          error: null,
+          dataUpdatedAt: clock.now(),
+          errorUpdatedAt: null,
+          isInvalidated: false,
+        ),
+      );
+
+      await act(() => result.current.fetch('first'));
+
+      expect(
+        result.current.state,
+        QueryState<String>(
+          status: QueryStatus.fetching,
+          data: 'first',
+          error: null,
+          dataUpdatedAt: clock.now(),
+          errorUpdatedAt: null,
+          isInvalidated: false,
+        ),
+      );
+
+      await tester.pump(fetchDuration);
+
+      expect(
+        result.current.state,
+        QueryState<String>(
+          status: QueryStatus.success,
+          data: 'first',
+          error: null,
+          dataUpdatedAt: clock.now(),
+          errorUpdatedAt: null,
+          isInvalidated: false,
+        ),
+      );
+    },
+  );
+
+  testWidgets(
     'removes inactive cached query from cache after gcDuration',
     (tester) async {
       final key = 'key';
@@ -138,9 +213,7 @@ void main() {
         ),
       ));
 
-      result.fetch(key);
-
-      await tester.pump();
+      await act(() => result.fetch(key));
 
       expect(client.cache.getQuery(key), isNotNull);
 
