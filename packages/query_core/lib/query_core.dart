@@ -1,4 +1,4 @@
 library query_core;
 
-export 'src/mutation.dart';
-export 'src/query.dart';
+export 'legacy/mutation.dart';
+export 'legacy/query.dart';
