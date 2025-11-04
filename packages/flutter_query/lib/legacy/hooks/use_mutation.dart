@@ -1,5 +1,5 @@
 import 'package:flutter_hooks/flutter_hooks.dart';
-import 'package:flutter_query/flutter_query.dart';
+import 'package:query_core/legacy/mutation.dart';
 
 typedef Mutate<A> = Future<void> Function([A arg]);
 

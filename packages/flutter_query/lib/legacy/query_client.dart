@@ -1,5 +1,7 @@
-import 'package:flutter_query/flutter_query.dart';
-import 'package:flutter_query/legacy/hooks/use_paged_query.dart';
+import 'package:query_core/legacy/query.dart';
+import 'query_cache.dart';
+import 'hooks/use_query.dart';
+import 'hooks/use_paged_query.dart';
 
 class QueryClient {
   final QueryCache cache = QueryCache();

@@ -1,5 +1,5 @@
 import 'package:flutter/widgets.dart';
-import 'package:flutter_query/flutter_query.dart';
+import 'query_client.dart';
 import 'package:provider/provider.dart';
 import 'package:provider/single_child_widget.dart';
 

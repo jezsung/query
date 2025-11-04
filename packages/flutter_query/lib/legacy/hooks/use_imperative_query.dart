@@ -2,7 +2,9 @@ import 'dart:async';
 
 import 'package:flutter/scheduler.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
-import 'package:flutter_query/flutter_query.dart';
+import 'use_query_client.dart';
+import 'use_query.dart';
+import 'package:query_core/legacy/query.dart';
 
 typedef ImperativeQueryFetch<T, K> = void Function(
   QueryKey<K> key, {
