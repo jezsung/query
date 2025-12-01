@@ -1,54 +1,126 @@
-A Flutter package that is equivalent to the [React Query](https://tanstack.com/query/v3/) library in the [React](https://react.dev/) ecosystem.
+flutter_query — follow the React Query (tanstack v5) for javascript
 
-This package utilizes the power of Widgets in Flutter. As React Query provides its APIs with Hooks, flutter_query does it with Widgets.
+This package provides a Flutter implementation of the query/cache patterns used by
+[tanstack/react-query v5](https://tanstack.com/query/latest/docs/framework/react/overview). It focuses on
+fetching, caching, invalidation and background updates while mirroring the high level
+concepts and APIs you're used to from React Query.
 
-## Motivation
+Key concepts
+- QueryClient — the root object that owns the cache and global defaults.
+- QueryCache / MutationCache — caches owned by the core that can broadcast errors/success globally.
+- useQuery / useInfiniteQuery / useMutation — Flutter hooks to interact with the cache from widgets.
 
-There are a variety of state management packages in Flutter, but those packages lack abstraction for common asynchronous operations.
+Getting started
 
-Asynchronous operations are mostly used when communicating with remote APIs such as sending HTTP requests to servers.
-
-These kind of operations lead to the repetitive state management pattern.
-
-This package helps reducing this common pattern by providing high level state management APIs.
-
-## Usage
-
-Wrap your app with the `QueryClientProvider`. The `QueryClient` is used to control the `Query`s in the app.
+Instantiate a basic `QueryClient` for your app. Example:
 
 ```dart
-runApp(
-  QueryClientProvider(
-    create: (context) => QueryClient(),
-    child: MyApp(),
+// Create a client with default options and cache handlers
+final queryClient = QueryClient(
+  defaultOptions: const DefaultOptions(
+    queries: QueryDefaultOptions(
+      enabled: true,
+      staleTime: 0,
+      refetchOnRestart: false,
+      refetchOnReconnect: false,
+    ),
   ),
+  queryCache: QueryCache(config: QueryCacheConfig(onError: (e) => print(e))),
+  mutationCache: MutationCache(config: MutationCacheConfig(onError: (e) => print(e))),
 );
 ```
+Example: Queries, Mutations and Invalidation (tanstack style)
 
-Give an unique string to the `id` and a method to the `fetcher` that runs asynchronous operations.
-
-The `state` is the type of `QueryState`. The `QueryState` has a `QueryStatus` that represents the current status of the operation.
+This short example demonstrates the three core concepts used by React Query:
+Queries, Mutations and Query Invalidation. It uses `useQuery` to fetch todos,
+`useMutation` to add a todo, and `QueryClient.instance.invalidateQueries` to
+refetch after a successful mutation.
 
 ```dart
-QueryBuilder<String>(
-  id: '1',
-  fetcher: (id) async {
-    final todoId = id;
-    final todoTitle = getTodoTitleById(todoId);
-    return todoTitle;
-  },
-  builder: (context, state, child) {
-    switch(state.status) {
-      case QueryStatus.idle:
-        return Text('Ready to load data');
-      case QueryStatus.fetching:
-        return Text('Loading...');
-      case QueryStatus.success:
-        final todoTitle = state.data!;
-        return Text(todoTitle);
-      case QueryStatus.failure:
-        return Text('Something went wrong...')
-    }
-  },
-)
+import 'package:flutter/material.dart';
+import 'package:flutter_hooks/flutter_hooks.dart';
+import 'package:flutter_query/flutter_query.dart';
+
+// Fake API helpers used in the example. Replace with your real networking code.
+Future<List<Map<String, dynamic>>> getTodos() async {
+  await Future.delayed(Duration(milliseconds: 150));
+  return [
+    {'id': 1, 'title': 'Buy milk'},
+    {'id': 2, 'title': 'Walk dog'},
+  ];
+}
+
+Future<Map<String, dynamic>> postTodo(Map<String, dynamic> todo) async {
+  await Future.delayed(Duration(milliseconds: 150));
+  return todo; // in a real app you'd POST and return the created item
+}
+
+final queryClient = QueryClient();
+
+void main() {
+  runApp(
+    QueryClientProvider(
+      create: (_) => queryClient,
+      child: MaterialApp(home: Todos()),
+    ),
+  );
+}
+
+class Todos extends HookWidget {
+  @override
+  Widget build(BuildContext context) {
+    // Queries
+    final todosQuery = useQuery<List<Map<String, dynamic>>>(
+      queryKey: ['todos'],
+      queryFn: getTodos,
+    );
+
+    // Mutations
+    final addTodoMutation = useMutation<Map<String, dynamic>, Map<String, dynamic>>(
+      postTodo,
+      onSuccess: (_) {
+        // Invalidate and refetch the todos query after successful mutation
+        QueryClient.instance.invalidateQueries(['todos']);
+      },
+    );
+
+    if (todosQuery.isPending) return const Center(child: Text('Loading...'));
+    if (todosQuery.isError) return Center(child: Text('Error: ${todosQuery.error}'));
+
+    final todos = todosQuery.data ?? [];
+
+    return Scaffold(
+      appBar: AppBar(title: const Text('Todos')),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          children: [
+            Expanded(
+              child: ListView(
+                children: todos.map((t) => ListTile(title: Text(t['title'] ?? ''))).toList(),
+              ),
+            ),
+            ElevatedButton(
+              child: const Text('Add Todo'),
+              onPressed: () {
+                addTodoMutation.mutate({'id': DateTime.now().millisecondsSinceEpoch, 'title': 'Do Laundry'});
+              },
+            )
+          ],
+        ),
+      ),
+    );
+  }
+}
 ```
+
+Other useful API notes
+- QueryClient.instance is used internally by hooks to find the active client.
+- QueryClient provides helper methods like `invalidateQueries` and `clear` to trigger refetches or wipe cache.
+- The core `query_core` package contains `DefaultOptions`, `QueryCacheConfig` and `MutationCacheConfig` types.
+
+Further reading
+- React Query (tanstack) docs: https://tanstack.com/query/latest/docs
+- See the `packages/flutter_query/example` folder for end-to-end examples.
+
+If you'd like, I can add more examples (mutations, optimistic updates, cache manipulation) to this README.
