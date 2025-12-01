@@ -123,4 +123,43 @@ Further reading
 - React Query (tanstack) docs: https://tanstack.com/query/latest/docs
 - See the `packages/flutter_query/example` folder for end-to-end examples.
 
-If you'd like, I can add more examples (mutations, optimistic updates, cache manipulation) to this README.
+
+
+Refetching on app restart and reconnect 🔁
+
+When a query is marked with `refetchOnRestart` or `refetchOnReconnect`, the library will call the query's `refetch` callback when a restart or reconnect event happens if the option is `true` (the default).
+
+You need to implement those events in your app.
+
+- App lifecycle (restart)
+If you already use an app-lifecycle listener widget (for example an `AppLifecycleListener`), call `refetchOnRestart()` in the callback:
+
+Example: call the client on app restart
+```dart
+AppLifecycleListener(
+  onRestart: () {
+    QueryClient.instance.refetchOnRestart();
+  },
+  child: MyApp(),
+);
+```
+
+- Connectivity monitoring (reconnect)
+If you already use an internet checker provider just call the `refetchOnReconnect()` in it
+
+Example: with internet_connection_checker_plus
+```dart
+import 'package:internet_connection_checker_plus/internet_connection_checker_plus.dart';
+import 'package:flutter_query/flutter_query.dart';
+
+static InternetConnection connectivity = InternetConnection();
+
+connectivity.onStatusChange.listen((status) {
+  if (status case InternetStatus.connected) {
+    QueryClient.instance.refetchOnReconnect();
+  }
+});
+```
+Notes
+- Ensure each query's options (or default options) have `refetchOnRestart` and `refetchOnReconnect` set appropriately.
+- This implementation keeps the library dependency optional — your app is responsible for wiring lifecycle and connection events. The library exposes `refetchOnRestart()` and `refetchOnReconnect()` on `QueryClient.instance` so your app can call it from any listener.
