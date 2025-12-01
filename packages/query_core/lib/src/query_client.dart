@@ -1,9 +1,10 @@
+import 'package:query_core/query_core.dart';
 import 'package:query_core/src/options.dart';
 import 'package:query_core/src/query_cache.dart';
 import 'package:query_core/src/mutation_cache.dart';
 import 'package:query_core/src/utils.dart';
 
-late QueryClient queryClient;
+QueryClient queryClient = QueryClient();
 final cacheQuery = <String, CacheQuery<dynamic>>{};
 
 class QueryClient {
@@ -52,7 +53,7 @@ class QueryClient {
     });
   }
 
-  refetchOnRecconect() {
+  refetchOnReconnect() {
     _listeners.forEach((key, listenersList) {
       for (var listener in listenersList) {
         if (listener.refetchOnReconnect ?? defaultOptions.queries.refetchOnReconnect) {
@@ -86,9 +87,35 @@ class QueryClient {
     }
   }
 
-  // NOTE: setQueryData and setQueryInfiniteData were intentionally removed from core.
-  // The Flutter layer owns `QueryResult` / `InfiniteQueryResult` models and should
-  // call into the core cache directly when mutating stored query data.
+  void setQueryData<T>(List<Object> keys, T Function(T? oldData) updateFn) {
+    final cacheKey = queryKeyToCacheKey(keys);
+    final oldEntry = cacheQuery[cacheKey];
+    final oldData = oldEntry?.result.data as T?;
+    final newData = updateFn(oldData);
+    final queryResult = QueryResult(cacheKey, QueryStatus.success, newData, null, isFetching: false);
+
+    cacheQuery[cacheKey] = CacheQuery(queryResult, DateTime.now());
+    notifyUpdate(cacheKey, queryResult);
+  }
+
+  void setQueryInfiniteData<T>(List<Object> keys, List<T> Function(List<T>? oldDatas) updateFn) {
+    final cacheKey = queryKeyToCacheKey(keys);
+    final oldEntry = cacheQuery[cacheKey];
+    final oldDatas = oldEntry?.result.data as List<T>? ?? <T>[];
+    final newDatas = updateFn(oldDatas);
+
+    final queryResult = InfiniteQueryResult(
+        key: cacheKey,
+        status: QueryStatus.success,
+        data: newDatas as List<Object>,
+        isFetching: false,
+        error: null,
+        isFetchingNextPage: false,
+        fetchNextPage: () async {});
+
+    cacheQuery[cacheKey] = CacheQuery(queryResult, DateTime.now());
+    notifyUpdate(cacheKey, queryResult);
+  }
 
   void clear() {
     final keys = cacheQuery.keys.toList();
