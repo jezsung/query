@@ -84,8 +84,8 @@ class Todos extends HookWidget {
     );
 
     // Mutations
-    final addTodoMutation = useMutation<Map<String, dynamic>, Map<String, dynamic>>(
-      postTodo,
+    final addTodoMutation = useMutation(
+      mutationFn: postTodo,
       onSuccess: (_) {
         // Invalidate and refetch the todos query after successful mutation
         QueryClient.instance.invalidateQueries(['todos']);
