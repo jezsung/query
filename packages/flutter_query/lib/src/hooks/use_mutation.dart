@@ -3,8 +3,11 @@ import 'package:query_core/query_core.dart';
 import 'package:query_core/src/mutation_types.dart';
 import 'package:query_core/src/query_client.dart';
 
-MutationResult<T, P> useMutation<T, P>(Future<T> Function(P) mutationFn,
-    {void Function(T)? onSuccess, void Function(Object)? onError, bool spreadCallBackLocalyOnly = false}) {
+MutationResult<T, P> useMutation<T, P>(
+    {required Future<T> Function(P) mutationFn,
+    void Function(T)? onSuccess,
+    void Function(Object)? onError,
+    bool spreadCallBackLocalyOnly = false}) {
   final state = useState<MutationState<T>>(MutationState<T>(null, MutationStatus.idle, null));
   var isMounted = true;
 

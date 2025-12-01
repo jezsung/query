@@ -56,6 +56,18 @@ InfiniteQueryResult<T> useInfiniteQuery<T>({
     QueryClient.instance.notifyUpdate(cacheKey, queryResult, excludeCallerId: callerId);
   }
 
+  // Safe setter to avoid updating the ValueNotifier after it has been disposed.
+  void safeSetResult(InfiniteQueryResult<T> newValue) {
+    if (!isMounted) return;
+    try {
+      result.value = newValue;
+    } catch (e) {
+      // In some lifecycle orders the ValueNotifier may be disposed before
+      // this async callback runs. Swallow the error to prevent an app crash.
+      debugPrint('Ignored attempt to write to disposed ValueNotifier: $e');
+    }
+  }
+
   void fetchNextPage(InfiniteQueryResult<T> resultPreviousPage) {
     final nextPage = getNextPageParam != null ? getNextPageParam(resultPreviousPage.data!.last) : currentPage.value;
 
@@ -71,7 +83,7 @@ InfiniteQueryResult<T> useInfiniteQuery<T>({
       isFetchingNextPage: true);
 
     var futureFetch = TrackedFuture(queryFn(nextPage));
-    if (isMounted) result.value = queryLoadingMore;
+    if (isMounted) safeSetResult(queryLoadingMore);
     updateCache(queryLoadingMore, queryFnRunning: futureFetch);
 
     futureFetch.then((value) {
@@ -90,7 +102,7 @@ InfiniteQueryResult<T> useInfiniteQuery<T>({
       );
       queryResult.fetchNextPage = () => fetchNextPage(queryResult);
 
-      if (isMounted) result.value = queryResult;
+      if (isMounted) safeSetResult(queryResult);
       updateCache(queryResult);
 
       onSuccess?.call(pageData);
@@ -105,7 +117,7 @@ InfiniteQueryResult<T> useInfiniteQuery<T>({
         isFetchingNextPage: false,
       );
       queryResult.fetchNextPage = () => fetchNextPage(queryResult);
-      if (isMounted) result.value = queryResult;
+      if (isMounted) safeSetResult(queryResult);
       updateCache(queryResult);
       onError?.call(e);
       if (!spreadCallBackLocalyOnly) QueryClient.instance.queryCache?.config.onError?.call(e);
@@ -138,7 +150,7 @@ InfiniteQueryResult<T> useInfiniteQuery<T>({
     }
     // Loading State: cacheEntry has a Running Function, set result to propagate the loading state
     var futureFetch = cacheEntry.queryFnRunning!;
-    if (isMounted) result.value = cacheEntry.result as InfiniteQueryResult<T>;
+    if (isMounted) safeSetResult(cacheEntry.result as InfiniteQueryResult<T>);
 
     futureFetch.then((value) {
       if (value is! T) return;
@@ -155,7 +167,7 @@ InfiniteQueryResult<T> useInfiniteQuery<T>({
       );
       queryResult.fetchNextPage = () => fetchNextPage(queryResult);
 
-      if (isMounted) result.value = queryResult;
+      if (isMounted) safeSetResult(queryResult);
       if (shouldUpdateTheCache) updateCache(queryResult);
 
       onSuccess?.call(pageData);
@@ -170,7 +182,7 @@ InfiniteQueryResult<T> useInfiniteQuery<T>({
         isFetchingNextPage: false,
       );
       queryResult.fetchNextPage = () => fetchNextPage(queryResult);
-      if (isMounted) result.value = queryResult;
+      if (isMounted) safeSetResult(queryResult);
       if (shouldUpdateTheCache) updateCache(queryResult);
       onError?.call(e);
       if (!spreadCallBackLocalyOnly) QueryClient.instance.queryCache?.config.onError?.call(e);
@@ -189,7 +201,7 @@ InfiniteQueryResult<T> useInfiniteQuery<T>({
           error: null,
           isFetchingNextPage: false);
       queryResult.fetchNextPage = () => fetchNextPage(queryResult);
-      if (isMounted) result.value = queryResult;
+      if (isMounted) safeSetResult(queryResult);
 
       for (int page = initialPageParam; page <= currentPage.value; page++) {
         final pageData = await queryFn(page);
@@ -206,7 +218,7 @@ InfiniteQueryResult<T> useInfiniteQuery<T>({
         isFetchingNextPage: false,
       );
       queryResult.fetchNextPage = () => fetchNextPage(queryResult);
-      if (isMounted) result.value = queryResult;
+      if (isMounted) safeSetResult(queryResult);
 
       updateCache(queryResult);
     } catch (e) {

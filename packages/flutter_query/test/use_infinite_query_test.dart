@@ -214,4 +214,52 @@ void main() {
     expect(find.text('QueryStatus.success'), findsOneWidget);
     expect(find.text('1'), findsWidgets);
   });
+
+  testWidgets('should not crash if widget unmounts during in-flight next-page fetch', (WidgetTester tester) async {
+    await tester.pumpWidget(MaterialApp(
+      home: HookBuilder(
+        builder: (context) {
+          final result = useInfiniteQuery<int>(
+            queryKey: ['infinite', 'unmount-during-fetch'],
+            queryFn: (page) async {
+              // initial page quick
+              if (page == 1) {
+                await Future.delayed(Duration(milliseconds: 10));
+                return 1;
+              }
+              // next page intentionally delayed so we can unmount mid-flight
+              await Future.delayed(Duration(milliseconds: 100));
+              return page;
+            },
+            initialPageParam: 1,
+            getNextPageParam: (last) => last + 1,
+            spreadCallBackLocalyOnly: true,
+          );
+
+          return Column(
+            children: [
+              Text(result.status.toString()),
+              Text((result.data ?? []).join(','), key: Key('data')),
+              ElevatedButton(onPressed: () => result.fetchNextPage?.call(), child: Text('fetchNext')),
+            ],
+          );
+        },
+      ),
+    ));
+
+    // wait initial fetch
+    await tester.pumpAndSettle();
+    expect(find.text('QueryStatus.success'), findsOneWidget);
+
+    // start loading next page, then unmount immediately
+    await tester.tap(find.text('fetchNext'));
+    await tester.pump(); // begin network request
+
+    // unmount the widget before the in-flight future completes
+    await tester.pumpWidget(Container());
+
+    // wait longer than the delayed next-page future, make sure no unhandled exceptions occur
+    await tester.pump(Duration(milliseconds: 200));
+    await tester.pumpAndSettle();
+  });
 }

@@ -16,7 +16,7 @@ Instantiate a basic `QueryClient` for your app. Example:
 
 ```dart
 // Create a client with default options and cache handlers
-final queryClient = QueryClient(
+queryClient = QueryClient(
   defaultOptions: const DefaultOptions(
     queries: QueryDefaultOptions(
       enabled: true,
@@ -55,14 +55,22 @@ Future<Map<String, dynamic>> postTodo(Map<String, dynamic> todo) async {
   return todo; // in a real app you'd POST and return the created item
 }
 
-final queryClient = QueryClient();
-
 void main() {
-  runApp(
-    QueryClientProvider(
-      create: (_) => queryClient,
-      child: MaterialApp(home: Todos()),
+
+  queryClient = QueryClient(
+    defaultOptions: const DefaultOptions(
+      queries: QueryDefaultOptions(
+        enabled: true,
+        staleTime: 0,
+        refetchOnRestart: false,
+        refetchOnReconnect: false,
+      ),
     ),
+    queryCache: QueryCache(config: QueryCacheConfig(onError: (e) => print(e))),
+    mutationCache: MutationCache(config: MutationCacheConfig(onError: (e) => print(e))),
+  );
+
+  runApp(MaterialApp(home: Todos()),
   );
 }
 
