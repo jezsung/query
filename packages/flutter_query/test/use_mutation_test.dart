@@ -11,7 +11,7 @@ void main() {
       home: HookBuilder(
         builder: (context) {
           final result = useMutation<String, String>(
-            (params) async {
+            mutationFn: (params) async {
               // simulate async operation
               await Future.delayed(Duration(milliseconds: 10));
               return 'ok';
@@ -54,7 +54,7 @@ void main() {
       home: HookBuilder(
         builder: (context) {
           final result = useMutation<String, String>(
-            (params) async {
+            mutationFn: (params) async {
               // simulate async error
               await Future.delayed(Duration(milliseconds: 10));
               throw Exception('boom');

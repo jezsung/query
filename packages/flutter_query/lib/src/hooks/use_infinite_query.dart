@@ -63,7 +63,7 @@ InfiniteQueryResult<T> useInfiniteQuery<T>({
       result.value = newValue;
     } catch (e) {
       // In fetchNextPage the ValueNotifier may be disposed before
-      // his async callback runs. Swallow the error to prevent an app crash.
+      // his async callback runs. Swallow the error to prevent an app freeze.
     }
   }
 
