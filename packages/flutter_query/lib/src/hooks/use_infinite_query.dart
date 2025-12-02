@@ -26,21 +26,21 @@ InfiniteQueryResult<T> useInfiniteQuery<T>({
   var isFirstRequest = useRef(true);
   final callerId = useMemoized(() => DateTime.now().microsecondsSinceEpoch.toString(), []);
   var cacheEntry = cacheQuery[cacheKey];
-    final result = useState<InfiniteQueryResult<T>>(cacheEntry != null && cacheEntry.result.isSuccess
+  final result = useState<InfiniteQueryResult<T>>(cacheEntry != null && cacheEntry.result.isSuccess
       ? InfiniteQueryResult(
-        key: cacheKey,
-        status: cacheEntry.result.status,
-        data: cacheEntry.result.data as List<T>,
-        isFetching: cacheEntry.result.isFetching,
-        error: cacheEntry.result.error,
-        isFetchingNextPage: false)
+          key: cacheKey,
+          status: cacheEntry.result.status,
+          data: cacheEntry.result.data as List<T>,
+          isFetching: cacheEntry.result.isFetching,
+          error: cacheEntry.result.error,
+          isFetchingNextPage: false)
       : InfiniteQueryResult(
-        key: cacheKey,
-        status: QueryStatus.pending,
-        data: [],
-        isFetching: false,
-        error: null,
-        isFetchingNextPage: false));
+          key: cacheKey,
+          status: QueryStatus.pending,
+          data: [],
+          isFetching: false,
+          error: null,
+          isFetchingNextPage: false));
   late QueryCacheListener queryCacheListener;
 
   var isMounted = true;
@@ -62,9 +62,8 @@ InfiniteQueryResult<T> useInfiniteQuery<T>({
     try {
       result.value = newValue;
     } catch (e) {
-      // In some lifecycle orders the ValueNotifier may be disposed before
-      // this async callback runs. Swallow the error to prevent an app crash.
-      debugPrint('Ignored attempt to write to disposed ValueNotifier: $e');
+      // In fetchNextPage the ValueNotifier may be disposed before
+      // his async callback runs. Swallow the error to prevent an app crash.
     }
   }
 
@@ -77,13 +76,10 @@ InfiniteQueryResult<T> useInfiniteQuery<T>({
     currentPage.value = nextPage;
 
     var queryLoadingMore = resultPreviousPage.copyWith(
-      isFetching: true,
-      status: resultPreviousPage.status,
-      error: null,
-      isFetchingNextPage: true);
+        isFetching: true, status: resultPreviousPage.status, error: null, isFetchingNextPage: true);
 
     var futureFetch = TrackedFuture(queryFn(nextPage));
-    if (isMounted) safeSetResult(queryLoadingMore);
+    if (isMounted) result.value = queryLoadingMore;
     updateCache(queryLoadingMore, queryFnRunning: futureFetch);
 
     futureFetch.then((value) {
@@ -102,7 +98,7 @@ InfiniteQueryResult<T> useInfiniteQuery<T>({
       );
       queryResult.fetchNextPage = () => fetchNextPage(queryResult);
 
-      if (isMounted) safeSetResult(queryResult);
+      safeSetResult(queryResult);
       updateCache(queryResult);
 
       onSuccess?.call(pageData);
@@ -117,7 +113,7 @@ InfiniteQueryResult<T> useInfiniteQuery<T>({
         isFetchingNextPage: false,
       );
       queryResult.fetchNextPage = () => fetchNextPage(queryResult);
-      if (isMounted) safeSetResult(queryResult);
+      safeSetResult(queryResult);
       updateCache(queryResult);
       onError?.call(e);
       if (!spreadCallBackLocalyOnly) QueryClient.instance.queryCache?.config.onError?.call(e);
@@ -133,7 +129,7 @@ InfiniteQueryResult<T> useInfiniteQuery<T>({
         cacheEntry.queryFnRunning == null ||
         cacheEntry.queryFnRunning!.isCompleted ||
         cacheEntry.queryFnRunning!.hasError) {
-        var queryResult = InfiniteQueryResult<T>(
+      var queryResult = InfiniteQueryResult<T>(
           key: cacheKey,
           status: QueryStatus.pending,
           data: [],
@@ -150,7 +146,7 @@ InfiniteQueryResult<T> useInfiniteQuery<T>({
     }
     // Loading State: cacheEntry has a Running Function, set result to propagate the loading state
     var futureFetch = cacheEntry.queryFnRunning!;
-    if (isMounted) safeSetResult(cacheEntry.result as InfiniteQueryResult<T>);
+    if (isMounted) result.value = cacheEntry.result as InfiniteQueryResult<T>;
 
     futureFetch.then((value) {
       if (value is! T) return;
@@ -167,7 +163,7 @@ InfiniteQueryResult<T> useInfiniteQuery<T>({
       );
       queryResult.fetchNextPage = () => fetchNextPage(queryResult);
 
-      if (isMounted) safeSetResult(queryResult);
+      if (isMounted) result.value = queryResult;
       if (shouldUpdateTheCache) updateCache(queryResult);
 
       onSuccess?.call(pageData);
@@ -182,7 +178,7 @@ InfiniteQueryResult<T> useInfiniteQuery<T>({
         isFetchingNextPage: false,
       );
       queryResult.fetchNextPage = () => fetchNextPage(queryResult);
-      if (isMounted) safeSetResult(queryResult);
+      if (isMounted) result.value = queryResult;
       if (shouldUpdateTheCache) updateCache(queryResult);
       onError?.call(e);
       if (!spreadCallBackLocalyOnly) QueryClient.instance.queryCache?.config.onError?.call(e);
@@ -193,7 +189,7 @@ InfiniteQueryResult<T> useInfiniteQuery<T>({
     final List<T> data = [];
     try {
       //Loading...
-        var queryResult = InfiniteQueryResult<T>(
+      var queryResult = InfiniteQueryResult<T>(
           key: cacheKey,
           status: QueryStatus.pending,
           data: [],
@@ -201,7 +197,7 @@ InfiniteQueryResult<T> useInfiniteQuery<T>({
           error: null,
           isFetchingNextPage: false);
       queryResult.fetchNextPage = () => fetchNextPage(queryResult);
-      if (isMounted) safeSetResult(queryResult);
+      if (isMounted) result.value = queryResult;
 
       for (int page = initialPageParam; page <= currentPage.value; page++) {
         final pageData = await queryFn(page);
@@ -218,7 +214,7 @@ InfiniteQueryResult<T> useInfiniteQuery<T>({
         isFetchingNextPage: false,
       );
       queryResult.fetchNextPage = () => fetchNextPage(queryResult);
-      if (isMounted) safeSetResult(queryResult);
+      if (isMounted) result.value = queryResult;
 
       updateCache(queryResult);
     } catch (e) {
@@ -250,7 +246,7 @@ InfiniteQueryResult<T> useInfiniteQuery<T>({
         try {
           if (!isMounted) return;
           //We need to cast it with T, cause Flutter take it as Object only..
-            var queryResultT = InfiniteQueryResult<T>(
+          var queryResultT = InfiniteQueryResult<T>(
               key: cacheKey,
               status: queryResult.status,
               data: queryResult.data as List<T>,
@@ -263,9 +259,9 @@ InfiniteQueryResult<T> useInfiniteQuery<T>({
         } catch (e) {
           debugPrint(e.toString());
         }
-        } else {
-          // Handle the case where newResult is not an InfiniteQueryResult
-          debugPrint("newResult is not an InfiniteQueryResult");
+      } else {
+        // Handle the case where newResult is not an InfiniteQueryResult
+        debugPrint("newResult is not an InfiniteQueryResult");
       }
     }
 
@@ -286,7 +282,8 @@ InfiniteQueryResult<T> useInfiniteQuery<T>({
   return result.value;
 }
 
-void resetValues<T>(ObjectRef<int> currentPage, int initialPageParam, ValueNotifier<InfiniteQueryResult<T>> result, {bool isLoading = false}) {
+void resetValues<T>(ObjectRef<int> currentPage, int initialPageParam, ValueNotifier<InfiniteQueryResult<T>> result,
+    {bool isLoading = false}) {
   currentPage.value = initialPageParam;
   result.value.status = QueryStatus.pending;
   result.value.data = [];
