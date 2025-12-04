@@ -7,10 +7,6 @@ QueryResult<T> useQuery<T>(
     required List<Object> queryKey,
     double? staleTime,
     bool? enabled,
-    void Function(T)? onSuccess,
-    void Function(dynamic)? onError,
-    void Function(T?)? onUpdate,
-    bool spreadCallBackLocalyOnly = false,
     bool? refetchOnRestart,
     bool? refetchOnReconnect}) {
   final cacheKey = queryKeyToCacheKey(queryKey);
@@ -66,14 +62,13 @@ QueryResult<T> useQuery<T>(
       if (isMounted) result.value = queryResult;
       if (shouldUpdateTheCache) updateCache(queryResult);
 
-      onSuccess?.call(value);
-      if (!spreadCallBackLocalyOnly) QueryClient.instance.queryCache?.config.onSuccess?.call(value);
+      QueryClient.instance.queryCache?.config.onSuccess?.call(value);
     }).catchError((e) {
       final queryResult = QueryResult<T>(cacheKey, QueryStatus.error, null, e, isFetching: false);
       if (isMounted) result.value = queryResult;
       if (shouldUpdateTheCache) updateCache(queryResult);
-      onError?.call(e);
-      if (!spreadCallBackLocalyOnly) QueryClient.instance.queryCache?.config.onError?.call(e);
+
+      QueryClient.instance.queryCache?.config.onError?.call(e);
     });
   }
 
@@ -104,7 +99,6 @@ QueryResult<T> useQuery<T>(
         } else {
           result.value = QueryResult<T>(cacheKey, newResult.status, newResult.data as T?, newResult.error, isFetching: newResult.isFetching);
         }
-        if (onUpdate != null) onUpdate(newResult.data);
       } catch (e) {
         debugPrint(e.toString());
       }

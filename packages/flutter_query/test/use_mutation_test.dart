@@ -17,7 +17,6 @@ void main() {
               return 'ok';
             },
             onSuccess: (data) => successData = data,
-            spreadCallBackLocalyOnly: true,
           );
 
           return Column(
@@ -60,7 +59,6 @@ void main() {
               throw Exception('boom');
             },
             onError: (e) => errorObj = e,
-            spreadCallBackLocalyOnly: true,
           );
 
           return Column(

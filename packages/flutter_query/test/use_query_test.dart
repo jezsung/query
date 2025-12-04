@@ -22,8 +22,6 @@ void main() {
             return 'ok';
           },
           queryKey: ['fetch-success'],
-          onSuccess: (d) => successData = d,
-          spreadCallBackLocalyOnly: true,
         );
 
         return Column(children: [Text(result.status.toString()), Text(result.data ?? '')]);
@@ -55,8 +53,6 @@ void main() {
             throw Exception('boom');
           },
           queryKey: ['fetch-fail'],
-          onError: (e) => errorObj = e,
-          spreadCallBackLocalyOnly: true,
         );
 
         return Column(children: [Text(result.status.toString()), Text(result.error?.toString() ?? '')]);
@@ -84,7 +80,6 @@ void main() {
           },
           queryKey: ['disabled'],
           enabled: false,
-          spreadCallBackLocalyOnly: true,
         );
 
         return Container();
@@ -145,8 +140,6 @@ void main() {
           },
           queryKey: ['stale-key'],
           staleTime: 100, // ms -> cached entry older than this
-          spreadCallBackLocalyOnly: true,
-          onSuccess: (d) => data = d,
         );
 
         return Column(children: [Text(result.status.toString()), Text(result.data ?? '')]);
@@ -179,7 +172,6 @@ void main() {
           },
           queryKey: ['fresh-key'],
           staleTime: 1000, // large staleTime so the cached is not stale
-          spreadCallBackLocalyOnly: true,
         );
 
         return Column(children: [Text(result.status.toString()), Text(result.data ?? '')]);
@@ -220,7 +212,6 @@ class _ToggleEnableTestState extends State<_ToggleEnableTest> {
         },
         queryKey: ['toggle-enable-key'],
         enabled: enabled,
-        spreadCallBackLocalyOnly: true,
       );
 
       return Column(children: [Text(result.status.toString()), ElevatedButton(onPressed: () => setState(() => enabled = true), key: Key('toggle'), child: Text('toggle'))]);

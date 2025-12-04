@@ -24,8 +24,6 @@ void main() {
               return page;
             },
             initialPageParam: 1,
-            onSuccess: (d) => successData = d,
-            spreadCallBackLocalyOnly: true,
           );
 
           return Column(
@@ -63,7 +61,6 @@ void main() {
             },
             initialPageParam: 1,
             getNextPageParam: (last) => last + 1,
-            spreadCallBackLocalyOnly: true,
           );
 
           return Column(
@@ -104,8 +101,6 @@ void main() {
               throw Exception('boom');
             },
             initialPageParam: 1,
-            onError: (e) => errorCaptured = e,
-            spreadCallBackLocalyOnly: true,
           );
 
           return Column(children: [Text(result.status.toString())]);
@@ -133,7 +128,6 @@ void main() {
             },
             initialPageParam: 1,
             getNextPageParam: (last) => last + 1,
-            spreadCallBackLocalyOnly: true,
           );
 
           return Column(
@@ -179,7 +173,6 @@ void main() {
             },
             initialPageParam: 1,
             debounceTime: toggled ? Duration(milliseconds: 50) : null,
-            spreadCallBackLocalyOnly: true,
           );
 
           return Column(
@@ -233,7 +226,6 @@ void main() {
             },
             initialPageParam: 1,
             getNextPageParam: (last) => last + 1,
-            spreadCallBackLocalyOnly: true,
           );
 
           return Column(

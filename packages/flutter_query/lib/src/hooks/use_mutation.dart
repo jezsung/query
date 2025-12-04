@@ -3,9 +3,10 @@ import 'package:query_core/query_core.dart';
 
 MutationResult<T, P> useMutation<T, P>(
     {required Future<T> Function(P) mutationFn,
-    void Function(T)? onSuccess,
-    void Function(Object)? onError,
-    bool spreadCallBackLocalyOnly = false}) {
+    void Function(T?)? onSuccess,
+    void Function(Object?)? onError,
+    void Function(T?, Object?)? onSettle
+    }) {
   final state = useState<MutationState<T>>(MutationState<T>(null, MutationStatus.idle, null));
   var isMounted = true;
 
@@ -24,12 +25,14 @@ MutationResult<T, P> useMutation<T, P>(
       if (!isMounted) return;
       state.value = MutationState<T>(data, MutationStatus.success, null);
       onSuccess?.call(data);
-      if (!spreadCallBackLocalyOnly) QueryClient.instance.mutationCache?.config.onSuccess?.call(data);
+      onSettle?.call(data, null);
+      QueryClient.instance.mutationCache?.config.onSuccess?.call(data);
     } catch (e) {
       if (!isMounted) return;
       state.value = MutationState<T>(null, MutationStatus.error, e);
       onError?.call(e);
-      if (!spreadCallBackLocalyOnly) QueryClient.instance.mutationCache?.config.onError?.call(e);
+      onSettle?.call(null, e);
+      QueryClient.instance.mutationCache?.config.onError?.call(e);
     }
   }
 

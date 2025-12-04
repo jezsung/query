@@ -11,9 +11,6 @@ InfiniteQueryResult<T> useInfiniteQuery<T>({
   required int initialPageParam,
   int Function(T lastResult)? getNextPageParam,
   Duration? debounceTime,
-  void Function(T)? onSuccess,
-  void Function(dynamic)? onError,
-  bool spreadCallBackLocalyOnly = false,
   bool? refetchOnRestart,
   bool? refetchOnReconnect,
 }) {
@@ -97,8 +94,7 @@ InfiniteQueryResult<T> useInfiniteQuery<T>({
       safeSetResult(queryResult);
       updateCache(queryResult);
 
-      onSuccess?.call(pageData);
-      if (!spreadCallBackLocalyOnly) QueryClient.instance.queryCache?.config.onSuccess?.call(pageData);
+      QueryClient.instance.queryCache?.config.onSuccess?.call(pageData);
     }).catchError((e) {
       final queryResult = InfiniteQueryResult<T>(
         key: cacheKey,
@@ -111,8 +107,8 @@ InfiniteQueryResult<T> useInfiniteQuery<T>({
       queryResult.fetchNextPage = () => fetchNextPage(queryResult);
       safeSetResult(queryResult);
       updateCache(queryResult);
-      onError?.call(e);
-      if (!spreadCallBackLocalyOnly) QueryClient.instance.queryCache?.config.onError?.call(e);
+
+      QueryClient.instance.queryCache?.config.onError?.call(e);
     });
   }
 
@@ -162,8 +158,7 @@ InfiniteQueryResult<T> useInfiniteQuery<T>({
       if (isMounted) result.value = queryResult;
       if (shouldUpdateTheCache) updateCache(queryResult);
 
-      onSuccess?.call(pageData);
-      if (!spreadCallBackLocalyOnly) QueryClient.instance.queryCache?.config.onSuccess?.call(pageData);
+      QueryClient.instance.queryCache?.config.onSuccess?.call(pageData);
     }).catchError((e) {
       final queryResult = InfiniteQueryResult<T>(
         key: cacheKey,
@@ -176,8 +171,8 @@ InfiniteQueryResult<T> useInfiniteQuery<T>({
       queryResult.fetchNextPage = () => fetchNextPage(queryResult);
       if (isMounted) result.value = queryResult;
       if (shouldUpdateTheCache) updateCache(queryResult);
-      onError?.call(e);
-      if (!spreadCallBackLocalyOnly) QueryClient.instance.queryCache?.config.onError?.call(e);
+
+      QueryClient.instance.queryCache?.config.onError?.call(e);
     });
   }
 
