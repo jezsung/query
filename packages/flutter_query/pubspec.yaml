@@ -16,7 +16,7 @@ dependencies:
   flutter_hooks: ^0.21.2
   meta: ^1.9.1
   provider: ^6.0.5
-  query_core: #^0.2.1
+  query_core: #^0.2.1 ## we need to update the core package here.
     path: ../query_core
 
 dev_dependencies:

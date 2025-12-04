@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:query_core/src/types.dart';
 
 

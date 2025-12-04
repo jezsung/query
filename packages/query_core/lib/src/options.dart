@@ -1,4 +1,3 @@
-// Core-level small types and default options
 
 class QueryDefaultOptions {
   final bool enabled;

@@ -1,7 +1,5 @@
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:query_core/query_core.dart';
-import 'package:query_core/src/mutation_types.dart';
-import 'package:query_core/src/query_client.dart';
 
 MutationResult<T, P> useMutation<T, P>(
     {required Future<T> Function(P) mutationFn,

@@ -1,8 +1,4 @@
 import 'package:query_core/query_core.dart';
-import 'package:query_core/src/options.dart';
-import 'package:query_core/src/query_cache.dart';
-import 'package:query_core/src/mutation_cache.dart';
-import 'package:query_core/src/utils.dart';
 
 QueryClient queryClient = QueryClient();
 final cacheQuery = <String, CacheQuery<dynamic>>{};
