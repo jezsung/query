@@ -87,7 +87,13 @@ class InfinityPage extends HookWidget {
               if (infiniteTodos.isFetching) {
                 return const Padding(
                   padding: EdgeInsets.symmetric(vertical: 12),
-                  child: Center(child: CircularProgressIndicator()),
+                    child: Center(
+                    child: SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(),
+                    ),
+                    ),
                 );
               } else {
                 return const SizedBox.shrink();
