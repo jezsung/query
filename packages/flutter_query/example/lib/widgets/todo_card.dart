@@ -28,8 +28,8 @@ class TodoCard extends HookWidget {
       mutationFn: (Todo body) => UpdateTodoApi.request(body),
       onSuccess: (deleted) {
         // Invalidate the todos query to refetch the updated list
-        QueryClient.instance.invalidateQueries(["Infinite", GetAllTodosApi.name]);
-        QueryClient.instance.invalidateQueries(["Classical", GetAllTodosApi.name]);
+        QueryClient.instance.invalidateQueries(queryKey: ["Infinite", GetAllTodosApi.name]);
+        QueryClient.instance.invalidateQueries(queryKey: ["Classical", GetAllTodosApi.name]);
       },
     );
 
@@ -37,8 +37,8 @@ class TodoCard extends HookWidget {
       mutationFn: (int id) => DeleteTodoApi.request(id),
       onSuccess: (deleted) {
         // Invalidate the todos query to refetch the updated list
-        QueryClient.instance.invalidateQueries(["Infinite", GetAllTodosApi.name]);
-        QueryClient.instance.invalidateQueries(["Classical", GetAllTodosApi.name]);
+        QueryClient.instance.invalidateQueries(queryKey: ["Infinite", GetAllTodosApi.name]);
+        QueryClient.instance.invalidateQueries(queryKey: ["Classical", GetAllTodosApi.name]);
       },
     );
 

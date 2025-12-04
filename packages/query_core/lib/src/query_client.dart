@@ -60,13 +60,23 @@ class QueryClient {
   }
   // #endRegion listeners
 
-  void invalidateQueries(List<Object> keys, {bool exact = false}) {
+  void invalidateQueries({List<Object>? queryKey, bool exact = false}) {
+    // If queryKey is null we invalidate everything.
+    if (queryKey == null) {
+      final invalidatedKeys = cacheQuery.keys.toList();
+      cacheQuery.clear();
+      for (var key in invalidatedKeys) {
+        notifyRefetch(key);
+      }
+      return;
+    }
+
     if (exact) {
-      final cacheKey = queryKeyToCacheKey(keys);
+      final cacheKey = queryKeyToCacheKey(queryKey);
       cacheQuery.remove(cacheKey);
       notifyRefetch(cacheKey);
     } else {
-      final cacheKey = queryKeyToCacheKey(keys);
+      final cacheKey = queryKeyToCacheKey(queryKey);
       final List<String> invalidatedKeys = [];
 
       cacheQuery.removeWhere((key, value) {

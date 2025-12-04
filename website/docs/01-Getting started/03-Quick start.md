@@ -40,7 +40,7 @@ class Todos extends HookWidget {
       mutationFn: postTodo,
       onSuccess: (_) {
         // Invalidate and refetch the todos query after successful mutation
-        QueryClient.instance.invalidateQueries(['todos']);
+        QueryClient.instance.invalidateQueries(queryKey: ['todos']);
       },
     );
 

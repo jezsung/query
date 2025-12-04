@@ -94,7 +94,7 @@ The example below demonstrates a minimal Flutter Hooks UI using `useMutation` to
       mutationFn: (Todo body) => UpdateTodoApi.request(body),
       onSuccess: (deleted) {
         // Invalidate the todos query to refetch the updated list
-        QueryClient.instance.invalidateQueries(['todos']);
+        QueryClient.instance.invalidateQueries(queryKey: ['todos']);
       },
     );
 ```

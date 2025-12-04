@@ -44,7 +44,7 @@ Iterates over all listeners and calls their `refetchCallBack()` if either the li
 > ```
 
 
-### `refetchOnRestart()`
+### `refetchOnRestart`
 Iterates over all listeners and calls their `refetchCallBack()` if either the listener's `refetchOnRestart` is true
 > **Need implementation:**  
 > ```dart
@@ -70,14 +70,14 @@ queryClient.setQueryData(['todo', todoId], (oldData) => {... oldData});
 The `invalidateQueries` method can be used to invalidate and refetch single or multiple queries in the cache based on their query keys or any other functionally accessible property/state of the query. By default, all matching queries are immediately marked as invalid and active queries are refetched in the background.
 
 Invalidates all queries starting with 'todos'
-```dart
- queryClient.invalidateQueries(["todos"]);
-```
+ ```dart
+ queryClient.invalidateQueries(queryKey: ["todos"]);
+ ```
 
 Invalidates only the query with key exactly ['todos']
-```dart
- queryClient.invalidateQueries(["todos"], true);
-```
+ ```dart
+  queryClient.invalidateQueries(queryKey: ["todos"], exact: true);
+ ```
 
 #### clear
 

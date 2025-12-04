@@ -18,8 +18,8 @@ class FloatingButton extends HookWidget {
       mutationFn: (Todo body) => CreateTodoApi.request(body),
       onSuccess: (created) {
         // invalidate the todos list so it refetches with the new item
-        QueryClient.instance.invalidateQueries(["Infinite", GetAllTodosApi.name]);
-        QueryClient.instance.invalidateQueries(["Classical", GetAllTodosApi.name]);
+        QueryClient.instance.invalidateQueries(queryKey: ["Infinite", GetAllTodosApi.name]);
+        QueryClient.instance.invalidateQueries(queryKey: ["Classical", GetAllTodosApi.name]);
       },
     );
 
