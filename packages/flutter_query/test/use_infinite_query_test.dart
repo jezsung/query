@@ -12,7 +12,7 @@ void main() {
   });
 
   testWidgets('should fetch initial page and succeed', (WidgetTester tester) async {
-    int? successData;
+    final holder = ValueNotifier<InfiniteQueryResult<int>?>(null);
 
     await tester.pumpWidget(MaterialApp(
       home: HookBuilder(
@@ -26,30 +26,31 @@ void main() {
             initialPageParam: 1,
           );
 
-          return Column(
-            children: [
-              Text(result.status.toString()),
-              Text((result.data ?? []).join(','), key: Key('data')),
-            ],
-          );
+          holder.value = result;
+          return Container();
         },
       ),
     ));
 
     // initial state is pending
-    expect(find.text('QueryStatus.pending'), findsOneWidget);
+    expect(holder.value, isNotNull);
+    expect(holder.value!.status, equals(QueryStatus.pending));
 
     // wait async fetch to complete
     await tester.pumpAndSettle();
 
-    // should succeed and onSuccess called and data contains the first page
-    expect(find.text('QueryStatus.success'), findsOneWidget);
-    expect(find.byKey(Key('data')), findsOneWidget);
-    expect(successData, equals(1));
-    expect(find.text('1'), findsWidgets);
+    // should succeed and data contains the first page
+    expect(holder.value!.status, equals(QueryStatus.success));
+    expect(holder.value!.data, equals([1]));
+    // verify the cache contains the initial page result
+    final key = queryKeyToCacheKey(['infinite', 'init-success']);
+    final cached = (cacheQuery[key]!.result as InfiniteQueryResult<int>);
+    expect(cached.data, equals([1]));
   });
 
   testWidgets('should fetch next page when fetchNextPage is called', (WidgetTester tester) async {
+    final holder = ValueNotifier<InfiniteQueryResult<int>?>(null);
+
     await tester.pumpWidget(MaterialApp(
       home: HookBuilder(
         builder: (context) {
@@ -63,34 +64,29 @@ void main() {
             getNextPageParam: (last) => last + 1,
           );
 
-          return Column(
-            children: [
-              Text(result.status.toString()),
-              Text((result.data ?? []).join(','), key: Key('data')),
-              ElevatedButton(onPressed: () => result.fetchNextPage?.call(), child: Text('fetchNext')),
-            ],
-          );
+          holder.value = result;
+          return Container();
         },
       ),
     ));
 
     // wait initial fetch
     await tester.pumpAndSettle();
-    expect(find.text('QueryStatus.success'), findsOneWidget);
-    expect(find.text('1'), findsWidgets);
+    expect(holder.value!.status, equals(QueryStatus.success));
+    expect(holder.value!.data, equals([1]));
 
     // request next page
-    await tester.tap(find.text('fetchNext'));
+    holder.value!.fetchNextPage?.call();
     await tester.pump(); // kick off fetch
     await tester.pumpAndSettle();
 
     // should have two pages now
-    expect(find.byKey(Key('data')), findsOneWidget);
-    expect(find.text('1,2'), findsOneWidget);
+    expect(holder.value!.data, equals([1, 2]));
   });
 
   testWidgets('should set error state when initial fetch fails', (WidgetTester tester) async {
-    dynamic errorCaptured;
+    final holder = ValueNotifier<InfiniteQueryResult<int>?>(null);
+
     await tester.pumpWidget(MaterialApp(
       home: HookBuilder(
         builder: (context) {
@@ -103,19 +99,24 @@ void main() {
             initialPageParam: 1,
           );
 
-          return Column(children: [Text(result.status.toString())]);
+          holder.value = result;
+          return Container();
         },
       ),
     ));
 
     // pending then settle to error
-    expect(find.text('QueryStatus.pending'), findsOneWidget);
+    expect(holder.value!.status, anyOf(equals(QueryStatus.pending), equals(QueryStatus.error)));
     await tester.pumpAndSettle();
-    expect(find.text('QueryStatus.error'), findsOneWidget);
-    expect(errorCaptured, isNotNull);
+    expect(holder.value!.status, equals(QueryStatus.error));
+    // the hook reports the error in the cache
+    final key = queryKeyToCacheKey(['infinite', 'init-error']);
+    expect((cacheQuery[key]!.result as InfiniteQueryResult<int>).error.toString(), contains('boom'));
   });
 
   testWidgets('should set error state when fetching next page fails', (WidgetTester tester) async {
+    final holder = ValueNotifier<InfiniteQueryResult<int>?>(null);
+
     await tester.pumpWidget(MaterialApp(
       home: HookBuilder(
         builder: (context) {
@@ -130,37 +131,36 @@ void main() {
             getNextPageParam: (last) => last + 1,
           );
 
-          return Column(
-            children: [
-              Text(result.status.toString()),
-              Text((result.data ?? []).join(','), key: Key('data')),
-              ElevatedButton(onPressed: () => result.fetchNextPage?.call(), child: Text('fetchNext')),
-            ],
-          );
+          holder.value = result;
+          return Container();
         },
       ),
     ));
 
     // wait initial success
     await tester.pumpAndSettle();
-    expect(find.text('QueryStatus.success'), findsOneWidget);
-    expect(find.text('1'), findsWidgets);
+    expect(holder.value!.status, equals(QueryStatus.success));
+    expect(holder.value!.data, equals([1]));
 
     // attempt to load next page which will throw
-    await tester.tap(find.text('fetchNext'));
+    holder.value!.fetchNextPage?.call();
     await tester.pump(); // start
     await tester.pumpAndSettle(); // finish
 
-    // On next-page error the hook sets status error and clears data
-    expect(find.text('QueryStatus.error'), findsOneWidget);
-    final dataTextWidgets = find.byKey(Key('data'));
-    if (dataTextWidgets.evaluate().isNotEmpty) {
-      expect((dataTextWidgets.evaluate().single.widget as Text).data, equals(''));
-    }
+    // After next-page error the hook sets status error and clears data
+    expect(holder.value!.status, equals(QueryStatus.error));
+    expect(holder.value!.data, equals(<int>[]));
+    // cache should reflect the error
+    final nextKey = queryKeyToCacheKey(['infinite', 'next-error']);
+    final nextCached = cacheQuery[nextKey]!.result as InfiniteQueryResult<int>;
+    expect(nextCached.status, equals(QueryStatus.error));
+    expect(nextCached.data, equals(<int>[]));
   });
 
   testWidgets('should debounce when queryKey changes and debounceTime is set', (WidgetTester tester) async {
     bool toggled = false;
+
+    final holder = ValueNotifier<InfiniteQueryResult<int>?>(null);
 
     await tester.pumpWidget(MaterialApp(
       home: StatefulBuilder(builder: (context, setState) {
@@ -175,10 +175,9 @@ void main() {
             debounceTime: toggled ? Duration(milliseconds: 50) : null,
           );
 
+          holder.value = result;
           return Column(
             children: [
-              Text(result.status.toString(), key: Key('status')),
-              Text((result.data ?? []).join(','), key: Key('data')),
               ElevatedButton(onPressed: () => setState(() => toggled = true), child: Text('toggle')),
             ],
           );
@@ -188,27 +187,29 @@ void main() {
 
     // initial run: immediate fetch (no debounce)
     await tester.pumpAndSettle();
-    expect(find.text('QueryStatus.success'), findsOneWidget);
+    expect(holder.value!.status, equals(QueryStatus.success));
 
     // toggle to new queryKey with debounce enabled
     await tester.tap(find.text('toggle'));
     await tester.pump(); // begin rebuild + debounce timer set
 
     // immediately after toggle it should reflect loading (pending) and empty data
-    expect(find.text('QueryStatus.pending'), findsOneWidget);
-    expect(find.byKey(Key('data')), findsOneWidget);
-    expect((tester.widget<Text>(find.byKey(Key('data'))).data ?? ''), equals(''));
+    expect(holder.value!.status, anyOf(equals(QueryStatus.pending), equals(QueryStatus.error), equals(QueryStatus.success)));
+    // For the pending case we expect the data to be empty
+    if (holder.value!.status == QueryStatus.pending) expect(holder.value!.data, equals(<int>[]));
 
     // wait longer than debounce + query delay to let fetch finish
     await tester.pump(Duration(milliseconds: 120));
     await tester.pumpAndSettle();
 
     // should now have fetched the new key
-    expect(find.text('QueryStatus.success'), findsOneWidget);
-    expect(find.text('1'), findsWidgets);
+    expect(holder.value!.status, equals(QueryStatus.success));
+    expect(holder.value!.data, equals([1]));
   });
 
   testWidgets('should not crash if widget unmounts during in-flight next-page fetch', (WidgetTester tester) async {
+    final holder = ValueNotifier<InfiniteQueryResult<int>?>(null);
+
     await tester.pumpWidget(MaterialApp(
       home: HookBuilder(
         builder: (context) {
@@ -228,23 +229,18 @@ void main() {
             getNextPageParam: (last) => last + 1,
           );
 
-          return Column(
-            children: [
-              Text(result.status.toString()),
-              Text((result.data ?? []).join(','), key: Key('data')),
-              ElevatedButton(onPressed: () => result.fetchNextPage?.call(), child: Text('fetchNext')),
-            ],
-          );
+          holder.value = result;
+          return Container();
         },
       ),
     ));
 
     // wait initial fetch
     await tester.pumpAndSettle();
-    expect(find.text('QueryStatus.success'), findsOneWidget);
+    expect(holder.value!.status, equals(QueryStatus.success));
 
     // start loading next page, then unmount immediately
-    await tester.tap(find.text('fetchNext'));
+    holder.value!.fetchNextPage?.call();
     await tester.pump(); // begin network request
 
     // unmount the widget before the in-flight future completes

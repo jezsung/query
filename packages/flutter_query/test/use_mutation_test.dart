@@ -2,10 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_query/src/hooks/use_mutation.dart';
+import 'package:query_core/query_core.dart';
 
 void main() {
+  setUp(() {
+    // Ensure a fresh QueryClient instance between tests
+    QueryClient();
+  });
+
+// (setUp is declared above)
   testWidgets('should mutate and succeed when mutate is called', (WidgetTester tester) async {
     String? successData;
+    final holder = ValueNotifier<MutationResult<String, String>?>(null);
 
     await tester.pumpWidget(MaterialApp(
       home: HookBuilder(
@@ -19,35 +27,33 @@ void main() {
             onSuccess: (data) => successData = data,
           );
 
-          return Column(
-            children: [
-              Text(result.status.toString(), key: Key('status')),
-              ElevatedButton(onPressed: () => result.mutate('p'), child: Text('mutate')),
-            ],
-          );
+          holder.value = result;
+          return Container();
         },
       ),
     ));
-
     // initial state is idle
-    expect(find.text('MutationStatus.idle'), findsOneWidget);
+    expect(holder.value!.status, equals(MutationStatus.idle));
 
-    await tester.tap(find.text('mutate'));
+    // start mutation
+    holder.value!.mutate('p');
     await tester.pump(); // start async
 
     // should be pending while in-flight
-    expect(find.text('MutationStatus.pending'), findsOneWidget);
+    expect(holder.value!.status, equals(MutationStatus.pending));
 
     // finish the async mutation
     await tester.pumpAndSettle();
 
-    // should end as success
-    expect(find.text('MutationStatus.success'), findsOneWidget);
+    // should end as success and data should be available via the result and callback
+    expect(holder.value!.status, equals(MutationStatus.success));
+    expect(holder.value!.data, equals('ok'));
     expect(successData, equals('ok'));
   });
 
   testWidgets('should mutate and fail when mutate is called', (WidgetTester tester) async {
     Object? errorObj;
+    final holder = ValueNotifier<MutationResult<String, String>?>(null);
 
     await tester.pumpWidget(MaterialApp(
       home: HookBuilder(
@@ -61,30 +67,27 @@ void main() {
             onError: (e) => errorObj = e,
           );
 
-          return Column(
-            children: [
-              Text(result.status.toString(), key: Key('status')),
-              ElevatedButton(onPressed: () => result.mutate('p'), child: Text('mutate')),
-            ],
-          );
+          holder.value = result;
+          return Container();
         },
       ),
     ));
-
     // initial state is idle
-    expect(find.text('MutationStatus.idle'), findsOneWidget);
+    expect(holder.value!.status, equals(MutationStatus.idle));
 
-    await tester.tap(find.text('mutate'));
+    holder.value!.mutate('p');
     await tester.pump(); // start async
 
     // should be pending while in-flight
-    expect(find.text('MutationStatus.pending'), findsOneWidget);
+    expect(holder.value!.status, equals(MutationStatus.pending));
 
     // finish the async mutation which should throw
     await tester.pumpAndSettle();
 
-    // should end as error
-    expect(find.text('MutationStatus.error'), findsOneWidget);
+    // should end as error; result should include the error
+    expect(holder.value!.status, equals(MutationStatus.error));
+    expect(holder.value!.error, isNotNull);
+    expect(holder.value!.error.toString(), contains('boom'));
     expect(errorObj, isNotNull);
   });
 }

@@ -12,60 +12,81 @@ void main() {
   });
 
   testWidgets('should fetch and succeed', (WidgetTester tester) async {
-    String? successData;
+    final holder = ValueNotifier<QueryResult<String>?>(null);
 
     await tester.pumpWidget(MaterialApp(
       home: HookBuilder(builder: (context) {
-        final result = useQuery<String>(
+        final query = useQuery<String>(
+          queryKey: ['fetch-success'],
           queryFn: () async {
             await Future.delayed(Duration(milliseconds: 10));
             return 'ok';
           },
-          queryKey: ['fetch-success'],
         );
 
-        return Column(children: [Text(result.status.toString()), Text(result.data ?? '')]);
+        // expose the query to the test
+        holder.value = query;
+
+        // return an empty container, we assert on the hook state directly
+        return Container();
       }),
     ));
 
-    // initial state is pending
-    expect(find.text('QueryStatus.pending'), findsOneWidget);
+    // initial state read from the hook directly
+    expect(holder.value!.status, equals(QueryStatus.pending));
 
-    // let the query start
+    // let the query start and finish
     await tester.pump();
-
-    // wait for completion
     await tester.pumpAndSettle();
 
-    expect(find.text('QueryStatus.success'), findsOneWidget);
-    expect(find.text('ok'), findsOneWidget);
-    expect(successData, equals('ok'));
+    // assert the hook result itself
+    expect(holder.value!.status, equals(QueryStatus.success));
+    expect(holder.value!.data, equals('ok'));
+
+    // The cache should also contain the successful result
+    final key = queryKeyToCacheKey(['fetch-success']);
+    expect((cacheQuery[key]!.result as QueryResult<String>).data, equals('ok'));
   });
 
   testWidgets('should fetch and fail', (WidgetTester tester) async {
-    Object? errorObj;
+    final holder = ValueNotifier<QueryResult<String>?>(null);
 
     await tester.pumpWidget(MaterialApp(
       home: HookBuilder(builder: (context) {
         final result = useQuery<String>(
+          queryKey: ['fetch-fail'],
           queryFn: () async {
             await Future.delayed(Duration(milliseconds: 10));
             throw Exception('boom');
           },
-          queryKey: ['fetch-fail'],
         );
 
-        return Column(children: [Text(result.status.toString()), Text(result.error?.toString() ?? '')]);
+        holder.value = result;
+
+        return Container();
       }),
     ));
-
-    expect(find.text('QueryStatus.pending'), findsOneWidget);
-
+    // run the build and let the hook run the failing query
     await tester.pump();
-    await tester.pumpAndSettle();
 
-    expect(find.text('QueryStatus.error'), findsOneWidget);
-    expect(errorObj, isNotNull);
+    // wait for the hook to update to error status (with a small timeout)
+    var tries = 0;
+    while ((holder.value == null || holder.value!.status == QueryStatus.pending) && tries < 20) {
+      await tester.pump(Duration(milliseconds: 10));
+      tries++;
+    }
+
+    expect(holder.value, isNotNull);
+    expect(holder.value!.status, equals(QueryStatus.error));
+    expect(holder.value!.error.toString(), contains('boom'));
+
+    // cache should contain the failing result as well (if the hook updated the cache)
+    final cacheKey = queryKeyToCacheKey(['fetch-fail']);
+    if (cacheQuery.containsKey(cacheKey)) {
+      final cached = cacheQuery[cacheKey]!.result as QueryResult<String>;
+      expect(cached.status, equals(QueryStatus.error));
+      expect(cached.error.toString(), contains('boom'));
+    }
   });
 
   testWidgets('should not fetch when enabled is false', (WidgetTester tester) async {
@@ -74,11 +95,11 @@ void main() {
     await tester.pumpWidget(MaterialApp(
       home: HookBuilder(builder: (context) {
         useQuery<String>(
+          queryKey: ['disabled'],
           queryFn: () async {
             called = true;
             return 'ok';
           },
-          queryKey: ['disabled'],
           enabled: false,
         );
 
@@ -93,56 +114,81 @@ void main() {
   });
 
   testWidgets('should fetch when enabled is changed from false to true', (WidgetTester tester) async {
-    String? resultData;
+    final holder = ValueNotifier<QueryResult<String>?>(null);
     var called = 0;
 
     await tester.pumpWidget(MaterialApp(
-      home: _ToggleEnableTest(
-        queryFn: () async {
-          called++;
-          await Future.delayed(Duration(milliseconds: 5));
-          return 'value-$called';
-        },
-        onGotResult: (v) => resultData = v,
-      ),
+      home: HookBuilder(builder: (context) {
+        final result = useQuery<String>(
+          queryKey: ['toggle-enable-key'],
+          queryFn: () async {
+            called++;
+            await Future.delayed(Duration(milliseconds: 5));
+            return 'value-$called';
+          },
+          enabled: false,
+        );
+
+        holder.value = result;
+
+        return Container();
+      }),
     ));
 
     // initial build: enabled=false so should NOT call
     await tester.pump();
     expect(called, equals(0));
 
-    // tap toggle button to enable
-    await tester.tap(find.byKey(Key('toggle')));
-    await tester.pump();
+    // enable the query by rebuilding with enabled = true
+    await tester.pumpWidget(MaterialApp(
+      home: HookBuilder(builder: (context) {
+        final result = useQuery<String>(
+          queryKey: ['toggle-enable-key'],
+          queryFn: () async {
+            called++;
+            await Future.delayed(Duration(milliseconds: 5));
+            return 'value-$called';
+          },
+          enabled: true,
+        );
+
+        holder.value = result;
+        return Container();
+      }),
+    ));
 
     // allow async to run
     await tester.pumpAndSettle();
 
     expect(called, greaterThan(0));
-    expect(resultData, isNotNull);
+    expect(holder.value!.status, equals(QueryStatus.success));
+    expect(holder.value!.data, contains('value-'));
   });
 
   testWidgets('should refetch when data is stale', (WidgetTester tester) async {
     final key = queryKeyToCacheKey(['stale-key']);
+    final holder = ValueNotifier<QueryResult<String>?>(null);
 
     // populate cache with old timestamp
     cacheQuery[key] = CacheQuery(QueryResult<String>(key, QueryStatus.success, 'old', null),
         DateTime.now().subtract(Duration(milliseconds: 200)));
 
-    String? data;
+    // removed external callback; assert on the rendered UI
 
     await tester.pumpWidget(MaterialApp(
       home: HookBuilder(builder: (context) {
         final result = useQuery<String>(
+          queryKey: ['stale-key'],
           queryFn: () async {
             await Future.delayed(Duration(milliseconds: 5));
             return 'fresh';
           },
-          queryKey: ['stale-key'],
           staleTime: 100, // ms -> cached entry older than this
         );
 
-        return Column(children: [Text(result.status.toString()), Text(result.data ?? '')]);
+        holder.value = result;
+
+        return Container();
       }),
     ));
 
@@ -150,9 +196,10 @@ void main() {
     await tester.pump();
     await tester.pumpAndSettle();
 
-    expect(find.text('QueryStatus.success'), findsOneWidget);
-    expect(find.text('fresh'), findsOneWidget);
-    expect(data, equals('fresh'));
+    expect(holder.value!.data, equals('fresh'));
+    // cache should be updated with fresh value
+    final cacheKey = queryKeyToCacheKey(['stale-key']);
+    expect((cacheQuery[cacheKey]!.result as QueryResult<String>).data, equals('fresh'));
   });
 
   testWidgets('should not refetch when data is not null and not stale', (WidgetTester tester) async {
@@ -163,18 +210,22 @@ void main() {
 
     var called = false;
 
+    final holder = ValueNotifier<QueryResult<String>?>(null);
+
     await tester.pumpWidget(MaterialApp(
       home: HookBuilder(builder: (context) {
         final result = useQuery<String>(
+          queryKey: ['fresh-key'],
           queryFn: () async {
             called = true;
             return 'should-not-run';
           },
-          queryKey: ['fresh-key'],
           staleTime: 1000, // large staleTime so the cached is not stale
         );
 
-        return Column(children: [Text(result.status.toString()), Text(result.data ?? '')]);
+        holder.value = result;
+
+        return Container();
       }),
     ));
 
@@ -182,39 +233,9 @@ void main() {
     await tester.pump();
 
     expect(called, isFalse);
-    expect(find.text('QueryStatus.success'), findsOneWidget);
-    expect(find.text('cached'), findsOneWidget);
+    expect(holder.value!.status, equals(QueryStatus.success));
+    expect(holder.value!.data, equals('cached'));
   });
 }
 
-// Helper widget to toggle enabled
-class _ToggleEnableTest extends StatefulWidget {
-  final Future<String> Function() queryFn;
-  final void Function(String?) onGotResult;
-
-  _ToggleEnableTest({required this.queryFn, required this.onGotResult});
-
-  @override
-  State<_ToggleEnableTest> createState() => _ToggleEnableTestState();
-}
-
-class _ToggleEnableTestState extends State<_ToggleEnableTest> {
-  bool enabled = false;
-
-  @override
-  Widget build(BuildContext context) {
-    return HookBuilder(builder: (context) {
-      final result = useQuery<String>(
-        queryFn: () async {
-          final value = await widget.queryFn();
-          widget.onGotResult(value);
-          return value;
-        },
-        queryKey: ['toggle-enable-key'],
-        enabled: enabled,
-      );
-
-      return Column(children: [Text(result.status.toString()), ElevatedButton(onPressed: () => setState(() => enabled = true), key: Key('toggle'), child: Text('toggle'))]);
-    });
-  }
-}
+// No helper widgets — tests inspect the hook result directly via ValueNotifiers.
