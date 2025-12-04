@@ -4,8 +4,6 @@ import 'pages/todos_page.dart';
 import 'pages/infinity_page.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 
-// The QueryClient is created inside the QueryClientProvider (see Quick Start docs)
-
 void main() {
   queryClient = QueryClient(
     defaultOptions: const DefaultOptions(

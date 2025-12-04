@@ -1,60 +1,72 @@
-In this quick start tutorial, we will make an app that shows "Hello World!" in the center of the screen after the 3-second delay using a `QueryBuilder`.
+This code snippet very briefly illustrates the 3 core concepts of React Query:
 
-First of all, wrap your entire widget tree with the `QueryClientProvider`. The `QueryClientProvider` allows you to create a `QueryClient` and dispose of it when the `QueryClient` is no longer used.
+- Queries
+- Mutations
+- Query Invalidation
 
 ```dart title="lib/main.dart"
+import 'package:flutter/material.dart';
+import 'package:flutter_query/flutter_query.dart';
+
 void main() {
-  runApp(
-    QueryClientProvider(
-      create: (context) => QueryClient(),
-      child: const MyApp(),
+  // Create a client with default options and cache handlers
+  queryClient = QueryClient(
+    defaultOptions: const DefaultOptions(
+      queries: QueryDefaultOptions(
+        enabled: true,
+        staleTime: 0,
+        refetchOnRestart: false,
+        refetchOnReconnect: false,
+      ),
     ),
+    queryCache: QueryCache(config: QueryCacheConfig(onError: (e) => print(e))),
+    mutationCache: MutationCache(config: MutationCacheConfig(onError: (e) => print(e))),
   );
+
+  runApp(const MyApp());
 }
-```
 
-:::caution
-Do create a `QueryClient` inside the `create`. Do NOT provide a `QueryClient` that was created outside of the `create`.
-:::
-
-```dart title="lib/main.dart"
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
-
+class Todos extends HookWidget {
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Quick start',
-      theme: ThemeData(primarySwatch: Colors.blue),
-      home: HomeScreen(),
+    // Queries
+    final todosQuery = useQuery<List<Map<String, dynamic>>>(
+      queryKey: ['todos'],
+      queryFn: getTodos,
     );
-  }
-}
 
-class HomeScreen extends StatelessWidget {
-  const HomeScreen({super.key});
+    // Mutations
+    final addTodoMutation = useMutation(
+      mutationFn: postTodo,
+      onSuccess: (_) {
+        // Invalidate and refetch the todos query after successful mutation
+        QueryClient.instance.invalidateQueries(['todos']);
+      },
+    );
 
-  @override
-  Widget build(BuildContext context) {
+    if (todosQuery.isPending) return const Center(child: Text('Loading...'));
+    if (todosQuery.isError) return Center(child: Text('Error: ${todosQuery.error}'));
+
+    final todos = todosQuery.data ?? [];
+
     return Scaffold(
-      body: Center(
-        child: QueryBuilder<String>(
-          id: 'id',
-          fetcher: (id) async {
-            await Future.delayed(const Duration(seconds: 3));
-            return 'Hello World!';
-          },
-          builder: (context, state, child) {
-            switch (state.status) {
-              case QueryStatus.idle:
-              case QueryStatus.fetching:
-                return const CircularProgressIndicator();
-              case QueryStatus.success:
-                return Text(state.data!);
-              case QueryStatus.failure:
-                return const Text('Something went wrong...');
-            }
-          },
+      appBar: AppBar(title: const Text('Todos')),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          children: [
+            Expanded(
+              child: ListView(
+                children: todos.map((t) => ListTile(title: Text(t['title'] ?? ''))).toList(),
+              ),
+            ),
+            ElevatedButton(
+              child: const Text('Add Todo'),
+              onPressed: () {
+                addTodoMutation.mutate({'id': DateTime.now().millisecondsSinceEpoch, 'title': 'Do Laundry'});
+              },
+            )
+          ],
         ),
       ),
     );
