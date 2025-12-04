@@ -29,11 +29,32 @@ queryClient = QueryClient(
 
 ### `refetechOnReconnect`
 Iterates over all listeners and calls their `refetchCallBack()` if either the listener's `refetechOnReconnect` is true
+> **Need implementation:**  
+> ```dart
+> import 'package:internet_connection_checker_plus/internet_connection_checker_plus.dart';
+> import 'package:flutter_query/flutter_query.dart';
+> 
+> static InternetConnection connectivity = InternetConnection();
+> 
+> connectivity.onStatusChange.listen((status) {
+>   if (status case InternetStatus.connected) {
+>     QueryClient.instance.refetchOnReconnect();
+>   }
+> });
+> ```
+
 
 ### `refetchOnRestart()`
 Iterates over all listeners and calls their `refetchCallBack()` if either the listener's `refetchOnRestart` is true
-
-This is typically used by a higher-level host or lifecycle hook that wants to refetch when the app restarts.
+> **Need implementation:**  
+> ```dart
+> AppLifecycleListener(
+>   onRestart: () {
+>     QueryClient.instance.refetchOnRestart();
+>   },
+>   child: MyApp(),
+> );
+> ```
 
 #### setQueryData
 
