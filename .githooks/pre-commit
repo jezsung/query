@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+
+set -e
+
+echo "Running pre-commit checks..."
+
+cd packages/flutter_query
+
+dart format --output none --set-exit-if-changed .
+flutter analyze
+flutter test
+
+echo "✓ All pre-commit checks passed!"
