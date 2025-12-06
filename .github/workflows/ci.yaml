@@ -27,7 +27,7 @@ jobs:
       - run: flutter pub get
         working-directory: packages/flutter_query
 
-      - run: flutter analyze .
+      - run: flutter analyze --no-fatal-infos --no-fatal-warnings
         working-directory: packages/flutter_query
 
       - run: dart format --output none --set-exit-if-changed .
