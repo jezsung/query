@@ -6,11 +6,13 @@ on:
       - 'packages/flutter_query/**'
       - '!packages/flutter_query/example/**'
       - '!**/README.md'
+      - '!**/LICENSE'
   push:
     paths:
       - 'packages/flutter_query/**'
       - '!packages/flutter_query/example/**'
       - '!**/README.md'
+      - '!**/LICENSE'
 
 jobs:
   check:
