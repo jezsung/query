@@ -1,6 +1,8 @@
 import 'package:flutter_query/flutter_query.dart';
 import 'package:flutter_query/src/hooks/use_paged_query.dart';
 
+import 'core/core.dart';
+
 class QueryClient {
   final QueryCache cache = QueryCache();
 

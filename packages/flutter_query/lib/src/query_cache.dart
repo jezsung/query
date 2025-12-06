@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:flutter_query/flutter_query.dart';
+import 'core/core.dart';
 
 class QueryCache {
   final Map<QueryKey, Query> _queries = <QueryKey, Query>{};
