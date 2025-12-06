@@ -14,7 +14,6 @@ dependencies:
   flutter:
     sdk: flutter
   flutter_hooks: ^0.21.2
-  meta: ^1.9.1
   provider: ^6.0.5
 
 dev_dependencies:
