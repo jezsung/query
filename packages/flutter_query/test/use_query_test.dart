@@ -158,7 +158,7 @@ void main() {
       late int fetchCount = 0;
 
       final result = await buildHook(
-        (_) => useQuery(
+        () => useQuery(
           key,
           (key) async {
             fetchCount++;
@@ -166,7 +166,7 @@ void main() {
           },
           enabled: false,
         ),
-        provide: (hookBuilder) => withQueryScope(hookBuilder),
+        wrapper: (hookBuilder) => withQueryScope(hookBuilder),
       );
 
       expect(
@@ -206,17 +206,17 @@ void main() {
       final data = 'data';
       const fetchDuration = Duration(seconds: 3);
 
-      final result = await buildHook<QueryResult<String>, bool>(
+      final result = await buildHookWithProps<QueryResult<String>, bool>(
         (enabled) => useQuery(
           key,
           (key) async {
             await Future.delayed(fetchDuration);
             return data;
           },
-          enabled: enabled!,
+          enabled: enabled,
         ),
         initialProps: false,
-        provide: (hookBuilder) => withQueryScope(hookBuilder),
+        wrapper: (hookBuilder) => withQueryScope(hookBuilder),
       );
 
       expect(
@@ -245,7 +245,7 @@ void main() {
         ),
       );
 
-      await result.rebuild(true);
+      await result.rebuildWithProps(true);
       await tester.pump();
 
       expect(
@@ -285,7 +285,7 @@ void main() {
       late DateTime dataUpdatedAt;
       late int fetchCount = 0;
 
-      final result = await buildHook<QueryResult<String>, bool>(
+      final result = await buildHookWithProps<QueryResult<String>, bool>(
         (enabled) => useQuery(
           'key',
           (key) async {
@@ -293,10 +293,10 @@ void main() {
             await Future.delayed(fetchDuration);
             return data;
           },
-          enabled: enabled!,
+          enabled: enabled,
         ),
         initialProps: true,
-        provide: (hookBuilder) => withQueryScope(hookBuilder),
+        wrapper: (hookBuilder) => withQueryScope(hookBuilder),
       );
 
       await tester.pump(fetchDuration);
@@ -314,8 +314,8 @@ void main() {
       );
       expect(fetchCount, 1);
 
-      await result.rebuild(false);
-      await result.rebuild(true);
+      await result.rebuildWithProps(false);
+      await result.rebuildWithProps(true);
       await tester.pump();
 
       expect(
@@ -353,8 +353,8 @@ void main() {
       final data = 42;
       const fetchDuration = Duration(seconds: 3);
 
-      final result = await buildHook<QueryResult<int>, bool>(
-        (_) => useQuery(
+      final result = await buildHook<QueryResult<int>>(
+        () => useQuery(
           'key',
           (key) async {
             await Future.delayed(fetchDuration);
@@ -362,7 +362,7 @@ void main() {
           },
           enabled: false,
         ),
-        provide: (hookBuilder) => withQueryScope(hookBuilder),
+        wrapper: (hookBuilder) => withQueryScope(hookBuilder),
       );
 
       await tester.pump(fetchDuration);
@@ -406,12 +406,12 @@ void main() {
           final initialData = 'initial data';
 
           final result = await buildHook(
-            (_) => useQuery(
+            () => useQuery(
               'key',
               (key) async => 'data',
               initialData: initialData,
             ),
-            provide: (hookBuilder) => withQueryScope(hookBuilder),
+            wrapper: (hookBuilder) => withQueryScope(hookBuilder),
           );
 
           expect(
@@ -436,7 +436,7 @@ void main() {
           const fetchDuration = Duration(seconds: 3);
 
           final result = await buildHook(
-            (_) => useQuery(
+            () => useQuery(
               'key',
               (key) async {
                 await Future.delayed(fetchDuration);
@@ -444,7 +444,7 @@ void main() {
               },
               initialData: initialData,
             ),
-            provide: (hookBuilder) => withQueryScope(hookBuilder),
+            wrapper: (hookBuilder) => withQueryScope(hookBuilder),
           );
 
           expect(
@@ -499,7 +499,7 @@ void main() {
           const staleDuraiton = Duration(minutes: 5);
 
           final result = await buildHook(
-            (_) => useQuery(
+            () => useQuery(
               'key',
               (key) async {
                 await Future.delayed(fetchDuration);
@@ -509,7 +509,7 @@ void main() {
               initialDataUpdatedAt: initialDataUpdatedAt,
               staleDuration: staleDuraiton,
             ),
-            provide: (hookBuilder) => withQueryScope(hookBuilder),
+            wrapper: (hookBuilder) => withQueryScope(hookBuilder),
           );
 
           expect(
@@ -550,7 +550,7 @@ void main() {
           const staleDuraiton = Duration(minutes: 2);
 
           final result = await buildHook(
-            (_) => useQuery(
+            () => useQuery(
               'key',
               (key) async {
                 await Future.delayed(fetchDuration);
@@ -560,7 +560,7 @@ void main() {
               initialDataUpdatedAt: initialDataUpdatedAt,
               staleDuration: staleDuraiton,
             ),
-            provide: (hookBuilder) => withQueryScope(hookBuilder),
+            wrapper: (hookBuilder) => withQueryScope(hookBuilder),
           );
 
           expect(

@@ -19,13 +19,13 @@ void main() {
       const fetchDuration = Duration(seconds: 3);
 
       final result = await buildHook(
-        (_) => useImperativeQuery<String, String>(
+        () => useImperativeQuery<String, String>(
           fetcher: (key) async {
             await Future.delayed(fetchDuration);
             return key;
           },
         ),
-        provide: (hookBuilder) => withQueryScope(hookBuilder),
+        wrapper: (hookBuilder) => withQueryScope(hookBuilder),
       );
 
       expect(result.current.state, isNull);
@@ -122,13 +122,13 @@ void main() {
       const fetchDuration = Duration(seconds: 3);
 
       final result = await buildHook(
-        (_) => useImperativeQuery<String, String>(
+        () => useImperativeQuery<String, String>(
           fetcher: (key) async {
             await Future.delayed(fetchDuration);
             return key;
           },
         ),
-        provide: (hookBuilder) => withQueryScope(hookBuilder),
+        wrapper: (hookBuilder) => withQueryScope(hookBuilder),
       );
 
       expect(result.current.state, isNull);

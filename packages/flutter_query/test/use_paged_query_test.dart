@@ -21,14 +21,14 @@ void main() {
       const fetchDuration = Duration(seconds: 3);
 
       final result = await buildHook(
-        (props) => usePagedQuery(
+        () => usePagedQuery(
           'key',
           (key, _) async {
             await Future.delayed(fetchDuration);
             return data;
           },
         ),
-        provide: (hookBuilder) => withQueryScope(hookBuilder),
+        wrapper: (hookBuilder) => withQueryScope(hookBuilder),
       );
 
       expect(
@@ -93,7 +93,7 @@ void main() {
       const fetchDuration = Duration(seconds: 3);
 
       final result = await buildHook(
-        (props) => usePagedQuery(
+        () => usePagedQuery(
           'key',
           (key, param) async {
             await Future.delayed(fetchDuration);
@@ -106,7 +106,7 @@ void main() {
             return 'param';
           },
         ),
-        provide: (hookBuilder) => withQueryScope(hookBuilder),
+        wrapper: (hookBuilder) => withQueryScope(hookBuilder),
       );
 
       await tester.pump(fetchDuration);
@@ -155,14 +155,14 @@ void main() {
       late Object? initialParam;
 
       await buildHook(
-        (props) => usePagedQuery(
+        () => usePagedQuery(
           'key',
           (key, param) async {
             initialParam = param;
             return 'data';
           },
         ),
-        provide: (hookBuilder) => withQueryScope(hookBuilder),
+        wrapper: (hookBuilder) => withQueryScope(hookBuilder),
       );
 
       expect(initialParam, isNull);
@@ -176,7 +176,7 @@ void main() {
       late String receivedParam;
 
       final result = await buildHook(
-        (props) => usePagedQuery<String, String, String>(
+        () => usePagedQuery<String, String, String>(
           'key',
           (key, param) async {
             if (param != null) {
@@ -188,7 +188,7 @@ void main() {
             return returnedParam;
           },
         ),
-        provide: (hookBuilder) => withQueryScope(hookBuilder),
+        wrapper: (hookBuilder) => withQueryScope(hookBuilder),
       );
 
       await act(() => result.current.fetchNextPage());
@@ -201,7 +201,7 @@ void main() {
     'hasNextPage is true when nextPageParam returns value',
     (tester) async {
       final result = await buildHook(
-        (props) => usePagedQuery<String, String, String>(
+        () => usePagedQuery<String, String, String>(
           'key',
           (key, param) async {
             return 'data';
@@ -210,7 +210,7 @@ void main() {
             return 'param';
           },
         ),
-        provide: (hookBuilder) => withQueryScope(hookBuilder),
+        wrapper: (hookBuilder) => withQueryScope(hookBuilder),
       );
 
       await tester.pump();
@@ -223,7 +223,7 @@ void main() {
     'hasNextPage is false when nextPageParam returns null',
     (tester) async {
       final result = await buildHook(
-        (props) => usePagedQuery<String, String, String>(
+        () => usePagedQuery<String, String, String>(
           'key',
           (key, param) async {
             return 'data';
@@ -232,7 +232,7 @@ void main() {
             return null;
           },
         ),
-        provide: (hookBuilder) => withQueryScope(hookBuilder),
+        wrapper: (hookBuilder) => withQueryScope(hookBuilder),
       );
 
       await tester.pump();
@@ -247,7 +247,7 @@ void main() {
       const fetchDuration = Duration(seconds: 3);
 
       final result = await buildHook(
-        (props) => usePagedQuery<String, String, String>(
+        () => usePagedQuery<String, String, String>(
           'key',
           (key, param) async {
             await Future.delayed(fetchDuration);
@@ -257,7 +257,7 @@ void main() {
             return 'data';
           },
         ),
-        provide: (hookBuilder) => withQueryScope(hookBuilder),
+        wrapper: (hookBuilder) => withQueryScope(hookBuilder),
       );
 
       expect(result.current.state.isFetchingNextPage, isFalse);
@@ -272,7 +272,7 @@ void main() {
       const fetchDuration = Duration(seconds: 3);
 
       final result = await buildHook(
-        (props) => usePagedQuery<String, String, String>(
+        () => usePagedQuery<String, String, String>(
           'key',
           (key, param) async {
             await Future.delayed(fetchDuration);
@@ -282,7 +282,7 @@ void main() {
             return 'data';
           },
         ),
-        provide: (hookBuilder) => withQueryScope(hookBuilder),
+        wrapper: (hookBuilder) => withQueryScope(hookBuilder),
       );
 
       await tester.pump(fetchDuration);
@@ -301,7 +301,7 @@ void main() {
       const fetchDuration = Duration(seconds: 3);
 
       final result = await buildHook(
-        (props) => usePagedQuery<String, String, String>(
+        () => usePagedQuery<String, String, String>(
           'key',
           (key, param) async {
             await Future.delayed(fetchDuration);
@@ -312,7 +312,7 @@ void main() {
           },
           enabled: false,
         ),
-        provide: (hookBuilder) => withQueryScope(hookBuilder),
+        wrapper: (hookBuilder) => withQueryScope(hookBuilder),
       );
 
       expect(result.current.state.status, QueryStatus.idle);
@@ -329,7 +329,7 @@ void main() {
       const fetchDuration = Duration(seconds: 3);
 
       final result = await buildHook(
-        (props) => usePagedQuery<String, String, String>(
+        () => usePagedQuery<String, String, String>(
           'key',
           (key, param) async {
             await Future.delayed(fetchDuration);
@@ -340,7 +340,7 @@ void main() {
           },
           enabled: false,
         ),
-        provide: (hookBuilder) => withQueryScope(hookBuilder),
+        wrapper: (hookBuilder) => withQueryScope(hookBuilder),
       );
 
       expect(result.current.state.status, QueryStatus.idle);
@@ -357,7 +357,7 @@ void main() {
     (tester) async {
       const fetchDuration = Duration(seconds: 3);
 
-      final result = await buildHook<PagedQueryResult<String, String>, bool>(
+      final result = await buildHookWithProps<PagedQueryResult<String, String>, bool>(
         (enabled) => usePagedQuery<String, String, String>(
           'key',
           (key, param) async {
@@ -367,13 +367,13 @@ void main() {
           nextPageParamBuilder: (pages) {
             return 'data';
           },
-          enabled: enabled!,
+          enabled: enabled,
         ),
         initialProps: false,
-        provide: (hookBuilder) => withQueryScope(hookBuilder),
+        wrapper: (hookBuilder) => withQueryScope(hookBuilder),
       );
 
-      await result.rebuild(true);
+      await result.rebuildWithProps(true);
 
       expect(result.current.state.status, QueryStatus.idle);
 
@@ -396,9 +396,8 @@ void main() {
           final initialData = ['data1', 'data2'];
           const fetchDuration = Duration(seconds: 3);
 
-          final result =
-              await buildHook<PagedQueryResult<String, String>, bool>(
-            (_) => usePagedQuery<String, String, String>(
+          final result = await buildHook<PagedQueryResult<String, String>>(
+            () => usePagedQuery<String, String, String>(
               'key',
               (key, param) async {
                 await Future.delayed(fetchDuration);
@@ -409,7 +408,7 @@ void main() {
               },
               initialData: initialData,
             ),
-            provide: (hookBuilder) => withQueryScope(hookBuilder),
+            wrapper: (hookBuilder) => withQueryScope(hookBuilder),
           );
 
           expect(result.current.state.status, QueryStatus.success);
@@ -427,9 +426,8 @@ void main() {
           final data = 'data';
           const fetchDuration = Duration(seconds: 3);
 
-          final result =
-              await buildHook<PagedQueryResult<String, String>, bool>(
-            (_) => usePagedQuery<String, String, String>(
+          final result = await buildHook<PagedQueryResult<String, String>>(
+            () => usePagedQuery<String, String, String>(
               'key',
               (key, param) async {
                 await Future.delayed(fetchDuration);
@@ -440,7 +438,7 @@ void main() {
               },
               initialData: initialData,
             ),
-            provide: (hookBuilder) => withQueryScope(hookBuilder),
+            wrapper: (hookBuilder) => withQueryScope(hookBuilder),
           );
 
           await tester.pump();
@@ -466,9 +464,8 @@ void main() {
           const fetchDuration = Duration(seconds: 3);
           const staleDuration = Duration(minutes: 5);
 
-          final result =
-              await buildHook<PagedQueryResult<String, String>, bool>(
-            (_) => usePagedQuery<String, String, String>(
+          final result = await buildHook<PagedQueryResult<String, String>>(
+            () => usePagedQuery<String, String, String>(
               'key',
               (key, param) async {
                 await Future.delayed(fetchDuration);
@@ -481,7 +478,7 @@ void main() {
               initialDataUpdatedAt: initialDataUpdatedAt,
               staleDuration: staleDuration,
             ),
-            provide: (hookBuilder) => withQueryScope(hookBuilder),
+            wrapper: (hookBuilder) => withQueryScope(hookBuilder),
           );
 
           await tester.pump();
@@ -501,9 +498,8 @@ void main() {
           const fetchDuration = Duration(seconds: 3);
           const staleDuration = Duration(minutes: 5);
 
-          final result =
-              await buildHook<PagedQueryResult<String, String>, bool>(
-            (_) => usePagedQuery<String, String, String>(
+          final result = await buildHook<PagedQueryResult<String, String>>(
+            () => usePagedQuery<String, String, String>(
               'key',
               (key, param) async {
                 await Future.delayed(fetchDuration);
@@ -516,7 +512,7 @@ void main() {
               initialDataUpdatedAt: initialDataUpdatedAt,
               staleDuration: staleDuration,
             ),
-            provide: (hookBuilder) => withQueryScope(hookBuilder),
+            wrapper: (hookBuilder) => withQueryScope(hookBuilder),
           );
 
           await tester.pump();
@@ -545,9 +541,8 @@ void main() {
           final data = 'data';
           const fetchDuration = Duration(seconds: 3);
 
-          final result =
-              await buildHook<PagedQueryResult<String, String>, bool>(
-            (_) => usePagedQuery<String, String, String>(
+          final result = await buildHook<PagedQueryResult<String, String>>(
+            () => usePagedQuery<String, String, String>(
               'key',
               (key, param) async {
                 await Future.delayed(fetchDuration);
@@ -558,7 +553,7 @@ void main() {
               },
               placeholder: placeholder,
             ),
-            provide: (hookBuilder) => withQueryScope(hookBuilder),
+            wrapper: (hookBuilder) => withQueryScope(hookBuilder),
           );
 
           expect(result.current.state.status, QueryStatus.idle);
