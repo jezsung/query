@@ -5,11 +5,11 @@ import 'package:provider/single_child_widget.dart';
 
 class QueryScope extends SingleChildStatelessWidget {
   QueryScope({
-    Key? key,
+    super.key,
     this.prepare,
     this.lazy,
-    Widget? child,
-  }) : super(key: key, child: child);
+    super.child,
+  });
 
   final void Function(QueryClient client)? prepare;
   final bool? lazy;
