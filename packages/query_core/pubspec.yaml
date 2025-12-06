@@ -5,7 +5,6 @@ repository: https://github.com/jezsung/query/tree/main/packages/query
 
 environment:
   sdk: ">=2.17.0 <4.0.0"
-  flutter: ">=3.32.0"
 
 dependencies:
   async: ^2.11.0
@@ -14,6 +13,3 @@ dependencies:
   meta: ^1.9.1
 
 dev_dependencies:
-  flutter_test:
-    sdk: flutter
-  flutter_lints: ^2.0.0
