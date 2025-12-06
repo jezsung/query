@@ -2,23 +2,18 @@ part of 'query.dart';
 
 class PagedQueryState<T> extends QueryState<Pages<T>> {
   const PagedQueryState({
-    QueryStatus status = QueryStatus.idle,
+    super.status,
     Pages<T> pages = const [],
-    Exception? error,
-    DateTime? dataUpdatedAt,
-    DateTime? errorUpdatedAt,
-    bool isInvalidated = false,
+    super.error,
+    super.dataUpdatedAt,
+    super.errorUpdatedAt,
+    super.isInvalidated,
     this.isFetchingNextPage = false,
     this.isFetchingPreviousPage = false,
     this.hasNextPage = false,
     this.hasPreviousPage = false,
   }) : super(
-          status: status,
           data: pages,
-          error: error,
-          dataUpdatedAt: dataUpdatedAt,
-          errorUpdatedAt: errorUpdatedAt,
-          isInvalidated: isInvalidated,
         );
 
   final bool isFetchingNextPage;
