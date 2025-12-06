@@ -1,6 +1,8 @@
-A Flutter package that is equivalent to the [React Query](https://tanstack.com/query/v3/) library in the [React](https://react.dev/) ecosystem.
+A Flutter package inspired by the [TanStack Query](https://tanstack.com/query/latest) library (formerly React Query) in the [React](https://react.dev/) ecosystem. The current API reflects the [TanStack Query version 3](https://tanstack.com/query/v3/docs/framework/react/overview) API.
 
-This package utilizes the power of Widgets in Flutter. As React Query provides its APIs with Hooks, flutter_query does it with Widgets.
+This package utilizes the power of Hooks in Flutter. As TanStack Query provides its APIs with Hooks, flutter_query does it with Hooks too.
+
+> **Note:** Since version 0.3.0, the widget-based API has been dropped in favor of the hook-based API. This package now requires `flutter_hooks`.
 
 ## Motivation
 
@@ -14,41 +16,44 @@ This package helps reducing this common pattern by providing high level state ma
 
 ## Usage
 
-Wrap your app with the `QueryClientProvider`. The `QueryClient` is used to control the `Query`s in the app.
+Wrap your app with the `QueryScope`. This provides the query client to the widget tree.
 
 ```dart
 runApp(
-  QueryClientProvider(
-    create: (context) => QueryClient(),
+  QueryScope(
     child: MyApp(),
   ),
 );
 ```
 
-Give an unique string to the `id` and a method to the `fetcher` that runs asynchronous operations.
+Use the `useQuery` hook in your `HookWidget` to fetch data. Give a unique key and a `fetcher` function that runs asynchronous operations.
 
-The `state` is the type of `QueryState`. The `QueryState` has a `QueryStatus` that represents the current status of the operation.
+The hook returns a `QueryResult` containing the `state`, which is of type `QueryState`. The `QueryState` has a `QueryStatus` that represents the current status of the operation.
 
 ```dart
-QueryBuilder<String>(
-  id: '1',
-  fetcher: (id) async {
-    final todoId = id;
-    final todoTitle = getTodoTitleById(todoId);
-    return todoTitle;
-  },
-  builder: (context, state, child) {
-    switch(state.status) {
-      case QueryStatus.idle:
-        return Text('Ready to load data');
+class TodoWidget extends HookWidget {
+  @override
+  Widget build(BuildContext context) {
+    final result = useQuery<String, String>(
+      'todo-1',
+      (key) async {
+        final todoId = key;
+        final todoTitle = await getTodoTitleById(todoId);
+        return todoTitle;
+      },
+    );
+
+    switch(result.state.status) {
       case QueryStatus.fetching:
         return Text('Loading...');
       case QueryStatus.success:
-        final todoTitle = state.data!;
+        final todoTitle = result.state.data!;
         return Text(todoTitle);
       case QueryStatus.failure:
-        return Text('Something went wrong...')
+        return Text('Something went wrong...');
+      default:
+        return Text('Ready to load data');
     }
-  },
-)
+  }
+}
 ```
