@@ -1,0 +1,37 @@
+name: Continuous Integration
+
+on:
+  pull_request:
+  push:
+
+jobs:
+  check:
+    runs-on: ubuntu-24.04
+    strategy:
+      matrix:
+        channel:
+          - stable
+        flutter-version:
+          - 3.32.0
+          - 3.35.0
+          - 3.38.0
+      fail-fast: false
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+
+      - uses: subosito/flutter-action@fd55f4c5af5b953cc57a2be44cb082c8f6635e8e # v2.21.0
+        with:
+          channel: ${{ matrix.channel }}
+          flutter-version: ${{ matrix.flutter-version }}
+
+      - run: flutter pub get
+        working-directory: packages/flutter_query
+
+      - run: flutter analyze .
+        working-directory: packages/flutter_query
+
+      - run: dart format --output none --set-exit-if-changed .
+        working-directory: packages/flutter_query
+
+      - run: flutter test
+        working-directory: packages/flutter_query
