@@ -4,15 +4,13 @@ on:
   pull_request:
     paths:
       - 'packages/flutter_query/**'
-    paths-ignore:
-      - 'packages/flutter_query/example/**'
-      - '**/README.md'
+      - '!packages/flutter_query/example/**'
+      - '!**/README.md'
   push:
     paths:
       - 'packages/flutter_query/**'
-    paths-ignore:
-      - 'packages/flutter_query/example/**'
-      - '**/README.md'
+      - '!packages/flutter_query/example/**'
+      - '!**/README.md'
 
 jobs:
   check:
