@@ -4,8 +4,8 @@ version: 0.2.1
 repository: https://github.com/jezsung/query/tree/main/packages/query
 
 environment:
-  sdk: ">=2.13.0 <4.0.0"
-  flutter: ">=1.17.0"
+  sdk: ">=2.17.0 <4.0.0"
+  flutter: ">=3.32.0"
 
 dependencies:
   async: ^2.11.0
