@@ -23,6 +23,7 @@ jobs:
         with:
           channel: ${{ matrix.channel }}
           flutter-version: ${{ matrix.flutter-version }}
+          cache: true
 
       - run: flutter pub get
         working-directory: packages/flutter_query
