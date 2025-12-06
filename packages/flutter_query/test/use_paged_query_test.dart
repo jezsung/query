@@ -357,7 +357,8 @@ void main() {
     (tester) async {
       const fetchDuration = Duration(seconds: 3);
 
-      final result = await buildHookWithProps<PagedQueryResult<String, String>, bool>(
+      final result =
+          await buildHookWithProps<PagedQueryResult<String, String>, bool>(
         (enabled) => usePagedQuery<String, String, String>(
           'key',
           (key, param) async {
