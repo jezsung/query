@@ -4,7 +4,7 @@ version: 0.3.7
 repository: https://github.com/jezsung/query/tree/main/packages/flutter_query
 
 environment:
-  sdk: ">=2.17.0 <4.0.0"
+  sdk: ">=3.0.0 <4.0.0"
   flutter: ">=3.32.0"
 
 dependencies:
