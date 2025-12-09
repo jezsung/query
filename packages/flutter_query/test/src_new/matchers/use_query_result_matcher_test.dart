@@ -1,7 +1,7 @@
-import 'package:flutter_query/src_new/core/query.dart';
-import 'package:flutter_query/src_new/hooks/use_query.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:flutter_query/src_new/core/query.dart';
+import 'package:flutter_query/src_new/hooks/use_query.dart';
 import 'use_query_result_matcher.dart';
 
 const _undefined = Object();

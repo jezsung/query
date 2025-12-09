@@ -1,10 +1,12 @@
-import 'package:clock/clock.dart';
 import 'package:flutter/widgets.dart';
+
+import 'package:clock/clock.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:flutter_hooks_test/flutter_hooks_test.dart';
+import 'package:flutter_test/flutter_test.dart';
+
 import 'package:flutter_query/flutter_query.dart';
 import 'package:flutter_query/src/hooks/use_paged_query.dart';
-import 'package:flutter_test/flutter_test.dart';
 
 Widget withQueryScope(Widget widget) {
   return QueryScope(

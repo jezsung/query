@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
+
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:flutter_hooks_test/flutter_hooks_test.dart';
+import 'package:flutter_test/flutter_test.dart';
+
 import 'package:flutter_query/src_new/core/core.dart';
 import 'package:flutter_query/src_new/hooks/use_query.dart';
 import 'package:flutter_query/src_new/widgets/query_client_provider.dart';
-import 'package:flutter_test/flutter_test.dart';
-
 import '../matchers/use_query_result_matcher.dart';
 
 void main() {

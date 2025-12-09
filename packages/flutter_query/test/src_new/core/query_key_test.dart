@@ -1,5 +1,6 @@
-import 'package:flutter_query/src_new/core/query_key.dart';
 import 'package:test/test.dart';
+
+import 'package:flutter_query/src_new/core/query_key.dart';
 
 void main() {
   test('SHOULD match WHEN keys are same', () {

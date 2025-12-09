@@ -1,5 +1,4 @@
 import 'package:flutter_query/src/hooks/use_paged_query.dart';
-
 import 'core/core.dart';
 import 'hooks/use_query.dart';
 import 'query_cache.dart';

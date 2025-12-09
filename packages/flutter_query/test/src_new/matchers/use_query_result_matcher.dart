@@ -1,6 +1,7 @@
+import 'package:flutter_test/flutter_test.dart';
+
 import 'package:flutter_query/src_new/core/query.dart';
 import 'package:flutter_query/src_new/hooks/use_query.dart';
-import 'package:flutter_test/flutter_test.dart';
 
 /// A matcher for [UseQueryResult] that matches all fields.
 ///

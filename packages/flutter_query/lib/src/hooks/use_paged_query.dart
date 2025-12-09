@@ -1,9 +1,10 @@
 import 'package:flutter/widgets.dart';
+
 import 'package:flutter_hooks/flutter_hooks.dart';
 
 import '../core/core.dart';
-import 'use_query_client.dart' show useQueryClient;
 import 'use_query.dart' show RefetchBehavior;
+import 'use_query_client.dart' show useQueryClient;
 
 class PagedQueryResult<T, P> {
   PagedQueryResult({

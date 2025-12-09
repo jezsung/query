@@ -4,8 +4,8 @@ version: 0.3.7
 repository: https://github.com/jezsung/query/tree/main/packages/flutter_query
 
 environment:
-  sdk: ">=3.0.0 <4.0.0"
-  flutter: ">=3.32.0"
+  sdk: '>=3.0.0 <4.0.0'
+  flutter: '>=3.32.0'
 
 dependencies:
   async: ^2.10.0
@@ -17,8 +17,13 @@ dependencies:
   provider: ^6.0.5
 
 dev_dependencies:
+  flutter_hooks_test: ^2.0.0
+  flutter_lints: ^6.0.0
   flutter_test:
     sdk: flutter
-  flutter_lints: ^6.0.0
+  import_sorter: ^4.6.0
   test: ^1.25.15
-  flutter_hooks_test: ^2.0.0
+
+import_sorter:
+  emojis: false
+  comments: false

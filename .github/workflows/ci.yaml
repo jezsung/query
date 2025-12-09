@@ -38,11 +38,14 @@ jobs:
       - run: flutter pub get
         working-directory: packages/flutter_query
 
-      - run: flutter analyze --no-fatal-infos --no-fatal-warnings
+      - run: flutter pub run import_sorter:main --exit-if-changed
         working-directory: packages/flutter_query
 
       - run: dart format --output none --set-exit-if-changed .
         working-directory: packages/flutter_query
+
+      - run: flutter analyze --no-fatal-infos --no-fatal-warnings
+        working-directory: packages/flutter_query      
 
       - run: flutter test test/src_new
         working-directory: packages/flutter_query
