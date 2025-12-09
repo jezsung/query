@@ -8,6 +8,6 @@ cd packages/flutter_query
 
 dart format --output none --set-exit-if-changed .
 flutter analyze
-flutter test test/use_query_new_test.dart
+flutter test test/src_new
 
 echo "✓ All pre-commit checks passed!"

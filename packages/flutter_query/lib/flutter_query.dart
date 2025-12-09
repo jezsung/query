@@ -1,5 +1,3 @@
-library flutter_query;
-
 export 'src/core/core.dart';
 export 'src/query_client.dart';
 export 'src/query_cache.dart';
