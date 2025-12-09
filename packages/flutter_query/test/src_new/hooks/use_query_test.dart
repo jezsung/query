@@ -479,4 +479,227 @@ void main() {
     expect(result1.data, 'data1');
     expect(result2.data, 'data2');
   });
+
+  group('staleTime', () {
+    testWidgets('SHOULD mark data as stale WHEN staleTime is zero',
+        (tester) async {
+      final hookResult = await buildHook(
+        () => useQuery(
+          queryKey: const ['test'],
+          queryFn: () async => 'data',
+          staleTime: Duration.zero, // Data immediately stale
+          queryClient: client,
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      expect(hookResult.current.data, 'data');
+      expect(hookResult.current.isStale, true);
+    });
+
+    testWidgets('SHOULD mark data as fresh WHEN within staleTime',
+        (tester) async {
+      final hookResult = await buildHook(
+        () => useQuery(
+          queryKey: const ['test'],
+          queryFn: () async => 'data',
+          staleTime: const Duration(minutes: 5), // Fresh for 5 minutes
+          queryClient: client,
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      expect(hookResult.current.data, 'data');
+      expect(hookResult.current.isStale, false);
+    });
+
+    testWidgets('SHOULD update isStale WHEN staleTime changes', (tester) async {
+      final hookResult = await buildHookWithProps(
+        (staleTime) => useQuery(
+          queryKey: const ['test'],
+          queryFn: () async => 'data',
+          staleTime: staleTime,
+          queryClient: client,
+        ),
+        initialProps: const Duration(minutes: 5),
+      );
+
+      await tester.pumpAndSettle();
+
+      expect(hookResult.current.data, 'data');
+      expect(hookResult.current.isStale, false);
+
+      // Change staleTime to zero to make data stale immediately
+      await hookResult.rebuildWithProps(Duration.zero);
+
+      expect(hookResult.current.isStale, true);
+    });
+
+    testWidgets('SHOULD refetch WHEN staleTime changes and data becomes stale',
+        (tester) async {
+      var fetchCount = 0;
+
+      final hookResult = await buildHookWithProps(
+        (staleTime) => useQuery(
+          queryKey: const ['key'],
+          queryFn: () async {
+            fetchCount++;
+            return 'data-$fetchCount';
+          },
+          staleTime: staleTime,
+          queryClient: client,
+        ),
+        initialProps: const Duration(minutes: 5),
+      );
+
+      await tester.pumpAndSettle();
+
+      // Initial fetch completed
+      expect(hookResult.current.data, 'data-1');
+      expect(hookResult.current.isStale, false);
+      expect(fetchCount, 1);
+
+      // Advance time by 3 seconds (less than initial staleTime, so still fresh)
+      await tester.pump(const Duration(seconds: 3));
+
+      // Data should still be fresh with 5-minute staleTime
+      expect(hookResult.current.isStale, false);
+      expect(fetchCount, 1);
+
+      // Change staleTime to 2 seconds - data is now stale (3 seconds > 2 seconds)
+      await hookResult.rebuildWithProps(const Duration(seconds: 2));
+
+      // Should be fetching because data became stale with new staleTime
+      expect(hookResult.current.fetchStatus, FetchStatus.fetching);
+      expect(hookResult.current.data, 'data-1'); // Old data still available
+      expect(hookResult.current.isStale, true);
+
+      await tester.pumpAndSettle();
+
+      // Should have new data now
+      expect(hookResult.current.fetchStatus, FetchStatus.idle);
+      expect(hookResult.current.data, 'data-2');
+      expect(hookResult.current.isStale, false);
+      expect(fetchCount, 2); // Fetched twice total
+    });
+
+    testWidgets(
+        'SHOULD NOT refetch WHEN staleTime changes and data remains fresh',
+        (tester) async {
+      var fetchCount = 0;
+
+      final hookResult = await buildHookWithProps(
+        (staleTime) => useQuery(
+          queryKey: const ['key'],
+          queryFn: () async {
+            fetchCount++;
+            return 'data-$fetchCount';
+          },
+          staleTime: staleTime,
+          queryClient: client,
+        ),
+        initialProps: const Duration(seconds: 5),
+      );
+
+      await tester.pumpAndSettle();
+
+      // Initial fetch completed
+      expect(hookResult.current.data, 'data-1');
+      expect(hookResult.current.isStale, false);
+      expect(fetchCount, 1);
+
+      // Change staleTime to 5 minutes
+      await hookResult.rebuildWithProps(const Duration(minutes: 5));
+
+      // Advance time by 5 second (exceeds initial staleTime)
+      await tester.pump(const Duration(seconds: 5));
+
+      await tester.pumpAndSettle();
+
+      // Should NOT have triggered a refetch because data is still fresh
+      expect(hookResult.current.fetchStatus, FetchStatus.idle);
+      expect(hookResult.current.data, 'data-1'); // Still old data
+      expect(hookResult.current.isStale, false);
+      expect(fetchCount, 1); // No additional fetch
+    });
+
+    testWidgets('SHOULD refetch WHEN data becomes stale', (tester) async {
+      var fetchCount = 0;
+
+      final hookResult = await buildHook(
+        () => useQuery(
+          queryKey: const ['key'],
+          queryFn: () async {
+            fetchCount++;
+            return 'data-$fetchCount';
+          },
+          staleTime: const Duration(seconds: 5),
+          queryClient: client,
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // Initial fetch completed
+      expect(hookResult.current.data, 'data-1');
+      expect(hookResult.current.isStale, false); // Fresh
+      expect(fetchCount, 1);
+
+      await hookResult.unmount();
+
+      await tester.pump(const Duration(seconds: 5));
+
+      await hookResult.rebuild();
+
+      // Should be fetching because data is stale
+      expect(hookResult.current.fetchStatus, FetchStatus.fetching);
+      expect(hookResult.current.data, 'data-1'); // Old data still available
+      expect(hookResult.current.isStale, true);
+
+      await tester.pumpAndSettle();
+
+      // Should have new data now
+      expect(hookResult.current.fetchStatus, FetchStatus.idle);
+      expect(hookResult.current.data, 'data-2');
+      expect(hookResult.current.isStale, false);
+      expect(fetchCount, 2); // Fetched twice total
+    });
+
+    testWidgets('SHOULD NOT refetch WHEN data is fresh on mount',
+        (tester) async {
+      var fetchCount = 0;
+      const queryKey = ['fresh-no-refetch-test'];
+
+      // Pre-populate cache with fresh data
+      final query = client.cache.buildQuery<String>(
+        queryKey,
+        () async => 'initial',
+      );
+      await query.fetch();
+      expect(fetchCount, 0);
+
+      // Mount hook immediately with long staleTime, should NOT refetch
+      final hookResult = await buildHook(
+        () => useQuery(
+          queryKey: queryKey,
+          queryFn: () async {
+            fetchCount++;
+            return 'refetched';
+          },
+          staleTime: const Duration(minutes: 5), // Data stays fresh
+          queryClient: client,
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // Should NOT have triggered a fetch
+      expect(hookResult.current.fetchStatus, FetchStatus.idle);
+      expect(hookResult.current.data, 'initial'); // Still has old data
+      expect(hookResult.current.isStale, false); // Data is fresh
+      expect(fetchCount, 0); // No fetch triggered
+    });
+  });
 }

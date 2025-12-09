@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:clock/clock.dart';
 import 'package:equatable/equatable.dart';
 
 enum QueryStatus { pending, error, success }
@@ -34,13 +35,12 @@ class Query<TData> {
 
     try {
       final data = await queryFn();
-      final now = DateTime.now();
 
       _setState(QueryState<TData>(
         status: QueryStatus.success,
         fetchStatus: FetchStatus.idle,
         data: data,
-        dataUpdatedAt: now,
+        dataUpdatedAt: clock.now(),
         error: null,
         errorUpdatedAt: state.errorUpdatedAt,
         errorUpdateCount: state.errorUpdateCount,
@@ -48,13 +48,11 @@ class Query<TData> {
         // failureReason: null,
       ));
     } catch (error) {
-      final now = DateTime.now();
-
       _setState(state.copyWith(
         status: QueryStatus.error,
         fetchStatus: FetchStatus.idle,
         error: error,
-        errorUpdatedAt: now,
+        errorUpdatedAt: clock.now(),
         errorUpdateCount: state.errorUpdateCount + 1,
         // failureCount: state.failureCount + 1,
         // failureReason: error,

@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:clock/clock.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 
@@ -18,12 +19,12 @@ class UseQueryResult<TData, TError> with EquatableMixin {
     required this.errorUpdatedAt,
     required this.errorUpdateCount,
     required this.isEnabled,
+    required Duration staleTime,
     // required this.failureCount,
     // required this.failureReason,
     // required this.isFetchedAfterMount,
     // required this.isPlaceholderData,
-    // required this.isStale,
-  });
+  }) : _staleTime = staleTime;
 
   // Base fields
   final QueryStatus status;
@@ -34,6 +35,7 @@ class UseQueryResult<TData, TError> with EquatableMixin {
   final DateTime? errorUpdatedAt;
   final int errorUpdateCount;
   final bool isEnabled;
+  final Duration _staleTime;
 
   // final int failureCount; // failureCount: number
   // final TError? failureReason; // failureReason: null | TError
@@ -56,6 +58,12 @@ class UseQueryResult<TData, TError> with EquatableMixin {
   bool get isLoadingError => isError && data == null;
   bool get isRefetchError => isError && data != null;
   bool get isRefetching => isFetching && !isPending;
+  bool get isStale {
+    // Data is stale if there's no dataUpdatedAt or if staleTime has elapsed
+    if (dataUpdatedAt == null) return true;
+    final age = clock.now().difference(dataUpdatedAt!);
+    return age > _staleTime;
+  }
 
   @override
   List<Object?> get props => [
@@ -67,6 +75,7 @@ class UseQueryResult<TData, TError> with EquatableMixin {
         errorUpdatedAt,
         errorUpdateCount,
         isEnabled,
+        _staleTime,
       ];
 }
 
@@ -112,7 +121,7 @@ UseQueryResult<TData, TError> useQuery<TData, TError>({
   // select: (data: TData) => unknown
   // Object? Function(TData)? select,
   // staleTime: number | 'static' | ((query: Query) => number | 'static')
-  // staleTime,
+  Duration staleTime = Duration.zero,
   // structuralSharing: boolean | (oldData: unknown | undefined, newData: unknown) => unknown
   // structuralSharing = true,
   // subscribed: boolean
@@ -133,6 +142,7 @@ UseQueryResult<TData, TError> useQuery<TData, TError>({
         queryKey: queryKey,
         queryFn: queryFn,
         enabled: enabled,
+        staleTime: staleTime,
       ),
     ),
     [],
@@ -145,6 +155,7 @@ UseQueryResult<TData, TError> useQuery<TData, TError>({
       queryKey: queryKey,
       queryFn: queryFn,
       enabled: enabled,
+      staleTime: staleTime,
     ),
   );
 

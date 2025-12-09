@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import 'package:clock/clock.dart';
+
 import '../hooks/use_query.dart';
 import 'query.dart';
 import 'query_client.dart';
@@ -19,8 +21,8 @@ class QueryObserver<TData, TError> {
     // Get initial optimistic result
     _result = _getOptimisticResult();
 
-    // Trigger initial fetch if enabled and no data
-    if (options.enabled && _query.state.data == null) {
+    // Trigger initial fetch if enabled and (no data or data is stale)
+    if (options.enabled && _shouldFetchOnMount(_query.state)) {
       _query.fetch();
     }
   }
@@ -43,9 +45,10 @@ class QueryObserver<TData, TError> {
     final didKeyChange =
         QueryKey(newOptions.queryKey) != QueryKey(options.queryKey);
     final didEnabledChange = newOptions.enabled != options.enabled;
+    final didStaleTimeChange = newOptions.staleTime != options.staleTime;
 
     // If nothing changed, return early
-    if (!didKeyChange && !didEnabledChange) {
+    if (!didKeyChange && !didEnabledChange && !didStaleTimeChange) {
       return;
     }
 
@@ -69,8 +72,8 @@ class QueryObserver<TData, TError> {
       _result = _getOptimisticResult();
       _controller.add(_result);
 
-      // Trigger initial fetch if enabled and no data
-      if (newOptions.enabled && _query.state.data == null) {
+      // Trigger initial fetch if enabled and (no data or data is stale)
+      if (newOptions.enabled && _shouldFetchOnMount(_query.state)) {
         _query.fetch();
       }
     }
@@ -80,7 +83,18 @@ class QueryObserver<TData, TError> {
       _result = _getOptimisticResult();
       _controller.add(_result);
 
-      if (newOptions.enabled && _query.state.data == null) {
+      if (newOptions.enabled && _shouldFetchOnMount(_query.state)) {
+        _query.fetch();
+      }
+    }
+
+    if (didStaleTimeChange) {
+      // Update staleTime - recalculate result to update isStale getter
+      _result = _getOptimisticResult();
+      _controller.add(_result);
+
+      // If data becomes stale with the new staleTime, trigger a refetch
+      if (newOptions.enabled && _shouldFetchOnMount(_query.state)) {
         _query.fetch();
       }
     }
@@ -94,8 +108,8 @@ class QueryObserver<TData, TError> {
   UseQueryResult<TData, TError> _getOptimisticResult() {
     final state = _query.state;
 
-    // Check if we should fetch on mount (enabled and no data)
-    final shouldFetch = options.enabled && state.data == null;
+    // Check if we should fetch on mount (enabled and (no data or stale))
+    final shouldFetch = options.enabled && _shouldFetchOnMount(state);
 
     // Return optimistic result with fetchStatus set to 'fetching' if we're about to fetch
     return UseQueryResult<TData, TError>(
@@ -107,7 +121,21 @@ class QueryObserver<TData, TError> {
       errorUpdatedAt: state.errorUpdatedAt,
       errorUpdateCount: state.errorUpdateCount,
       isEnabled: options.enabled,
+      staleTime: options.staleTime,
     );
+  }
+
+  bool _shouldFetchOnMount(QueryState<TData> state) {
+    // No data - always fetch
+    if (state.data == null) return true;
+
+    // Has data - check if stale
+    // No dataUpdatedAt - consider stale
+    if (state.dataUpdatedAt == null) return true;
+
+    // Check if data age exceeds staleTime
+    final age = clock.now().difference(state.dataUpdatedAt!);
+    return age > options.staleTime;
   }
 
   void _updateResult(QueryState<TData> state) {
@@ -120,11 +148,11 @@ class QueryObserver<TData, TError> {
       errorUpdatedAt: state.errorUpdatedAt,
       errorUpdateCount: state.errorUpdateCount,
       isEnabled: options.enabled,
+      staleTime: options.staleTime,
       // failureCount: state.failureCount,
       // failureReason: state.failureReason as TError?,
       // isFetchedAfterMount: state.dataUpdatedAt != null, // Simplified for now
       // isPlaceholderData: false, // Not implemented yet
-      // isStale: false, // Not implemented yet
     );
     _result = result;
     _controller.add(result);
@@ -136,9 +164,11 @@ class QueryOptions<TData> {
     required this.queryKey,
     required this.queryFn,
     this.enabled = true,
+    this.staleTime = Duration.zero,
   });
 
   final List<Object?> queryKey;
   final Future<TData> Function() queryFn;
   final bool enabled;
+  final Duration staleTime;
 }
