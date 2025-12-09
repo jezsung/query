@@ -40,13 +40,13 @@ void main() {
 
   testWidgets('SHOULD prioritize queryClient over QueryClientProvider',
       (tester) async {
-    final priorQueryClient = QueryClient();
+    final prioritizedQueryClient = QueryClient();
 
     await buildHook(
       () => useQuery(
         queryKey: const ['key'],
         queryFn: () async => 'data',
-        queryClient: priorQueryClient,
+        queryClient: prioritizedQueryClient,
       ),
       wrapper: (child) => QueryClientProvider(
         client: client,
@@ -56,7 +56,7 @@ void main() {
 
     await tester.pumpAndSettle();
 
-    expect(priorQueryClient.cache.getQuery(const ['key']), isNotNull);
+    expect(prioritizedQueryClient.cache.getQuery(const ['key']), isNotNull);
     expect(client.cache.getQuery(const ['key']), isNull);
   });
 
