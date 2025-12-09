@@ -91,4 +91,81 @@ void main() {
       "[{id: 123, name: test}]",
     );
   });
+
+  group('startsWith', () {
+    test('SHOULD return true WHEN key starts with prefix', () {
+      const key = QueryKey(['users', '1']);
+      const prefix = QueryKey(['users']);
+
+      expect(key.startsWith(prefix), isTrue);
+    });
+
+    test('SHOULD return true WHEN key is exact same as prefix', () {
+      const key = QueryKey(['users', '1']);
+      const prefix = QueryKey(['users', '1']);
+
+      expect(key.startsWith(prefix), isTrue);
+    });
+
+    test('SHOULD return false WHEN prefix is longer than key', () {
+      const key = QueryKey(['users']);
+      const prefix = QueryKey(['users', '1']);
+
+      expect(key.startsWith(prefix), isFalse);
+    });
+
+    test('SHOULD return false WHEN prefix does not match', () {
+      const key = QueryKey(['users', '1']);
+      const prefix = QueryKey(['posts']);
+
+      expect(key.startsWith(prefix), isFalse);
+    });
+
+    test('SHOULD return false WHEN only partial segments match', () {
+      const key1 = QueryKey(['users', '1']);
+      const prefix1 = QueryKey(['users', '2']);
+
+      expect(key1.startsWith(prefix1), isFalse);
+
+      const key2 = QueryKey(['users', '1', 'posts', '1']);
+      const prefix2 = QueryKey(['users', '1', 'posts', '2']);
+
+      expect(key2.startsWith(prefix2), isFalse);
+    });
+
+    test('SHOULD return true WHEN prefix is empty', () {
+      const key = QueryKey(['users', '1']);
+      const prefix = QueryKey([]);
+
+      expect(key.startsWith(prefix), isTrue);
+    });
+
+    test('SHOULD return true WHEN both are empty', () {
+      const key = QueryKey([]);
+      const prefix = QueryKey([]);
+
+      expect(key.startsWith(prefix), isTrue);
+    });
+
+    test('SHOULD return true with multiple segments', () {
+      const key = QueryKey(['users', '1', 'posts', '42']);
+      const prefix = QueryKey(['users', '1', 'posts']);
+
+      expect(key.startsWith(prefix), isTrue);
+    });
+
+    test('SHOULD return false WHEN first segment differs', () {
+      const key = QueryKey(['users', '1']);
+      const prefix = QueryKey(['posts', '1']);
+
+      expect(key.startsWith(prefix), isFalse);
+    });
+
+    test('SHOULD return false WHEN middle segment differs', () {
+      const key = QueryKey(['users', '1', 'posts']);
+      const prefix = QueryKey(['users', '2']);
+
+      expect(key.startsWith(prefix), isFalse);
+    });
+  });
 }

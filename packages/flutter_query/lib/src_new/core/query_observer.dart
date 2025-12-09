@@ -9,7 +9,7 @@ import 'query_key.dart';
 
 class QueryObserver<TData, TError> {
   QueryObserver(this.client, this.options) {
-    _query = client.cache.buildQuery<TData>(
+    _query = client.cache.build<TData>(
       options.queryKey,
       options.queryFn,
     );
@@ -57,7 +57,7 @@ class QueryObserver<TData, TError> {
 
     if (didKeyChange) {
       // Query key changed - need to switch to a different query
-      _query = client.cache.buildQuery<TData>(
+      _query = client.cache.build<TData>(
         newOptions.queryKey,
         newOptions.queryFn,
       );

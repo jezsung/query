@@ -56,8 +56,8 @@ void main() {
 
     await tester.pumpAndSettle();
 
-    expect(prioritizedQueryClient.cache.getQuery(const ['key']), isNotNull);
-    expect(client.cache.getQuery(const ['key']), isNull);
+    expect(prioritizedQueryClient.cache.get(const ['key']), isNotNull);
+    expect(client.cache.get(const ['key']), isNull);
   });
 
   testWidgets('SHOULD fetch and succeed', (tester) async {
@@ -423,7 +423,7 @@ void main() {
 
     await tester.pumpAndSettle();
 
-    final query = client.cache.getQuery(key)!;
+    final query = client.cache.get(key)!;
 
     expect(query.hasObservers, true);
 
@@ -673,7 +673,7 @@ void main() {
       const queryKey = ['fresh-no-refetch-test'];
 
       // Pre-populate cache with fresh data
-      final query = client.cache.buildQuery<String>(
+      final query = client.cache.build<String>(
         queryKey,
         () async => 'initial',
       );

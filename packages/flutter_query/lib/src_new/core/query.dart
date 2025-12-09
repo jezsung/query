@@ -20,6 +20,7 @@ class Query<TData> {
   QueryState<TData> get state => _state;
 
   bool get hasObservers => _controller.hasListener;
+  bool get isClosed => _controller.isClosed;
 
   void _setState(QueryState<TData> newState) {
     _state = newState;
