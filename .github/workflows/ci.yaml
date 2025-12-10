@@ -5,13 +5,13 @@ on:
     paths:
       - 'packages/flutter_query/**'
       - '!packages/flutter_query/example/**'
-      - '!**/README.md'
+      - '!**/*.md'
       - '!**/LICENSE'
   push:
     paths:
       - 'packages/flutter_query/**'
       - '!packages/flutter_query/example/**'
-      - '!**/README.md'
+      - '!**/*.md'
       - '!**/LICENSE'
 
 jobs:
