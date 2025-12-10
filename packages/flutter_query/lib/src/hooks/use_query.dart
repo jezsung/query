@@ -1,231 +1,262 @@
-import 'package:flutter/widgets.dart';
+import 'dart:async';
 
+import 'package:clock/clock.dart';
+import 'package:equatable/equatable.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 
 import '../core/core.dart';
 import 'use_query_client.dart';
 
-enum RefetchBehavior {
-  never,
-  stale,
-  always,
+// enum NetworkMode { online, always, offlineFirst }
+
+class UseQueryResult<TData, TError> with EquatableMixin {
+  const UseQueryResult({
+    required this.status,
+    required this.fetchStatus,
+    required this.data,
+    required this.dataUpdatedAt,
+    required this.error,
+    required this.errorUpdatedAt,
+    required this.errorUpdateCount,
+    required this.isEnabled,
+    required StaleDurationValue staleDuration,
+    // required this.failureCount,
+    // required this.failureReason,
+    // required this.isFetchedAfterMount,
+    // required this.isPlaceholderData,
+  }) : _staleDuration = staleDuration;
+
+  // Base fields
+  final QueryStatus status;
+  final FetchStatus fetchStatus;
+  final TData? data;
+  final DateTime? dataUpdatedAt;
+  final TError? error;
+  final DateTime? errorUpdatedAt;
+  final int errorUpdateCount;
+  final bool isEnabled;
+  final StaleDurationValue _staleDuration;
+
+  // final int failureCount; // failureCount: number
+  // final TError? failureReason; // failureReason: null | TError
+
+  // final bool isFetchedAfterMount;
+  // final bool isPlaceholderData;
+  // final bool isStale;
+  // final T promise; // promise: Promise<TData>
+  // final T refetch; // refetch: (options: { throwOnError: boolean, cancelRefetch: boolean }) => Promise<UseQueryResult>
+
+  // Derived fields - computed from base fields
+  bool get isError => status == QueryStatus.error;
+  bool get isSuccess => status == QueryStatus.success;
+  bool get isPending => status == QueryStatus.pending;
+  bool get isFetching => fetchStatus == FetchStatus.fetching;
+  bool get isPaused => fetchStatus == FetchStatus.paused;
+  bool get isFetched => dataUpdatedAt != null;
+  bool get isLoading => isPending && isFetching;
+  bool get isInitialLoading => isLoading && !isFetched;
+  bool get isLoadingError => isError && data == null;
+  bool get isRefetchError => isError && data != null;
+  bool get isRefetching => isFetching && !isPending;
+  bool get isStale {
+    // Data is stale if there's no dataUpdatedAt
+    if (dataUpdatedAt == null) return true;
+
+    final age = clock.now().difference(dataUpdatedAt!);
+
+    return switch (_staleDuration) {
+      // Check if age exceeds staleDuration
+      StaleDuration duration => age > duration,
+      // If staleDuration is StaleDurationInfinity, never stale (unless invalidated)
+      StaleDurationInfinity() => false,
+      // If staleDuration is StaleDurationStatic, never stale
+      StaleDurationStatic() => false,
+    };
+  }
+
+  @override
+  List<Object?> get props => [
+        status,
+        fetchStatus,
+        data,
+        dataUpdatedAt,
+        error,
+        errorUpdatedAt,
+        errorUpdateCount,
+        isEnabled,
+        _staleDuration,
+      ];
 }
 
-class QueryResult<T> {
-  QueryResult({
-    required this.state,
-    required this.refetch,
-    required this.cancel,
-  });
-
-  final QueryState<T> state;
-  final Future<void> Function() refetch;
-  final Future<void> Function() cancel;
-}
-
-class QueryOptions<T, K> {
-  QueryOptions({
-    required this.key,
-    required this.fetcher,
-    required this.enabled,
-    required this.initialData,
-    required this.initialDataUpdatedAt,
-    required this.placeholder,
-    required this.staleDuration,
-    required this.gcDuration,
-    required this.refetchOnInit,
-    required this.refetchOnResumed,
-  });
-
-  final QueryKey<K> key;
-  final QueryFetcher<T, K> fetcher;
-  final bool enabled;
-  final T? initialData;
-  final DateTime? initialDataUpdatedAt;
-  final T? placeholder;
-  final Duration staleDuration;
-  final Duration gcDuration;
-  final RefetchBehavior refetchOnInit;
-  final RefetchBehavior refetchOnResumed;
-}
-
-QueryResult<T> useQuery<T, K>(
-  QueryKey<K> key,
-  QueryFetcher<T, K> fetcher, {
+UseQueryResult<TData, TError> useQuery<TData, TError>({
+  // queryKey: unknown[]
+  required List<Object?> queryKey,
+  // queryFn: (context: QueryFunctionContext) => Promise<TData>
+  required Future<TData> Function() queryFn,
+  // gcTime: number | Infinity
+  // Duration gcTime = const Duration(minutes: 5),
+  // enabled: boolean | (query: Query) => boolean
   bool enabled = true,
-  T? initialData,
-  DateTime? initialDataUpdatedAt,
-  T? placeholder,
-  Duration staleDuration = Duration.zero,
-  Duration gcDuration = const Duration(minutes: 5),
-  RefetchBehavior refetchOnInit = RefetchBehavior.stale,
-  RefetchBehavior refetchOnResumed = RefetchBehavior.stale,
+  // networkMode: 'online' | 'always' | 'offlineFirst'
+  // NetworkMode networkMode = NetworkMode.online,
+  // initialData: TData | () => TData
+  // TData? initialData,
+  // initialDataUpdatedAt: number | (() => number | undefined)
+  // DateTime? initialDataUpdatedAt,
+  // meta: Record<string, unknown>
+  // Map<String, Object?>? meta,
+  // notifyOnChangeProps: string[] | "all" | (() => string[] | "all" | undefined)
+  // List<String>? notifyOnChangeProps,
+  // placeholderData: TData | (previousValue: TData | undefined, previousQuery: Query | undefined) => TData
+  // placeholderData,
+  // queryKeyHashFn: (queryKey: QueryKey) => string
+  // String Function()? queryKeyHashFn,
+  // refetchInterval: number | false | ((query: Query) => number | false | undefined)
+  // refetchInterval,
+  // refetchIntervalInBackground: boolean
+  // bool refetchIntervalInBackground = false,
+  // refetchOnMount: boolean | "always" | ((query: Query) => boolean | "always")
+  // refetchOnMount = true,
+  // refetchOnReconnect: boolean | "always" | ((query: Query) => boolean | "always")
+  // refetchOnReconnect = true,
+  // refetchOnWindowFocus: boolean | "always" | ((query: Query) => boolean | "always")
+  // refetchOnWindowFocus = true,
+  // retry: boolean | number | (failureCount: number, error: TError) => boolean
+  // retry,
+  // retryOnMount: boolean
+  // bool retryOnMount = true,
+  // retryDelay: number | (retryAttempt: number, error: TError) => number
+  // retryDelay,
+  // select: (data: TData) => unknown
+  // Object? Function(TData)? select,
+  // staleDuration: StaleDuration<TData, TError>
+  StaleDurationBase staleDuration = StaleDuration.zero,
+  // structuralSharing: boolean | (oldData: unknown | undefined, newData: unknown) => unknown
+  // structuralSharing = true,
+  // subscribed: boolean
+  // bool subscribed = true,
+  // throwOnError: undefined | boolean | (error: TError, query: Query) => boolean
+  // throwOnError,
+  // queryClient?: QueryClient
+  QueryClient? queryClient,
 }) {
-  final client = useQueryClient();
-  final query = useMemoized(
-    () {
-      final query_ = client.cache.buildQuery<T, K>(key);
+  // Get QueryClient from context if not provided
+  final client = queryClient ?? useQueryClient();
 
-      if (initialData != null) {
-        query_.setInitialData(initialData, initialDataUpdatedAt);
-      }
-
-      return query_;
-    },
-    [key, client],
-  );
-  final queryOptions = useMemoized(
-    () => QueryOptions<T, K>(
-      key: key,
-      fetcher: fetcher,
-      enabled: enabled,
-      initialData: initialData,
-      initialDataUpdatedAt: initialDataUpdatedAt,
-      placeholder: placeholder,
-      staleDuration: staleDuration,
-      gcDuration: gcDuration,
-      refetchOnInit: refetchOnInit,
-      refetchOnResumed: refetchOnResumed,
-    ),
-    [
-      key,
-      fetcher,
-      enabled,
-      initialData,
-      initialDataUpdatedAt,
-      placeholder,
-      staleDuration,
-      gcDuration,
-      refetchOnInit,
-      refetchOnResumed,
-    ],
-  );
-  final stateSnapshot = useStream(
-    useMemoized(
-      () => query.stream.map(
-        (state) => state.copyWith(
-          data: state.hasData ? state.data : placeholder,
-        ),
-      ),
-      [query],
-    ),
-    initialData: query.state.copyWith(
-      status: query.state.status.isIdle && enabled
-          ? QueryStatus.fetching
-          : query.state.status,
-      data: query.state.hasData ? query.state.data : placeholder,
-    ),
-    preserveState: false,
-  );
-
-  useEffect(
-    () {
-      client.cache.cancelGc(key);
-      return () {
-        final options = client.getQueryOptions(key);
-        if (options == null || options.isEmpty) {
-          client.cache.scheduleGc(key, gcDuration);
-        }
-      };
-    },
-    [client, key],
-  );
-
-  useEffect(
-    () {
-      client.addQueryOptions(queryOptions);
-      return () {
-        client.removeQueryOptions(queryOptions);
-      };
-    },
-    [client, queryOptions],
-  );
-
-  useEffect(
-    () {
-      if (!enabled || query.state.status.isFetching) return;
-
-      if (query.state.status.isIdle) {
-        query.fetch(
-          fetcher: fetcher,
-          staleDuration: staleDuration,
-        );
-      } else {
-        switch (refetchOnInit) {
-          case RefetchBehavior.never:
-            break;
-          case RefetchBehavior.stale:
-            query.fetch(
-              fetcher: fetcher,
-              staleDuration: staleDuration,
-            );
-            break;
-          case RefetchBehavior.always:
-            query.fetch(
-              fetcher: fetcher,
-              staleDuration: Duration.zero,
-            );
-            break;
-        }
-      }
-
-      return;
-    },
-    [query, enabled],
-  );
-
-  useOnAppLifecycleStateChange(
-    (previous, current) {
-      if (!enabled) return;
-
-      if (current == AppLifecycleState.resumed) {
-        switch (refetchOnResumed) {
-          case RefetchBehavior.never:
-            break;
-          case RefetchBehavior.stale:
-            query.fetch(
-              fetcher: fetcher,
-              staleDuration: staleDuration,
-            );
-            break;
-          case RefetchBehavior.always:
-            query.fetch(
-              fetcher: fetcher,
-              staleDuration: Duration.zero,
-            );
-            break;
-        }
-      }
-    },
-  );
-
-  final refetch = useCallback(
-    () async {
-      await query.fetch(
-        fetcher: fetcher,
+  // Create observer once per component instance
+  final observer = useMemoized(
+    () => QueryObserver<TData, TError>(
+      client,
+      QueryOptions(
+        queryKey: queryKey,
+        queryFn: queryFn,
+        enabled: enabled,
         staleDuration: staleDuration,
-      );
-    },
-    [query],
-  );
-  final cancel = useCallback(
-    () async {
-      await query.cancel();
-    },
-    [query],
-  );
-  final result = useMemoized(
-    () => QueryResult<T>(
-      state: stateSnapshot.requireData,
-      refetch: refetch,
-      cancel: cancel,
+      ),
     ),
-    [
-      stateSnapshot.requireData,
-      refetch,
-      cancel,
-    ],
+    [],
   );
 
-  return result;
+  // Update options during render (before subscribing)
+  // This ensures we get the optimistic result immediately when options change
+  observer.updateOptions(
+    QueryOptions(
+      queryKey: queryKey,
+      queryFn: queryFn,
+      enabled: enabled,
+      staleDuration: staleDuration,
+    ),
+  );
+
+  // Subscribe to observer stream to trigger rebuilds when result changes
+  useStream(
+    observer.onResultChange,
+    initialData: observer.result,
+  );
+
+  // Cleanup on unmount
+  useEffect(() {
+    return () {
+      observer.dispose();
+    };
+  }, []);
+
+  // Always return the current result from the observer
+  // This ensures we get the optimistic result immediately when options change
+  return observer.result;
+}
+
+/// Base class for stale duration configuration.
+sealed class StaleDurationBase {}
+
+/// A concrete stale duration value (not a function).
+sealed class StaleDurationValue implements StaleDurationBase {}
+
+class StaleDuration extends Duration implements StaleDurationValue {
+  /// Data becomes stale after the specified duration
+  ///
+  /// This is the default constructor matching Duration's constructor.
+  ///
+  /// Example:
+  /// ```dart
+  /// StaleDuration(minutes: 5)
+  /// StaleDuration(seconds: 30)
+  /// StaleDuration(hours: 1, minutes: 30)
+  /// ```
+  const StaleDuration({
+    super.days,
+    super.hours,
+    super.minutes,
+    super.seconds,
+    super.milliseconds,
+    super.microseconds,
+  });
+
+  /// Zero duration - data is immediately stale
+  static const StaleDuration zero = StaleDuration(seconds: 0);
+
+  /// Data never becomes stale via time-based staleness.
+  ///
+  /// Note: Can still be invalidated manually when invalidation is implemented.
+  /// Sets duration to maximum possible value internally.
+  static const StaleDurationInfinity infinity = StaleDurationInfinity._();
+
+  /// Data never becomes stale (equivalent to TanStack's 'static')
+  static const StaleDurationStatic static = StaleDurationStatic._();
+
+  /// Compute stale duration dynamically based on the query state
+  ///
+  /// Example:
+  /// ```dart
+  /// StaleDuration.resolveWith((query) {
+  ///   // If query has error, make it stale immediately
+  ///   if (query.state.error != null) {
+  ///     return StaleDuration.zero();
+  ///   }
+  ///   // Otherwise, 10 minutes
+  ///   return StaleDuration(minutes: 10);
+  /// })
+  /// ```
+  static StaleDurationResolver resolveWith<TData, TError>(
+    StaleDurationValue Function(Query<TData, TError> query) callback,
+  ) {
+    return StaleDurationResolver<TData, TError>._(callback);
+  }
+}
+
+class StaleDurationInfinity implements StaleDurationValue {
+  const StaleDurationInfinity._();
+}
+
+class StaleDurationStatic implements StaleDurationValue {
+  const StaleDurationStatic._();
+}
+
+/// A dynamic stale duration that is computed based on query state.
+class StaleDurationResolver<TData, TError> implements StaleDurationBase {
+  const StaleDurationResolver._(this._callback);
+
+  final StaleDurationValue Function(Query<TData, TError> query) _callback;
+
+  StaleDurationValue resolve(Query<TData, TError> query) => _callback(query);
 }

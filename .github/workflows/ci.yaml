@@ -47,5 +47,5 @@ jobs:
       - run: dart format --output none --set-exit-if-changed .
         working-directory: packages/flutter_query
 
-      - run: flutter test test/src_new
+      - run: flutter test
         working-directory: packages/flutter_query

@@ -9,6 +9,6 @@ cd packages/flutter_query
 flutter analyze
 flutter pub run import_sorter:main --exit-if-changed
 dart format --output none --set-exit-if-changed .
-flutter test test/src_new
+flutter test
 
 echo "✓ All pre-commit checks passed!"

@@ -1,143 +1,128 @@
 import 'dart:async';
 
-import 'package:async/async.dart';
 import 'package:clock/clock.dart';
 import 'package:equatable/equatable.dart';
 
-part 'paged_query.dart';
-part 'paged_query_state.dart';
-part 'query_state.dart';
+enum QueryStatus { pending, error, success }
 
-enum QueryStatus {
-  idle,
-  fetching,
-  success,
-  failure,
-}
+enum FetchStatus { fetching, paused, idle }
 
-extension QueryStatusExtension on QueryStatus {
-  bool get isIdle => this == QueryStatus.idle;
+class Query<TData, TError> {
+  Query(this.queryKey, this.queryFn);
 
-  bool get isFetching => this == QueryStatus.fetching;
+  final List<Object?> queryKey;
+  final Future<TData> Function() queryFn;
 
-  bool get isSuccess => this == QueryStatus.success;
+  final _controller = StreamController<QueryState<TData, TError>>.broadcast();
+  Stream<QueryState<TData, TError>> get onStateChange => _controller.stream;
 
-  bool get isFailure => this == QueryStatus.failure;
-}
+  QueryState<TData, TError> _state = QueryState<TData, TError>();
+  QueryState<TData, TError> get state => _state;
 
-typedef QueryKey<K> = K;
+  bool get hasObservers => _controller.hasListener;
+  bool get isClosed => _controller.isClosed;
 
-typedef QueryFetcher<T, K> = Future<T> Function(K key);
-
-class Query<T, K> {
-  Query(this.key) : _state = QueryState<T>();
-
-  final QueryKey<K> key;
-
-  final _stateController = StreamController<QueryState<T>>.broadcast();
-  Stream<QueryState<T>> get stream => _stateController.stream;
-
-  QueryState<T> _state;
-  QueryState<T> get state => _state;
-  set state(QueryState<T> value) {
-    _state = value;
-    _stateController.add(value);
+  void _setState(QueryState<TData, TError> newState) {
+    _state = newState;
+    _controller.add(newState);
   }
 
-  CancelableOperation<T>? _cancelableOperation;
+  Future<void> fetch() async {
+    if (state.fetchStatus == FetchStatus.fetching) return;
 
-  Future fetch({
-    required QueryFetcher<T, K> fetcher,
-    Duration staleDuration = Duration.zero,
-  }) async {
-    if (state.status.isFetching) return;
-
-    if (!isStale(staleDuration) && !state.isInvalidated) return;
-
-    QueryState<T> stateBeforeFetching = state.copyWith();
-
-    state = state.copyWith(
-      status: QueryStatus.fetching,
-      isInvalidated: false,
-    );
+    _setState(state.copyWith(
+      fetchStatus: FetchStatus.fetching,
+    ));
 
     try {
-      _cancelableOperation = CancelableOperation<T>.fromFuture(fetcher(key));
+      final data = await queryFn();
 
-      final data = await _cancelableOperation!.valueOrCancellation();
-
-      if (_cancelableOperation!.isCanceled) {
-        state = stateBeforeFetching;
-        return;
-      }
-
-      state = state.copyWith(
+      _setState(QueryState<TData, TError>(
         status: QueryStatus.success,
+        fetchStatus: FetchStatus.idle,
         data: data,
         dataUpdatedAt: clock.now(),
-      );
-    } on Exception catch (error) {
-      state = state.copyWith(
-        status: QueryStatus.failure,
-        error: error,
+        error: null,
+        errorUpdatedAt: state.errorUpdatedAt,
+        errorUpdateCount: state.errorUpdateCount,
+        // failureCount: 0,
+        // failureReason: null,
+      ));
+    } catch (error) {
+      _setState(state.copyWith(
+        status: QueryStatus.error,
+        fetchStatus: FetchStatus.idle,
+        error: error as TError,
         errorUpdatedAt: clock.now(),
-      );
+        errorUpdateCount: state.errorUpdateCount + 1,
+        // failureCount: state.failureCount + 1,
+        // failureReason: error,
+      ));
     }
   }
 
-  Future cancel() async {
-    if (!state.status.isFetching) return;
-
-    await _cancelableOperation?.cancel();
+  void dispose() {
+    _controller.close();
   }
+}
 
-  void setInitialData(
-    T data, [
-    DateTime? updatedAt,
-  ]) {
-    if (state.hasData) {
-      return;
-    }
+class QueryState<TData, TError> with EquatableMixin {
+  const QueryState({
+    this.status = QueryStatus.pending,
+    this.fetchStatus = FetchStatus.idle,
+    this.data,
+    this.dataUpdatedAt,
+    this.error,
+    this.errorUpdatedAt,
+    this.errorUpdateCount = 0,
+    // this.failureCount = 0,
+    // this.failureReason,
+  });
 
-    state = state.copyWith(
-      status: QueryStatus.success,
-      data: data,
-      dataUpdatedAt: updatedAt ?? clock.now(),
+  final QueryStatus status;
+  final FetchStatus fetchStatus;
+  final TData? data;
+  final DateTime? dataUpdatedAt;
+  final TError? error;
+  final DateTime? errorUpdatedAt;
+  final int errorUpdateCount;
+  // final int failureCount;
+  // final TError? failureReason;
+
+  QueryState<TData, TError> copyWith({
+    QueryStatus? status,
+    FetchStatus? fetchStatus,
+    TData? data,
+    DateTime? dataUpdatedAt,
+    TError? error,
+    DateTime? errorUpdatedAt,
+    int? errorUpdateCount,
+    // int? failureCount,
+    // TError? failureReason,
+  }) {
+    return QueryState<TData, TError>(
+      status: status ?? this.status,
+      fetchStatus: fetchStatus ?? this.fetchStatus,
+      data: data ?? this.data,
+      dataUpdatedAt: dataUpdatedAt ?? this.dataUpdatedAt,
+      error: error ?? this.error,
+      errorUpdatedAt: errorUpdatedAt ?? this.errorUpdatedAt,
+      errorUpdateCount: errorUpdateCount ?? this.errorUpdateCount,
+      // failureCount: failureCount ?? this.failureCount,
+      // failureReason: failureReason ?? this.failureReason,
     );
   }
 
-  void setData(
-    T data, [
-    DateTime? updatedAt,
-  ]) {
-    if (updatedAt != null &&
-        state.dataUpdatedAt != null &&
-        !updatedAt.isAfter(state.dataUpdatedAt!)) {
-      return;
-    }
-
-    state = state.copyWith(
-      status: QueryStatus.success,
-      data: data,
-      dataUpdatedAt: updatedAt ?? clock.now(),
-    );
-  }
-
-  void invalidate() {
-    state = state.copyWith(isInvalidated: true);
-  }
-
-  bool isStale(Duration duration) {
-    if (!state.hasData || state.dataUpdatedAt == null) return true;
-
-    final now = clock.now();
-    final staleAt = state.dataUpdatedAt!.add(duration);
-
-    return now.isAfter(staleAt) || now.isAtSameMomentAs(staleAt);
-  }
-
-  Future close() async {
-    await _cancelableOperation?.cancel();
-    await _stateController.close();
-  }
+  @override
+  List<Object?> get props => [
+        status,
+        fetchStatus,
+        data,
+        dataUpdatedAt,
+        error,
+        errorUpdatedAt,
+        errorUpdateCount,
+        // failureCount,
+        // failureReason,
+      ];
 }
