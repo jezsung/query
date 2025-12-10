@@ -16,7 +16,7 @@ extension CopyWith<TData, TError> on UseQueryResult<TData, TError> {
     Object? errorUpdatedAt = _undefined,
     int? errorUpdateCount,
     bool? isEnabled,
-    Duration? staleTime,
+    StaleDuration? staleDuration,
   }) {
     return UseQueryResult<TData, TError>(
       status: status ?? this.status,
@@ -31,7 +31,7 @@ extension CopyWith<TData, TError> on UseQueryResult<TData, TError> {
           : errorUpdatedAt as DateTime?,
       errorUpdateCount: errorUpdateCount ?? this.errorUpdateCount,
       isEnabled: isEnabled ?? this.isEnabled,
-      staleTime: staleTime ?? Duration.zero,
+      staleDuration: staleDuration ?? StaleDuration.zero,
     );
   }
 }
@@ -63,7 +63,7 @@ void main() {
         errorUpdatedAt: null,
         errorUpdateCount: 0,
         isEnabled: true,
-        staleTime: Duration.zero,
+        staleDuration: StaleDuration.zero,
       );
       final result2 = result1.copyWith();
 
@@ -80,7 +80,7 @@ void main() {
         errorUpdatedAt: null,
         errorUpdateCount: 0,
         isEnabled: true,
-        staleTime: Duration.zero,
+        staleDuration: StaleDuration.zero,
       );
       final result2 = result1.copyWith(status: QueryStatus.success);
 
@@ -97,7 +97,7 @@ void main() {
         errorUpdatedAt: null,
         errorUpdateCount: 0,
         isEnabled: true,
-        staleTime: Duration.zero,
+        staleDuration: StaleDuration.zero,
       );
       final result2 = result1.copyWith(fetchStatus: FetchStatus.idle);
 
@@ -114,7 +114,7 @@ void main() {
         errorUpdatedAt: null,
         errorUpdateCount: 0,
         isEnabled: true,
-        staleTime: Duration.zero,
+        staleDuration: StaleDuration.zero,
       );
       final result2 = result1.copyWith(data: 'expected data');
 
@@ -131,7 +131,7 @@ void main() {
         errorUpdatedAt: null,
         errorUpdateCount: 0,
         isEnabled: true,
-        staleTime: Duration.zero,
+        staleDuration: StaleDuration.zero,
       );
       final result2 = result1.copyWith(dataUpdatedAt: DateTime(2024, 1, 2));
 
@@ -148,7 +148,7 @@ void main() {
         errorUpdatedAt: null,
         errorUpdateCount: 1,
         isEnabled: true,
-        staleTime: Duration.zero,
+        staleDuration: StaleDuration.zero,
       );
       final result2 = result1.copyWith(error: 'expected error');
 
@@ -165,7 +165,7 @@ void main() {
         errorUpdatedAt: DateTime(2024, 1, 1),
         errorUpdateCount: 1,
         isEnabled: true,
-        staleTime: Duration.zero,
+        staleDuration: StaleDuration.zero,
       );
       final result2 = result1.copyWith(errorUpdatedAt: DateTime(2024, 1, 2));
 
@@ -182,7 +182,7 @@ void main() {
         errorUpdatedAt: null,
         errorUpdateCount: 5,
         isEnabled: true,
-        staleTime: Duration.zero,
+        staleDuration: StaleDuration.zero,
       );
       final result2 = result1.copyWith(errorUpdateCount: 0);
 
@@ -199,7 +199,7 @@ void main() {
         errorUpdatedAt: null,
         errorUpdateCount: 0,
         isEnabled: false,
-        staleTime: Duration.zero,
+        staleDuration: StaleDuration.zero,
       );
       final result2 = result1.copyWith(isEnabled: true);
 
@@ -216,7 +216,7 @@ void main() {
         errorUpdatedAt: null,
         errorUpdateCount: 0,
         isEnabled: true,
-        staleTime: Duration.zero,
+        staleDuration: StaleDuration.zero,
       );
 
       expect(
@@ -258,7 +258,7 @@ void main() {
         errorUpdatedAt: DateTime(2024, 1, 1),
         errorUpdateCount: 1,
         isEnabled: true,
-        staleTime: Duration.zero,
+        staleDuration: StaleDuration.zero,
       );
 
       expect(
@@ -300,7 +300,7 @@ void main() {
         errorUpdatedAt: null,
         errorUpdateCount: 0,
         isEnabled: true,
-        staleTime: Duration.zero,
+        staleDuration: StaleDuration.zero,
       );
 
       expect(

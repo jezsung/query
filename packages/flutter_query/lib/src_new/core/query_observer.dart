@@ -28,7 +28,7 @@ class QueryObserver<TData, TError> {
   }
 
   final QueryClient client;
-  QueryOptions<TData> options;
+  QueryOptions<TData, TError> options;
 
   late StreamSubscription<QueryState<TData, TError>> _stateSubscription;
   late Query<TData, TError> _query;
@@ -41,14 +41,24 @@ class QueryObserver<TData, TError> {
   late UseQueryResult<TData, TError> _result;
   UseQueryResult<TData, TError> get result => _result;
 
-  void updateOptions(QueryOptions<TData> newOptions) {
+  void updateOptions(QueryOptions<TData, TError> newOptions) {
     final didKeyChange =
         QueryKey(newOptions.queryKey) != QueryKey(options.queryKey);
     final didEnabledChange = newOptions.enabled != options.enabled;
-    final didStaleTimeChange = newOptions.staleTime != options.staleTime;
+
+    // Resolve staleDuration to concrete values before comparing
+    final newResolvedDuration = switch (newOptions.staleDuration) {
+      StaleDurationValue value => value,
+      StaleDurationResolver(:final resolve) => resolve(_query),
+    };
+    final oldResolvedDuration = switch (options.staleDuration) {
+      StaleDurationValue value => value,
+      StaleDurationResolver(:final resolve) => resolve(_query),
+    };
+    final didStaleDurationChange = newResolvedDuration != oldResolvedDuration;
 
     // If nothing changed, return early
-    if (!didKeyChange && !didEnabledChange && !didStaleTimeChange) {
+    if (!didKeyChange && !didEnabledChange && !didStaleDurationChange) {
       return;
     }
 
@@ -88,12 +98,12 @@ class QueryObserver<TData, TError> {
       }
     }
 
-    if (didStaleTimeChange) {
-      // Update staleTime - recalculate result to update isStale getter
+    if (didStaleDurationChange) {
+      // Update staleDuration - recalculate result to update isStale getter
       _result = _getOptimisticResult();
       _controller.add(_result);
 
-      // If data becomes stale with the new staleTime, trigger a refetch
+      // If data becomes stale with the new staleDuration, trigger a refetch
       if (newOptions.enabled && _shouldFetchOnMount(_query.state)) {
         _query.fetch();
       }
@@ -108,6 +118,12 @@ class QueryObserver<TData, TError> {
   UseQueryResult<TData, TError> _getOptimisticResult() {
     final state = _query.state;
 
+    // Resolve staleDuration to concrete value
+    final staleDuration = switch (options.staleDuration) {
+      StaleDurationValue value => value,
+      StaleDurationResolver(:final resolve) => resolve(_query),
+    };
+
     // Check if we should fetch on mount (enabled and (no data or stale))
     final shouldFetch = options.enabled && _shouldFetchOnMount(state);
 
@@ -121,7 +137,7 @@ class QueryObserver<TData, TError> {
       errorUpdatedAt: state.errorUpdatedAt,
       errorUpdateCount: state.errorUpdateCount,
       isEnabled: options.enabled,
-      staleTime: options.staleTime,
+      staleDuration: staleDuration,
     );
   }
 
@@ -133,12 +149,30 @@ class QueryObserver<TData, TError> {
     // No dataUpdatedAt - consider stale
     if (state.dataUpdatedAt == null) return true;
 
-    // Check if data age exceeds staleTime
+    // Resolve staleDuration to concrete value
+    final staleDuration = switch (options.staleDuration) {
+      StaleDurationValue value => value,
+      StaleDurationResolver(:final resolve) => resolve(_query),
+    };
+
     final age = clock.now().difference(state.dataUpdatedAt!);
-    return age > options.staleTime;
+    return switch (staleDuration) {
+      // Check if age exceeds staleDuration
+      StaleDuration duration => age > duration,
+      // If staleDuration is StaleDurationInfinity, never stale (unless invalidated)
+      StaleDurationInfinity() => false,
+      // If staleDuration is StaleDurationStatic, never stale
+      StaleDurationStatic() => false,
+    };
   }
 
   void _updateResult(QueryState<TData, TError> state) {
+    // Resolve staleDuration to concrete value
+    final staleDuration = switch (options.staleDuration) {
+      StaleDurationValue value => value,
+      StaleDurationResolver(:final resolve) => resolve(_query),
+    };
+
     final result = UseQueryResult<TData, TError>(
       status: state.status,
       fetchStatus: state.fetchStatus,
@@ -148,7 +182,7 @@ class QueryObserver<TData, TError> {
       errorUpdatedAt: state.errorUpdatedAt,
       errorUpdateCount: state.errorUpdateCount,
       isEnabled: options.enabled,
-      staleTime: options.staleTime,
+      staleDuration: staleDuration,
       // failureCount: state.failureCount,
       // failureReason: state.failureReason,
       // isFetchedAfterMount: state.dataUpdatedAt != null, // Simplified for now
@@ -159,16 +193,16 @@ class QueryObserver<TData, TError> {
   }
 }
 
-class QueryOptions<TData> {
+class QueryOptions<TData, TError> {
   const QueryOptions({
     required this.queryKey,
     required this.queryFn,
     this.enabled = true,
-    this.staleTime = Duration.zero,
+    this.staleDuration = StaleDuration.zero,
   });
 
   final List<Object?> queryKey;
   final Future<TData> Function() queryFn;
   final bool enabled;
-  final Duration staleTime;
+  final StaleDurationBase staleDuration;
 }

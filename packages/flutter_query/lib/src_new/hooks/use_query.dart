@@ -19,12 +19,12 @@ class UseQueryResult<TData, TError> with EquatableMixin {
     required this.errorUpdatedAt,
     required this.errorUpdateCount,
     required this.isEnabled,
-    required Duration staleTime,
+    required StaleDurationValue staleDuration,
     // required this.failureCount,
     // required this.failureReason,
     // required this.isFetchedAfterMount,
     // required this.isPlaceholderData,
-  }) : _staleTime = staleTime;
+  }) : _staleDuration = staleDuration;
 
   // Base fields
   final QueryStatus status;
@@ -35,7 +35,7 @@ class UseQueryResult<TData, TError> with EquatableMixin {
   final DateTime? errorUpdatedAt;
   final int errorUpdateCount;
   final bool isEnabled;
-  final Duration _staleTime;
+  final StaleDurationValue _staleDuration;
 
   // final int failureCount; // failureCount: number
   // final TError? failureReason; // failureReason: null | TError
@@ -59,10 +59,19 @@ class UseQueryResult<TData, TError> with EquatableMixin {
   bool get isRefetchError => isError && data != null;
   bool get isRefetching => isFetching && !isPending;
   bool get isStale {
-    // Data is stale if there's no dataUpdatedAt or if staleTime has elapsed
+    // Data is stale if there's no dataUpdatedAt
     if (dataUpdatedAt == null) return true;
+
     final age = clock.now().difference(dataUpdatedAt!);
-    return age > _staleTime;
+
+    return switch (_staleDuration) {
+      // Check if age exceeds staleDuration
+      StaleDuration duration => age > duration,
+      // If staleDuration is StaleDurationInfinity, never stale (unless invalidated)
+      StaleDurationInfinity() => false,
+      // If staleDuration is StaleDurationStatic, never stale
+      StaleDurationStatic() => false,
+    };
   }
 
   @override
@@ -75,7 +84,7 @@ class UseQueryResult<TData, TError> with EquatableMixin {
         errorUpdatedAt,
         errorUpdateCount,
         isEnabled,
-        _staleTime,
+        _staleDuration,
       ];
 }
 
@@ -120,8 +129,8 @@ UseQueryResult<TData, TError> useQuery<TData, TError>({
   // retryDelay,
   // select: (data: TData) => unknown
   // Object? Function(TData)? select,
-  // staleTime: number | 'static' | ((query: Query) => number | 'static')
-  Duration staleTime = Duration.zero,
+  // staleDuration: StaleDuration<TData, TError>
+  StaleDurationBase staleDuration = StaleDuration.zero,
   // structuralSharing: boolean | (oldData: unknown | undefined, newData: unknown) => unknown
   // structuralSharing = true,
   // subscribed: boolean
@@ -142,7 +151,7 @@ UseQueryResult<TData, TError> useQuery<TData, TError>({
         queryKey: queryKey,
         queryFn: queryFn,
         enabled: enabled,
-        staleTime: staleTime,
+        staleDuration: staleDuration,
       ),
     ),
     [],
@@ -155,7 +164,7 @@ UseQueryResult<TData, TError> useQuery<TData, TError>({
       queryKey: queryKey,
       queryFn: queryFn,
       enabled: enabled,
-      staleTime: staleTime,
+      staleDuration: staleDuration,
     ),
   );
 
@@ -175,4 +184,79 @@ UseQueryResult<TData, TError> useQuery<TData, TError>({
   // Always return the current result from the observer
   // This ensures we get the optimistic result immediately when options change
   return observer.result;
+}
+
+/// Base class for stale duration configuration.
+sealed class StaleDurationBase {}
+
+/// A concrete stale duration value (not a function).
+sealed class StaleDurationValue implements StaleDurationBase {}
+
+class StaleDuration extends Duration implements StaleDurationValue {
+  /// Data becomes stale after the specified duration
+  ///
+  /// This is the default constructor matching Duration's constructor.
+  ///
+  /// Example:
+  /// ```dart
+  /// StaleDuration(minutes: 5)
+  /// StaleDuration(seconds: 30)
+  /// StaleDuration(hours: 1, minutes: 30)
+  /// ```
+  const StaleDuration({
+    super.days,
+    super.hours,
+    super.minutes,
+    super.seconds,
+    super.milliseconds,
+    super.microseconds,
+  });
+
+  /// Zero duration - data is immediately stale
+  static const StaleDuration zero = StaleDuration(seconds: 0);
+
+  /// Data never becomes stale via time-based staleness.
+  ///
+  /// Note: Can still be invalidated manually when invalidation is implemented.
+  /// Sets duration to maximum possible value internally.
+  static const StaleDurationInfinity infinity = StaleDurationInfinity._();
+
+  /// Data never becomes stale (equivalent to TanStack's 'static')
+  static const StaleDurationStatic static = StaleDurationStatic._();
+
+  /// Compute stale duration dynamically based on the query state
+  ///
+  /// Example:
+  /// ```dart
+  /// StaleDuration.resolveWith((query) {
+  ///   // If query has error, make it stale immediately
+  ///   if (query.state.error != null) {
+  ///     return StaleDuration.zero();
+  ///   }
+  ///   // Otherwise, 10 minutes
+  ///   return StaleDuration(minutes: 10);
+  /// })
+  /// ```
+  static StaleDurationResolver resolveWith<TData, TError>(
+    StaleDurationValue Function(Query<TData, TError> query) callback,
+  ) {
+    return StaleDurationResolver<TData, TError>._(callback);
+  }
+}
+
+class StaleDurationInfinity implements StaleDurationValue {
+  const StaleDurationInfinity._();
+}
+
+class StaleDurationStatic implements StaleDurationValue {
+  const StaleDurationStatic._();
+}
+
+/// A dynamic stale duration that is computed based on query state.
+class StaleDurationResolver<TData, TError> implements StaleDurationBase {
+  const StaleDurationResolver._(this._callback);
+
+  final StaleDurationValue Function(Query<TData, TError> query) _callback;
+
+  StaleDurationValue resolve(Query<TData, TError> query) => _callback(query);
 }
