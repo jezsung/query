@@ -9,7 +9,7 @@ import 'query_key.dart';
 
 class QueryObserver<TData, TError> {
   QueryObserver(this.client, this.options) {
-    _query = client.cache.build<TData>(
+    _query = client.cache.build<TData, TError>(
       options.queryKey,
       options.queryFn,
     );
@@ -30,8 +30,8 @@ class QueryObserver<TData, TError> {
   final QueryClient client;
   QueryOptions<TData> options;
 
-  late StreamSubscription<QueryState<TData>> _stateSubscription;
-  late Query<TData> _query;
+  late StreamSubscription<QueryState<TData, TError>> _stateSubscription;
+  late Query<TData, TError> _query;
 
   final _controller =
       StreamController<UseQueryResult<TData, TError>>.broadcast();
@@ -57,7 +57,7 @@ class QueryObserver<TData, TError> {
 
     if (didKeyChange) {
       // Query key changed - need to switch to a different query
-      _query = client.cache.build<TData>(
+      _query = client.cache.build<TData, TError>(
         newOptions.queryKey,
         newOptions.queryFn,
       );
@@ -117,7 +117,7 @@ class QueryObserver<TData, TError> {
       fetchStatus: shouldFetch ? FetchStatus.fetching : state.fetchStatus,
       data: state.data,
       dataUpdatedAt: state.dataUpdatedAt,
-      error: state.error as TError?,
+      error: state.error,
       errorUpdatedAt: state.errorUpdatedAt,
       errorUpdateCount: state.errorUpdateCount,
       isEnabled: options.enabled,
@@ -125,7 +125,7 @@ class QueryObserver<TData, TError> {
     );
   }
 
-  bool _shouldFetchOnMount(QueryState<TData> state) {
+  bool _shouldFetchOnMount(QueryState<TData, TError> state) {
     // No data - always fetch
     if (state.data == null) return true;
 
@@ -138,19 +138,19 @@ class QueryObserver<TData, TError> {
     return age > options.staleTime;
   }
 
-  void _updateResult(QueryState<TData> state) {
+  void _updateResult(QueryState<TData, TError> state) {
     final result = UseQueryResult<TData, TError>(
       status: state.status,
       fetchStatus: state.fetchStatus,
       data: state.data,
       dataUpdatedAt: state.dataUpdatedAt,
-      error: state.error as TError?,
+      error: state.error,
       errorUpdatedAt: state.errorUpdatedAt,
       errorUpdateCount: state.errorUpdateCount,
       isEnabled: options.enabled,
       staleTime: options.staleTime,
       // failureCount: state.failureCount,
-      // failureReason: state.failureReason as TError?,
+      // failureReason: state.failureReason,
       // isFetchedAfterMount: state.dataUpdatedAt != null, // Simplified for now
       // isPlaceholderData: false, // Not implemented yet
     );

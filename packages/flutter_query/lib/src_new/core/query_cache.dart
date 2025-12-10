@@ -5,19 +5,19 @@ class QueryCache {
   final Map<QueryKey, Query> _queries = {};
 
   /// Builds or retrieves an existing query from the cache
-  Query<TData> build<TData>(
+  Query<TData, TError> build<TData, TError>(
     List<Object?> queryKey,
     Future<TData> Function() queryFn,
   ) {
     final key = QueryKey(queryKey);
-    final query = _queries[key] ??= Query<TData>(queryKey, queryFn);
-    return query as Query<TData>;
+    final query = _queries[key] ??= Query<TData, TError>(queryKey, queryFn);
+    return query as Query<TData, TError>;
   }
 
   /// Gets a query from the cache by key
-  Query<TData>? get<TData>(List<Object?> queryKey) {
+  Query<TData, TError>? get<TData, TError>(List<Object?> queryKey) {
     final key = QueryKey(queryKey);
-    return _queries[key] as Query<TData>?;
+    return _queries[key] as Query<TData, TError>?;
   }
 
   /// Returns all queries in the cache
@@ -50,7 +50,7 @@ class QueryCache {
   /// Finds a single query matching the given query key
   /// Returns null if no matching query is found
   /// [exact] defaults to true for exact key matching
-  Query<TData>? find<TData>(
+  Query<TData, TError>? find<TData, TError>(
     List<Object?> queryKey, {
     bool exact = true,
     bool Function(Query)? predicate,
@@ -59,7 +59,7 @@ class QueryCache {
       if (!_matchesFilters(query, queryKey, exact, predicate)) {
         continue;
       }
-      return query as Query<TData>;
+      return query as Query<TData, TError>;
     }
     return null;
   }

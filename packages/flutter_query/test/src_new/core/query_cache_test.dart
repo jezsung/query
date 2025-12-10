@@ -16,39 +16,22 @@ void main() {
 
   group('build', () {
     test('SHOULD create and cache new query', () {
-      final query = cache.build<String>(
-        const ['key1'],
-        () async => 'data',
-      );
+      final query = cache.build(const ['key1'], () async => 'data');
 
-      expect(query, isA<Query<String>>());
+      expect(query, isA<Query>());
       expect(query.queryKey, equals(const ['key1']));
     });
 
     test('SHOULD return same query for same key', () {
-      final query1 = cache.build<String>(
-        const ['key1'],
-        () async => 'data1',
-      );
-
-      final query2 = cache.build<String>(
-        const ['key1'],
-        () async => 'data2',
-      );
+      final query1 = cache.build(const ['key1'], () async => 'data1');
+      final query2 = cache.build(const ['key1'], () async => 'data2');
 
       expect(query1, same(query2));
     });
 
     test('SHOULD create different queries for different keys', () {
-      final query1 = cache.build<String>(
-        const ['key1'],
-        () async => 'data1',
-      );
-
-      final query2 = cache.build<String>(
-        const ['key2'],
-        () async => 'data2',
-      );
+      final query1 = cache.build(const ['key1'], () async => 'data1');
+      final query2 = cache.build(const ['key2'], () async => 'data2');
 
       expect(query1, isNot(same(query2)));
     });
@@ -56,14 +39,14 @@ void main() {
 
   group('get', () {
     test('SHOULD return null WHEN query does not exist', () {
-      final query = cache.get<String>(const ['nonexistent']);
+      final query = cache.get(const ['nonexistent']);
       expect(query, isNull);
     });
 
     test('SHOULD return query WHEN it exists', () {
-      cache.build<String>(const ['key1'], () async => 'data');
+      cache.build(const ['key1'], () async => 'data');
 
-      final query = cache.get<String>(const ['key1']);
+      final query = cache.get(const ['key1']);
       expect(query, isNotNull);
       expect(query!.queryKey, equals(const ['key1']));
     });
@@ -77,9 +60,9 @@ void main() {
     });
 
     test('SHOULD return all queries in cache', () {
-      cache.build<String>(const ['key1'], () async => 'data1');
-      cache.build<String>(const ['key2'], () async => 'data2');
-      cache.build<String>(const ['key3'], () async => 'data3');
+      cache.build(const ['key1'], () async => 'data1');
+      cache.build(const ['key2'], () async => 'data2');
+      cache.build(const ['key3'], () async => 'data3');
 
       final queries = cache.getAll();
 
@@ -87,7 +70,7 @@ void main() {
     });
 
     test('SHOULD return copy of the queries list', () {
-      cache.build<String>(const ['key1'], () async => 'data1');
+      cache.build(const ['key1'], () async => 'data1');
 
       final queries1 = cache.getAll();
       final queries2 = cache.getAll();
@@ -97,8 +80,8 @@ void main() {
     });
 
     test('SHOULD return same queries in list', () {
-      cache.build<String>(const ['key1'], () async => 'data1');
-      cache.build<String>(const ['key2'], () async => 'data2');
+      cache.build(const ['key1'], () async => 'data1');
+      cache.build(const ['key2'], () async => 'data2');
 
       final queries1 = cache.getAll();
       final queries2 = cache.getAll();
@@ -112,7 +95,7 @@ void main() {
 
   group('remove', () {
     test('SHOULD remove query from cache', () {
-      cache.build<String>(const ['key1'], () async => 'data');
+      cache.build(const ['key1'], () async => 'data');
 
       cache.remove(const ['key1']);
 
@@ -120,7 +103,7 @@ void main() {
     });
 
     test('SHOULD dispose query WHEN removed', () {
-      final query = cache.build<String>(
+      final query = cache.build(
         const ['key1'],
         () async => 'data',
       );
@@ -135,9 +118,9 @@ void main() {
 
   group('clear', () {
     test('SHOULD remove all queries from cache', () {
-      cache.build<String>(const ['key1'], () async => 'data1');
-      cache.build<String>(const ['key2'], () async => 'data2');
-      cache.build<String>(const ['key3'], () async => 'data3');
+      cache.build(const ['key1'], () async => 'data1');
+      cache.build(const ['key2'], () async => 'data2');
+      cache.build(const ['key3'], () async => 'data3');
 
       cache.clear();
 
@@ -148,8 +131,8 @@ void main() {
     });
 
     test('SHOULD dispose all queries', () {
-      final query1 = cache.build<String>(const ['key1'], () async => 'data1');
-      final query2 = cache.build<String>(const ['key2'], () async => 'data2');
+      final query1 = cache.build(const ['key1'], () async => 'data1');
+      final query2 = cache.build(const ['key2'], () async => 'data2');
 
       expect(query1.isClosed, isFalse);
       expect(query2.isClosed, isFalse);
@@ -164,23 +147,23 @@ void main() {
 
   group('find', () {
     setUp(() {
-      cache.build<String>(
+      cache.build(
         const ['users'],
         () async => 'users data',
       );
-      cache.build<String>(
+      cache.build(
         const ['users', '1'],
         () async => 'user 1 data',
       );
-      cache.build<String>(
+      cache.build(
         const ['users', '2'],
         () async => 'user 2 data',
       );
-      cache.build<String>(
+      cache.build(
         const ['posts'],
         () async => 'posts data',
       );
-      cache.build<String>(
+      cache.build(
         const ['posts', '1'],
         () async => 'post 1 data',
       );
@@ -191,7 +174,7 @@ void main() {
     });
 
     test('SHOULD find query by exact key match', () {
-      final query = cache.find<String>(
+      final query = cache.find(
         const ['users', '1'],
         exact: true,
       );
@@ -201,7 +184,7 @@ void main() {
     });
 
     test('SHOULD return null WHEN exact match not found', () {
-      final query = cache.find<String>(
+      final query = cache.find(
         const ['users', '3'],
         exact: true,
       );
@@ -210,7 +193,7 @@ void main() {
     });
 
     test('SHOULD find query by prefix match', () {
-      final query = cache.find<String>(
+      final query = cache.find(
         const ['users'],
         exact: false,
       );
@@ -220,7 +203,7 @@ void main() {
     });
 
     test('SHOULD return null WHEN prefix match not found', () {
-      final query = cache.find<String>(
+      final query = cache.find(
         const ['comments'],
         exact: false,
       );
@@ -229,7 +212,7 @@ void main() {
     });
 
     test('SHOULD find query using predicate', () {
-      final query = cache.find<String>(
+      final query = cache.find(
         const ['posts'],
         exact: false,
         predicate: (q) => q.queryKey.length == 2,
@@ -241,7 +224,7 @@ void main() {
     });
 
     test('SHOULD return null WHEN predicate matches nothing', () {
-      final query = cache.find<String>(
+      final query = cache.find(
         const ['comments'],
         exact: false,
       );
@@ -250,7 +233,7 @@ void main() {
     });
 
     test('SHOULD combine queryKey and predicate filters', () {
-      final query = cache.find<String>(
+      final query = cache.find(
         const ['users'],
         exact: false,
         predicate: (q) => q.queryKey.length == 2,
@@ -262,7 +245,7 @@ void main() {
     });
 
     test('SHOULD return null WHEN combined filters match nothing', () {
-      final query = cache.find<String>(
+      final query = cache.find(
         const ['users'],
         exact: false,
         predicate: (q) => q.queryKey.length == 3,
@@ -274,23 +257,23 @@ void main() {
 
   group('findAll', () {
     setUp(() {
-      cache.build<String>(
+      cache.build(
         const ['users'],
         () async => 'users data',
       );
-      cache.build<String>(
+      cache.build(
         const ['users', '1'],
         () async => 'user 1 data',
       );
-      cache.build<String>(
+      cache.build(
         const ['users', '2'],
         () async => 'user 2 data',
       );
-      cache.build<String>(
+      cache.build(
         const ['posts'],
         () async => 'posts data',
       );
-      cache.build<String>(
+      cache.build(
         const ['posts', '1'],
         () async => 'post 1 data',
       );

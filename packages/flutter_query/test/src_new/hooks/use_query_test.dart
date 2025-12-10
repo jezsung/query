@@ -673,14 +673,11 @@ void main() {
       const queryKey = ['fresh-no-refetch-test'];
 
       // Pre-populate cache with fresh data
-      final query = client.cache.build<String>(
-        queryKey,
-        () async => 'initial',
-      );
+      final query = client.cache.build(queryKey, () async => 'initial');
       await query.fetch();
       expect(fetchCount, 0);
 
-      // Mount hook immediately with long staleTime, should NOT refetch
+      // Mount hook immediately with long sta leTime, should NOT refetch
       final hookResult = await buildHook(
         () => useQuery(
           queryKey: queryKey,

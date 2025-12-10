@@ -7,22 +7,22 @@ enum QueryStatus { pending, error, success }
 
 enum FetchStatus { fetching, paused, idle }
 
-class Query<TData> {
+class Query<TData, TError> {
   Query(this.queryKey, this.queryFn);
 
   final List<Object?> queryKey;
   final Future<TData> Function() queryFn;
 
-  final _controller = StreamController<QueryState<TData>>.broadcast();
-  Stream<QueryState<TData>> get onStateChange => _controller.stream;
+  final _controller = StreamController<QueryState<TData, TError>>.broadcast();
+  Stream<QueryState<TData, TError>> get onStateChange => _controller.stream;
 
-  QueryState<TData> _state = QueryState<TData>();
-  QueryState<TData> get state => _state;
+  QueryState<TData, TError> _state = QueryState<TData, TError>();
+  QueryState<TData, TError> get state => _state;
 
   bool get hasObservers => _controller.hasListener;
   bool get isClosed => _controller.isClosed;
 
-  void _setState(QueryState<TData> newState) {
+  void _setState(QueryState<TData, TError> newState) {
     _state = newState;
     _controller.add(newState);
   }
@@ -37,7 +37,7 @@ class Query<TData> {
     try {
       final data = await queryFn();
 
-      _setState(QueryState<TData>(
+      _setState(QueryState<TData, TError>(
         status: QueryStatus.success,
         fetchStatus: FetchStatus.idle,
         data: data,
@@ -52,7 +52,7 @@ class Query<TData> {
       _setState(state.copyWith(
         status: QueryStatus.error,
         fetchStatus: FetchStatus.idle,
-        error: error,
+        error: error as TError,
         errorUpdatedAt: clock.now(),
         errorUpdateCount: state.errorUpdateCount + 1,
         // failureCount: state.failureCount + 1,
@@ -66,7 +66,7 @@ class Query<TData> {
   }
 }
 
-class QueryState<TData> with EquatableMixin {
+class QueryState<TData, TError> with EquatableMixin {
   const QueryState({
     this.status = QueryStatus.pending,
     this.fetchStatus = FetchStatus.idle,
@@ -83,24 +83,24 @@ class QueryState<TData> with EquatableMixin {
   final FetchStatus fetchStatus;
   final TData? data;
   final DateTime? dataUpdatedAt;
-  final Object? error;
+  final TError? error;
   final DateTime? errorUpdatedAt;
   final int errorUpdateCount;
   // final int failureCount;
-  // final Object? failureReason;
+  // final TError? failureReason;
 
-  QueryState<TData> copyWith({
+  QueryState<TData, TError> copyWith({
     QueryStatus? status,
     FetchStatus? fetchStatus,
     TData? data,
     DateTime? dataUpdatedAt,
-    Object? error,
+    TError? error,
     DateTime? errorUpdatedAt,
     int? errorUpdateCount,
     // int? failureCount,
-    // Object? failureReason,
+    // TError? failureReason,
   }) {
-    return QueryState<TData>(
+    return QueryState<TData, TError>(
       status: status ?? this.status,
       fetchStatus: fetchStatus ?? this.fetchStatus,
       data: data ?? this.data,
