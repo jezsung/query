@@ -248,10 +248,22 @@ class StaleDuration extends Duration implements StaleDurationValue {
 
 class StaleDurationInfinity implements StaleDurationValue {
   const StaleDurationInfinity._();
+
+  @override
+  bool operator ==(Object other) => other is StaleDurationInfinity;
+
+  @override
+  int get hashCode => 0;
 }
 
 class StaleDurationStatic implements StaleDurationValue {
   const StaleDurationStatic._();
+
+  @override
+  bool operator ==(Object other) => other is StaleDurationStatic;
+
+  @override
+  int get hashCode => 0;
 }
 
 /// A dynamic stale duration that is computed based on query state.
