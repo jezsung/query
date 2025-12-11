@@ -3,15 +3,20 @@ import 'dart:async';
 import 'package:clock/clock.dart';
 import 'package:equatable/equatable.dart';
 
+import 'query_cache.dart';
+import 'query_observer.dart';
+import 'removable.dart';
+
 enum QueryStatus { pending, error, success }
 
 enum FetchStatus { fetching, paused, idle }
 
-class Query<TData, TError> {
-  Query(this.queryKey, this.queryFn);
+class Query<TData, TError> with Removable {
+  Query(this.queryKey, this.queryFn, QueryCache cache) : _cache = cache;
 
   final List<Object?> queryKey;
   final Future<TData> Function() queryFn;
+  final QueryCache _cache;
 
   final _controller = StreamController<QueryState<TData, TError>>.broadcast();
   Stream<QueryState<TData, TError>> get onStateChange => _controller.stream;
@@ -19,7 +24,10 @@ class Query<TData, TError> {
   QueryState<TData, TError> _state = QueryState<TData, TError>();
   QueryState<TData, TError> get state => _state;
 
-  bool get hasObservers => _controller.hasListener;
+  // Track observers explicitly to match TanStack Query's pattern
+  final List<QueryObserver> _observers = [];
+
+  bool get hasObservers => _observers.isNotEmpty;
   bool get isClosed => _controller.isClosed;
 
   void _setState(QueryState<TData, TError> newState) {
@@ -61,7 +69,45 @@ class Query<TData, TError> {
     }
   }
 
+  /// Adds an observer to this query.
+  ///
+  /// Matches TanStack Query's pattern: clear GC timeout when an observer subscribes.
+  void addObserver(QueryObserver observer) {
+    if (!_observers.contains(observer)) {
+      _observers.add(observer);
+
+      // Stop the query from being garbage collected
+      cancelGc();
+    }
+  }
+
+  /// Removes an observer from this query.
+  ///
+  /// Matches TanStack Query's pattern: schedule GC only when the last observer is removed.
+  void removeObserver(QueryObserver observer) {
+    if (_observers.contains(observer)) {
+      _observers.remove(observer);
+
+      // Schedule GC only if there are no more observers
+      if (_observers.isEmpty) {
+        scheduleGc();
+      }
+    }
+  }
+
+  /// Attempts to remove the query if it has no observers and is idle.
+  ///
+  /// This is called by the Removable mixin when the GC timer expires.
+  /// Matches TanStack Query's behavior: remove when no observers and fetchStatus is idle.
+  @override
+  void tryRemove() {
+    if (!hasObservers && state.fetchStatus == FetchStatus.idle) {
+      _cache.remove(this);
+    }
+  }
+
   void dispose() {
+    cancelGc();
     _controller.close();
   }
 }

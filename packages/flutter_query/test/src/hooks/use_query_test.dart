@@ -18,8 +18,35 @@ void main() {
     client.dispose();
   });
 
+  /// Helper function to run a test with automatic cache cleanup.
+  ///
+  /// This ensures proper cleanup order:
+  /// 1. Test body completes
+  /// 2. Widget tree is unmounted (disposes QueryObservers)
+  /// 3. Cache is cleared (prevents GC timers from being scheduled)
+  ///
+  /// Usage:
+  /// ```dart
+  /// testWidgets('my test', withCleanup((tester) async {
+  ///   // test body
+  /// }));
+  /// ```
+  WidgetTesterCallback withCleanup(
+    Future<void> Function(WidgetTester) testBody,
+  ) {
+    return (WidgetTester tester) async {
+      await testBody(tester);
+
+      // Unmount widget tree first (disposes QueryObservers)
+      await tester.pumpWidget(Container());
+
+      // Then dispose cache to prevent new GC timers
+      client.dispose();
+    };
+  }
+
   testWidgets('SHOULD find QueryClient provided by QueryClientProvider',
-      (tester) async {
+      withCleanup((tester) async {
     final hookResult = await buildHook(
       () => useQuery(
         queryKey: const ['key'],
@@ -34,13 +61,13 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(hookResult.current.data, equals('data'));
-  });
+  }));
 
   testWidgets('SHOULD prioritize queryClient over QueryClientProvider',
-      (tester) async {
+      withCleanup((tester) async {
     final prioritizedQueryClient = QueryClient();
 
-    await buildHook(
+    final hookResult = await buildHook(
       () => useQuery(
         queryKey: const ['key'],
         queryFn: () async => 'data',
@@ -56,9 +83,12 @@ void main() {
 
     expect(prioritizedQueryClient.cache.get(const ['key']), isNotNull);
     expect(client.cache.get(const ['key']), isNull);
-  });
 
-  testWidgets('SHOULD fetch and succeed', (tester) async {
+    await hookResult.unmount();
+    prioritizedQueryClient.dispose();
+  }));
+
+  testWidgets('SHOULD fetch and succeed', withCleanup((tester) async {
     const expectedData = 'test data';
 
     final hookResult = await buildHook(
@@ -101,9 +131,9 @@ void main() {
         isEnabled: true,
       ),
     );
-  });
+  }));
 
-  testWidgets('SHOULD fetch and fail', (tester) async {
+  testWidgets('SHOULD fetch and fail', withCleanup((tester) async {
     final expectedError = Exception();
 
     final hookResult = await buildHook(
@@ -146,9 +176,10 @@ void main() {
         isEnabled: true,
       ),
     );
-  });
+  }));
 
-  testWidgets('SHOULD NOT fetch WHEN enabled is false', (tester) async {
+  testWidgets('SHOULD NOT fetch WHEN enabled is false',
+      withCleanup((tester) async {
     var fetchCount = 0;
 
     final hookResult = await buildHook(
@@ -179,9 +210,10 @@ void main() {
         isEnabled: false,
       ),
     );
-  });
+  }));
 
-  testWidgets('SHOULD fetch WHEN enabled changes to true', (tester) async {
+  testWidgets('SHOULD fetch WHEN enabled changes to true',
+      withCleanup((tester) async {
     var fetchCount = 0;
     const expectedData = 'data';
 
@@ -247,10 +279,10 @@ void main() {
         isEnabled: true,
       ),
     );
-  });
+  }));
 
   testWidgets('SHOULD fetch only once WHEN multiple hooks share same key',
-      (tester) async {
+      withCleanup((tester) async {
     var fetchCount = 0;
     const sharedKey = ["key"];
     const expectedData = 'data';
@@ -325,9 +357,10 @@ void main() {
         ),
       );
     }
-  });
+  }));
 
-  testWidgets('SHOULD fetch again WHEN queryKey changes', (tester) async {
+  testWidgets('SHOULD fetch again WHEN queryKey changes',
+      withCleanup((tester) async {
     const key1 = ["key1"];
     const key2 = ["key2"];
     const expectedData1 = 'data1';
@@ -406,7 +439,7 @@ void main() {
         isEnabled: true,
       ),
     );
-  });
+  }));
 
   testWidgets('SHOULD clean up observers on unmount', (tester) async {
     const key = ['key'];
@@ -428,6 +461,9 @@ void main() {
     await hookResult.unmount();
 
     expect(query.hasObservers, false);
+
+    // Clean up to prevent pending GC timer
+    client.cache.clear();
   });
 
   testWidgets('SHOULD throw WHEN QueryClient is not provided', (tester) async {
@@ -447,7 +483,7 @@ void main() {
   });
 
   testWidgets('SHOULD distinguish between different query keys',
-      (tester) async {
+      withCleanup((tester) async {
     late UseQueryResult<String, Object> result1;
     late UseQueryResult<String, Object> result2;
 
@@ -476,11 +512,11 @@ void main() {
 
     expect(result1.data, 'data1');
     expect(result2.data, 'data2');
-  });
+  }));
 
   group('staleDuration', () {
     testWidgets('SHOULD mark data as stale WHEN staleDuration is zero',
-        (tester) async {
+        withCleanup((tester) async {
       final hookResult = await buildHook(
         () => useQuery(
           queryKey: const ['test'],
@@ -494,10 +530,10 @@ void main() {
 
       expect(hookResult.current.data, 'data');
       expect(hookResult.current.isStale, true);
-    });
+    }));
 
     testWidgets('SHOULD mark data as fresh WHEN within staleDuration',
-        (tester) async {
+        withCleanup((tester) async {
       final hookResult = await buildHook(
         () => useQuery(
           queryKey: const ['test'],
@@ -511,10 +547,10 @@ void main() {
 
       expect(hookResult.current.data, 'data');
       expect(hookResult.current.isStale, false);
-    });
+    }));
 
     testWidgets('SHOULD update isStale WHEN staleDuration changes',
-        (tester) async {
+        withCleanup((tester) async {
       final hookResult = await buildHookWithProps(
         (staleDuration) => useQuery(
           queryKey: const ['test'],
@@ -534,11 +570,11 @@ void main() {
       await hookResult.rebuildWithProps(StaleDuration.zero);
 
       expect(hookResult.current.isStale, true);
-    });
+    }));
 
     testWidgets(
         'SHOULD refetch WHEN staleDuration changes and data becomes stale',
-        (tester) async {
+        withCleanup((tester) async {
       var fetchCount = 0;
 
       final hookResult = await buildHookWithProps(
@@ -583,11 +619,11 @@ void main() {
       expect(hookResult.current.data, 'data-2');
       expect(hookResult.current.isStale, false);
       expect(fetchCount, 2); // Fetched twice total
-    });
+    }));
 
     testWidgets(
         'SHOULD NOT refetch WHEN staleDuration changes and data remains fresh',
-        (tester) async {
+        withCleanup((tester) async {
       var fetchCount = 0;
 
       final hookResult = await buildHookWithProps(
@@ -623,9 +659,10 @@ void main() {
       expect(hookResult.current.data, 'data-1'); // Still old data
       expect(hookResult.current.isStale, false);
       expect(fetchCount, 1); // No additional fetch
-    });
+    }));
 
-    testWidgets('SHOULD refetch WHEN data becomes stale', (tester) async {
+    testWidgets('SHOULD refetch WHEN data becomes stale',
+        withCleanup((tester) async {
       var fetchCount = 0;
 
       final hookResult = await buildHook(
@@ -665,10 +702,10 @@ void main() {
       expect(hookResult.current.data, 'data-2');
       expect(hookResult.current.isStale, false);
       expect(fetchCount, 2); // Fetched twice total
-    });
+    }));
 
     testWidgets('SHOULD NOT refetch WHEN data is fresh on mount',
-        (tester) async {
+        withCleanup((tester) async {
       var fetchCount = 0;
       const queryKey = ['fresh-no-refetch-test'];
 
@@ -697,10 +734,10 @@ void main() {
       expect(hookResult.current.data, 'initial'); // Still has old data
       expect(hookResult.current.isStale, false); // Data is fresh
       expect(fetchCount, 0); // No fetch triggered
-    });
+    }));
 
     testWidgets('SHOULD NOT mark data as stale WHEN using static',
-        (tester) async {
+        withCleanup((tester) async {
       final hookResult = await buildHook(
         () => useQuery(
           queryKey: const ['test-static'],
@@ -714,50 +751,84 @@ void main() {
 
       expect(hookResult.current.data, 'data');
       expect(hookResult.current.isStale, false);
-    });
+    }));
 
-    testWidgets('SHOULD NOT refetch on mount WHEN using static',
-        (tester) async {
-      var fetchCount = 0;
-
+    testWidgets(
+        'SHOULD NOT refetch on mount WHEN using static and time passed was shorter than gcDuration',
+        withCleanup((tester) async {
       // Pre-populate cache with data
       final query = client.cache.build(['key'], () async => 'initial');
       await query.fetch();
 
-      // Mount hook with static staleDuration
+      // Mount hook with static staleDuration and 10 min gcDuration
+      var fetchCount = 0;
       final hookResult = await buildHook(
         () => useQuery(
           queryKey: ['key'],
-          queryFn: () async {
-            fetchCount++;
-            return 'data-$fetchCount';
-          },
+          queryFn: () async => 'data-${++fetchCount}',
           staleDuration: StaleDuration.static,
+          gcDuration: const GcDuration(minutes: 10),
           queryClient: client,
         ),
       );
 
       await tester.pumpAndSettle();
 
-      // Should NOT have triggered a fetch, even after time passes
+      // Should NOT have triggered a fetch
       expect(hookResult.current.data, 'initial');
       expect(hookResult.current.isStale, false);
-      expect(fetchCount, 0);
 
-      // Unmount and remount after long time
+      // Unmount and wait 5 minutes (less than 10 min gcDuration)
       await hookResult.unmount();
-      await tester.pump(const Duration(hours: 24));
+      await tester.pump(const Duration(minutes: 5));
+
+      // Remount - cache still exists, should not refetch
       await hookResult.rebuild();
       await tester.pumpAndSettle();
 
-      // Still should not refetch with static
       expect(hookResult.current.data, 'initial');
       expect(hookResult.current.isStale, false);
-      expect(fetchCount, 0);
-    });
+    }));
+
+    testWidgets(
+        'SHOULD refetch on mount WHEN using static and time passed was longer than gcDuration',
+        withCleanup((tester) async {
+      // Pre-populate cache with data
+      final query = client.cache.build(['key'], () async => 'initial');
+      await query.fetch();
+
+      // Mount hook with static staleDuration and 10 min gcDuration
+      var fetchCount = 0;
+      final hookResult = await buildHook(
+        () => useQuery(
+          queryKey: ['key'],
+          queryFn: () async => 'data-${++fetchCount}',
+          staleDuration: StaleDuration.static,
+          gcDuration: const GcDuration(minutes: 10),
+          queryClient: client,
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // Should NOT have triggered a fetch initially
+      expect(hookResult.current.data, 'initial');
+      expect(hookResult.current.isStale, false);
+
+      // Unmount and wait 10 minutes (equals to 10 min gcDuration)
+      await hookResult.unmount();
+      await tester.pump(const Duration(minutes: 10));
+
+      // Remount - cache is gone, MUST refetch
+      await hookResult.rebuild();
+      await tester.pumpAndSettle();
+
+      expect(hookResult.current.data, 'data-1');
+      expect(hookResult.current.isStale, false);
+    }));
 
     testWidgets('SHOULD NOT mark data as stale WHEN using infinity',
-        (tester) async {
+        withCleanup((tester) async {
       final hookResult = await buildHook(
         () => useQuery(
           queryKey: const ['key'],
@@ -771,25 +842,23 @@ void main() {
 
       expect(hookResult.current.data, 'data');
       expect(hookResult.current.isStale, false);
-    });
+    }));
 
-    testWidgets('SHOULD NOT refetch on mount WHEN using infinity',
-        (tester) async {
-      var fetchCount = 0;
-
+    testWidgets(
+        'SHOULD NOT refetch on mount WHEN using infinity and time passed was shorter than gcDuration',
+        withCleanup((tester) async {
       // Pre-populate cache with data
       final query = client.cache.build(['key'], () async => 'initial');
       await query.fetch();
 
-      // Mount hook with infinity staleDuration
+      // Mount hook with infinity staleDuration and 10 min gcDuration
+      var fetchCount = 0;
       final hookResult = await buildHook(
         () => useQuery(
           queryKey: ['key'],
-          queryFn: () async {
-            fetchCount++;
-            return 'data-$fetchCount';
-          },
+          queryFn: () async => 'data-${++fetchCount}',
           staleDuration: StaleDuration.infinity,
+          gcDuration: const GcDuration(minutes: 10),
           queryClient: client,
         ),
       );
@@ -799,11 +868,58 @@ void main() {
       // Should NOT have triggered a fetch
       expect(hookResult.current.data, 'initial');
       expect(hookResult.current.isStale, false);
-      expect(fetchCount, 0);
-    });
+
+      // Unmount and wait 5 minutes (less than 10 min gcDuration)
+      await hookResult.unmount();
+      await tester.pump(const Duration(minutes: 5));
+
+      // Remount - cache still exists, should not refetch
+      await hookResult.rebuild();
+      await tester.pumpAndSettle();
+
+      expect(hookResult.current.data, 'initial');
+      expect(hookResult.current.isStale, false);
+    }));
+
+    testWidgets(
+        'SHOULD refetch on mount WHEN using infinity and time passed was longer than gcDuration',
+        withCleanup((tester) async {
+      // Pre-populate cache with data
+      final query = client.cache.build(['key'], () async => 'initial');
+      await query.fetch();
+
+      // Mount hook with infinity staleDuration and 10 min gcDuration
+      var fetchCount = 0;
+      final hookResult = await buildHook(
+        () => useQuery(
+          queryKey: ['key'],
+          queryFn: () async => 'data-${++fetchCount}',
+          staleDuration: StaleDuration.infinity,
+          gcDuration: const GcDuration(minutes: 10),
+          queryClient: client,
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // Should NOT have triggered a fetch initially
+      expect(hookResult.current.data, 'initial');
+      expect(hookResult.current.isStale, false);
+
+      // Unmount and wait 10 minutes (equals to 10 min gcDuration)
+      await hookResult.unmount();
+      await tester.pump(const Duration(minutes: 10));
+
+      // Remount - cache is gone, MUST refetch
+      await hookResult.rebuild();
+      await tester.pumpAndSettle();
+
+      expect(hookResult.current.data, 'data-1');
+      expect(hookResult.current.isStale, false);
+    }));
 
     testWidgets('SHOULD resolve staleDuration dynamically with resolveWith',
-        (tester) async {
+        withCleanup((tester) async {
       var fetchCount = 0;
 
       final hookResult = await buildHookWithProps(
@@ -857,59 +973,61 @@ void main() {
       expect(hookResult.current.data, 'data-2');
       expect(hookResult.current.isStale, false);
       expect(fetchCount, 2);
-    });
+    }));
 
-    testWidgets('SHOULD pass correct Query to resolveWith callback',
-        (tester) async {
+    testWidgets('SHOULD pass correct Query state to resolveWith callback',
+        withCleanup((tester) async {
       late QueryState<String, Object> capturedState;
-      var fetchCount = 0;
 
-      final hookResult = await buildHook(
+      await buildHook(
         () => useQuery<String, Object>(
-          queryKey: const ['query-state-test'],
-          queryFn: () async {
-            fetchCount++;
-            if (fetchCount == 2) {
-              throw Exception('Second fetch fails');
-            }
-            return 'data-$fetchCount';
-          },
+          queryKey: const ['ke1'],
+          queryFn: () async => 'data',
           staleDuration: StaleDuration.resolveWith<String, Object>((query) {
             // Capture the query state for inspection
             capturedState = query.state;
-            return const StaleDuration(hours: 1);
+            return StaleDuration.zero;
           }),
           queryClient: client,
         ),
       );
 
-      // Wait for initial fetch to complete
       await tester.pumpAndSettle();
 
       // Query should have success state with data
       expect(capturedState.status, QueryStatus.success);
-      expect(capturedState.data, 'data-1');
-      expect(capturedState.error, null);
+      expect(capturedState.data, 'data');
       expect(capturedState.dataUpdatedAt, isA<DateTime>());
-      expect(fetchCount, 1);
+      expect(capturedState.error, null);
+      expect(capturedState.errorUpdatedAt, null);
+      expect(capturedState.errorUpdateCount, 0);
 
-      // Trigger a refetch that will fail
-      await hookResult.unmount();
-      await tester.pump(const Duration(hours: 2));
-      await hookResult.rebuild();
+      await buildHook(
+        () => useQuery<String, Object>(
+          queryKey: const ['key2'],
+          queryFn: () async => throw Exception(),
+          staleDuration: StaleDuration.resolveWith<String, Object>((query) {
+            // Capture the query state for inspection
+            capturedState = query.state;
+            return StaleDuration.zero;
+          }),
+          queryClient: client,
+        ),
+      );
+
       await tester.pumpAndSettle();
 
-      // Query should now have error state with previous data still available
+      // Query should have error state with error
       expect(capturedState.status, QueryStatus.error);
-      expect(capturedState.data, 'data-1'); // Previous data preserved
+      expect(capturedState.data, null);
+      expect(capturedState.dataUpdatedAt, null);
       expect(capturedState.error, isA<Exception>());
       expect(capturedState.errorUpdatedAt, isA<DateTime>());
       expect(capturedState.errorUpdateCount, 1);
-      expect(fetchCount, 2);
-    });
+    }));
 
     testWidgets('SHOULD default to zero when staleDuration not specified',
-        (tester) async {
+        withCleanup((tester) async {
       final hookResult = await buildHook(
         () => useQuery(
           queryKey: const ['default-stale'],
@@ -923,6 +1041,189 @@ void main() {
 
       expect(hookResult.current.data, 'data');
       expect(hookResult.current.isStale, true); // Immediately stale with zero
+    }));
+  });
+
+  group('gcDuration', () {
+    testWidgets('SHOULD remove cache WHEN gcDuration is passed',
+        (tester) async {
+      final hookResult = await buildHook(
+        () => useQuery(
+          queryKey: const ['key'],
+          queryFn: () async => 'data',
+          gcDuration: const GcDuration(minutes: 5),
+          queryClient: client,
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // Verify query is in cache
+      expect(client.cache.get(const ['key']), isNotNull);
+
+      // Unmount the hook (disposes observer)
+      await hookResult.unmount();
+
+      // Wait for shorter than gc duration
+      await tester.pump(const Duration(minutes: 3));
+
+      // Query should still exist
+      expect(client.cache.get(const ['key']), isNotNull);
+
+      // Wait for 2 more mins
+      await tester.pump(const Duration(minutes: 2));
+
+      // Query should now be removed from cache
+      expect(client.cache.get(const ['key']), isNull);
     });
+
+    testWidgets('SHOULD NOT remove cache WHEN gcDuration is infinity',
+        (tester) async {
+      final hookResult = await buildHook(
+        () => useQuery(
+          queryKey: const ['key'],
+          queryFn: () async => 'data',
+          gcDuration: GcDuration.infinity, // Disable gc
+          queryClient: client,
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // Verify query is in cache
+      expect(client.cache.get(const ['key']), isNotNull);
+
+      // Unmount the hook
+      await hookResult.unmount();
+
+      // Wait long enough to ensure gc would have triggered if enabled
+      await tester.pump(const Duration(hours: 24));
+
+      // Query should still be in cache
+      expect(client.cache.get(const ['key']), isNotNull);
+    });
+
+    testWidgets('SHOULD NOT remove cache WHEN another hook is still subscribed',
+        (tester) async {
+      // Create two observers on the same query using HookBuilder
+      await tester.pumpWidget(Column(
+        children: [
+          HookBuilder(
+            builder: (context) {
+              useQuery<String, Object>(
+                queryKey: const ['shared-key'],
+                queryFn: () async => 'data',
+                gcDuration: const GcDuration(minutes: 5),
+                queryClient: client,
+              );
+              return Container();
+            },
+          ),
+          HookBuilder(
+            builder: (context) {
+              useQuery<String, Object>(
+                queryKey: const ['shared-key'],
+                queryFn: () async => 'data',
+                gcDuration: const GcDuration(minutes: 5),
+                queryClient: client,
+              );
+              return Container();
+            },
+          ),
+        ],
+      ));
+
+      await tester.pumpAndSettle();
+
+      // Cache should exist
+      expect(client.cache.get(const ['shared-key']), isNotNull);
+
+      // Remove first hook from widget tree
+      await tester.pumpWidget(Column(
+        children: [
+          HookBuilder(
+            builder: (context) {
+              useQuery<String, Object>(
+                queryKey: const ['shared-key'],
+                queryFn: () async => 'data',
+                gcDuration: const GcDuration(minutes: 5),
+                queryClient: client,
+              );
+              return Container();
+            },
+          ),
+        ],
+      ));
+
+      // Wait for gc duration
+      await tester.pump(const Duration(minutes: 5));
+
+      // Query should still be in cache because second hook is still subscribed
+      expect(client.cache.get(const ['shared-key']), isNotNull);
+
+      // Remove second hook
+      await tester.pumpWidget(Container());
+
+      // Wait for gc duration again
+      await tester.pump(const Duration(minutes: 5));
+
+      // Now query should be removed
+      expect(client.cache.get(const ['shared-key']), isNull);
+    });
+
+    testWidgets('SHOULD default to 5 mins WHEN gcDuration is not specified',
+        withCleanup((tester) async {
+      final hookResult = await buildHook(
+        () => useQuery(
+          queryKey: const ['key'],
+          queryFn: () async => 'data',
+          // gcDuration defaults to 5 minutes
+          queryClient: client,
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // Verify query is in cache
+      expect(client.cache.get(const ['key']), isNotNull);
+
+      // Unmount the hook
+      await hookResult.unmount();
+
+      // Wait for a short duration (less than 5 minutes)
+      await tester.pump(const Duration(minutes: 1));
+
+      // Query should still be in cache (default 5 minute gc hasn't triggered)
+      expect(client.cache.get(const ['key']), isNotNull);
+    }));
+
+    testWidgets('SHOULD cancel gc timer WHEN hook resubscribes',
+        withCleanup((tester) async {
+      final hookResult = await buildHook(
+        () => useQuery(
+          queryKey: const ['key'],
+          queryFn: () async => 'data',
+          gcDuration: const GcDuration(minutes: 10),
+          queryClient: client,
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // Unmount (starts gc timer)
+      await hookResult.unmount();
+
+      // Wait halfway through gc duration
+      await tester.pump(const Duration(minutes: 5));
+
+      // Rebuild before gc triggers (cancels gc timer)
+      await hookResult.rebuild();
+
+      // Wait past original gc duration (5 mins + 5 mins = 10 mins)
+      await tester.pump(const Duration(minutes: 5));
+
+      // Query should still be in cache because rebuild cancelled gc
+      expect(client.cache.get(const ['key']), isNotNull);
+    }));
   });
 }

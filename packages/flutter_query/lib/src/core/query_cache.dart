@@ -10,7 +10,11 @@ class QueryCache {
     Future<TData> Function() queryFn,
   ) {
     final key = QueryKey(queryKey);
-    final query = _queries[key] ??= Query<TData, TError>(queryKey, queryFn);
+    final query = _queries[key] ??= Query<TData, TError>(
+      queryKey,
+      queryFn,
+      this,
+    );
     return query as Query<TData, TError>;
   }
 
@@ -31,8 +35,29 @@ class QueryCache {
     _queries[key] = query;
   }
 
-  /// Removes a query from the cache
-  void remove(List<Object?> queryKey) {
+  /// Removes a query from the cache by Query object.
+  ///
+  /// This matches TanStack Query's pattern where Query.tryRemove() calls
+  /// cache.remove(this) passing the Query object itself.
+  ///
+  /// Only removes if the query in the cache is the same instance to prevent
+  /// race conditions where a query might have been replaced.
+  void remove(Query query) {
+    final key = QueryKey(query.queryKey);
+    final cachedQuery = _queries[key];
+
+    // Only remove if the query in the cache is the same instance
+    if (cachedQuery == query) {
+      query.dispose();
+      _queries.remove(key);
+    }
+  }
+
+  /// Removes a query from the cache by query key.
+  ///
+  /// This is a convenience method for external API usage where you want to
+  /// remove a query without having a reference to the Query object.
+  void removeByKey(List<Object?> queryKey) {
     final key = QueryKey(queryKey);
     final query = _queries[key];
     query?.dispose();

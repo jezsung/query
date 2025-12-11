@@ -13,6 +13,14 @@ class QueryObserver<TData, TError> {
       options.queryKey,
       options.queryFn,
     );
+
+    // Update gcDuration on the query
+    _query.updateGcDuration(options.gcDuration);
+
+    // Register this observer with the query
+    // This will clear any pending gc timeout
+    _query.addObserver(this);
+
     // Subscribe to query state changes
     _stateSubscription = _query.onStateChange.listen((state) {
       _updateResult(state);
@@ -45,6 +53,7 @@ class QueryObserver<TData, TError> {
     final didKeyChange =
         QueryKey(newOptions.queryKey) != QueryKey(options.queryKey);
     final didEnabledChange = newOptions.enabled != options.enabled;
+    final didGcDurationChange = newOptions.gcDuration != options.gcDuration;
 
     // Resolve staleDuration to concrete values before comparing
     final newResolvedDuration = switch (newOptions.staleDuration) {
@@ -58,19 +67,33 @@ class QueryObserver<TData, TError> {
     final didStaleDurationChange = newResolvedDuration != oldResolvedDuration;
 
     // If nothing changed, return early
-    if (!didKeyChange && !didEnabledChange && !didStaleDurationChange) {
+    if (!didKeyChange &&
+        !didEnabledChange &&
+        !didStaleDurationChange &&
+        !didGcDurationChange) {
       return;
     }
 
     // Update options
     options = newOptions;
 
+    // Update gcDuration if it changed
+    if (didGcDurationChange) {
+      _query.updateGcDuration(newOptions.gcDuration);
+    }
+
     if (didKeyChange) {
+      final oldQuery = _query;
+
       // Query key changed - need to switch to a different query
       _query = client.cache.build<TData, TError>(
         newOptions.queryKey,
         newOptions.queryFn,
       );
+
+      // Update gcDuration and register with new query
+      _query.updateGcDuration(newOptions.gcDuration);
+      _query.addObserver(this);
 
       // Subscribe to new query state changes
       _stateSubscription.cancel();
@@ -86,6 +109,10 @@ class QueryObserver<TData, TError> {
       if (newOptions.enabled && _shouldFetchOnMount(_query.state)) {
         _query.fetch();
       }
+
+      // Remove this observer from the old query
+      // This will schedule GC if it was the last observer
+      oldQuery.removeObserver(this);
     }
 
     if (didEnabledChange) {
@@ -113,6 +140,10 @@ class QueryObserver<TData, TError> {
   void dispose() {
     _stateSubscription.cancel();
     _controller.close();
+
+    // Remove this observer from the query
+    // This will schedule GC if it was the last observer
+    _query.removeObserver(this);
   }
 
   UseQueryResult<TData, TError> _getOptimisticResult() {
@@ -199,10 +230,18 @@ class QueryOptions<TData, TError> {
     required this.queryFn,
     this.enabled = true,
     this.staleDuration = StaleDuration.zero,
+    this.gcDuration = const GcDuration(minutes: 5),
   });
 
   final List<Object?> queryKey;
   final Future<TData> Function() queryFn;
   final bool enabled;
   final StaleDurationBase staleDuration;
+
+  /// The duration that unused/inactive cache data remains in memory.
+  /// When a query's cache becomes unused or inactive, that cache data will be
+  /// garbage collected after this duration.
+  /// When different garbage collection durations are specified, the longest one will be used.
+  /// Use [GcDuration.infinity] to disable garbage collection.
+  final GcDurationValue gcDuration;
 }

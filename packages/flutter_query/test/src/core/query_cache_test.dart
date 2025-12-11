@@ -94,9 +94,43 @@ void main() {
 
   group('remove', () {
     test('SHOULD remove query from cache', () {
+      final query = cache.build(const ['key1'], () async => 'data');
+
+      cache.remove(query);
+
+      expect(cache.get(const ['key1']), isNull);
+    });
+
+    test('SHOULD dispose query WHEN removed', () {
+      final query = cache.build(const ['key1'], () async => 'data');
+
+      expect(query.isClosed, false);
+
+      cache.remove(query);
+
+      expect(query.isClosed, true);
+    });
+
+    test('SHOULD NOT remove different query with same key', () {
+      final query1 = cache.build(const ['key1'], () async => 'data1');
+
+      // Manually create a different query instance (not in cache)
+      final query2 = Query(const ['key1'], () async => 'data2', cache);
+
+      // Try to remove query2 (which is not the one in cache)
+      cache.remove(query2);
+
+      // query1 should still be in cache since it's a different instance
+      expect(cache.get(const ['key1']), same(query1));
+      expect(query1.isClosed, false);
+    });
+  });
+
+  group('removeByKey', () {
+    test('SHOULD remove query from cache', () {
       cache.build(const ['key1'], () async => 'data');
 
-      cache.remove(const ['key1']);
+      cache.removeByKey(const ['key1']);
 
       expect(cache.get(const ['key1']), isNull);
     });
@@ -109,7 +143,7 @@ void main() {
 
       expect(query.isClosed, false);
 
-      cache.remove(const ['key1']);
+      cache.removeByKey(const ['key1']);
 
       expect(query.isClosed, true);
     });
