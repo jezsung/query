@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:clock/clock.dart';
 import 'package:equatable/equatable.dart';
 
@@ -27,9 +25,6 @@ class Query<TData, TError> with Removable {
   List<Object?> get queryKey => _options.queryKey;
   Future<TData> Function() get queryFn => _options.queryFn;
 
-  final _controller = StreamController<QueryState<TData, TError>>.broadcast();
-  Stream<QueryState<TData, TError>> get onStateChange => _controller.stream;
-
   late QueryState<TData, TError> _state;
   QueryState<TData, TError> get state => _state;
 
@@ -41,11 +36,14 @@ class Query<TData, TError> with Removable {
   final List<QueryObserver> _observers = [];
 
   bool get hasObservers => _observers.isNotEmpty;
-  bool get isClosed => _controller.isClosed;
 
   void _setState(QueryState<TData, TError> newState) {
     _state = newState;
-    _controller.add(newState);
+
+    // Notify all observers directly via method calls
+    for (final observer in _observers) {
+      observer.onQueryUpdate();
+    }
   }
 
   Future<void> fetch() async {
@@ -147,11 +145,6 @@ class Query<TData, TError> with Removable {
         _initialState = defaultState;
       }
     }
-  }
-
-  void dispose() {
-    cancelGc();
-    _controller.close();
   }
 }
 

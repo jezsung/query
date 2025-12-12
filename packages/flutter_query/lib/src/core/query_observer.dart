@@ -19,11 +19,6 @@ class QueryObserver<TData, TError> {
     // This will clear any pending gc timeout
     _query.addObserver(this);
 
-    // Subscribe to query state changes
-    _stateSubscription = _query.onStateChange.listen((state) {
-      _updateResult(state);
-    });
-
     // Get initial optimistic result
     _result = _getOptimisticResult();
 
@@ -36,7 +31,6 @@ class QueryObserver<TData, TError> {
   final QueryClient client;
   QueryOptions<TData, TError> options;
 
-  late StreamSubscription<QueryState<TData, TError>> _stateSubscription;
   late Query<TData, TError> _query;
 
   final _controller =
@@ -46,6 +40,14 @@ class QueryObserver<TData, TError> {
 
   late UseQueryResult<TData, TError> _result;
   UseQueryResult<TData, TError> get result => _result;
+
+  /// Called by Query when its state changes.
+  ///
+  /// Matches TanStack Query's pattern: Query notifies observers via direct method call,
+  /// and Observer pulls the current state from Query.
+  void onQueryUpdate() {
+    _updateResult();
+  }
 
   void updateOptions(QueryOptions<TData, TError> newOptions) {
     final didKeyChange =
@@ -92,12 +94,6 @@ class QueryObserver<TData, TError> {
       // Register with new query
       _query.addObserver(this);
 
-      // Subscribe to new query state changes
-      _stateSubscription.cancel();
-      _stateSubscription = _query.onStateChange.listen((state) {
-        _updateResult(state);
-      });
-
       // Get optimistic result
       _result = _getOptimisticResult();
       _controller.add(_result);
@@ -135,7 +131,6 @@ class QueryObserver<TData, TError> {
   }
 
   void dispose() {
-    _stateSubscription.cancel();
     _controller.close();
 
     // Remove this observer from the query
@@ -194,7 +189,10 @@ class QueryObserver<TData, TError> {
     };
   }
 
-  void _updateResult(QueryState<TData, TError> state) {
+  void _updateResult() {
+    // Pull fresh state from query
+    final state = _query.state;
+
     // Resolve staleDuration to concrete value
     final staleDuration = switch (options.staleDuration) {
       StaleDurationValue value => value,

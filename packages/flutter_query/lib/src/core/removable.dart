@@ -52,6 +52,14 @@ mixin Removable {
     _gcTimer = null;
   }
 
+  /// Disposes of resources held by this item.
+  ///
+  /// Matches TanStack Query's Removable.destroy() method.
+  /// Clears the garbage collection timer to prevent further GC attempts.
+  void dispose() {
+    cancelGc();
+  }
+
   /// Attempts to remove the item from cache.
   ///
   /// This method must be implemented by classes using this mixin to define
