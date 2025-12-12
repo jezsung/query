@@ -135,109 +135,6 @@ void main() {
     );
   }));
 
-  testWidgets('SHOULD NOT fetch WHEN enabled is false',
-      withCleanup((tester) async {
-    var fetchCount = 0;
-
-    final hookResult = await buildHook(
-      () => useQuery<String, Object>(
-        queryKey: const ['test-disabled'],
-        queryFn: () async {
-          fetchCount++;
-          return 'data';
-        },
-        enabled: false,
-        queryClient: client,
-      ),
-    );
-
-    await tester.pumpAndSettle();
-
-    expect(fetchCount, 0);
-    expect(
-      hookResult.current,
-      isUseQueryResult(
-        status: QueryStatus.pending,
-        fetchStatus: FetchStatus.idle,
-        data: null,
-        dataUpdatedAt: null,
-        error: null,
-        errorUpdatedAt: null,
-        errorUpdateCount: 0,
-        isEnabled: false,
-      ),
-    );
-  }));
-
-  testWidgets('SHOULD fetch WHEN enabled changes to true',
-      withCleanup((tester) async {
-    var fetchCount = 0;
-    const expectedData = 'data';
-
-    final hookResult = await buildHookWithProps(
-      (enabled) => useQuery<String, Object>(
-        queryKey: const ['enabled-test'],
-        queryFn: () async {
-          fetchCount++;
-          await Future.delayed(const Duration(milliseconds: 100));
-          return expectedData;
-        },
-        enabled: enabled,
-        queryClient: client,
-      ),
-      initialProps: false,
-    );
-
-    expect(fetchCount, 0);
-    expect(
-      hookResult.current,
-      isUseQueryResult(
-        status: QueryStatus.pending,
-        fetchStatus: FetchStatus.idle,
-        data: null,
-        dataUpdatedAt: null,
-        error: null,
-        errorUpdatedAt: null,
-        errorUpdateCount: 0,
-        isEnabled: false,
-      ),
-    );
-
-    await hookResult.rebuildWithProps(true);
-
-    expect(fetchCount, 1);
-    expect(
-      hookResult.current,
-      isUseQueryResult(
-        status: QueryStatus.pending,
-        fetchStatus: FetchStatus.fetching,
-        data: null,
-        dataUpdatedAt: null,
-        error: null,
-        errorUpdatedAt: null,
-        errorUpdateCount: 0,
-        isEnabled: true,
-      ),
-    );
-
-    await tester.pumpAndSettle();
-
-    expect(fetchCount, 1);
-    expect(
-      hookResult.current,
-      isUseQueryResult(
-        status: QueryStatus.success,
-        fetchStatus: FetchStatus.idle,
-        data: expectedData,
-        dataUpdatedAt: isA<DateTime>(),
-        error: null,
-        errorUpdatedAt: null,
-        errorUpdateCount: 0,
-        isEnabled: true,
-      ),
-    );
-  }));
-
   testWidgets('SHOULD fetch only once WHEN multiple hooks share same key',
       withCleanup((tester) async {
     var fetchCount = 0;
@@ -454,6 +351,111 @@ void main() {
     expect(result1.data, 'data1');
     expect(result2.data, 'data2');
   }));
+
+  group('enabled', () {
+    testWidgets('SHOULD NOT fetch WHEN enabled is false',
+        withCleanup((tester) async {
+      var fetchCount = 0;
+
+      final hookResult = await buildHook(
+        () => useQuery<String, Object>(
+          queryKey: const ['test-disabled'],
+          queryFn: () async {
+            fetchCount++;
+            return 'data';
+          },
+          enabled: false,
+          queryClient: client,
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      expect(fetchCount, 0);
+      expect(
+        hookResult.current,
+        isUseQueryResult(
+          status: QueryStatus.pending,
+          fetchStatus: FetchStatus.idle,
+          data: null,
+          dataUpdatedAt: null,
+          error: null,
+          errorUpdatedAt: null,
+          errorUpdateCount: 0,
+          isEnabled: false,
+        ),
+      );
+    }));
+
+    testWidgets('SHOULD fetch WHEN enabled changes to true',
+        withCleanup((tester) async {
+      var fetchCount = 0;
+      const expectedData = 'data';
+
+      final hookResult = await buildHookWithProps(
+        (enabled) => useQuery<String, Object>(
+          queryKey: const ['enabled-test'],
+          queryFn: () async {
+            fetchCount++;
+            await Future.delayed(const Duration(milliseconds: 100));
+            return expectedData;
+          },
+          enabled: enabled,
+          queryClient: client,
+        ),
+        initialProps: false,
+      );
+
+      expect(fetchCount, 0);
+      expect(
+        hookResult.current,
+        isUseQueryResult(
+          status: QueryStatus.pending,
+          fetchStatus: FetchStatus.idle,
+          data: null,
+          dataUpdatedAt: null,
+          error: null,
+          errorUpdatedAt: null,
+          errorUpdateCount: 0,
+          isEnabled: false,
+        ),
+      );
+
+      await hookResult.rebuildWithProps(true);
+
+      expect(fetchCount, 1);
+      expect(
+        hookResult.current,
+        isUseQueryResult(
+          status: QueryStatus.pending,
+          fetchStatus: FetchStatus.fetching,
+          data: null,
+          dataUpdatedAt: null,
+          error: null,
+          errorUpdatedAt: null,
+          errorUpdateCount: 0,
+          isEnabled: true,
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      expect(fetchCount, 1);
+      expect(
+        hookResult.current,
+        isUseQueryResult(
+          status: QueryStatus.success,
+          fetchStatus: FetchStatus.idle,
+          data: expectedData,
+          dataUpdatedAt: isA<DateTime>(),
+          error: null,
+          errorUpdatedAt: null,
+          errorUpdateCount: 0,
+          isEnabled: true,
+        ),
+      );
+    }));
+  });
 
   group('staleDuration', () {
     testWidgets('SHOULD mark data as stale WHEN staleDuration is zero',
