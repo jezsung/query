@@ -65,8 +65,8 @@ class UseQueryResult<TData, TError> with EquatableMixin {
     final age = clock.now().difference(dataUpdatedAt!);
 
     return switch (_staleDuration) {
-      // Check if age exceeds staleDuration
-      StaleDuration duration => age > duration,
+      // Check if age exceeds or equals staleDuration (>= for zero staleDuration)
+      StaleDuration duration => age >= duration,
       // If staleDuration is StaleDurationInfinity, never stale (unless invalidated)
       StaleDurationInfinity() => false,
       // If staleDuration is StaleDurationStatic, never stale
@@ -99,10 +99,10 @@ UseQueryResult<TData, TError> useQuery<TData, TError>({
   bool enabled = true,
   // networkMode: 'online' | 'always' | 'offlineFirst'
   // NetworkMode networkMode = NetworkMode.online,
-  // initialData: TData | () => TData
-  // TData? initialData,
-  // initialDataUpdatedAt: number | (() => number | undefined)
-  // DateTime? initialDataUpdatedAt,
+  // initialData: TData
+  TData? initialData,
+  // initialDataUpdatedAt: DateTime
+  DateTime? initialDataUpdatedAt,
   // meta: Record<string, unknown>
   // Map<String, Object?>? meta,
   // notifyOnChangeProps: string[] | "all" | (() => string[] | "all" | undefined)
@@ -148,11 +148,13 @@ UseQueryResult<TData, TError> useQuery<TData, TError>({
     () => QueryObserver<TData, TError>(
       client,
       QueryOptions(
-        queryKey: queryKey,
-        queryFn: queryFn,
+        queryKey,
+        queryFn,
         enabled: enabled,
         staleDuration: staleDuration,
         gcDuration: gcDuration,
+        initialData: initialData,
+        initialDataUpdatedAt: initialDataUpdatedAt,
       ),
     ),
     [],
@@ -162,11 +164,13 @@ UseQueryResult<TData, TError> useQuery<TData, TError>({
   // This ensures we get the optimistic result immediately when options change
   observer.updateOptions(
     QueryOptions(
-      queryKey: queryKey,
-      queryFn: queryFn,
+      queryKey,
+      queryFn,
       enabled: enabled,
       staleDuration: staleDuration,
       gcDuration: gcDuration,
+      initialData: initialData,
+      initialDataUpdatedAt: initialDataUpdatedAt,
     ),
   );
 

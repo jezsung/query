@@ -15,22 +15,37 @@ void main() {
 
   group('build', () {
     test('SHOULD create and cache new query', () {
-      final query = cache.build(const ['key1'], () async => 'data');
+      final query = cache.build(QueryOptions(
+        const ['key1'],
+        () async => 'data',
+      ));
 
       expect(query, isA<Query>());
       expect(query.queryKey, equals(const ['key1']));
     });
 
     test('SHOULD return same query for same key', () {
-      final query1 = cache.build(const ['key1'], () async => 'data1');
-      final query2 = cache.build(const ['key1'], () async => 'data2');
+      final query1 = cache.build(QueryOptions(
+        const ['key1'],
+        () async => 'data1',
+      ));
+      final query2 = cache.build(QueryOptions(
+        const ['key1'],
+        () async => 'data2',
+      ));
 
       expect(query1, same(query2));
     });
 
     test('SHOULD create different queries for different keys', () {
-      final query1 = cache.build(const ['key1'], () async => 'data1');
-      final query2 = cache.build(const ['key2'], () async => 'data2');
+      final query1 = cache.build(QueryOptions(
+        const ['key1'],
+        () async => 'data1',
+      ));
+      final query2 = cache.build(QueryOptions(
+        const ['key2'],
+        () async => 'data2',
+      ));
 
       expect(query1, isNot(same(query2)));
     });
@@ -43,7 +58,10 @@ void main() {
     });
 
     test('SHOULD return query WHEN it exists', () {
-      cache.build(const ['key1'], () async => 'data');
+      cache.build(QueryOptions(
+        const ['key1'],
+        () async => 'data',
+      ));
 
       final query = cache.get(const ['key1']);
       expect(query, isNotNull);
@@ -59,9 +77,18 @@ void main() {
     });
 
     test('SHOULD return all queries in cache', () {
-      cache.build(const ['key1'], () async => 'data1');
-      cache.build(const ['key2'], () async => 'data2');
-      cache.build(const ['key3'], () async => 'data3');
+      cache.build(QueryOptions(
+        const ['key1'],
+        () async => 'data1',
+      ));
+      cache.build(QueryOptions(
+        const ['key2'],
+        () async => 'data2',
+      ));
+      cache.build(QueryOptions(
+        const ['key3'],
+        () async => 'data3',
+      ));
 
       final queries = cache.getAll();
 
@@ -69,7 +96,10 @@ void main() {
     });
 
     test('SHOULD return copy of the queries list', () {
-      cache.build(const ['key1'], () async => 'data1');
+      cache.build(QueryOptions(
+        const ['key1'],
+        () async => 'data1',
+      ));
 
       final queries1 = cache.getAll();
       final queries2 = cache.getAll();
@@ -79,8 +109,14 @@ void main() {
     });
 
     test('SHOULD return same queries in list', () {
-      cache.build(const ['key1'], () async => 'data1');
-      cache.build(const ['key2'], () async => 'data2');
+      cache.build(QueryOptions(
+        const ['key1'],
+        () async => 'data1',
+      ));
+      cache.build(QueryOptions(
+        const ['key2'],
+        () async => 'data2',
+      ));
 
       final queries1 = cache.getAll();
       final queries2 = cache.getAll();
@@ -94,7 +130,10 @@ void main() {
 
   group('remove', () {
     test('SHOULD remove query from cache', () {
-      final query = cache.build(const ['key1'], () async => 'data');
+      final query = cache.build(QueryOptions(
+        const ['key1'],
+        () async => 'data',
+      ));
 
       cache.remove(query);
 
@@ -102,7 +141,10 @@ void main() {
     });
 
     test('SHOULD dispose query WHEN removed', () {
-      final query = cache.build(const ['key1'], () async => 'data');
+      final query = cache.build(QueryOptions(
+        const ['key1'],
+        () async => 'data',
+      ));
 
       expect(query.isClosed, false);
 
@@ -112,10 +154,19 @@ void main() {
     });
 
     test('SHOULD NOT remove different query with same key', () {
-      final query1 = cache.build(const ['key1'], () async => 'data1');
+      final query1 = cache.build(QueryOptions(
+        const ['key1'],
+        () async => 'data1',
+      ));
 
       // Manually create a different query instance (not in cache)
-      final query2 = Query(const ['key1'], () async => 'data2', cache);
+      final query2 = Query(
+        cache,
+        QueryOptions(
+          const ['key1'],
+          () async => 'data2',
+        ),
+      );
 
       // Try to remove query2 (which is not the one in cache)
       cache.remove(query2);
@@ -128,7 +179,10 @@ void main() {
 
   group('removeByKey', () {
     test('SHOULD remove query from cache', () {
-      cache.build(const ['key1'], () async => 'data');
+      cache.build(QueryOptions(
+        const ['key1'],
+        () async => 'data',
+      ));
 
       cache.removeByKey(const ['key1']);
 
@@ -136,10 +190,10 @@ void main() {
     });
 
     test('SHOULD dispose query WHEN removed', () {
-      final query = cache.build(
+      final query = cache.build(QueryOptions(
         const ['key1'],
         () async => 'data',
-      );
+      ));
 
       expect(query.isClosed, false);
 
@@ -151,9 +205,18 @@ void main() {
 
   group('clear', () {
     test('SHOULD remove all queries from cache', () {
-      cache.build(const ['key1'], () async => 'data1');
-      cache.build(const ['key2'], () async => 'data2');
-      cache.build(const ['key3'], () async => 'data3');
+      cache.build(QueryOptions(
+        const ['key1'],
+        () async => 'data1',
+      ));
+      cache.build(QueryOptions(
+        const ['key2'],
+        () async => 'data2',
+      ));
+      cache.build(QueryOptions(
+        const ['key3'],
+        () async => 'data3',
+      ));
 
       cache.clear();
 
@@ -164,8 +227,14 @@ void main() {
     });
 
     test('SHOULD dispose all queries', () {
-      final query1 = cache.build(const ['key1'], () async => 'data1');
-      final query2 = cache.build(const ['key2'], () async => 'data2');
+      final query1 = cache.build(QueryOptions(
+        const ['key1'],
+        () async => 'data1',
+      ));
+      final query2 = cache.build(QueryOptions(
+        const ['key2'],
+        () async => 'data2',
+      ));
 
       expect(query1.isClosed, isFalse);
       expect(query2.isClosed, isFalse);
@@ -180,26 +249,26 @@ void main() {
 
   group('find', () {
     setUp(() {
-      cache.build(
+      cache.build(QueryOptions(
         const ['users'],
         () async => 'users data',
-      );
-      cache.build(
+      ));
+      cache.build(QueryOptions(
         const ['users', '1'],
         () async => 'user 1 data',
-      );
-      cache.build(
+      ));
+      cache.build(QueryOptions(
         const ['users', '2'],
         () async => 'user 2 data',
-      );
-      cache.build(
+      ));
+      cache.build(QueryOptions(
         const ['posts'],
         () async => 'posts data',
-      );
-      cache.build(
+      ));
+      cache.build(QueryOptions(
         const ['posts', '1'],
         () async => 'post 1 data',
-      );
+      ));
     });
 
     tearDown(() {
@@ -290,26 +359,26 @@ void main() {
 
   group('findAll', () {
     setUp(() {
-      cache.build(
+      cache.build(QueryOptions(
         const ['users'],
         () async => 'users data',
-      );
-      cache.build(
+      ));
+      cache.build(QueryOptions(
         const ['users', '1'],
         () async => 'user 1 data',
-      );
-      cache.build(
+      ));
+      cache.build(QueryOptions(
         const ['users', '2'],
         () async => 'user 2 data',
-      );
-      cache.build(
+      ));
+      cache.build(QueryOptions(
         const ['posts'],
         () async => 'posts data',
-      );
-      cache.build(
+      ));
+      cache.build(QueryOptions(
         const ['posts', '1'],
         () async => 'post 1 data',
-      );
+      ));
     });
 
     tearDown(() {

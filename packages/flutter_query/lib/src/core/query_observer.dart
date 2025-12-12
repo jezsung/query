@@ -9,13 +9,11 @@ import 'query_key.dart';
 
 class QueryObserver<TData, TError> {
   QueryObserver(this.client, this.options) {
-    _query = client.cache.build<TData, TError>(
-      options.queryKey,
-      options.queryFn,
-    );
+    // Get or create query using cache.build()
+    _query = client.cache.build<TData, TError>(options);
 
-    // Update gcDuration on the query
-    _query.updateGcDuration(options.gcDuration);
+    // Set options on the query (will set initialData if query has no data)
+    _query.setOptions(options);
 
     // Register this observer with the query
     // This will clear any pending gc timeout
@@ -85,14 +83,13 @@ class QueryObserver<TData, TError> {
     if (didKeyChange) {
       final oldQuery = _query;
 
-      // Query key changed - need to switch to a different query
-      _query = client.cache.build<TData, TError>(
-        newOptions.queryKey,
-        newOptions.queryFn,
-      );
+      // Get or create query using cache.build()
+      _query = client.cache.build<TData, TError>(newOptions);
 
-      // Update gcDuration and register with new query
-      _query.updateGcDuration(newOptions.gcDuration);
+      // Set options on the query (will set initialData if query has no data)
+      _query.setOptions(newOptions);
+
+      // Register with new query
       _query.addObserver(this);
 
       // Subscribe to new query state changes
@@ -188,8 +185,8 @@ class QueryObserver<TData, TError> {
 
     final age = clock.now().difference(state.dataUpdatedAt!);
     return switch (staleDuration) {
-      // Check if age exceeds staleDuration
-      StaleDuration duration => age > duration,
+      // Check if age exceeds or equals staleDuration (>= for zero staleDuration)
+      StaleDuration duration => age >= duration,
       // If staleDuration is StaleDurationInfinity, never stale (unless invalidated)
       StaleDurationInfinity() => false,
       // If staleDuration is StaleDurationStatic, never stale
@@ -225,12 +222,14 @@ class QueryObserver<TData, TError> {
 }
 
 class QueryOptions<TData, TError> {
-  const QueryOptions({
-    required this.queryKey,
-    required this.queryFn,
+  const QueryOptions(
+    this.queryKey,
+    this.queryFn, {
     this.enabled = true,
     this.staleDuration = StaleDuration.zero,
     this.gcDuration = const GcDuration(minutes: 5),
+    this.initialData,
+    this.initialDataUpdatedAt,
   });
 
   final List<Object?> queryKey;
@@ -244,4 +243,12 @@ class QueryOptions<TData, TError> {
   /// When different garbage collection durations are specified, the longest one will be used.
   /// Use [GcDuration.infinity] to disable garbage collection.
   final GcDurationValue gcDuration;
+
+  /// Initial data to use for the query.
+  /// If provided, the query will start with status 'success' and this data.
+  final TData? initialData;
+
+  /// Timestamp for when the initial data was created.
+  /// If not provided when initialData is set, defaults to the current time.
+  final DateTime? initialDataUpdatedAt;
 }

@@ -12,17 +12,30 @@ enum QueryStatus { pending, error, success }
 enum FetchStatus { fetching, paused, idle }
 
 class Query<TData, TError> with Removable {
-  Query(this.queryKey, this.queryFn, QueryCache cache) : _cache = cache;
+  Query(
+    QueryCache cache,
+    QueryOptions<TData, TError> options,
+  )   : _cache = cache,
+        _options = options,
+        _initialState = QueryState.fromOptions(options) {
+    _state = _initialState;
+  }
 
-  final List<Object?> queryKey;
-  final Future<TData> Function() queryFn;
   final QueryCache _cache;
+  QueryOptions<TData, TError> _options;
+
+  List<Object?> get queryKey => _options.queryKey;
+  Future<TData> Function() get queryFn => _options.queryFn;
 
   final _controller = StreamController<QueryState<TData, TError>>.broadcast();
   Stream<QueryState<TData, TError>> get onStateChange => _controller.stream;
 
-  QueryState<TData, TError> _state = QueryState<TData, TError>();
+  late QueryState<TData, TError> _state;
   QueryState<TData, TError> get state => _state;
+
+  // Store the initial state for reset functionality
+  // This can be updated via setOptions when initialData is set on a query without data
+  QueryState<TData, TError> _initialState;
 
   // Track observers explicitly to match TanStack Query's pattern
   final List<QueryObserver> _observers = [];
@@ -106,6 +119,36 @@ class Query<TData, TError> with Removable {
     }
   }
 
+  /// Resets the query to its initial state.
+  ///
+  /// This restores the query to the state it had when it was first created,
+  /// including any initialData that was provided.
+  void reset() {
+    cancelGc();
+    _setState(_initialState);
+  }
+
+  /// Sets the query options and updates the state if needed.
+  ///
+  /// This matches TanStack Query's setOptions behavior where initialData
+  /// can be set on a query that exists without data.
+  void setOptions(QueryOptions<TData, TError> options) {
+    _options = options;
+
+    // Update gcDuration if changed
+    updateGcDuration(options.gcDuration);
+
+    // If query has no data and options provide initialData, update state
+    if (state.data == null && options.initialData != null) {
+      final defaultState = QueryState<TData, TError>.fromOptions(options);
+      if (defaultState.data != null) {
+        _setState(defaultState);
+        // Update initial state so reset() will restore to this state
+        _initialState = defaultState;
+      }
+    }
+  }
+
   void dispose() {
     cancelGc();
     _controller.close();
@@ -124,6 +167,25 @@ class QueryState<TData, TError> with EquatableMixin {
     // this.failureCount = 0,
     // this.failureReason,
   });
+
+  /// Creates a QueryState from QueryOptions, handling initialData.
+  ///
+  /// This matches TanStack Query's getDefaultState function behavior.
+  factory QueryState.fromOptions(QueryOptions<TData, TError> options) {
+    if (options.initialData != null) {
+      return QueryState<TData, TError>(
+        status: QueryStatus.success,
+        fetchStatus: FetchStatus.idle,
+        data: options.initialData,
+        dataUpdatedAt: options.initialDataUpdatedAt ?? clock.now(),
+        error: null,
+        errorUpdatedAt: null,
+        errorUpdateCount: 0,
+      );
+    }
+
+    return QueryState<TData, TError>();
+  }
 
   final QueryStatus status;
   final FetchStatus fetchStatus;

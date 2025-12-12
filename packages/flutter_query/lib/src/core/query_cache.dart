@@ -1,21 +1,19 @@
 import 'query.dart';
 import 'query_key.dart';
+import 'query_observer.dart';
 
 class QueryCache {
   final Map<QueryKey, Query> _queries = {};
 
-  /// Builds or retrieves an existing query from the cache
+  /// Builds or retrieves an existing query from the cache.
+  ///
+  /// This matches TanStack Query's build method - gets existing query or creates new one.
   Query<TData, TError> build<TData, TError>(
-    List<Object?> queryKey,
-    Future<TData> Function() queryFn,
+    QueryOptions<TData, TError> options,
   ) {
-    final key = QueryKey(queryKey);
-    final query = _queries[key] ??= Query<TData, TError>(
-      queryKey,
-      queryFn,
-      this,
-    );
-    return query as Query<TData, TError>;
+    final key = QueryKey(options.queryKey);
+    return (_queries[key] ??= Query<TData, TError>(this, options))
+        as Query<TData, TError>;
   }
 
   /// Gets a query from the cache by key
