@@ -45,49 +45,6 @@ void main() {
     };
   }
 
-  testWidgets('SHOULD find QueryClient provided by QueryClientProvider',
-      withCleanup((tester) async {
-    final hookResult = await buildHook(
-      () => useQuery(
-        queryKey: const ['key'],
-        queryFn: () async => 'data',
-      ),
-      wrapper: (child) => QueryClientProvider(
-        client: client,
-        child: child,
-      ),
-    );
-
-    await tester.pumpAndSettle();
-
-    expect(hookResult.current.data, equals('data'));
-  }));
-
-  testWidgets('SHOULD prioritize queryClient over QueryClientProvider',
-      withCleanup((tester) async {
-    final prioritizedQueryClient = QueryClient();
-
-    final hookResult = await buildHook(
-      () => useQuery(
-        queryKey: const ['key'],
-        queryFn: () async => 'data',
-        queryClient: prioritizedQueryClient,
-      ),
-      wrapper: (child) => QueryClientProvider(
-        client: client,
-        child: child,
-      ),
-    );
-
-    await tester.pumpAndSettle();
-
-    expect(prioritizedQueryClient.cache.get(const ['key']), isNotNull);
-    expect(client.cache.get(const ['key']), isNull);
-
-    await hookResult.unmount();
-    prioritizedQueryClient.dispose();
-  }));
-
   testWidgets('SHOULD fetch and succeed', withCleanup((tester) async {
     const expectedData = 'test data';
 
@@ -464,22 +421,6 @@ void main() {
 
     // Clean up to prevent pending GC timer
     client.cache.clear();
-  });
-
-  testWidgets('SHOULD throw WHEN QueryClient is not provided', (tester) async {
-    await tester.pumpWidget(HookBuilder(
-      builder: (context) {
-        useQuery<String, Object>(
-          queryKey: const ['test'],
-          queryFn: () async => 'data',
-        );
-        return Container();
-      },
-    ));
-
-    // Check that a FlutterError was thrown during build
-    final exception = tester.takeException();
-    expect(exception, isA<FlutterError>());
   });
 
   testWidgets('SHOULD distinguish between different query keys',
@@ -1225,5 +1166,67 @@ void main() {
       // Query should still be in cache because rebuild cancelled gc
       expect(client.cache.get(const ['key']), isNotNull);
     }));
+  });
+
+  group('queryClient', () {
+    testWidgets('SHOULD find QueryClient provided by QueryClientProvider',
+        withCleanup((tester) async {
+      final hookResult = await buildHook(
+        () => useQuery(
+          queryKey: const ['key'],
+          queryFn: () async => 'data',
+        ),
+        wrapper: (child) => QueryClientProvider(
+          client: client,
+          child: child,
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      expect(hookResult.current.data, equals('data'));
+    }));
+
+    testWidgets('SHOULD prioritize queryClient over QueryClientProvider',
+        withCleanup((tester) async {
+      final prioritizedQueryClient = QueryClient();
+
+      final hookResult = await buildHook(
+        () => useQuery(
+          queryKey: const ['key'],
+          queryFn: () async => 'data',
+          queryClient: prioritizedQueryClient,
+        ),
+        wrapper: (child) => QueryClientProvider(
+          client: client,
+          child: child,
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      expect(prioritizedQueryClient.cache.get(const ['key']), isNotNull);
+      expect(client.cache.get(const ['key']), isNull);
+
+      await hookResult.unmount();
+      prioritizedQueryClient.dispose();
+    }));
+
+    testWidgets('SHOULD throw WHEN QueryClient is not provided',
+        (tester) async {
+      await tester.pumpWidget(HookBuilder(
+        builder: (context) {
+          useQuery<String, Object>(
+            queryKey: const ['test'],
+            queryFn: () async => 'data',
+          );
+          return Container();
+        },
+      ));
+
+      // Check that a FlutterError was thrown during build
+      final exception = tester.takeException();
+      expect(exception, isA<FlutterError>());
+    });
   });
 }
