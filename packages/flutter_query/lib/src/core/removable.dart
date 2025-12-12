@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import 'package:meta/meta.dart';
+
 import '../hooks/use_query.dart';
 
 /// Mixin that provides garbage collection functionality for queries and mutations.
@@ -56,6 +58,7 @@ mixin Removable {
   ///
   /// Matches TanStack Query's Removable.destroy() method.
   /// Clears the garbage collection timer to prevent further GC attempts.
+  @mustCallSuper
   void dispose() {
     cancelGc();
   }
