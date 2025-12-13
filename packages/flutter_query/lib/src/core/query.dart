@@ -37,15 +37,6 @@ class Query<TData, TError> with Removable {
 
   bool get hasObservers => _observers.isNotEmpty;
 
-  void _setState(QueryState<TData, TError> newState) {
-    _state = newState;
-
-    // Notify all observers directly via method calls
-    for (final observer in _observers) {
-      observer.onQueryUpdate();
-    }
-  }
-
   Future<void> fetch() async {
     if (state.fetchStatus == FetchStatus.fetching) return;
 
@@ -144,6 +135,15 @@ class Query<TData, TError> with Removable {
         // Update initial state so reset() will restore to this state
         _initialState = defaultState;
       }
+    }
+  }
+
+  void _setState(QueryState<TData, TError> newState) {
+    _state = newState;
+
+    // Notify all observers directly via method calls
+    for (final observer in _observers) {
+      observer.onQueryUpdate();
     }
   }
 }
