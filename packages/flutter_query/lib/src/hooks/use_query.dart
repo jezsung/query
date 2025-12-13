@@ -91,28 +91,21 @@ class UseQueryResult<TData, TError> with EquatableMixin {
 }
 
 UseQueryResult<TData, TError> useQuery<TData, TError>({
-  // queryKey: unknown[]
   required List<Object?> queryKey,
-  // queryFn: (context: QueryFunctionContext) => Promise<TData>
   required Future<TData> Function() queryFn,
-  // gcTime: number | Infinity
   GcDurationOption gcDuration = const GcDuration(minutes: 5),
-  // enabled: boolean | (query: Query) => boolean
   bool enabled = true,
+  TData? initialData,
+  DateTime? initialDataUpdatedAt,
+  TData? placeholderData,
+  StaleDurationOption staleDuration = StaleDuration.zero,
+  QueryClient? queryClient,
   // networkMode: 'online' | 'always' | 'offlineFirst'
   // NetworkMode networkMode = NetworkMode.online,
-  // initialData: TData
-  TData? initialData,
-  // initialDataUpdatedAt: DateTime
-  DateTime? initialDataUpdatedAt,
-  // placeholderData: TData
-  TData? placeholderData,
   // meta: Record<string, unknown>
   // Map<String, Object?>? meta,
   // notifyOnChangeProps: string[] | "all" | (() => string[] | "all" | undefined)
   // List<String>? notifyOnChangeProps,
-  // placeholderData: TData | (previousValue: TData | undefined, previousQuery: Query | undefined) => TData
-  // placeholderData,
   // queryKeyHashFn: (queryKey: QueryKey) => string
   // String Function()? queryKeyHashFn,
   // refetchInterval: number | false | ((query: Query) => number | false | undefined)
@@ -133,16 +126,12 @@ UseQueryResult<TData, TError> useQuery<TData, TError>({
   // retryDelay,
   // select: (data: TData) => unknown
   // Object? Function(TData)? select,
-  // staleDuration: StaleDuration<TData, TError>
-  StaleDurationOption staleDuration = StaleDuration.zero,
   // structuralSharing: boolean | (oldData: unknown | undefined, newData: unknown) => unknown
   // structuralSharing = true,
   // subscribed: boolean
   // bool subscribed = true,
   // throwOnError: undefined | boolean | (error: TError, query: Query) => boolean
   // throwOnError,
-  // queryClient?: QueryClient
-  QueryClient? queryClient,
 }) {
   // Get QueryClient from context if not provided
   final client = queryClient ?? useQueryClient();
