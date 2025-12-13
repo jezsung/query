@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:clock/clock.dart';
 
 import '../hooks/use_query.dart';
+import 'options/gc_duration.dart';
 import 'options/stale_duration.dart';
 import 'query.dart';
 import 'query_client.dart';
@@ -263,7 +264,7 @@ class QueryOptions<TData, TError> {
   /// garbage collected after this duration.
   /// When different garbage collection durations are specified, the longest one will be used.
   /// Use [GcDuration.infinity] to disable garbage collection.
-  final GcDurationValue gcDuration;
+  final GcDurationOption gcDuration;
 
   /// Initial data to use for the query.
   /// If provided, the query will start with status 'success' and this data.

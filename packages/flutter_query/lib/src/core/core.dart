@@ -5,3 +5,4 @@ export 'query_key.dart';
 export 'query_observer.dart';
 export 'removable.dart';
 export 'options/stale_duration.dart';
+export 'options/gc_duration.dart';

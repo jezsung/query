@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:meta/meta.dart';
 
-import '../hooks/use_query.dart';
+import 'options/gc_duration.dart';
 
 /// Mixin that provides garbage collection functionality for queries and mutations.
 ///
@@ -12,7 +12,7 @@ import '../hooks/use_query.dart';
 /// Classes that use this mixin must:
 /// - Implement [tryRemove] to define removal logic (including checks for observers, fetching state, etc.)
 mixin Removable {
-  GcDurationValue _gcDuration = GcDuration.zero;
+  GcDurationOption _gcDuration = GcDuration.zero;
   Timer? _gcTimer;
 
   /// Updates the garbage collection duration.
@@ -23,7 +23,7 @@ mixin Removable {
   /// This matches TanStack Query's `updateGcTime` behavior which uses `Math.max`,
   /// meaning the gcTime can only increase, never decrease during a Query's lifetime.
   /// This is intentional to prevent premature garbage collection.
-  void updateGcDuration(GcDurationValue newGcDuration) {
+  void updateGcDuration(GcDurationOption newGcDuration) {
     // Use Math.max equivalent - always keep the longest duration
     // This works because GcDurationInfinity > any GcDuration
     _gcDuration = _gcDuration > newGcDuration ? _gcDuration : newGcDuration;

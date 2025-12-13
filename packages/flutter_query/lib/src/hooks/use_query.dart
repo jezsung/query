@@ -96,7 +96,7 @@ UseQueryResult<TData, TError> useQuery<TData, TError>({
   // queryFn: (context: QueryFunctionContext) => Promise<TData>
   required Future<TData> Function() queryFn,
   // gcTime: number | Infinity
-  GcDurationValue gcDuration = const GcDuration(minutes: 5),
+  GcDurationOption gcDuration = const GcDuration(minutes: 5),
   // enabled: boolean | (query: Query) => boolean
   bool enabled = true,
   // networkMode: 'online' | 'always' | 'offlineFirst'
@@ -196,80 +196,6 @@ UseQueryResult<TData, TError> useQuery<TData, TError>({
   // Always return the current result from the observer
   // This ensures we get the optimistic result immediately when options change
   return observer.result;
-}
-
-/// A concrete gc duration value.
-sealed class GcDurationValue {}
-
-/// Garbage collection duration configuration.
-///
-/// Controls how long unused/inactive cache data remains in memory before being
-/// garbage collected. When a query's cache becomes unused or inactive, that
-/// cache data will be garbage collected after this duration.
-class GcDuration extends Duration implements GcDurationValue {
-  /// Cache is garbage collected after the specified duration
-  ///
-  /// This is the default constructor matching Duration's constructor.
-  ///
-  /// Example:
-  /// ```dart
-  /// GcDuration(minutes: 5)  // Default in TanStack Query
-  /// GcDuration(seconds: 30)
-  /// GcDuration(hours: 1, minutes: 30)
-  /// ```
-  const GcDuration({
-    super.days,
-    super.hours,
-    super.minutes,
-    super.seconds,
-    super.milliseconds,
-    super.microseconds,
-  });
-
-  /// Zero duration - cache is garbage collected immediately when unused
-  static const GcDuration zero = GcDuration(seconds: 0);
-
-  /// Cache is never garbage collected.
-  ///
-  /// Equivalent to TanStack Query's `Infinity` gcTime value.
-  /// Useful for data that should persist for the lifetime of the application.
-  static const GcDurationInfinity infinity = GcDurationInfinity._();
-}
-
-/// Represents infinity - cache is never garbage collected.
-class GcDurationInfinity implements GcDurationValue {
-  const GcDurationInfinity._();
-
-  @override
-  bool operator ==(Object other) => other is GcDurationInfinity;
-
-  @override
-  int get hashCode => 0;
-}
-
-/// Extension to add comparison operators for GcDurationValue.
-extension GcDurationValueComparison on GcDurationValue {
-  /// Compares this GcDurationValue to another.
-  ///
-  /// Returns:
-  /// - a negative value if this < other
-  /// - zero if this == other
-  /// - a positive value if this > other
-  ///
-  /// GcDurationInfinity is always greater than any GcDuration.
-  int compareTo(GcDurationValue other) {
-    return switch ((this, other)) {
-      (GcDurationInfinity(), GcDurationInfinity()) => 0,
-      (GcDurationInfinity(), GcDuration()) => 1,
-      (GcDuration(), GcDurationInfinity()) => -1,
-      (GcDuration a, GcDuration b) => a.compareTo(b),
-    };
-  }
-
-  bool operator <(GcDurationValue other) => compareTo(other) < 0;
-  bool operator <=(GcDurationValue other) => compareTo(other) <= 0;
-  bool operator >(GcDurationValue other) => compareTo(other) > 0;
-  bool operator >=(GcDurationValue other) => compareTo(other) >= 0;
 }
 
 typedef PlaceholderDataBuilder<TData, TError> = TData? Function(
