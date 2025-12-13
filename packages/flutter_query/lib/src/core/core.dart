@@ -4,3 +4,4 @@ export 'query_client.dart';
 export 'query_key.dart';
 export 'query_observer.dart';
 export 'removable.dart';
+export 'options/stale_duration.dart';

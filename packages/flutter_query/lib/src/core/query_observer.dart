@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:clock/clock.dart';
 
 import '../hooks/use_query.dart';
+import 'options/stale_duration.dart';
 import 'query.dart';
 import 'query_client.dart';
 import 'query_key.dart';
@@ -60,11 +61,11 @@ class QueryObserver<TData, TError> {
     // Resolve staleDuration to concrete values before comparing
     final newResolvedDuration = switch (newOptions.staleDuration) {
       StaleDurationValue value => value,
-      StaleDurationResolver(:final resolve) => resolve(_query),
+      StaleDurationProvider(:final resolve) => resolve(_query),
     };
     final oldResolvedDuration = switch (options.staleDuration) {
       StaleDurationValue value => value,
-      StaleDurationResolver(:final resolve) => resolve(_query),
+      StaleDurationProvider(:final resolve) => resolve(_query),
     };
     final didStaleDurationChange = newResolvedDuration != oldResolvedDuration;
 
@@ -152,12 +153,6 @@ class QueryObserver<TData, TError> {
   UseQueryResult<TData, TError> _getOptimisticResult() {
     final state = _query.state;
 
-    // Resolve staleDuration to concrete value
-    final staleDuration = switch (options.staleDuration) {
-      StaleDurationValue value => value,
-      StaleDurationResolver(:final resolve) => resolve(_query),
-    };
-
     // Check if we should fetch on mount (enabled and (no data or stale))
     final shouldFetch = options.enabled && _shouldFetchOnMount(state);
 
@@ -183,7 +178,7 @@ class QueryObserver<TData, TError> {
       errorUpdatedAt: state.errorUpdatedAt,
       errorUpdateCount: state.errorUpdateCount,
       isEnabled: options.enabled,
-      staleDuration: staleDuration,
+      staleDuration: options.staleDuration.resolve(_query),
       isPlaceholderData: isPlaceholderData,
     );
   }
@@ -196,13 +191,9 @@ class QueryObserver<TData, TError> {
     // No dataUpdatedAt - consider stale
     if (state.dataUpdatedAt == null) return true;
 
-    // Resolve staleDuration to concrete value
-    final staleDuration = switch (options.staleDuration) {
-      StaleDurationValue value => value,
-      StaleDurationResolver(:final resolve) => resolve(_query),
-    };
-
     final age = clock.now().difference(state.dataUpdatedAt!);
+    final staleDuration = options.staleDuration.resolve(_query);
+
     return switch (staleDuration) {
       // Check if age exceeds or equals staleDuration (>= for zero staleDuration)
       StaleDuration duration => age >= duration,
@@ -216,12 +207,6 @@ class QueryObserver<TData, TError> {
   void _updateResult() {
     // Pull fresh state from query
     final state = _query.state;
-
-    // Resolve staleDuration to concrete value
-    final staleDuration = switch (options.staleDuration) {
-      StaleDurationValue value => value,
-      StaleDurationResolver(:final resolve) => resolve(_query),
-    };
 
     var status = state.status;
     var data = state.data;
@@ -244,7 +229,7 @@ class QueryObserver<TData, TError> {
       errorUpdatedAt: state.errorUpdatedAt,
       errorUpdateCount: state.errorUpdateCount,
       isEnabled: options.enabled,
-      staleDuration: staleDuration,
+      staleDuration: options.staleDuration.resolve(_query),
       isPlaceholderData: isPlaceholderData,
       // failureCount: state.failureCount,
       // failureReason: state.failureReason,
@@ -271,7 +256,7 @@ class QueryOptions<TData, TError> {
   final List<Object?> queryKey;
   final Future<TData> Function() queryFn;
   final bool enabled;
-  final StaleDurationBase staleDuration;
+  final StaleDurationOption staleDuration;
 
   /// The duration that unused/inactive cache data remains in memory.
   /// When a query's cache becomes unused or inactive, that cache data will be
