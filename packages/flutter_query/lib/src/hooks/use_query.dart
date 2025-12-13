@@ -186,36 +186,3 @@ UseQueryResult<TData, TError> useQuery<TData, TError>({
   // This ensures we get the optimistic result immediately when options change
   return observer.result;
 }
-
-typedef PlaceholderDataBuilder<TData, TError> = TData? Function(
-  TData? previousValue,
-  Query<TData, TError>? previousQuery,
-);
-
-/// Base class for placeholder data options.
-sealed class PlaceholderDataOption<TData, TError> {}
-
-/// Concrete placeholder data value.
-class PlaceholderData<TData, TError>
-    implements PlaceholderDataOption<TData, TError> {
-  const PlaceholderData(this.value);
-
-  final TData value;
-
-  static PlaceholderDataProvider<TData, TError> resolveWith<TData, TError>(
-    PlaceholderDataBuilder<TData, TError> callback,
-  ) {
-    return PlaceholderDataProvider._(callback);
-  }
-}
-
-/// Placeholder data computed from previous value/query.
-class PlaceholderDataProvider<TData, TError>
-    implements PlaceholderDataOption<TData, TError> {
-  const PlaceholderDataProvider._(this._callback);
-
-  final PlaceholderDataBuilder<TData, TError> _callback;
-
-  TData? resolve(TData? previousValue, Query<TData, TError>? previousQuery) =>
-      _callback(previousValue, previousQuery);
-}
