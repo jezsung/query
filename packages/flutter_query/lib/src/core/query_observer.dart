@@ -54,6 +54,8 @@ class QueryObserver<TData, TError> {
         QueryKey(newOptions.queryKey) != QueryKey(options.queryKey);
     final didEnabledChange = newOptions.enabled != options.enabled;
     final didGcDurationChange = newOptions.gcDuration != options.gcDuration;
+    final didPlaceholderDataChange =
+        newOptions.placeholderData != options.placeholderData;
 
     // Resolve staleDuration to concrete values before comparing
     final newResolvedDuration = switch (newOptions.staleDuration) {
@@ -70,7 +72,8 @@ class QueryObserver<TData, TError> {
     if (!didKeyChange &&
         !didEnabledChange &&
         !didStaleDurationChange &&
-        !didGcDurationChange) {
+        !didGcDurationChange &&
+        !didPlaceholderDataChange) {
       return;
     }
 
@@ -128,6 +131,14 @@ class QueryObserver<TData, TError> {
         _query.fetch();
       }
     }
+
+    if (didPlaceholderDataChange &&
+        !didEnabledChange &&
+        !didStaleDurationChange) {
+      // Recalculate optimistic result to reflect new placeholder data
+      _result = _getOptimisticResult();
+      _controller.add(_result);
+    }
   }
 
   void dispose() {
@@ -150,17 +161,30 @@ class QueryObserver<TData, TError> {
     // Check if we should fetch on mount (enabled and (no data or stale))
     final shouldFetch = options.enabled && _shouldFetchOnMount(state);
 
+    var status = state.status;
+    var data = state.data;
+    var isPlaceholderData = false;
+
+    if (options.placeholderData != null &&
+        data == null &&
+        status == QueryStatus.pending) {
+      status = QueryStatus.success;
+      data = options.placeholderData;
+      isPlaceholderData = true;
+    }
+
     // Return optimistic result with fetchStatus set to 'fetching' if we're about to fetch
     return UseQueryResult<TData, TError>(
-      status: state.status,
+      status: status,
       fetchStatus: shouldFetch ? FetchStatus.fetching : state.fetchStatus,
-      data: state.data,
+      data: data,
       dataUpdatedAt: state.dataUpdatedAt,
       error: state.error,
       errorUpdatedAt: state.errorUpdatedAt,
       errorUpdateCount: state.errorUpdateCount,
       isEnabled: options.enabled,
       staleDuration: staleDuration,
+      isPlaceholderData: isPlaceholderData,
     );
   }
 
@@ -199,16 +223,29 @@ class QueryObserver<TData, TError> {
       StaleDurationResolver(:final resolve) => resolve(_query),
     };
 
+    var status = state.status;
+    var data = state.data;
+    var isPlaceholderData = false;
+
+    if (options.placeholderData != null &&
+        data == null &&
+        status == QueryStatus.pending) {
+      status = QueryStatus.success;
+      data = options.placeholderData;
+      isPlaceholderData = true;
+    }
+
     final result = UseQueryResult<TData, TError>(
-      status: state.status,
+      status: status,
       fetchStatus: state.fetchStatus,
-      data: state.data,
+      data: data,
       dataUpdatedAt: state.dataUpdatedAt,
       error: state.error,
       errorUpdatedAt: state.errorUpdatedAt,
       errorUpdateCount: state.errorUpdateCount,
       isEnabled: options.enabled,
       staleDuration: staleDuration,
+      isPlaceholderData: isPlaceholderData,
       // failureCount: state.failureCount,
       // failureReason: state.failureReason,
       // isFetchedAfterMount: state.dataUpdatedAt != null, // Simplified for now
@@ -228,6 +265,7 @@ class QueryOptions<TData, TError> {
     this.gcDuration = const GcDuration(minutes: 5),
     this.initialData,
     this.initialDataUpdatedAt,
+    this.placeholderData,
   });
 
   final List<Object?> queryKey;
@@ -249,4 +287,9 @@ class QueryOptions<TData, TError> {
   /// Timestamp for when the initial data was created.
   /// If not provided when initialData is set, defaults to the current time.
   final DateTime? initialDataUpdatedAt;
+
+  /// Data to show while the query is pending and has no data.
+  ///
+  /// Only the direct value variant is currently supported (no function form).
+  final TData? placeholderData;
 }

@@ -20,10 +20,10 @@ class UseQueryResult<TData, TError> with EquatableMixin {
     required this.errorUpdateCount,
     required this.isEnabled,
     required StaleDurationValue staleDuration,
+    required this.isPlaceholderData,
     // required this.failureCount,
     // required this.failureReason,
     // required this.isFetchedAfterMount,
-    // required this.isPlaceholderData,
   }) : _staleDuration = staleDuration;
 
   // Base fields
@@ -35,6 +35,7 @@ class UseQueryResult<TData, TError> with EquatableMixin {
   final DateTime? errorUpdatedAt;
   final int errorUpdateCount;
   final bool isEnabled;
+  final bool isPlaceholderData;
   final StaleDurationValue _staleDuration;
 
   // final int failureCount; // failureCount: number
@@ -84,6 +85,7 @@ class UseQueryResult<TData, TError> with EquatableMixin {
         errorUpdatedAt,
         errorUpdateCount,
         isEnabled,
+        isPlaceholderData,
         _staleDuration,
       ];
 }
@@ -103,6 +105,8 @@ UseQueryResult<TData, TError> useQuery<TData, TError>({
   TData? initialData,
   // initialDataUpdatedAt: DateTime
   DateTime? initialDataUpdatedAt,
+  // placeholderData: TData
+  TData? placeholderData,
   // meta: Record<string, unknown>
   // Map<String, Object?>? meta,
   // notifyOnChangeProps: string[] | "all" | (() => string[] | "all" | undefined)
@@ -155,6 +159,7 @@ UseQueryResult<TData, TError> useQuery<TData, TError>({
         gcDuration: gcDuration,
         initialData: initialData,
         initialDataUpdatedAt: initialDataUpdatedAt,
+        placeholderData: placeholderData,
       ),
     ),
     [],
@@ -171,6 +176,7 @@ UseQueryResult<TData, TError> useQuery<TData, TError>({
       gcDuration: gcDuration,
       initialData: initialData,
       initialDataUpdatedAt: initialDataUpdatedAt,
+      placeholderData: placeholderData,
     ),
   );
 
@@ -351,4 +357,37 @@ extension GcDurationValueComparison on GcDurationValue {
   bool operator <=(GcDurationValue other) => compareTo(other) <= 0;
   bool operator >(GcDurationValue other) => compareTo(other) > 0;
   bool operator >=(GcDurationValue other) => compareTo(other) >= 0;
+}
+
+typedef PlaceholderDataBuilder<TData, TError> = TData? Function(
+  TData? previousValue,
+  Query<TData, TError>? previousQuery,
+);
+
+/// Base class for placeholder data options.
+sealed class PlaceholderDataOption<TData, TError> {}
+
+/// Concrete placeholder data value.
+class PlaceholderData<TData, TError>
+    implements PlaceholderDataOption<TData, TError> {
+  const PlaceholderData(this.value);
+
+  final TData value;
+
+  static PlaceholderDataProvider<TData, TError> resolveWith<TData, TError>(
+    PlaceholderDataBuilder<TData, TError> callback,
+  ) {
+    return PlaceholderDataProvider._(callback);
+  }
+}
+
+/// Placeholder data computed from previous value/query.
+class PlaceholderDataProvider<TData, TError>
+    implements PlaceholderDataOption<TData, TError> {
+  const PlaceholderDataProvider._(this._callback);
+
+  final PlaceholderDataBuilder<TData, TError> _callback;
+
+  TData? resolve(TData? previousValue, Query<TData, TError>? previousQuery) =>
+      _callback(previousValue, previousQuery);
 }

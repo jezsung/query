@@ -37,6 +37,9 @@ void main() {
     return (WidgetTester tester) async {
       await testBody(tester);
 
+      // Wait until all pending timers finish
+      await tester.binding.delayed(const Duration(days: 365));
+
       // Unmount widget tree first (disposes QueryObservers)
       await tester.pumpWidget(Container());
 
@@ -254,6 +257,8 @@ void main() {
         ),
       );
 
+      // Advance to resolve the delayed fetch
+      await tester.pump(const Duration(seconds: 2));
       await tester.pumpAndSettle();
 
       expect(hookResult.current.status, QueryStatus.pending);
@@ -272,6 +277,8 @@ void main() {
         initialProps: false,
       );
 
+      // Advance to resolve the delayed fetch
+      await tester.pump(const Duration(seconds: 2));
       await tester.pumpAndSettle();
 
       expect(hookResult.current.status, QueryStatus.pending);
@@ -1210,6 +1217,155 @@ void main() {
 
       // Should have new data
       expect(hookResult.current.data, 'data');
+    }));
+  });
+
+  group('placeholderData', () {
+    testWidgets('SHOULD show placeholder data', withCleanup((tester) async {
+      final hookResult = await buildHook(
+        () => useQuery(
+          queryKey: const ['key'],
+          queryFn: () async => 'data',
+          placeholderData: 'placeholder',
+          queryClient: client,
+        ),
+      );
+
+      var result = hookResult.current;
+      expect(result.status, QueryStatus.success);
+      expect(result.fetchStatus, FetchStatus.fetching);
+      expect(result.data, 'placeholder');
+      expect(result.isPlaceholderData, true);
+    }));
+
+    testWidgets('SHOULD replace placeholder data once fetch completes',
+        withCleanup((tester) async {
+      final hookResult = await buildHook(
+        () => useQuery(
+          queryKey: const ['key'],
+          queryFn: () async => 'data',
+          placeholderData: 'placeholder',
+          queryClient: client,
+        ),
+      );
+
+      var result = hookResult.current;
+      expect(result.data, 'placeholder');
+      expect(result.isPlaceholderData, true);
+
+      await tester.pump();
+
+      result = hookResult.current;
+      expect(result.data, 'data');
+      expect(result.isPlaceholderData, false);
+    }));
+
+    testWidgets('SHOULD show placeholder data WHEN enabled is false',
+        withCleanup((tester) async {
+      final hookResult = await buildHook(
+        () => useQuery(
+          queryKey: const ['key'],
+          queryFn: () async => 'data',
+          placeholderData: 'placeholder',
+          enabled: false,
+          queryClient: client,
+        ),
+      );
+
+      var result = hookResult.current;
+      expect(result.status, QueryStatus.success);
+      expect(result.fetchStatus, FetchStatus.idle);
+      expect(result.data, 'placeholder');
+      expect(result.isEnabled, false);
+      expect(result.isPlaceholderData, true);
+    }));
+
+    testWidgets('SHOULD NOT show placeholder WHEN query already has data',
+        withCleanup((tester) async {
+      final query = client.cache.build(QueryOptions(
+        const ['key'],
+        () async => 'data-cached',
+      ));
+      await query.fetch();
+
+      final hookResult = await buildHook(
+        () => useQuery(
+          queryKey: const ['key'],
+          queryFn: () async => 'data',
+          placeholderData: 'placeholder',
+          staleDuration: StaleDuration.infinity,
+          queryClient: client,
+        ),
+      );
+
+      final result = hookResult.current;
+      expect(result.data, 'data-cached');
+      expect(result.isPlaceholderData, false);
+    }));
+
+    testWidgets('SHOULD NOT show placeholder data WHEN initialData is provided',
+        withCleanup((tester) async {
+      final hookResult = await buildHook(
+        () => useQuery(
+          queryKey: const ['key'],
+          queryFn: () async => 'data',
+          initialData: 'initial',
+          placeholderData: 'placeholder',
+          queryClient: client,
+        ),
+      );
+
+      var result = hookResult.current;
+      expect(result.status, QueryStatus.success);
+      expect(result.fetchStatus, FetchStatus.fetching);
+      expect(result.data, 'initial');
+      expect(result.isPlaceholderData, false);
+    }));
+
+    testWidgets('SHOULD NOT persist placeholder data to cache',
+        withCleanup((tester) async {
+      final hookResult = await buildHook(
+        () => useQuery(
+          queryKey: const ['key'],
+          queryFn: () async => 'data',
+          placeholderData: 'placeholder',
+          queryClient: client,
+        ),
+      );
+
+      var result = hookResult.current;
+      expect(result.data, 'placeholder');
+      expect(result.isPlaceholderData, true);
+
+      final query = client.cache.get(const ['key'])!;
+      expect(query.state.data, isNot('placeholder'));
+    }));
+
+    testWidgets(
+        'SHOULD replace with new placeholder data WHEN fetch has not completed',
+        withCleanup((tester) async {
+      final hookResult = await buildHookWithProps(
+        (placeholder) => useQuery(
+          queryKey: const ['key'],
+          queryFn: () async {
+            await Future.delayed(const Duration(seconds: 5));
+            return 'data';
+          },
+          placeholderData: placeholder,
+          queryClient: client,
+        ),
+        initialProps: 'placeholder-1',
+      );
+
+      var result = hookResult.current;
+      expect(result.data, 'placeholder-1');
+      expect(result.isPlaceholderData, true);
+
+      await hookResult.rebuildWithProps('placeholder-2');
+
+      result = hookResult.current;
+      expect(result.data, 'placeholder-2');
+      expect(result.isPlaceholderData, true);
     }));
   });
 }
