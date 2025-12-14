@@ -31,7 +31,7 @@ class QueryObserver<TData, TError> {
     _result = _getResult(optimistic: true);
 
     // Trigger initial fetch if enabled and (no data or data is stale)
-    if (options.enabled && _shouldFetchOnMount(_query.state)) {
+    if (_shouldFetchOnMount(options, _query.state)) {
       _query.fetch();
     }
   }
@@ -124,7 +124,7 @@ class QueryObserver<TData, TError> {
       _setResult(result);
 
       // Trigger initial fetch if enabled and (no data or data is stale)
-      if (newOptions.enabled && _shouldFetchOnMount(_query.state)) {
+      if (_shouldFetchOnMount(newOptions, _query.state)) {
         _query.fetch();
       }
 
@@ -138,7 +138,7 @@ class QueryObserver<TData, TError> {
       final result = _getResult(optimistic: true);
       _setResult(result);
 
-      if (newOptions.enabled && _shouldFetchOnMount(_query.state)) {
+      if (_shouldFetchOnMount(newOptions, _query.state)) {
         _query.fetch();
       }
     }
@@ -149,7 +149,7 @@ class QueryObserver<TData, TError> {
       _setResult(result);
 
       // If data becomes stale with the new staleDuration, trigger a refetch
-      if (newOptions.enabled && _shouldFetchOnMount(_query.state)) {
+      if (_shouldFetchOnMount(newOptions, _query.state)) {
         _query.fetch();
       }
     }
@@ -191,8 +191,9 @@ class QueryObserver<TData, TError> {
 
     // Check if we should fetch on mount (enabled and (no data or stale))
     if (optimistic) {
-      final shouldFetch = options.enabled && _shouldFetchOnMount(state);
-      fetchStatus = shouldFetch ? FetchStatus.fetching : state.fetchStatus;
+      fetchStatus = _shouldFetchOnMount(options, state)
+          ? FetchStatus.fetching
+          : state.fetchStatus;
     }
 
     // Use placeholderData if needed (when query is pending and has no data)
@@ -229,13 +230,16 @@ class QueryObserver<TData, TError> {
     );
   }
 
-  bool _shouldFetchOnMount(QueryState<TData, TError> state) {
-    // No data - always fetch
-    if (state.data == null) return true;
-
-    // Has data - check if stale
-    // No dataUpdatedAt - consider stale
-    if (state.dataUpdatedAt == null) return true;
+  bool _shouldFetchOnMount(
+    QueryOptions<TData, TError> options,
+    QueryState<TData, TError> state,
+  ) {
+    if (!options.enabled) {
+      return false;
+    }
+    if (state.data == null || state.dataUpdatedAt == null) {
+      return true;
+    }
 
     final age = clock.now().difference(state.dataUpdatedAt!);
     final staleDuration = options.staleDuration.resolve(_query);
