@@ -40,18 +40,17 @@ class QueryObserver<TData, TError> {
   QueryOptions<TData, TError> options;
 
   late Query<TData, TError> _query;
+  late UseQueryResult<TData, TError> _result;
+
+  /// Tracks the last query that had non-null data for placeholder data resolution.
+  /// This is used when calling PlaceholderData.resolveWith() callbacks.
+  Query<TData, TError>? _lastQueryWithDefinedData;
 
   final _controller =
       StreamController<UseQueryResult<TData, TError>>.broadcast();
   Stream<UseQueryResult<TData, TError>> get onResultChange =>
       _controller.stream;
-
-  late UseQueryResult<TData, TError> _result;
   UseQueryResult<TData, TError> get result => _result;
-
-  /// Tracks the last query that had defined data for placeholder data resolution.
-  /// This is used when calling PlaceholderData.resolveWith() callbacks.
-  Query<TData, TError>? _lastQueryWithDefinedData;
 
   /// Called by Query when its state changes.
   ///
