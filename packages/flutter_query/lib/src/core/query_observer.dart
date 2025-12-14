@@ -66,24 +66,20 @@ class QueryObserver<TData, TError> {
     _setResult(result);
   }
 
-  void updateOptions(QueryOptions<TData, TError> newOptions) {
-    final didKeyChange =
-        QueryKey(newOptions.queryKey) != QueryKey(options.queryKey);
-    final didEnabledChange = newOptions.enabled != options.enabled;
-    final didGcDurationChange = newOptions.gcDuration != options.gcDuration;
-    final didPlaceholderDataChange =
-        newOptions.placeholderData != options.placeholderData;
+  void updateOptions(final QueryOptions<TData, TError> newOptions) {
+    final oldOptions = options;
+    options = newOptions;
 
+    final didKeyChange =
+        QueryKey(newOptions.queryKey) != QueryKey(oldOptions.queryKey);
+    final didGcDurationChange = newOptions.gcDuration != oldOptions.gcDuration;
+    final didEnabledChange = newOptions.enabled != oldOptions.enabled;
+    final didPlaceholderDataChange =
+        newOptions.placeholderData != oldOptions.placeholderData;
     // Resolve staleDuration to concrete values before comparing
-    final newResolvedDuration = switch (newOptions.staleDuration) {
-      StaleDurationValue value => value,
-      StaleDurationProvider(:final resolve) => resolve(_query),
-    };
-    final oldResolvedDuration = switch (options.staleDuration) {
-      StaleDurationValue value => value,
-      StaleDurationProvider(:final resolve) => resolve(_query),
-    };
-    final didStaleDurationChange = newResolvedDuration != oldResolvedDuration;
+    final newStaleDuration = newOptions.staleDuration.resolve(_query);
+    final oldStaleDuration = oldOptions.staleDuration.resolve(_query);
+    final didStaleDurationChange = newStaleDuration != oldStaleDuration;
 
     // If nothing changed, return early
     if (!didKeyChange &&
@@ -92,14 +88,6 @@ class QueryObserver<TData, TError> {
         !didGcDurationChange &&
         !didPlaceholderDataChange) {
       return;
-    }
-
-    // Update options
-    options = newOptions;
-
-    // Update gcDuration if it changed
-    if (didGcDurationChange) {
-      _query.updateGcDuration(newOptions.gcDuration);
     }
 
     if (didKeyChange) {
@@ -131,6 +119,13 @@ class QueryObserver<TData, TError> {
       // Remove this observer from the old query
       // This will schedule GC if it was the last observer
       oldQuery.removeObserver(this);
+
+      return;
+    }
+
+    // Update gcDuration if it changed
+    if (didGcDurationChange) {
+      _query.updateGcDuration(newOptions.gcDuration);
     }
 
     if (didEnabledChange) {
@@ -143,24 +138,21 @@ class QueryObserver<TData, TError> {
       }
     }
 
+    if (didPlaceholderDataChange) {
+      // Recalculate optimistic result to reflect new placeholder data
+      final result = _getResult(optimistic: true);
+      _setResult(result);
+    }
+
     if (didStaleDurationChange) {
       // Update staleDuration - recalculate result to update isStale getter
       final result = _getResult(optimistic: true);
       _setResult(result);
 
-      // If data becomes stale with the new staleDuration, trigger a refetch
+      // If data becomes stale with the new staleDuration, trigger refetch
       if (_shouldFetchOnMount(newOptions, _query.state)) {
         _query.fetch();
       }
-    }
-
-    if (didPlaceholderDataChange &&
-        !didEnabledChange &&
-        !didStaleDurationChange) {
-      // Recalculate optimistic result to reflect new placeholder data
-      final newResult = _getResult(optimistic: true);
-
-      _setResult(newResult);
     }
   }
 
@@ -260,36 +252,19 @@ class QueryOptions<TData, TError> {
     this.queryKey,
     this.queryFn, {
     this.enabled = true,
-    this.staleDuration = StaleDuration.zero,
     this.gcDuration = const GcDuration(minutes: 5),
     this.initialData,
     this.initialDataUpdatedAt,
     this.placeholderData,
+    this.staleDuration = StaleDuration.zero,
   });
 
   final List<Object?> queryKey;
   final Future<TData> Function() queryFn;
-  final bool enabled;
-  final StaleDurationOption staleDuration;
-
-  /// The duration that unused/inactive cache data remains in memory.
-  /// When a query's cache becomes unused or inactive, that cache data will be
-  /// garbage collected after this duration.
-  /// When different garbage collection durations are specified, the longest one will be used.
-  /// Use [GcDuration.infinity] to disable garbage collection.
   final GcDurationOption gcDuration;
-
-  /// Initial data to use for the query.
-  /// If provided, the query will start with status 'success' and this data.
+  final bool enabled;
   final TData? initialData;
-
-  /// Timestamp for when the initial data was created.
-  /// If not provided when initialData is set, defaults to the current time.
   final DateTime? initialDataUpdatedAt;
-
-  /// Data to show while the query is pending and has no data.
-  ///
-  /// Can be either a direct value or a callback that receives the previous data
-  /// and previous query to compute the placeholder data.
   final PlaceholderData<TData, TError>? placeholderData;
+  final StaleDurationOption staleDuration;
 }
