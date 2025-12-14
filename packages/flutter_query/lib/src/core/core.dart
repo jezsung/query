@@ -7,3 +7,4 @@ export 'removable.dart';
 export 'options/stale_duration.dart';
 export 'options/gc_duration.dart';
 export 'options/placeholder_data.dart';
+export 'options/refetch_on_mount.dart';

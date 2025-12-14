@@ -98,6 +98,7 @@ UseQueryResult<TData, TError> useQuery<TData, TError>({
   TData? initialData,
   DateTime? initialDataUpdatedAt,
   PlaceholderData<TData, TError>? placeholderData,
+  RefetchOnMount refetchOnMount = RefetchOnMount.stale,
   StaleDurationOption staleDuration = StaleDuration.zero,
   QueryClient? queryClient,
   // networkMode: 'online' | 'always' | 'offlineFirst'
@@ -143,12 +144,13 @@ UseQueryResult<TData, TError> useQuery<TData, TError>({
       QueryOptions(
         queryKey,
         queryFn,
-        enabled: enabled,
-        staleDuration: staleDuration,
         gcDuration: gcDuration,
+        enabled: enabled,
         initialData: initialData,
         initialDataUpdatedAt: initialDataUpdatedAt,
         placeholderData: placeholderData,
+        refetchOnMount: refetchOnMount,
+        staleDuration: staleDuration,
       ),
     ),
     [],
@@ -160,12 +162,13 @@ UseQueryResult<TData, TError> useQuery<TData, TError>({
     QueryOptions(
       queryKey,
       queryFn,
-      enabled: enabled,
-      staleDuration: staleDuration,
       gcDuration: gcDuration,
+      enabled: enabled,
       initialData: initialData,
       initialDataUpdatedAt: initialDataUpdatedAt,
       placeholderData: placeholderData,
+      refetchOnMount: refetchOnMount,
+      staleDuration: staleDuration,
     ),
   );
 

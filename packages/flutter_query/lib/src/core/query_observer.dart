@@ -5,6 +5,7 @@ import 'package:clock/clock.dart';
 import '../hooks/use_query.dart';
 import 'options/gc_duration.dart';
 import 'options/placeholder_data.dart';
+import 'options/refetch_on_mount.dart';
 import 'options/stale_duration.dart';
 import 'query.dart';
 import 'query_client.dart';
@@ -76,6 +77,8 @@ class QueryObserver<TData, TError> {
     final didEnabledChange = newOptions.enabled != oldOptions.enabled;
     final didPlaceholderDataChange =
         newOptions.placeholderData != oldOptions.placeholderData;
+    final didRefetchOnMountChange =
+        newOptions.refetchOnMount != oldOptions.refetchOnMount;
     // Resolve staleDuration to concrete values before comparing
     final newStaleDuration = newOptions.staleDuration.resolve(_query);
     final oldStaleDuration = oldOptions.staleDuration.resolve(_query);
@@ -86,7 +89,8 @@ class QueryObserver<TData, TError> {
         !didEnabledChange &&
         !didStaleDurationChange &&
         !didGcDurationChange &&
-        !didPlaceholderDataChange) {
+        !didPlaceholderDataChange &&
+        !didRefetchOnMountChange) {
       return;
     }
 
@@ -142,6 +146,16 @@ class QueryObserver<TData, TError> {
       // Recalculate optimistic result to reflect new placeholder data
       final result = _getResult(optimistic: true);
       _setResult(result);
+    }
+
+    if (didRefetchOnMountChange) {
+      // Refetch behavior on mount changed - recompute result and maybe refetch
+      final result = _getResult(optimistic: true);
+      _setResult(result);
+
+      if (_shouldFetchOnMount(newOptions, _query.state)) {
+        _query.fetch();
+      }
     }
 
     if (didStaleDurationChange) {
@@ -233,8 +247,21 @@ class QueryObserver<TData, TError> {
       return true;
     }
 
-    final age = clock.now().difference(state.dataUpdatedAt!);
     final staleDuration = options.staleDuration.resolve(_query);
+
+    // With static stale duration, data is always fresh and should never refetch automatically
+    if (staleDuration is StaleDurationStatic) {
+      return false;
+    }
+
+    if (options.refetchOnMount == RefetchOnMount.always) {
+      return true;
+    }
+    if (options.refetchOnMount == RefetchOnMount.never) {
+      return false;
+    }
+
+    final age = clock.now().difference(state.dataUpdatedAt!);
 
     return switch (staleDuration) {
       // Check if age exceeds or equals staleDuration (>= for zero staleDuration)
@@ -256,6 +283,7 @@ class QueryOptions<TData, TError> {
     this.initialData,
     this.initialDataUpdatedAt,
     this.placeholderData,
+    this.refetchOnMount = RefetchOnMount.stale,
     this.staleDuration = StaleDuration.zero,
   });
 
@@ -266,5 +294,6 @@ class QueryOptions<TData, TError> {
   final TData? initialData;
   final DateTime? initialDataUpdatedAt;
   final PlaceholderData<TData, TError>? placeholderData;
+  final RefetchOnMount refetchOnMount;
   final StaleDurationOption staleDuration;
 }

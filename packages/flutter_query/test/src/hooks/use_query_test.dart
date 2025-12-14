@@ -765,6 +765,151 @@ void main() {
     }));
   });
 
+  group('refetchOnMount', () {
+    testWidgets('SHOULD refetch on mount WHEN set to stale AND data is stale',
+        withCleanup((tester) async {
+      final hookResult = await buildHook(
+        () => useQuery(
+          queryKey: const ['key'],
+          queryFn: () async => 'data',
+          refetchOnMount: RefetchOnMount.stale,
+          staleDuration: StaleDuration.zero,
+          queryClient: client,
+        ),
+      );
+
+      // Wait for initial fetch to complete
+      await tester.pump();
+
+      // Remount hook
+      await hookResult.unmount();
+      await hookResult.rebuild();
+
+      // Should refetch when data is stale
+      expect(hookResult.current.fetchStatus, FetchStatus.fetching);
+      expect(hookResult.current.isStale, true);
+    }));
+
+    testWidgets(
+        'SHOULD NOT refetch on mount WHEN set to stale AND data is fresh',
+        withCleanup((tester) async {
+      final hookResult = await buildHook(
+        () => useQuery(
+          queryKey: const ['key'],
+          queryFn: () async => 'data',
+          refetchOnMount: RefetchOnMount.stale,
+          staleDuration: StaleDuration.infinity,
+          queryClient: client,
+        ),
+      );
+
+      // Wait for initial fetch to complete
+      await tester.pump();
+
+      // Remount hook
+      await hookResult.unmount();
+      await hookResult.rebuild();
+
+      // Should NOT refetch when data is fresh
+      expect(hookResult.current.fetchStatus, FetchStatus.idle);
+      expect(hookResult.current.isStale, false);
+    }));
+
+    testWidgets(
+        'SHOULD NOT refetch on mount WHEN set to never even if data is stale',
+        withCleanup((tester) async {
+      final hookResult = await buildHook(
+        () => useQuery(
+          queryKey: const ['key'],
+          queryFn: () async => 'data',
+          refetchOnMount: RefetchOnMount.never,
+          staleDuration: StaleDuration.zero,
+          queryClient: client,
+        ),
+      );
+
+      // Wait for initial fetch to complete
+      await tester.pump();
+
+      // Remount hook
+      await hookResult.unmount();
+      await hookResult.rebuild();
+
+      // Should NOT be fetching even if data is stale
+      expect(hookResult.current.fetchStatus, FetchStatus.idle);
+      expect(hookResult.current.isStale, true);
+    }));
+
+    testWidgets(
+        'SHOULD fetch on mount WHEN no data even if refetchOnMount is never',
+        withCleanup((tester) async {
+      final hookResult = await buildHook(
+        () => useQuery(
+          queryKey: const ['key'],
+          queryFn: () async => 'data',
+          refetchOnMount: RefetchOnMount.never,
+          queryClient: client,
+        ),
+      );
+
+      expect(hookResult.current.fetchStatus, FetchStatus.fetching);
+
+      await tester.pumpAndSettle();
+
+      expect(hookResult.current.data, 'data');
+    }));
+
+    testWidgets(
+        'SHOULD refetch on mount WHEN set to always even if data is fresh',
+        withCleanup((tester) async {
+      final hookResult = await buildHook(
+        () => useQuery(
+          queryKey: const ['key'],
+          queryFn: () async => 'data',
+          refetchOnMount: RefetchOnMount.always,
+          staleDuration: const StaleDuration(minutes: 5),
+          queryClient: client,
+        ),
+      );
+
+      // Wait for initial fetch to complete
+      await tester.pump();
+
+      // Remount hook
+      await hookResult.unmount();
+      await hookResult.rebuild();
+
+      // Should be fetching even if data is fresh
+      expect(hookResult.current.fetchStatus, FetchStatus.fetching);
+      expect(hookResult.current.isStale, false);
+    }));
+
+    testWidgets(
+        'SHOULD NOT refetch on mount WHEN set to always AND stale duration is static',
+        withCleanup((tester) async {
+      final hookResult = await buildHook(
+        () => useQuery(
+          queryKey: const ['key'],
+          queryFn: () async => 'data',
+          refetchOnMount: RefetchOnMount.always,
+          staleDuration: StaleDuration.static,
+          queryClient: client,
+        ),
+      );
+
+      // Wait for initial fetch to complete
+      await tester.pump();
+
+      // Remount hook
+      await hookResult.unmount();
+      await hookResult.rebuild();
+
+      // Should NOT be fetching as stale duration is set to static
+      expect(hookResult.current.fetchStatus, FetchStatus.idle);
+      expect(hookResult.current.isStale, false);
+    }));
+  });
+
   group('gcDuration', () {
     testWidgets('SHOULD remove cache WHEN time passes gcDuration',
         (tester) async {
