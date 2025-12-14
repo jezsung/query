@@ -4,6 +4,7 @@ import 'package:clock/clock.dart';
 
 import '../hooks/use_query.dart';
 import 'options/gc_duration.dart';
+import 'options/placeholder_data.dart';
 import 'options/stale_duration.dart';
 import 'query.dart';
 import 'query_client.dart';
@@ -20,6 +21,11 @@ class QueryObserver<TData, TError> {
     // Register this observer with the query
     // This will clear any pending gc timeout
     _query.addObserver(this);
+
+    // Track last query with defined data
+    if (_query.state.data != null) {
+      _lastQueryWithDefinedData = _query;
+    }
 
     // Get initial optimistic result
     _result = _getOptimisticResult();
@@ -43,11 +49,20 @@ class QueryObserver<TData, TError> {
   late UseQueryResult<TData, TError> _result;
   UseQueryResult<TData, TError> get result => _result;
 
+  /// Tracks the last query that had defined data for placeholder data resolution.
+  /// This is used when calling PlaceholderData.resolveWith() callbacks.
+  Query<TData, TError>? _lastQueryWithDefinedData;
+
   /// Called by Query when its state changes.
   ///
   /// Matches TanStack Query's pattern: Query notifies observers via direct method call,
   /// and Observer pulls the current state from Query.
   void onQueryUpdate() {
+    // Track last query with defined data
+    if (_query.state.data != null) {
+      _lastQueryWithDefinedData = _query;
+    }
+
     _updateResult();
   }
 
@@ -99,6 +114,11 @@ class QueryObserver<TData, TError> {
       // Register with new query
       _query.addObserver(this);
 
+      // Track last query with defined data
+      if (_query.state.data != null) {
+        _lastQueryWithDefinedData = _query;
+      }
+
       // Get optimistic result
       _result = _getOptimisticResult();
       _controller.add(_result);
@@ -138,8 +158,13 @@ class QueryObserver<TData, TError> {
         !didEnabledChange &&
         !didStaleDurationChange) {
       // Recalculate optimistic result to reflect new placeholder data
-      _result = _getOptimisticResult();
-      _controller.add(_result);
+      final newResult = _getOptimisticResult();
+      // Only emit if the result actually changed (prevents infinite loops
+      // when placeholderData function reference changes on every rebuild)
+      if (newResult != _result) {
+        _result = newResult;
+        _controller.add(_result);
+      }
     }
   }
 
@@ -161,12 +186,21 @@ class QueryObserver<TData, TError> {
     var data = state.data;
     var isPlaceholderData = false;
 
+    // Use placeholderData if needed (when query is pending and has no data)
     if (options.placeholderData != null &&
         data == null &&
         status == QueryStatus.pending) {
-      status = QueryStatus.success;
-      data = options.placeholderData;
-      isPlaceholderData = true;
+      // Resolve placeholder data (handles both value and callback forms)
+      final resolvedPlaceholderData = options.placeholderData!.resolve(
+        _lastQueryWithDefinedData?.state.data,
+        _lastQueryWithDefinedData,
+      );
+
+      if (resolvedPlaceholderData != null) {
+        status = QueryStatus.success;
+        data = resolvedPlaceholderData;
+        isPlaceholderData = true;
+      }
     }
 
     // Return optimistic result with fetchStatus set to 'fetching' if we're about to fetch
@@ -182,6 +216,50 @@ class QueryObserver<TData, TError> {
       staleDuration: options.staleDuration.resolve(_query),
       isPlaceholderData: isPlaceholderData,
     );
+  }
+
+  void _updateResult() {
+    // Pull fresh state from query
+    final state = _query.state;
+
+    var status = state.status;
+    var data = state.data;
+    var isPlaceholderData = false;
+
+    // Use placeholderData if needed (when query is pending and has no data)
+    if (options.placeholderData != null &&
+        data == null &&
+        status == QueryStatus.pending) {
+      // Resolve placeholder data (handles both value and callback forms)
+      final resolvedPlaceholderData = options.placeholderData!.resolve(
+        _lastQueryWithDefinedData?.state.data,
+        _lastQueryWithDefinedData,
+      );
+
+      if (resolvedPlaceholderData != null) {
+        status = QueryStatus.success;
+        data = resolvedPlaceholderData;
+        isPlaceholderData = true;
+      }
+    }
+
+    final result = UseQueryResult<TData, TError>(
+      status: status,
+      fetchStatus: state.fetchStatus,
+      data: data,
+      dataUpdatedAt: state.dataUpdatedAt,
+      error: state.error,
+      errorUpdatedAt: state.errorUpdatedAt,
+      errorUpdateCount: state.errorUpdateCount,
+      isEnabled: options.enabled,
+      staleDuration: options.staleDuration.resolve(_query),
+      isPlaceholderData: isPlaceholderData,
+      // failureCount: state.failureCount,
+      // failureReason: state.failureReason,
+      // isFetchedAfterMount: state.dataUpdatedAt != null, // Simplified for now
+    );
+    _result = result;
+    _controller.add(result);
   }
 
   bool _shouldFetchOnMount(QueryState<TData, TError> state) {
@@ -203,42 +281,6 @@ class QueryObserver<TData, TError> {
       // If staleDuration is StaleDurationStatic, never stale
       StaleDurationStatic() => false,
     };
-  }
-
-  void _updateResult() {
-    // Pull fresh state from query
-    final state = _query.state;
-
-    var status = state.status;
-    var data = state.data;
-    var isPlaceholderData = false;
-
-    if (options.placeholderData != null &&
-        data == null &&
-        status == QueryStatus.pending) {
-      status = QueryStatus.success;
-      data = options.placeholderData;
-      isPlaceholderData = true;
-    }
-
-    final result = UseQueryResult<TData, TError>(
-      status: status,
-      fetchStatus: state.fetchStatus,
-      data: data,
-      dataUpdatedAt: state.dataUpdatedAt,
-      error: state.error,
-      errorUpdatedAt: state.errorUpdatedAt,
-      errorUpdateCount: state.errorUpdateCount,
-      isEnabled: options.enabled,
-      staleDuration: options.staleDuration.resolve(_query),
-      isPlaceholderData: isPlaceholderData,
-      // failureCount: state.failureCount,
-      // failureReason: state.failureReason,
-      // isFetchedAfterMount: state.dataUpdatedAt != null, // Simplified for now
-      // isPlaceholderData: false, // Not implemented yet
-    );
-    _result = result;
-    _controller.add(result);
   }
 }
 
@@ -276,6 +318,7 @@ class QueryOptions<TData, TError> {
 
   /// Data to show while the query is pending and has no data.
   ///
-  /// Only the direct value variant is currently supported (no function form).
-  final TData? placeholderData;
+  /// Can be either a direct value or a callback that receives the previous data
+  /// and previous query to compute the placeholder data.
+  final PlaceholderData<TData, TError>? placeholderData;
 }

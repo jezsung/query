@@ -97,7 +97,7 @@ UseQueryResult<TData, TError> useQuery<TData, TError>({
   bool enabled = true,
   TData? initialData,
   DateTime? initialDataUpdatedAt,
-  TData? placeholderData,
+  PlaceholderData<TData, TError>? placeholderData,
   StaleDurationOption staleDuration = StaleDuration.zero,
   QueryClient? queryClient,
   // networkMode: 'online' | 'always' | 'offlineFirst'

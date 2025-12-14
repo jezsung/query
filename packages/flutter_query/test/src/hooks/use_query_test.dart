@@ -1226,7 +1226,7 @@ void main() {
         () => useQuery(
           queryKey: const ['key'],
           queryFn: () async => 'data',
-          placeholderData: 'placeholder',
+          placeholderData: PlaceholderData('placeholder'),
           queryClient: client,
         ),
       );
@@ -1244,7 +1244,7 @@ void main() {
         () => useQuery(
           queryKey: const ['key'],
           queryFn: () async => 'data',
-          placeholderData: 'placeholder',
+          placeholderData: PlaceholderData('placeholder'),
           queryClient: client,
         ),
       );
@@ -1266,7 +1266,7 @@ void main() {
         () => useQuery(
           queryKey: const ['key'],
           queryFn: () async => 'data',
-          placeholderData: 'placeholder',
+          placeholderData: PlaceholderData('placeholder'),
           enabled: false,
           queryClient: client,
         ),
@@ -1292,7 +1292,7 @@ void main() {
         () => useQuery(
           queryKey: const ['key'],
           queryFn: () async => 'data',
-          placeholderData: 'placeholder',
+          placeholderData: PlaceholderData('placeholder'),
           staleDuration: StaleDuration.infinity,
           queryClient: client,
         ),
@@ -1310,7 +1310,7 @@ void main() {
           queryKey: const ['key'],
           queryFn: () async => 'data',
           initialData: 'initial',
-          placeholderData: 'placeholder',
+          placeholderData: PlaceholderData('placeholder'),
           queryClient: client,
         ),
       );
@@ -1328,7 +1328,7 @@ void main() {
         () => useQuery(
           queryKey: const ['key'],
           queryFn: () async => 'data',
-          placeholderData: 'placeholder',
+          placeholderData: PlaceholderData('placeholder'),
           queryClient: client,
         ),
       );
@@ -1351,7 +1351,7 @@ void main() {
             await Future.delayed(const Duration(seconds: 5));
             return 'data';
           },
-          placeholderData: placeholder,
+          placeholderData: PlaceholderData(placeholder),
           queryClient: client,
         ),
         initialProps: 'placeholder-1',
@@ -1366,6 +1366,79 @@ void main() {
       result = hookResult.current;
       expect(result.data, 'placeholder-2');
       expect(result.isPlaceholderData, true);
+    }));
+
+    testWidgets('SHOULD show old data as placeholder WHEN query key changes',
+        withCleanup((tester) async {
+      final hookResult = await buildHookWithProps(
+        (key) => useQuery(
+          queryKey: key,
+          queryFn: () async => 'data-1',
+          placeholderData: PlaceholderData.resolveWith(
+            (previousValue, _) => previousValue,
+          ),
+          queryClient: client,
+        ),
+        initialProps: const ['todos', 1],
+      );
+
+      await tester.pumpAndSettle();
+
+      expect(hookResult.current.data, 'data-1');
+      expect(hookResult.current.isPlaceholderData, false);
+
+      await hookResult.rebuildWithProps(const ['todos', 2]);
+
+      expect(hookResult.current.data, 'data-1');
+      expect(hookResult.current.isPlaceholderData, true);
+    }));
+
+    testWidgets(
+        'SHOULD pass previousValue and previousQuery to PlaceholderData.resolveWith',
+        withCleanup((tester) async {
+      dynamic capturedValue;
+      dynamic capturedQuery;
+
+      final hookResult = await buildHookWithProps(
+        (key) => useQuery<String, Object>(
+          queryKey: key,
+          queryFn: () async {
+            await Future.delayed(const Duration(seconds: 5));
+            return 'data';
+          },
+          placeholderData: PlaceholderData.resolveWith(
+            (previousValue, previousQuery) {
+              capturedValue = previousValue;
+              capturedQuery = previousQuery;
+              return 'placeholder';
+            },
+          ),
+          queryClient: client,
+        ),
+        initialProps: const ['key-1'],
+      );
+
+      var result = hookResult.current;
+      expect(result.data, 'placeholder');
+      expect(result.isPlaceholderData, isTrue);
+      expect(capturedValue, isNull);
+      expect(capturedQuery, isNull);
+
+      await tester.pump(const Duration(seconds: 5));
+
+      result = hookResult.current;
+      expect(result.data, 'data');
+      expect(result.isPlaceholderData, isFalse);
+      expect(capturedValue, isNull);
+      expect(capturedQuery, isNull);
+
+      await hookResult.rebuildWithProps(const ['key-2']);
+
+      result = hookResult.current;
+      expect(result.data, 'placeholder');
+      expect(result.isPlaceholderData, isTrue);
+      expect(capturedValue, 'data');
+      expect(capturedQuery, isNotNull);
     }));
   });
 }
