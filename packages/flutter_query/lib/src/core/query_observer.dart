@@ -28,7 +28,7 @@ class QueryObserver<TData, TError> {
     }
 
     // Get initial optimistic result
-    _result = _getOptimisticResult();
+    _result = _getResult(optimistic: true);
 
     // Trigger initial fetch if enabled and (no data or data is stale)
     if (options.enabled && _shouldFetchOnMount(_query.state)) {
@@ -63,7 +63,8 @@ class QueryObserver<TData, TError> {
       _lastQueryWithDefinedData = _query;
     }
 
-    _updateResult();
+    final result = _getResult();
+    _setResult(result);
   }
 
   void updateOptions(QueryOptions<TData, TError> newOptions) {
@@ -120,8 +121,8 @@ class QueryObserver<TData, TError> {
       }
 
       // Get optimistic result
-      _result = _getOptimisticResult();
-      _controller.add(_result);
+      final result = _getResult(optimistic: true);
+      _setResult(result);
 
       // Trigger initial fetch if enabled and (no data or data is stale)
       if (newOptions.enabled && _shouldFetchOnMount(_query.state)) {
@@ -135,8 +136,8 @@ class QueryObserver<TData, TError> {
 
     if (didEnabledChange) {
       // Update enabled state - get optimistic result and notify
-      _result = _getOptimisticResult();
-      _controller.add(_result);
+      final result = _getResult(optimistic: true);
+      _setResult(result);
 
       if (newOptions.enabled && _shouldFetchOnMount(_query.state)) {
         _query.fetch();
@@ -145,8 +146,8 @@ class QueryObserver<TData, TError> {
 
     if (didStaleDurationChange) {
       // Update staleDuration - recalculate result to update isStale getter
-      _result = _getOptimisticResult();
-      _controller.add(_result);
+      final result = _getResult(optimistic: true);
+      _setResult(result);
 
       // If data becomes stale with the new staleDuration, trigger a refetch
       if (newOptions.enabled && _shouldFetchOnMount(_query.state)) {
@@ -158,13 +159,9 @@ class QueryObserver<TData, TError> {
         !didEnabledChange &&
         !didStaleDurationChange) {
       // Recalculate optimistic result to reflect new placeholder data
-      final newResult = _getOptimisticResult();
-      // Only emit if the result actually changed (prevents infinite loops
-      // when placeholderData function reference changes on every rebuild)
-      if (newResult != _result) {
-        _result = newResult;
-        _controller.add(_result);
-      }
+      final newResult = _getResult(optimistic: true);
+
+      _setResult(newResult);
     }
   }
 
@@ -176,55 +173,28 @@ class QueryObserver<TData, TError> {
     _query.removeObserver(this);
   }
 
-  UseQueryResult<TData, TError> _getOptimisticResult() {
-    final state = _query.state;
-
-    // Check if we should fetch on mount (enabled and (no data or stale))
-    final shouldFetch = options.enabled && _shouldFetchOnMount(state);
-
-    var status = state.status;
-    var data = state.data;
-    var isPlaceholderData = false;
-
-    // Use placeholderData if needed (when query is pending and has no data)
-    if (options.placeholderData != null &&
-        data == null &&
-        status == QueryStatus.pending) {
-      // Resolve placeholder data (handles both value and callback forms)
-      final resolvedPlaceholderData = options.placeholderData!.resolve(
-        _lastQueryWithDefinedData?.state.data,
-        _lastQueryWithDefinedData,
-      );
-
-      if (resolvedPlaceholderData != null) {
-        status = QueryStatus.success;
-        data = resolvedPlaceholderData;
-        isPlaceholderData = true;
-      }
+  void _setResult(UseQueryResult<TData, TError> newResult) {
+    // Only emit if the result actually changed, preventing infinite loops
+    if (newResult != _result) {
+      _result = newResult;
+      _controller.add(_result);
     }
-
-    // Return optimistic result with fetchStatus set to 'fetching' if we're about to fetch
-    return UseQueryResult<TData, TError>(
-      status: status,
-      fetchStatus: shouldFetch ? FetchStatus.fetching : state.fetchStatus,
-      data: data,
-      dataUpdatedAt: state.dataUpdatedAt,
-      error: state.error,
-      errorUpdatedAt: state.errorUpdatedAt,
-      errorUpdateCount: state.errorUpdateCount,
-      isEnabled: options.enabled,
-      staleDuration: options.staleDuration.resolve(_query),
-      isPlaceholderData: isPlaceholderData,
-    );
   }
 
-  void _updateResult() {
+  UseQueryResult<TData, TError> _getResult({bool optimistic = false}) {
     // Pull fresh state from query
     final state = _query.state;
 
     var status = state.status;
+    var fetchStatus = state.fetchStatus;
     var data = state.data;
     var isPlaceholderData = false;
+
+    // Check if we should fetch on mount (enabled and (no data or stale))
+    if (optimistic) {
+      final shouldFetch = options.enabled && _shouldFetchOnMount(state);
+      fetchStatus = shouldFetch ? FetchStatus.fetching : state.fetchStatus;
+    }
 
     // Use placeholderData if needed (when query is pending and has no data)
     if (options.placeholderData != null &&
@@ -243,9 +213,9 @@ class QueryObserver<TData, TError> {
       }
     }
 
-    final result = UseQueryResult<TData, TError>(
+    return UseQueryResult<TData, TError>(
       status: status,
-      fetchStatus: state.fetchStatus,
+      fetchStatus: fetchStatus,
       data: data,
       dataUpdatedAt: state.dataUpdatedAt,
       error: state.error,
@@ -258,8 +228,6 @@ class QueryObserver<TData, TError> {
       // failureReason: state.failureReason,
       // isFetchedAfterMount: state.dataUpdatedAt != null, // Simplified for now
     );
-    _result = result;
-    _controller.add(result);
   }
 
   bool _shouldFetchOnMount(QueryState<TData, TError> state) {
