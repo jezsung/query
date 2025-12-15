@@ -100,6 +100,7 @@ UseQueryResult<TData, TError> useQuery<TData, TError>({
   TData? initialData,
   DateTime? initialDataUpdatedAt,
   PlaceholderData<TData, TError>? placeholderData,
+  Duration? refetchInterval,
   RefetchOnMount refetchOnMount = RefetchOnMount.stale,
   RefetchOnResume refetchOnResume = RefetchOnResume.stale,
   StaleDurationOption staleDuration = StaleDuration.zero,
@@ -112,10 +113,6 @@ UseQueryResult<TData, TError> useQuery<TData, TError>({
   // List<String>? notifyOnChangeProps,
   // queryKeyHashFn: (queryKey: QueryKey) => string
   // String Function()? queryKeyHashFn,
-  // refetchInterval: number | false | ((query: Query) => number | false | undefined)
-  // refetchInterval,
-  // refetchIntervalInBackground: boolean
-  // bool refetchIntervalInBackground = false,
   // refetchOnMount: boolean | "always" | ((query: Query) => boolean | "always")
   // refetchOnMount = true,
   // refetchOnReconnect: boolean | "always" | ((query: Query) => boolean | "always")
@@ -152,6 +149,7 @@ UseQueryResult<TData, TError> useQuery<TData, TError>({
         initialData: initialData,
         initialDataUpdatedAt: initialDataUpdatedAt,
         placeholderData: placeholderData,
+        refetchInterval: refetchInterval,
         refetchOnMount: refetchOnMount,
         refetchOnResume: refetchOnResume,
         staleDuration: staleDuration,
@@ -171,6 +169,7 @@ UseQueryResult<TData, TError> useQuery<TData, TError>({
       initialData: initialData,
       initialDataUpdatedAt: initialDataUpdatedAt,
       placeholderData: placeholderData,
+      refetchInterval: refetchInterval,
       refetchOnMount: refetchOnMount,
       refetchOnResume: refetchOnResume,
       staleDuration: staleDuration,

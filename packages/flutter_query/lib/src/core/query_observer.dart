@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:clock/clock.dart';
 
 import '../hooks/use_query.dart';
@@ -38,6 +40,9 @@ class QueryObserver<TData, TError> {
     if (_shouldFetchOnMount(options, _query.state)) {
       _query.fetch();
     }
+
+    // Start refetch interval if configured
+    _updateRefetchInterval();
   }
 
   final QueryClient client;
@@ -53,6 +58,9 @@ class QueryObserver<TData, TError> {
   /// Listeners that are notified when the result changes.
   /// Uses direct callback pattern instead of streams for synchronous updates.
   final Set<ResultChangeListener<TData, TError>> _listeners = {};
+
+  /// Timer for refetchInterval. Continuously refetches at the specified interval.
+  Timer? _refetchIntervalTimer;
 
   /// Subscribe to result changes. Returns an unsubscribe function.
   void Function() subscribe(ResultChangeListener<TData, TError> listener) {
@@ -86,6 +94,8 @@ class QueryObserver<TData, TError> {
     final didEnabledChange = newOptions.enabled != oldOptions.enabled;
     final didPlaceholderDataChange =
         newOptions.placeholderData != oldOptions.placeholderData;
+    final didRefetchIntervalChange =
+        newOptions.refetchInterval != oldOptions.refetchInterval;
     final didRefetchOnMountChange =
         newOptions.refetchOnMount != oldOptions.refetchOnMount;
     final didRefetchOnResumeChange =
@@ -101,6 +111,7 @@ class QueryObserver<TData, TError> {
         !didStaleDurationChange &&
         !didGcDurationChange &&
         !didPlaceholderDataChange &&
+        !didRefetchIntervalChange &&
         !didRefetchOnMountChange &&
         !didRefetchOnResumeChange) {
       return;
@@ -131,6 +142,9 @@ class QueryObserver<TData, TError> {
       if (_shouldFetchOnMount(newOptions, _query.state)) {
         _query.fetch();
       }
+
+      // Update refetch interval for new query
+      _updateRefetchInterval();
 
       // Remove this observer from the old query
       // This will schedule GC if it was the last observer
@@ -186,6 +200,11 @@ class QueryObserver<TData, TError> {
         _query.fetch();
       }
     }
+
+    // Update refetch interval if it changed or if enabled changed
+    if (didRefetchIntervalChange || didEnabledChange) {
+      _updateRefetchInterval();
+    }
   }
 
   /// Called when the app lifecycle returns to resumed state.
@@ -197,10 +216,37 @@ class QueryObserver<TData, TError> {
 
   void dispose() {
     _listeners.clear();
+    _cancelRefetchInterval();
 
     // Remove this observer from the query
     // This will schedule GC if it was the last observer
     _query.removeObserver(this);
+  }
+
+  void _updateRefetchInterval() {
+    _cancelRefetchInterval();
+
+    // Don't set up interval if:
+    // - Query is disabled
+    // - No refetchInterval is configured
+    // - refetchInterval is zero/negative
+    if (!options.enabled ||
+        options.refetchInterval == null ||
+        options.refetchInterval!.inMilliseconds <= 0) {
+      return;
+    }
+
+    _refetchIntervalTimer = Timer.periodic(
+      options.refetchInterval!,
+      (_) {
+        _query.fetch();
+      },
+    );
+  }
+
+  void _cancelRefetchInterval() {
+    _refetchIntervalTimer?.cancel();
+    _refetchIntervalTimer = null;
   }
 
   void _setResult(UseQueryResult<TData, TError> newResult) {
@@ -347,6 +393,7 @@ class QueryOptions<TData, TError> {
     this.initialData,
     this.initialDataUpdatedAt,
     this.placeholderData,
+    this.refetchInterval,
     this.refetchOnMount = RefetchOnMount.stale,
     this.refetchOnResume = RefetchOnResume.stale,
     this.staleDuration = StaleDuration.zero,
@@ -359,6 +406,7 @@ class QueryOptions<TData, TError> {
   final TData? initialData;
   final DateTime? initialDataUpdatedAt;
   final PlaceholderData<TData, TError>? placeholderData;
+  final Duration? refetchInterval;
   final RefetchOnMount refetchOnMount;
   final RefetchOnResume refetchOnResume;
   final StaleDurationOption staleDuration;

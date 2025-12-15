@@ -7,6 +7,18 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:flutter_query/flutter_query.dart';
 
+extension on WidgetTester {
+  Future<void> pumpUntil(DateTime target) async {
+    final duration = target.difference(clock.now());
+
+    if (duration.isNegative) {
+      throw Exception('Cannot pump to a time in the past');
+    }
+
+    await pump(duration);
+  }
+}
+
 void main() {
   late QueryClient client;
 
@@ -37,14 +49,14 @@ void main() {
     return (WidgetTester tester) async {
       await testBody(tester);
 
-      // Wait until all pending timers finish
-      await tester.binding.delayed(const Duration(days: 365));
-
       // Unmount widget tree first (disposes QueryObservers)
       await tester.pumpWidget(Container());
 
       // Then dispose cache to prevent new GC timers
       client.dispose();
+
+      // Wait until all pending timers finish
+      await tester.binding.delayed(const Duration(days: 365));
     };
   }
 
@@ -1884,6 +1896,197 @@ void main() {
       expect(result.isPlaceholderData, isTrue);
       expect(capturedValue, 'data');
       expect(capturedQuery, isNotNull);
+    }));
+  });
+
+  group('refetchInterval', () {
+    testWidgets('SHOULD refetch at interval', withCleanup((tester) async {
+      final start = clock.now();
+      var fetchAttempts = 0;
+
+      final hookResult = await buildHook(
+        () => useQuery(
+          queryKey: const ['key'],
+          queryFn: () async {
+            fetchAttempts++;
+            await Future.delayed(const Duration(seconds: 3));
+            return 'data-$fetchAttempts';
+          },
+          refetchInterval: const Duration(seconds: 10),
+          queryClient: client,
+        ),
+      );
+      expect(hookResult.current.isInitialLoading, isTrue);
+
+      await tester.pump(const Duration(seconds: 3));
+      expect(hookResult.current.isFetched, isTrue);
+      expect(fetchAttempts, 1);
+
+      for (var i = 2; i < 20; i++) {
+        await tester.pumpUntil(start.add(Duration(seconds: 10 * (i - 1))));
+        expect(hookResult.current.isRefetching, isTrue);
+        expect(fetchAttempts, i);
+
+        await tester.pump(const Duration(seconds: 3));
+        expect(hookResult.current.data, 'data-$i');
+        expect(
+          hookResult.current.dataUpdatedAt,
+          start.add(Duration(seconds: 10 * (i - 1) + 3)),
+        );
+      }
+    }));
+
+    testWidgets('SHOULD reschedule refetch WHEN interval duration changes',
+        withCleanup((tester) async {
+      final start = clock.now();
+      var fetchAttempts = 0;
+
+      final hookResult = await buildHookWithProps(
+        (interval) => useQuery(
+          queryKey: const ['key'],
+          queryFn: () async {
+            fetchAttempts++;
+            await Future.delayed(const Duration(seconds: 3));
+            return 'data-$fetchAttempts';
+          },
+          refetchInterval: interval,
+          queryClient: client,
+        ),
+        initialProps: const Duration(seconds: 10),
+      );
+      expect(hookResult.current.isInitialLoading, isTrue);
+      expect(fetchAttempts, 1);
+
+      await tester.pump(const Duration(seconds: 3));
+      expect(hookResult.current.data, 'data-1');
+      expect(
+        hookResult.current.dataUpdatedAt,
+        start.add(const Duration(seconds: 3)),
+      );
+
+      // 10 seconds passed since start - should trigger refetch at old interval
+      await tester.pumpUntil(start.add(const Duration(seconds: 10)));
+      expect(hookResult.current.isRefetching, isTrue);
+      expect(fetchAttempts, 2);
+
+      // Change interval to 5 seconds
+      await hookResult.rebuildWithProps(const Duration(seconds: 5));
+
+      // Wait 5 seconds - should trigger refetch at new interval
+      await tester.pump(const Duration(seconds: 5));
+      expect(hookResult.current.isRefetching, isTrue);
+      expect(fetchAttempts, 3);
+
+      // Wait another 5 seconds - should trigger refetch at new interval
+      await tester.pump(const Duration(seconds: 5));
+      expect(hookResult.current.isRefetching, isTrue);
+      expect(fetchAttempts, 4);
+    }));
+
+    testWidgets('SHOULD NOT refetch at interval WHEN enabled is false',
+        withCleanup((tester) async {
+      var fetchAttempts = 0;
+
+      final hookResult = await buildHook(
+        () => useQuery(
+          queryKey: const ['key'],
+          queryFn: () async {
+            fetchAttempts++;
+            await Future.delayed(const Duration(seconds: 3));
+            return 'data-$fetchAttempts';
+          },
+          enabled: false,
+          refetchInterval: const Duration(seconds: 10),
+          queryClient: client,
+        ),
+      );
+
+      // Wait 10 seconds - should NOT trigger refetch because disabled
+      await tester.pump(const Duration(seconds: 10));
+      expect(hookResult.current.isFetched, isFalse);
+      expect(hookResult.current.isRefetching, isFalse);
+      expect(fetchAttempts, 0);
+    }));
+
+    testWidgets('SHOULD NOT refetch at interval WHEN enabled changes to false',
+        withCleanup((tester) async {
+      final start = clock.now();
+      var fetchAttempts = 0;
+
+      final hookResult = await buildHookWithProps(
+        (enabled) => useQuery(
+          queryKey: const ['key'],
+          queryFn: () async {
+            fetchAttempts++;
+            await Future.delayed(const Duration(seconds: 3));
+            return 'data-$fetchAttempts';
+          },
+          enabled: enabled,
+          refetchInterval: const Duration(seconds: 10),
+          queryClient: client,
+        ),
+        initialProps: true,
+      );
+      expect(hookResult.current.isInitialLoading, isTrue);
+
+      await tester.pump(const Duration(seconds: 3));
+      expect(hookResult.current.isFetched, isTrue);
+      expect(fetchAttempts, 1);
+
+      // 10 seconds passed since start - should trigger interval refetch
+      await tester.pumpUntil(start.add(const Duration(seconds: 10)));
+      expect(hookResult.current.isRefetching, isTrue);
+      expect(fetchAttempts, 2);
+
+      // Disable the query
+      await hookResult.rebuildWithProps(false);
+
+      // 20 seconds passed since start - should NOT trigger refetch anymore
+      await tester.pumpUntil(start.add(const Duration(seconds: 10 * 2)));
+      expect(hookResult.current.isRefetching, isFalse);
+      expect(fetchAttempts, 2);
+
+      // 30 seconds passed since start - still should NOT trigger refetch
+      await tester.pumpUntil(start.add(const Duration(seconds: 10 * 3)));
+      expect(hookResult.current.isRefetching, isFalse);
+      expect(fetchAttempts, 2);
+    }));
+
+    testWidgets('SHOULD refetch at interval WHEN data is fresh',
+        withCleanup((tester) async {
+      late HookResult<UseQueryResult> hookResult;
+      for (final staleDuration in [
+        StaleDuration(hours: 1),
+        StaleDuration.infinity,
+        StaleDuration.static,
+      ]) {
+        final start = clock.now();
+        var fetchAttempts = 0;
+
+        hookResult = await buildHook(
+          () => useQuery(
+            queryKey: [staleDuration],
+            queryFn: () async {
+              fetchAttempts++;
+              await Future.delayed(const Duration(seconds: 3));
+              return 'data-$fetchAttempts';
+            },
+            refetchInterval: const Duration(seconds: 10),
+            staleDuration: staleDuration,
+            queryClient: client,
+          ),
+        );
+        expect(hookResult.current.isInitialLoading, isTrue);
+
+        await tester.pump(const Duration(seconds: 3));
+        expect(hookResult.current.isFetched, isTrue);
+        expect(fetchAttempts, 1);
+
+        // 10 seconds passed since start - should trigger interval refetch
+        await tester.pumpUntil(start.add(const Duration(seconds: 10)));
+        expect(hookResult.current.isRefetching, isTrue);
+        expect(fetchAttempts, 2);
+      }
     }));
   });
 }
