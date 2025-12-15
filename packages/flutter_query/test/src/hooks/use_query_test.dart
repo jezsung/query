@@ -128,6 +128,31 @@ void main() {
     expect(result.isEnabled, true);
   }));
 
+  testWidgets('SHOULD fetch and succeed (synchronous queryFn)',
+      withCleanup((tester) async {
+    final data = Object();
+
+    final hookResult = await buildHook(
+      () => useQuery(
+        queryKey: const ['key'],
+        queryFn: () async => data,
+        queryClient: client,
+      ),
+    );
+
+    var result = hookResult.current;
+    expect(result.status, QueryStatus.pending);
+    expect(result.fetchStatus, FetchStatus.fetching);
+    expect(result.data, null);
+
+    await tester.pump();
+
+    result = hookResult.current;
+    expect(result.status, QueryStatus.success);
+    expect(result.fetchStatus, FetchStatus.idle);
+    expect(result.data, same(data));
+  }));
+
   testWidgets('SHOULD fetch only once WHEN multiple hooks share same key',
       withCleanup((tester) async {
     var fetchCount = 0;
@@ -907,6 +932,281 @@ void main() {
       // Should NOT be fetching as stale duration is set to static
       expect(hookResult.current.fetchStatus, FetchStatus.idle);
       expect(hookResult.current.isStale, false);
+    }));
+  });
+
+  group('refetchOnResume == RefetchOnResume.stale', () {
+    testWidgets('SHOULD refetch WHEN data is stale',
+        withCleanup((tester) async {
+      var fetchCount = 0;
+      final hookResult = await buildHook(
+        () => useQuery(
+          queryKey: const ['key'],
+          queryFn: () async {
+            await Future.delayed(const Duration(seconds: 5));
+            return 'data-${++fetchCount}';
+          },
+          refetchOnResume: RefetchOnResume.stale,
+          staleDuration: StaleDuration.zero,
+          queryClient: client,
+        ),
+      );
+
+      // Wait for initial fetch to complete
+      await tester.pump(const Duration(seconds: 5));
+
+      expect(hookResult.current.data, 'data-1');
+      expect(hookResult.current.isStale, isTrue);
+
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      await tester.pump();
+
+      expect(hookResult.current.fetchStatus, FetchStatus.fetching);
+
+      await tester.pump(const Duration(seconds: 5));
+
+      expect(hookResult.current.fetchStatus, FetchStatus.idle);
+      expect(hookResult.current.data, 'data-2');
+    }));
+
+    testWidgets('SHOULD NOT refetch WHEN data is fresh',
+        withCleanup((tester) async {
+      var fetchCount = 0;
+      final hookResult = await buildHook(
+        () => useQuery(
+          queryKey: const ['key'],
+          queryFn: () async {
+            await Future.delayed(const Duration(seconds: 5));
+            return 'data-${++fetchCount}';
+          },
+          refetchOnResume: RefetchOnResume.stale,
+          staleDuration: StaleDuration.infinity,
+          queryClient: client,
+        ),
+      );
+
+      // Wait for initial fetch to complete
+      await tester.pump(const Duration(seconds: 5));
+
+      expect(hookResult.current.data, 'data-1');
+      expect(hookResult.current.isStale, isFalse);
+
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      await tester.pump();
+
+      expect(hookResult.current.fetchStatus, FetchStatus.idle);
+
+      await tester.pump(const Duration(seconds: 5));
+
+      expect(hookResult.current.fetchStatus, FetchStatus.idle);
+      expect(hookResult.current.data, 'data-1');
+    }));
+
+    testWidgets('SHOULD refetch WHEN data is stale (with synchronous queryFn)',
+        withCleanup((tester) async {
+      var fetchCount = 0;
+      final hookResult = await buildHook(
+        () => useQuery(
+          queryKey: const ['key'],
+          queryFn: () async => 'data-${++fetchCount}',
+          refetchOnResume: RefetchOnResume.stale,
+          staleDuration: StaleDuration.zero,
+          queryClient: client,
+        ),
+      );
+
+      // Wait for initial fetch to complete
+      await tester.pump();
+
+      expect(hookResult.current.data, 'data-1');
+      expect(hookResult.current.isStale, isTrue);
+
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      await tester.pump();
+
+      // With synchronous queryFn (no actual async operations), the fetch completes
+      // immediately in the same synchronous execution, so we only observe the final state
+      expect(hookResult.current.fetchStatus, FetchStatus.idle);
+      expect(hookResult.current.data, 'data-2');
+    }));
+
+    testWidgets(
+        'SHOULD NOT refetch WHEN data is fresh (with synchronous queryFn)',
+        withCleanup((tester) async {
+      var fetchCount = 0;
+      final hookResult = await buildHook(
+        () => useQuery(
+          queryKey: const ['key'],
+          queryFn: () async => 'data-${++fetchCount}',
+          refetchOnResume: RefetchOnResume.stale,
+          staleDuration: StaleDuration.infinity,
+          queryClient: client,
+        ),
+      );
+
+      // Wait for initial fetch to complete
+      await tester.pump();
+
+      expect(hookResult.current.data, 'data-1');
+      expect(hookResult.current.isStale, isFalse);
+
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      await tester.pump();
+
+      // With synchronous queryFn (no actual async operations), the fetch completes
+      // immediately in the same synchronous execution, so we only observe the final state
+      expect(hookResult.current.fetchStatus, FetchStatus.idle);
+      expect(hookResult.current.data, 'data-1');
+    }));
+  });
+
+  group('refetchOnResume == RefetchOnResume.never', () {
+    testWidgets('SHOULD NOT refetch on resumed WHEN data is stale',
+        withCleanup((tester) async {
+      var fetchCount = 0;
+      final hookResult = await buildHook(
+        () => useQuery(
+          queryKey: const ['key'],
+          queryFn: () async {
+            await Future.delayed(const Duration(seconds: 5));
+            return 'data-${++fetchCount}';
+          },
+          refetchOnResume: RefetchOnResume.never,
+          staleDuration: StaleDuration.zero,
+          queryClient: client,
+        ),
+      );
+
+      // Wait for initial fetch to complete
+      await tester.pump(const Duration(seconds: 5));
+
+      expect(hookResult.current.data, 'data-1');
+      expect(hookResult.current.isStale, isTrue);
+
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      await tester.pump();
+
+      expect(hookResult.current.fetchStatus, FetchStatus.idle);
+      expect(hookResult.current.data, 'data-1');
+
+      await tester.pump(const Duration(seconds: 5));
+
+      expect(hookResult.current.fetchStatus, FetchStatus.idle);
+      expect(hookResult.current.data, 'data-1');
+    }));
+
+    testWidgets(
+        'SHOULD NOT fetch on resumed WHEN query is in error state with no data',
+        withCleanup((tester) async {
+      var fetchCount = 0;
+      final hookResult = await buildHook(
+        () => useQuery(
+          queryKey: const ['key'],
+          queryFn: () async {
+            fetchCount++;
+            await Future.delayed(const Duration(seconds: 5));
+            if (fetchCount == 1) {
+              throw Exception();
+            }
+            return 'data-$fetchCount';
+          },
+          refetchOnResume: RefetchOnResume.never,
+          queryClient: client,
+        ),
+      );
+
+      // Wait for fetch to fail
+      await tester.pump(const Duration(seconds: 5));
+
+      // Should be in error state with no data
+      expect(hookResult.current.status, QueryStatus.error);
+      expect(hookResult.current.fetchStatus, FetchStatus.idle);
+      expect(hookResult.current.data, isNull);
+      expect(fetchCount, 1);
+
+      // Trigger resume
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      await tester.pump();
+
+      // Should NOT trigger a new fetch since refetchOnResume is never
+      expect(hookResult.current.fetchStatus, FetchStatus.idle);
+      expect(fetchCount, 1);
+
+      await tester.pump(const Duration(seconds: 5));
+
+      // Still should not have refetched
+      expect(hookResult.current.fetchStatus, FetchStatus.idle);
+      expect(fetchCount, 1);
+    }));
+  });
+
+  group('refetchOnResume == RefetchOnResume.always', () {
+    testWidgets('SHOULD refetch on mount WHEN data is fresh',
+        withCleanup((tester) async {
+      var fetchCount = 0;
+      final hookResult = await buildHook(
+        () => useQuery(
+          queryKey: const ['key'],
+          queryFn: () async {
+            fetchCount++;
+            await Future.delayed(const Duration(seconds: 5));
+            return 'data-$fetchCount';
+          },
+          refetchOnResume: RefetchOnResume.always,
+          staleDuration: StaleDuration.infinity,
+          queryClient: client,
+        ),
+      );
+
+      // Wait for initial fetch to complete
+      await tester.pump(const Duration(seconds: 5));
+
+      expect(hookResult.current.data, 'data-1');
+      expect(hookResult.current.isStale, isFalse);
+
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      await tester.pump();
+
+      expect(hookResult.current.fetchStatus, FetchStatus.fetching);
+
+      await tester.pump(const Duration(seconds: 5));
+
+      expect(hookResult.current.fetchStatus, FetchStatus.idle);
+      expect(hookResult.current.data, 'data-2');
+    }));
+    testWidgets('SHOULD NOT refetch on mount WHEN stale duration is static',
+        withCleanup((tester) async {
+      var fetchCount = 0;
+      final hookResult = await buildHook(
+        () => useQuery(
+          queryKey: const ['key'],
+          queryFn: () async {
+            fetchCount++;
+            await Future.delayed(const Duration(seconds: 5));
+            return 'data-$fetchCount';
+          },
+          refetchOnResume: RefetchOnResume.always,
+          staleDuration: StaleDuration.static,
+          queryClient: client,
+        ),
+      );
+
+      // Wait for initial fetch to complete
+      await tester.pump(const Duration(seconds: 5));
+
+      expect(hookResult.current.data, 'data-1');
+      expect(hookResult.current.isStale, isFalse);
+
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      await tester.pump();
+
+      expect(hookResult.current.fetchStatus, FetchStatus.idle);
+      expect(hookResult.current.data, 'data-1');
+
+      await tester.pump(const Duration(seconds: 5));
+
+      expect(hookResult.current.fetchStatus, FetchStatus.idle);
+      expect(hookResult.current.data, 'data-1');
     }));
   });
 

@@ -1,15 +1,18 @@
-import 'dart:async';
-
 import 'package:clock/clock.dart';
 
 import '../hooks/use_query.dart';
 import 'options/gc_duration.dart';
 import 'options/placeholder_data.dart';
 import 'options/refetch_on_mount.dart';
+import 'options/refetch_on_resume.dart';
 import 'options/stale_duration.dart';
 import 'query.dart';
 import 'query_client.dart';
 import 'query_key.dart';
+
+/// Callback type for result change listeners
+typedef ResultChangeListener<TData, TError> = void Function(
+    UseQueryResult<TData, TError> result);
 
 class QueryObserver<TData, TError> {
   QueryObserver(this.client, this.options) {
@@ -47,10 +50,16 @@ class QueryObserver<TData, TError> {
   /// This is used when calling PlaceholderData.resolveWith() callbacks.
   Query<TData, TError>? _lastQueryWithDefinedData;
 
-  final _controller =
-      StreamController<UseQueryResult<TData, TError>>.broadcast();
-  Stream<UseQueryResult<TData, TError>> get onResultChange =>
-      _controller.stream;
+  /// Listeners that are notified when the result changes.
+  /// Uses direct callback pattern instead of streams for synchronous updates.
+  final Set<ResultChangeListener<TData, TError>> _listeners = {};
+
+  /// Subscribe to result changes. Returns an unsubscribe function.
+  void Function() subscribe(ResultChangeListener<TData, TError> listener) {
+    _listeners.add(listener);
+    return () => _listeners.remove(listener);
+  }
+
   UseQueryResult<TData, TError> get result => _result;
 
   /// Called by Query when its state changes.
@@ -79,6 +88,8 @@ class QueryObserver<TData, TError> {
         newOptions.placeholderData != oldOptions.placeholderData;
     final didRefetchOnMountChange =
         newOptions.refetchOnMount != oldOptions.refetchOnMount;
+    final didRefetchOnResumeChange =
+        newOptions.refetchOnResume != oldOptions.refetchOnResume;
     // Resolve staleDuration to concrete values before comparing
     final newStaleDuration = newOptions.staleDuration.resolve(_query);
     final oldStaleDuration = oldOptions.staleDuration.resolve(_query);
@@ -90,7 +101,8 @@ class QueryObserver<TData, TError> {
         !didStaleDurationChange &&
         !didGcDurationChange &&
         !didPlaceholderDataChange &&
-        !didRefetchOnMountChange) {
+        !didRefetchOnMountChange &&
+        !didRefetchOnResumeChange) {
       return;
     }
 
@@ -158,6 +170,12 @@ class QueryObserver<TData, TError> {
       }
     }
 
+    if (didRefetchOnResumeChange) {
+      // Update optimistic result for refetchOnResume changes
+      final result = _getResult(optimistic: true);
+      _setResult(result);
+    }
+
     if (didStaleDurationChange) {
       // Update staleDuration - recalculate result to update isStale getter
       final result = _getResult(optimistic: true);
@@ -170,8 +188,15 @@ class QueryObserver<TData, TError> {
     }
   }
 
+  /// Called when the app lifecycle returns to resumed state.
+  void onResume() {
+    if (_shouldFetchOnResume(options, _query.state)) {
+      _query.fetch();
+    }
+  }
+
   void dispose() {
-    _controller.close();
+    _listeners.clear();
 
     // Remove this observer from the query
     // This will schedule GC if it was the last observer
@@ -179,10 +204,13 @@ class QueryObserver<TData, TError> {
   }
 
   void _setResult(UseQueryResult<TData, TError> newResult) {
-    // Only emit if the result actually changed, preventing infinite loops
+    // Only notify if the result actually changed, preventing infinite loops
     if (newResult != _result) {
       _result = newResult;
-      _controller.add(_result);
+      // Notify all listeners synchronously
+      for (final listener in _listeners) {
+        listener(_result);
+      }
     }
   }
 
@@ -272,6 +300,42 @@ class QueryObserver<TData, TError> {
       StaleDurationStatic() => false,
     };
   }
+
+  bool _shouldFetchOnResume(
+    QueryOptions<TData, TError> options,
+    QueryState<TData, TError> state,
+  ) {
+    if (!options.enabled) return false;
+
+    final staleDuration = options.staleDuration.resolve(_query);
+
+    // With static stale duration, data is always fresh and should never refetch automatically
+    if (staleDuration is StaleDurationStatic) {
+      return false;
+    }
+
+    if (options.refetchOnResume == RefetchOnResume.never) {
+      return false;
+    }
+
+    if (options.refetchOnResume == RefetchOnResume.always) {
+      return true;
+    }
+
+    // For 'stale' mode: check if data is stale
+    // If there's no data, it's considered stale
+    if (state.data == null || state.dataUpdatedAt == null) {
+      return true;
+    }
+
+    final age = clock.now().difference(state.dataUpdatedAt!);
+
+    return switch (staleDuration) {
+      StaleDuration duration => age >= duration,
+      StaleDurationInfinity() => false,
+      StaleDurationStatic() => false,
+    };
+  }
 }
 
 class QueryOptions<TData, TError> {
@@ -284,6 +348,7 @@ class QueryOptions<TData, TError> {
     this.initialDataUpdatedAt,
     this.placeholderData,
     this.refetchOnMount = RefetchOnMount.stale,
+    this.refetchOnResume = RefetchOnResume.stale,
     this.staleDuration = StaleDuration.zero,
   });
 
@@ -295,5 +360,6 @@ class QueryOptions<TData, TError> {
   final DateTime? initialDataUpdatedAt;
   final PlaceholderData<TData, TError>? placeholderData;
   final RefetchOnMount refetchOnMount;
+  final RefetchOnResume refetchOnResume;
   final StaleDurationOption staleDuration;
 }

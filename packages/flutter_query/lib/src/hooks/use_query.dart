@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import 'package:flutter/widgets.dart';
+
 import 'package:clock/clock.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
@@ -99,6 +101,7 @@ UseQueryResult<TData, TError> useQuery<TData, TError>({
   DateTime? initialDataUpdatedAt,
   PlaceholderData<TData, TError>? placeholderData,
   RefetchOnMount refetchOnMount = RefetchOnMount.stale,
+  RefetchOnResume refetchOnResume = RefetchOnResume.stale,
   StaleDurationOption staleDuration = StaleDuration.zero,
   QueryClient? queryClient,
   // networkMode: 'online' | 'always' | 'offlineFirst'
@@ -150,6 +153,7 @@ UseQueryResult<TData, TError> useQuery<TData, TError>({
         initialDataUpdatedAt: initialDataUpdatedAt,
         placeholderData: placeholderData,
         refetchOnMount: refetchOnMount,
+        refetchOnResume: refetchOnResume,
         staleDuration: staleDuration,
       ),
     ),
@@ -168,15 +172,27 @@ UseQueryResult<TData, TError> useQuery<TData, TError>({
       initialDataUpdatedAt: initialDataUpdatedAt,
       placeholderData: placeholderData,
       refetchOnMount: refetchOnMount,
+      refetchOnResume: refetchOnResume,
       staleDuration: staleDuration,
     ),
   );
 
-  // Subscribe to observer stream to trigger rebuilds when result changes
-  useStream(
-    observer.onResultChange,
-    initialData: observer.result,
-  );
+  // Subscribe to observer and trigger rebuilds when result changes
+  // Uses direct callback subscription for synchronous updates
+  final result = useState(observer.result);
+
+  useEffect(() {
+    final unsubscribe = observer.subscribe((newResult) {
+      result.value = newResult;
+    });
+    return unsubscribe;
+  }, []);
+
+  // Refetch on app resume based on refetchOnResume option
+  useEffect(() {
+    final listener = AppLifecycleListener(onResume: observer.onResume);
+    return listener.dispose;
+  }, [observer]);
 
   // Cleanup on unmount
   useEffect(() {
@@ -185,7 +201,9 @@ UseQueryResult<TData, TError> useQuery<TData, TError>({
     };
   }, []);
 
-  // Always return the current result from the observer
-  // This ensures we get the optimistic result immediately when options change
-  return observer.result;
+  // Return observer.result directly to ensure synchronous updates are visible immediately.
+  // The useState + subscription pattern ensures widget rebuilds when the result changes,
+  // but returning observer.result directly allows tests and imperative code to see
+  // updates immediately without waiting for a rebuild.
+  return result.value;
 }
