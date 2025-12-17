@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:clock/clock.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:flutter_hooks_test/flutter_hooks_test.dart';
-import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_test/flutter_test.dart' hide Retry;
 
 import 'package:flutter_query/flutter_query.dart';
 
@@ -84,6 +84,8 @@ void main() {
     expect(result.error, null);
     expect(result.errorUpdatedAt, null);
     expect(result.errorUpdateCount, 0);
+    expect(result.failureCount, 0);
+    expect(result.failureReason, null);
     expect(result.isEnabled, true);
 
     // Wait 5 seconds for fetch to complete
@@ -97,6 +99,8 @@ void main() {
     expect(result.error, null);
     expect(result.errorUpdatedAt, null);
     expect(result.errorUpdateCount, 0);
+    expect(result.failureCount, 0);
+    expect(result.failureReason, null);
     expect(result.isEnabled, true);
   }));
 
@@ -105,13 +109,14 @@ void main() {
     final error = Exception();
 
     final hookResult = await buildHook(
-      () => useQuery(
+      () => useQuery<String, Object>(
         queryKey: const ['key'],
         queryFn: () async {
           // Take 5 seconds to finish
           await Future.delayed(const Duration(seconds: 5));
           throw error;
         },
+        retry: const Retry.never(),
         queryClient: client,
       ),
     );
@@ -124,6 +129,8 @@ void main() {
     expect(result.error, null);
     expect(result.errorUpdatedAt, null);
     expect(result.errorUpdateCount, 0);
+    expect(result.failureCount, 0);
+    expect(result.failureReason, null);
     expect(result.isEnabled, true);
 
     // Wait 5 seconds for fetch to complete
@@ -137,6 +144,8 @@ void main() {
     expect(result.error, same(error));
     expect(result.errorUpdatedAt, startedAt.add(const Duration(seconds: 5)));
     expect(result.errorUpdateCount, 1);
+    expect(result.failureCount, 1);
+    expect(result.failureReason, same(error));
     expect(result.isEnabled, true);
   }));
 
@@ -768,6 +777,7 @@ void main() {
             capturedState = query.state;
             return StaleDuration.zero;
           }),
+          retry: const Retry.never(),
           queryClient: client,
         ),
       );
@@ -1123,6 +1133,7 @@ void main() {
             return 'data-$fetchCount';
           },
           refetchOnResume: RefetchOnResume.never,
+          retry: const Retry.never(),
           queryClient: client,
         ),
       );
@@ -2087,6 +2098,474 @@ void main() {
         expect(hookResult.current.isRefetching, isTrue);
         expect(fetchAttempts, 2);
       }
+    }));
+  });
+
+  group('retry', () {
+    testWidgets('SHOULD retry for N times WHEN retry is Retry.count(N)',
+        withCleanup((tester) async {
+      for (final N in [0, 1, 2, 4, 8, 16, 32, 64, 128]) {
+        final hook = await buildHook(
+          () => useQuery(
+            queryKey: ['key', N],
+            queryFn: () async {
+              await Future.delayed(Duration.zero);
+              throw Exception();
+            },
+            retry: Retry.count(N),
+            retryDelay: const RetryDelay(seconds: 1),
+            queryClient: client,
+          ),
+        );
+
+        // Initial attempt
+        await tester.pump(Duration.zero);
+        expect(hook.current.failureCount, 1);
+
+        // Retry for N times with fixed 1s delay
+        for (var i = 0; i < N; i++) {
+          final retryNth = i + 1;
+          await tester.pump(const Duration(seconds: 1));
+          expect(hook.current.failureCount, 1 + retryNth);
+        }
+      }
+    }));
+
+    testWidgets('SHOULD retry forever WHEN retry is Retry.always()',
+        withCleanup((tester) async {
+      // Not implemented yet as there's no manual way to stop infinite retries
+    }));
+
+    testWidgets('SHOULD NOT retry WHEN retry is Retry.never()',
+        withCleanup((tester) async {
+      final hook = await buildHook(
+        () => useQuery(
+          queryKey: const ['key'],
+          queryFn: () async {
+            await Future.delayed(Duration.zero);
+            throw Exception();
+          },
+          retry: const Retry.never(),
+          queryClient: client,
+        ),
+      );
+
+      // Initial attempt
+      await tester.pump(Duration.zero);
+      expect(hook.current.failureCount, 1);
+
+      // Wait long enough
+      await tester.pump(const Duration(hours: 24));
+      // Should NOT have retried
+      expect(hook.current.failureCount, 1);
+    }));
+
+    testWidgets(
+        'SHOULD retry with custom logic WHEN retry is Retry.resolveWith()',
+        withCleanup((tester) async {
+      var attempts = 0;
+
+      final hook = await buildHook(
+        () => useQuery<Never, String>(
+          queryKey: const ['key'],
+          queryFn: () async {
+            attempts++;
+            await Future.delayed(Duration.zero);
+            throw 'error-$attempts';
+          },
+          retry: Retry.resolveWith((failureCount, error) {
+            // Only retry if error message contains specific text
+            // AND retry count is less than 2
+            return error.contains('error-$attempts') && failureCount < 2;
+          }),
+          retryDelay: const RetryDelay(seconds: 1),
+          queryClient: client,
+        ),
+      );
+
+      // Initial attempt
+      await tester.pump(Duration.zero);
+      expect(hook.current.failureCount, 1);
+
+      // Retry for 2 times
+      await tester.pump(const Duration(seconds: 1));
+      expect(hook.current.failureCount, 2);
+      await tester.pump(const Duration(seconds: 1));
+      expect(hook.current.failureCount, 3);
+
+      // Should stop retrying on 3rd attempt
+      await tester.pump(const Duration(seconds: 1));
+      expect(hook.current.failureCount, 3);
+    }));
+
+    testWidgets(
+        'SHOULD increment failureCount on each retry and reset to 0 on every fetch attempt',
+        withCleanup((tester) async {
+      final hook = await buildHook(
+        () => useQuery<Never, Exception>(
+          queryKey: ['key'],
+          queryFn: () async {
+            await Future.delayed(Duration.zero);
+            throw Exception();
+          },
+          retry: Retry.count(5),
+          retryOnMount: true,
+          retryDelay: const RetryDelay(seconds: 1),
+          queryClient: client,
+        ),
+      );
+
+      // Initial attempt
+      await tester.pump(Duration.zero);
+      expect(hook.current.failureCount, 1);
+      expect(hook.current.failureReason, isA<Exception>());
+
+      // Should retry for 5 times with fixed 1s delay
+      for (var i = 0; i < 5; i++) {
+        final retryNth = i + 1;
+        await tester.pump(const Duration(seconds: 1));
+        // Should increment failureCount on EACH retry
+        expect(hook.current.failureCount, 1 + retryNth);
+        expect(hook.current.failureReason, isA<Exception>());
+      }
+
+      // Remount hook
+      await hook.unmount();
+      await hook.rebuild();
+
+      // Should reset to 0
+      expect(hook.current.failureCount, 0);
+      expect(hook.current.failureReason, null);
+
+      // First attempt since remount
+      await tester.pump(Duration.zero);
+
+      // Should have failed
+      expect(hook.current.failureCount, 1);
+      expect(hook.current.failureReason, isA<Exception>());
+    }));
+
+    testWidgets('SHOULD succeed after failed retries',
+        withCleanup((tester) async {
+      var attempts = 0;
+
+      final hook = await buildHook(
+        () => useQuery(
+          queryKey: const ['key'],
+          queryFn: () async {
+            attempts++;
+            await Future.delayed(Duration.zero);
+            if (attempts < 3) {
+              throw Exception();
+            }
+            return 'data';
+          },
+          retry: const Retry.count(3),
+          retryDelay: const RetryDelay(seconds: 1),
+          queryClient: client,
+        ),
+      );
+
+      // Initial attempts
+      await tester.pump(Duration.zero);
+      expect(hook.current.failureCount, 1);
+
+      // First retry fails
+      await tester.pump(const Duration(seconds: 1));
+      expect(hook.current.failureCount, 2);
+      expect(hook.current.failureReason, isA<Exception>());
+
+      // Second retry succeeds
+      await tester.pump(const Duration(seconds: 1));
+      expect(hook.current.status, QueryStatus.success);
+      expect(hook.current.data, 'data');
+      // Should reset failureCount and failureReason on success
+      expect(hook.current.failureCount, 0);
+      expect(hook.current.failureReason, null);
+    }));
+  });
+
+  group('retryOnMount', () {
+    testWidgets(
+        'SHOULD retry on mount WHEN retryOnMount is true AND query has error',
+        withCleanup((tester) async {
+      final hook = await buildHookWithProps(
+        (retry) => useQuery(
+          queryKey: ['key'],
+          queryFn: () async {
+            await Future.delayed(Duration.zero);
+            throw Exception();
+          },
+          retry: retry,
+          retryOnMount: true,
+          retryDelay: const RetryDelay(seconds: 1),
+          queryClient: client,
+        ),
+        // Don't retry on initial attempt
+        initialProps: const Retry.never(),
+      );
+
+      // Initial attempt
+      await tester.pump(Duration.zero);
+      expect(hook.current.status, QueryStatus.error);
+      expect(hook.current.failureCount, 1);
+
+      // Remount hook and set retry to 3
+      await hook.unmount();
+      await hook.rebuildWithProps(const Retry.count(3));
+
+      // First attempt since remount (not retry)
+      await tester.pump(Duration.zero);
+      expect(hook.current.status, QueryStatus.error);
+      expect(hook.current.failureCount, 1);
+
+      // Retry 3 times with fixed 1s delay
+      await tester.pump(const Duration(seconds: 3));
+      expect(hook.current.failureCount, 4);
+    }));
+
+    testWidgets(
+        'SHOULD NOT retry on mount WHEN retryOnMount is false AND query has error',
+        withCleanup((tester) async {
+      final hook = await buildHook(
+        () => useQuery(
+          queryKey: const ['key'],
+          queryFn: () async {
+            await Future.delayed(Duration.zero);
+            throw Exception();
+          },
+          retry: const Retry.count(1),
+          retryOnMount: false,
+          retryDelay: const RetryDelay(seconds: 1),
+          queryClient: client,
+        ),
+      );
+
+      // Initial attempt
+      await tester.pump(Duration.zero);
+      expect(hook.current.status, QueryStatus.pending);
+      expect(hook.current.failureCount, 1);
+
+      // Retry 1 time with fixed 1s delay
+      await tester.pump(const Duration(seconds: 1));
+      expect(hook.current.status, QueryStatus.error);
+      expect(hook.current.failureCount, 2);
+
+      // Remount hook
+      await hook.unmount();
+      await hook.rebuild();
+
+      // First attempt since remount
+      await tester.pump(Duration.zero);
+      // Should keep previous result
+      expect(hook.current.status, QueryStatus.error);
+      expect(hook.current.failureCount, 2);
+
+      // Wait 1s retry delay
+      await tester.pump(const Duration(seconds: 1));
+      // Should NOT have retried
+      expect(hook.current.status, QueryStatus.error);
+      expect(hook.current.failureCount, 2);
+    }));
+
+    testWidgets('SHOULD respect retry count WHEN retryOnMount triggers retry',
+        withCleanup((tester) async {
+      var attempts = 0;
+
+      final hook = await buildHook(
+        () => useQuery(
+          queryKey: const ['key'],
+          queryFn: () async {
+            attempts++;
+            await Future.delayed(Duration.zero);
+            throw Exception();
+          },
+          retry: const Retry.count(2),
+          retryOnMount: true,
+          retryDelay: const RetryDelay(seconds: 1),
+          queryClient: client,
+        ),
+      );
+
+      // Initial attempt
+      await tester.pump(Duration.zero);
+      expect(hook.current.failureCount, 1);
+
+      // Retry 2 times with fixed 1s delay
+      await tester.pump(const Duration(seconds: 1));
+      expect(hook.current.failureCount, 2);
+      await tester.pump(const Duration(seconds: 1));
+      expect(hook.current.failureCount, 3);
+
+      // Remount hook - this should trigger another fetch with retries
+      await hook.unmount();
+      await hook.rebuild();
+
+      // First attempt since remount
+      await tester.pump(Duration.zero);
+      expect(hook.current.failureCount, 1);
+
+      // Retry 2 times with fixed 1s delay
+      await tester.pump(const Duration(seconds: 1));
+      expect(hook.current.failureCount, 2);
+      await tester.pump(const Duration(seconds: 1));
+      expect(hook.current.failureCount, 3);
+
+      // 3 from first mount + 3 from remount
+      expect(attempts, 6);
+    }));
+  });
+
+  group('retryDelay', () {
+    testWidgets('SHOULD retry with exponential backoff',
+        withCleanup((tester) async {
+      final hook = await buildHook(
+        () => useQuery(
+          queryKey: const ['key'],
+          queryFn: () async {
+            await Future.delayed(Duration.zero);
+            throw Exception();
+          },
+          retry: const Retry.count(8),
+          retryDelay: const RetryDelay.exponentialBackoff(),
+          queryClient: client,
+        ),
+      );
+
+      // Wait for initial attempt
+      await tester.pump(Duration.zero);
+      expect(hook.current.failureCount, 1);
+      // Should start retrying
+      await tester.pump(const Duration(seconds: 1));
+      expect(hook.current.failureCount, 2);
+      await tester.pump(const Duration(seconds: 2));
+      expect(hook.current.failureCount, 3);
+      await tester.pump(const Duration(seconds: 4));
+      expect(hook.current.failureCount, 4);
+      await tester.pump(const Duration(seconds: 8));
+      expect(hook.current.failureCount, 5);
+      await tester.pump(const Duration(seconds: 16));
+      expect(hook.current.failureCount, 6);
+      await tester.pump(const Duration(seconds: 30));
+      expect(hook.current.failureCount, 7);
+      // Should be capped at 30 seconds
+      await tester.pump(const Duration(seconds: 30));
+      expect(hook.current.failureCount, 8);
+      await tester.pump(const Duration(seconds: 30));
+      expect(hook.current.failureCount, 9);
+    }));
+
+    testWidgets('SHOULD retry with fixed delay', withCleanup((tester) async {
+      final hook = await buildHook(
+        () => useQuery(
+          queryKey: const ['key'],
+          queryFn: () async {
+            await Future.delayed(Duration.zero);
+            throw Exception();
+          },
+          retry: const Retry.count(8),
+          retryDelay: const RetryDelay(seconds: 1),
+          queryClient: client,
+        ),
+      );
+
+      // Wait for initial attempt
+      await tester.pump(Duration.zero);
+      expect(hook.current.failureCount, 1);
+
+      // Should retry for 8 times with fixed delay 1 second
+      for (var i = 0; i < 8; i++) {
+        final retryNth = i + 1;
+        await tester.pump(const Duration(seconds: 1));
+        expect(hook.current.failureCount, 1 + retryNth);
+      }
+    }));
+
+    testWidgets('SHOULD retry with custom delay logic',
+        withCleanup((tester) async {
+      final delays = <int>[];
+
+      final hook = await buildHook(
+        () => useQuery(
+          queryKey: const ['key'],
+          queryFn: () async {
+            await Future.delayed(Duration.zero);
+            throw Exception();
+          },
+          retry: const Retry.count(3),
+          retryDelay: RetryDelay.resolveWith((failureCount, error) {
+            // Linear delay: 1s * (failureCount + 1)
+            final delay = Duration(seconds: 1 * (failureCount + 1));
+            delays.add(delay.inSeconds);
+            return delay;
+          }),
+          queryClient: client,
+        ),
+      );
+
+      // Initial attempt
+      await tester.pump(Duration.zero);
+      expect(hook.current.failureCount, 1);
+
+      // First retry after 1s delay
+      await tester.pump(const Duration(seconds: 1));
+      expect(hook.current.failureCount, 2);
+
+      // Second retry after 2s delay
+      await tester.pump(const Duration(seconds: 2));
+      expect(hook.current.failureCount, 3);
+
+      // Third retry after 3s delay
+      await tester.pump(const Duration(seconds: 3));
+      expect(hook.current.failureCount, 4);
+
+      // Verify linear delays were calculated
+      // Note: resolver is called for each failure, even the last one
+      // that doesn't result in a retry (shouldRetry returns false)
+      expect(delays, [1, 2, 3, 4]);
+    }));
+
+    testWidgets('SHOULD pass correct args to delay resolver',
+        withCleanup((tester) async {
+      var attempts = 0;
+      final failureCounts = [];
+      final errors = [];
+
+      final hook = await buildHook(
+        () => useQuery(
+          queryKey: const ['key'],
+          queryFn: () async {
+            attempts++;
+            await Future.delayed(Duration.zero);
+            throw 'error-$attempts';
+          },
+          retry: const Retry.count(3),
+          retryDelay: RetryDelay.resolveWith((failureCount, error) {
+            failureCounts.add(failureCount);
+            errors.add(error);
+            return const Duration(seconds: 1);
+          }),
+          queryClient: client,
+        ),
+      );
+
+      // Initial attempt
+      await tester.pump(Duration.zero);
+      expect(hook.current.failureCount, 1);
+
+      // Retry for 3 times with fixed 1s delay
+      for (var i = 0; i < 3; i++) {
+        final retryNth = i + 1;
+        await tester.pump(const Duration(seconds: 1));
+        expect(hook.current.failureCount, 1 + retryNth);
+      }
+
+      // Verify resolver received correct failureCount and error for each failure
+      // Note: resolver is called for each failure, even the last one
+      // that doesn't result in a retry (shouldRetry returns false)
+      expect(attempts, 4);
+      expect(failureCounts, [0, 1, 2, 3]);
+      expect(errors, ['error-1', 'error-2', 'error-3', 'error-4']);
     }));
   });
 }

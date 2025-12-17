@@ -7,6 +7,8 @@ import 'options/gc_duration.dart';
 import 'options/placeholder_data.dart';
 import 'options/refetch_on_mount.dart';
 import 'options/refetch_on_resume.dart';
+import 'options/retry.dart';
+import 'options/retry_delay.dart';
 import 'options/stale_duration.dart';
 import 'query.dart';
 import 'query_client.dart';
@@ -100,6 +102,10 @@ class QueryObserver<TData, TError> {
         newOptions.refetchOnMount != oldOptions.refetchOnMount;
     final didRefetchOnResumeChange =
         newOptions.refetchOnResume != oldOptions.refetchOnResume;
+    final didRetryChange = newOptions.retry != oldOptions.retry;
+    final didRetryOnMountChange =
+        newOptions.retryOnMount != oldOptions.retryOnMount;
+    final didRetryDelayChange = newOptions.retryDelay != oldOptions.retryDelay;
     // Resolve staleDuration to concrete values before comparing
     final newStaleDuration = newOptions.staleDuration.resolve(_query);
     final oldStaleDuration = oldOptions.staleDuration.resolve(_query);
@@ -113,7 +119,10 @@ class QueryObserver<TData, TError> {
         !didPlaceholderDataChange &&
         !didRefetchIntervalChange &&
         !didRefetchOnMountChange &&
-        !didRefetchOnResumeChange) {
+        !didRefetchOnResumeChange &&
+        !didRetryChange &&
+        !didRetryOnMountChange &&
+        !didRetryDelayChange) {
       return;
     }
 
@@ -196,6 +205,22 @@ class QueryObserver<TData, TError> {
       _setResult(result);
 
       // If data becomes stale with the new staleDuration, trigger refetch
+      if (_shouldFetchOnMount(newOptions, _query.state)) {
+        _query.fetch();
+      }
+    }
+
+    // Handle retry option changes
+    if (didRetryChange || didRetryDelayChange) {
+      // Update query options (affects future fetches)
+      _query.setOptions(newOptions);
+    }
+
+    if (didRetryOnMountChange) {
+      // Recalculate result and maybe refetch
+      final result = _getResult(optimistic: true);
+      _setResult(result);
+
       if (_shouldFetchOnMount(newOptions, _query.state)) {
         _query.fetch();
       }
@@ -304,8 +329,8 @@ class QueryObserver<TData, TError> {
       isEnabled: options.enabled,
       staleDuration: options.staleDuration.resolve(_query),
       isPlaceholderData: isPlaceholderData,
-      // failureCount: state.failureCount,
-      // failureReason: state.failureReason,
+      failureCount: state.failureCount,
+      failureReason: state.failureReason,
       // isFetchedAfterMount: state.dataUpdatedAt != null, // Simplified for now
     );
   }
@@ -317,10 +342,18 @@ class QueryObserver<TData, TError> {
     if (!options.enabled) {
       return false;
     }
-    if (state.data == null || state.dataUpdatedAt == null) {
+
+    // Don't fetch if query has error and retryOnMount is false
+    if (state.status == QueryStatus.error && !options.retryOnMount) {
+      return false;
+    }
+
+    // No data yet - should fetch
+    if (state.data == null) {
       return true;
     }
 
+    // Has data - check staleness and refetchOnMount
     final staleDuration = options.staleDuration.resolve(_query);
 
     // With static stale duration, data is always fresh and should never refetch automatically
@@ -385,7 +418,7 @@ class QueryObserver<TData, TError> {
 }
 
 class QueryOptions<TData, TError> {
-  const QueryOptions(
+  QueryOptions(
     this.queryKey,
     this.queryFn, {
     this.enabled = true,
@@ -396,6 +429,9 @@ class QueryOptions<TData, TError> {
     this.refetchInterval,
     this.refetchOnMount = RefetchOnMount.stale,
     this.refetchOnResume = RefetchOnResume.stale,
+    this.retry,
+    this.retryOnMount = true,
+    this.retryDelay,
     this.staleDuration = StaleDuration.zero,
   });
 
@@ -409,5 +445,8 @@ class QueryOptions<TData, TError> {
   final Duration? refetchInterval;
   final RefetchOnMount refetchOnMount;
   final RefetchOnResume refetchOnResume;
+  final Retry<TError>? retry;
+  final bool retryOnMount;
+  final RetryDelay<TError>? retryDelay;
   final StaleDurationOption staleDuration;
 }

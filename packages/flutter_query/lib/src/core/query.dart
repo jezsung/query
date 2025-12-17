@@ -1,9 +1,12 @@
 import 'package:clock/clock.dart';
 import 'package:equatable/equatable.dart';
 
+import 'options/retry.dart';
+import 'options/retry_delay.dart';
 import 'query_cache.dart';
 import 'query_observer.dart';
 import 'removable.dart';
+import 'retryer.dart';
 
 enum QueryStatus { pending, error, success }
 
@@ -40,12 +43,31 @@ class Query<TData, TError> with Removable {
   Future<void> fetch() async {
     if (state.fetchStatus == FetchStatus.fetching) return;
 
-    _setState(state.copyWith(
-      fetchStatus: FetchStatus.fetching,
-    ));
+    _setState(state
+        .copyWith(
+          fetchStatus: FetchStatus.fetching,
+          failureCount: 0,
+        )
+        .copyWithNull(faliureReason: true));
+
+    final retryer = Retryer<TData, TError>(
+      RetryerConfig(
+        fn: queryFn,
+        retry: _options.retry ?? Retry<TError>.count(3),
+        retryDelay:
+            _options.retryDelay ?? RetryDelay<TError>.exponentialBackoff(),
+        onFail: (failureCount, error) {
+          // Update state on each failure for reactivity
+          _setState(state.copyWith(
+            failureCount: failureCount,
+            failureReason: error,
+          ));
+        },
+      ),
+    );
 
     try {
-      final data = await queryFn();
+      final data = await retryer.start();
 
       _setState(QueryState<TData, TError>(
         status: QueryStatus.success,
@@ -55,19 +77,26 @@ class Query<TData, TError> with Removable {
         error: null,
         errorUpdatedAt: state.errorUpdatedAt,
         errorUpdateCount: state.errorUpdateCount,
-        // failureCount: 0,
-        // failureReason: null,
+        failureCount: 0,
+        failureReason: null,
       ));
     } catch (error) {
-      _setState(state.copyWith(
-        status: QueryStatus.error,
-        fetchStatus: FetchStatus.idle,
-        error: error as TError,
-        errorUpdatedAt: clock.now(),
-        errorUpdateCount: state.errorUpdateCount + 1,
-        // failureCount: state.failureCount + 1,
-        // failureReason: error,
-      ));
+      // Cast error to TError - should already be TError from retryer
+      if (error is TError) {
+        final typedError = error as TError;
+        _setState(state.copyWith(
+          status: QueryStatus.error,
+          fetchStatus: FetchStatus.idle,
+          error: typedError,
+          errorUpdatedAt: clock.now(),
+          errorUpdateCount: state.errorUpdateCount + 1,
+          failureCount: state.failureCount + 1,
+          failureReason: typedError,
+        ));
+      } else {
+        // If it's not TError (e.g., CancelledException), rethrow
+        rethrow;
+      }
     }
   }
 
@@ -157,8 +186,8 @@ class QueryState<TData, TError> with EquatableMixin {
     this.error,
     this.errorUpdatedAt,
     this.errorUpdateCount = 0,
-    // this.failureCount = 0,
-    // this.failureReason,
+    this.failureCount = 0,
+    this.failureReason,
   });
 
   /// Creates a QueryState from QueryOptions, handling initialData.
@@ -174,6 +203,8 @@ class QueryState<TData, TError> with EquatableMixin {
         error: null,
         errorUpdatedAt: null,
         errorUpdateCount: 0,
+        failureCount: 0,
+        failureReason: null,
       );
     }
 
@@ -187,8 +218,8 @@ class QueryState<TData, TError> with EquatableMixin {
   final TError? error;
   final DateTime? errorUpdatedAt;
   final int errorUpdateCount;
-  // final int failureCount;
-  // final TError? failureReason;
+  final int failureCount;
+  final TError? failureReason;
 
   QueryState<TData, TError> copyWith({
     QueryStatus? status,
@@ -198,8 +229,8 @@ class QueryState<TData, TError> with EquatableMixin {
     TError? error,
     DateTime? errorUpdatedAt,
     int? errorUpdateCount,
-    // int? failureCount,
-    // TError? failureReason,
+    int? failureCount,
+    TError? failureReason,
   }) {
     return QueryState<TData, TError>(
       status: status ?? this.status,
@@ -209,8 +240,24 @@ class QueryState<TData, TError> with EquatableMixin {
       error: error ?? this.error,
       errorUpdatedAt: errorUpdatedAt ?? this.errorUpdatedAt,
       errorUpdateCount: errorUpdateCount ?? this.errorUpdateCount,
-      // failureCount: failureCount ?? this.failureCount,
-      // failureReason: failureReason ?? this.failureReason,
+      failureCount: failureCount ?? this.failureCount,
+      failureReason: failureReason ?? this.failureReason,
+    );
+  }
+
+  QueryState<TData, TError> copyWithNull({
+    bool faliureReason = false,
+  }) {
+    return QueryState<TData, TError>(
+      status: this.status,
+      fetchStatus: this.fetchStatus,
+      data: this.data,
+      dataUpdatedAt: this.dataUpdatedAt,
+      error: this.error,
+      errorUpdatedAt: this.errorUpdatedAt,
+      errorUpdateCount: this.errorUpdateCount,
+      failureCount: this.failureCount,
+      failureReason: faliureReason ? null : this.failureReason,
     );
   }
 
@@ -223,7 +270,7 @@ class QueryState<TData, TError> with EquatableMixin {
         error,
         errorUpdatedAt,
         errorUpdateCount,
-        // failureCount,
-        // failureReason,
+        failureCount,
+        failureReason,
       ];
 }

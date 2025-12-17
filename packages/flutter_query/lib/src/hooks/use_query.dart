@@ -20,11 +20,11 @@ class UseQueryResult<TData, TError> with EquatableMixin {
     required this.error,
     required this.errorUpdatedAt,
     required this.errorUpdateCount,
+    required this.failureCount,
+    required this.failureReason,
     required this.isEnabled,
     required StaleDurationValue staleDuration,
     required this.isPlaceholderData,
-    // required this.failureCount,
-    // required this.failureReason,
     // required this.isFetchedAfterMount,
   }) : _staleDuration = staleDuration;
 
@@ -36,12 +36,11 @@ class UseQueryResult<TData, TError> with EquatableMixin {
   final TError? error;
   final DateTime? errorUpdatedAt;
   final int errorUpdateCount;
+  final int failureCount;
+  final TError? failureReason;
   final bool isEnabled;
   final bool isPlaceholderData;
   final StaleDurationValue _staleDuration;
-
-  // final int failureCount; // failureCount: number
-  // final TError? failureReason; // failureReason: null | TError
 
   // final bool isFetchedAfterMount;
   // final bool isPlaceholderData;
@@ -86,6 +85,8 @@ class UseQueryResult<TData, TError> with EquatableMixin {
         error,
         errorUpdatedAt,
         errorUpdateCount,
+        failureCount,
+        failureReason,
         isEnabled,
         isPlaceholderData,
         _staleDuration,
@@ -103,6 +104,9 @@ UseQueryResult<TData, TError> useQuery<TData, TError>({
   Duration? refetchInterval,
   RefetchOnMount refetchOnMount = RefetchOnMount.stale,
   RefetchOnResume refetchOnResume = RefetchOnResume.stale,
+  Retry<TError>? retry,
+  bool retryOnMount = true,
+  RetryDelay<TError>? retryDelay,
   StaleDurationOption staleDuration = StaleDuration.zero,
   QueryClient? queryClient,
   // networkMode: 'online' | 'always' | 'offlineFirst'
@@ -119,12 +123,6 @@ UseQueryResult<TData, TError> useQuery<TData, TError>({
   // refetchOnReconnect = true,
   // refetchOnWindowFocus: boolean | "always" | ((query: Query) => boolean | "always")
   // refetchOnWindowFocus = true,
-  // retry: boolean | number | (failureCount: number, error: TError) => boolean
-  // retry,
-  // retryOnMount: boolean
-  // bool retryOnMount = true,
-  // retryDelay: number | (retryAttempt: number, error: TError) => number
-  // retryDelay,
   // select: (data: TData) => unknown
   // Object? Function(TData)? select,
   // structuralSharing: boolean | (oldData: unknown | undefined, newData: unknown) => unknown
@@ -152,6 +150,9 @@ UseQueryResult<TData, TError> useQuery<TData, TError>({
         refetchInterval: refetchInterval,
         refetchOnMount: refetchOnMount,
         refetchOnResume: refetchOnResume,
+        retry: retry,
+        retryOnMount: retryOnMount,
+        retryDelay: retryDelay,
         staleDuration: staleDuration,
       ),
     ),
@@ -172,6 +173,9 @@ UseQueryResult<TData, TError> useQuery<TData, TError>({
       refetchInterval: refetchInterval,
       refetchOnMount: refetchOnMount,
       refetchOnResume: refetchOnResume,
+      retry: retry,
+      retryOnMount: retryOnMount,
+      retryDelay: retryDelay,
       staleDuration: staleDuration,
     ),
   );
