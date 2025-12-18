@@ -324,4 +324,21 @@ void main() {
       });
     });
   });
+
+  group('prefetchQuery', () {
+    test(
+        'SHOULD NOT throw '
+        'WHEN fetch fails', () async {
+      // This should complete without throwing
+      await client.prefetchQuery<String, Exception>(
+        queryKey: const ['key'],
+        queryFn: (context) async => throw Exception('error'),
+      );
+
+      // Verify the query was created but has an error state
+      final query = client.cache.get<String, Exception>(const ['key']);
+      expect(query, isNotNull);
+      expect(query!.state.error, isA<Exception>());
+    });
+  });
 }

@@ -64,4 +64,39 @@ class QueryClient {
     // Data is fresh, return cached data
     return query.state.data as TData;
   }
+
+  /// Prefetches a query and populates the cache.
+  ///
+  /// Unlike [fetchQuery], this method:
+  /// - Returns `Future<void>` instead of the data
+  /// - Silently ignores any errors (fire-and-forget pattern)
+  ///
+  /// Use this for preloading data before navigation or warming up the cache.
+  ///
+  /// Aligned with TanStack Query's `prefetchQuery` method.
+  Future<void> prefetchQuery<TData, TError>({
+    required List<Object?> queryKey,
+    required Future<TData> Function(QueryContext context) queryFn,
+    StaleDuration<TData, TError>? staleDuration,
+    Retry<TError>? retry,
+    RetryDelay<TError>? retryDelay,
+    GcDurationOption gcDuration = const GcDuration(minutes: 5),
+    TData? initialData,
+    DateTime? initialDataUpdatedAt,
+  }) async {
+    try {
+      await fetchQuery<TData, TError>(
+        queryKey: queryKey,
+        queryFn: queryFn,
+        staleDuration: staleDuration,
+        retry: retry,
+        retryDelay: retryDelay,
+        gcDuration: gcDuration,
+        initialData: initialData,
+        initialDataUpdatedAt: initialDataUpdatedAt,
+      );
+    } catch (_) {
+      // Silently ignore errors - prefetch is fire-and-forget
+    }
+  }
 }
