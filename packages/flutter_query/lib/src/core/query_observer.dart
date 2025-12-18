@@ -41,7 +41,8 @@ class QueryObserver<TData, TError> {
 
     // Trigger initial fetch if enabled and (no data or data is stale)
     if (_shouldFetchOnMount(options, _query.state)) {
-      _query.fetch();
+      // Ignore result and errors - they're handled via query state
+      _query.fetch().ignore();
     }
 
     // Start refetch interval if configured
@@ -154,7 +155,8 @@ class QueryObserver<TData, TError> {
 
       // Trigger initial fetch if enabled and (no data or data is stale)
       if (_shouldFetchOnMount(newOptions, _query.state)) {
-        _query.fetch();
+        // Ignore result and errors - they're handled via query state
+        _query.fetch().ignore();
       }
 
       // Update refetch interval for new query
@@ -178,7 +180,8 @@ class QueryObserver<TData, TError> {
       _setResult(result);
 
       if (_shouldFetchOnMount(newOptions, _query.state)) {
-        _query.fetch();
+        // Ignore result and errors - they're handled via query state
+        _query.fetch().ignore();
       }
     }
 
@@ -194,7 +197,8 @@ class QueryObserver<TData, TError> {
       _setResult(result);
 
       if (_shouldFetchOnMount(newOptions, _query.state)) {
-        _query.fetch();
+        // Ignore result and errors - they're handled via query state
+        _query.fetch().ignore();
       }
     }
 
@@ -211,7 +215,8 @@ class QueryObserver<TData, TError> {
 
       // If data becomes stale with the new staleDuration, trigger refetch
       if (_shouldFetchOnMount(newOptions, _query.state)) {
-        _query.fetch();
+        // Ignore errors - they're handled via query state
+        _query.fetch().ignore();
       }
     }
 
@@ -227,7 +232,8 @@ class QueryObserver<TData, TError> {
       _setResult(result);
 
       if (_shouldFetchOnMount(newOptions, _query.state)) {
-        _query.fetch();
+        // Ignore errors - they're handled via query state
+        _query.fetch().ignore();
       }
     }
 
@@ -240,7 +246,8 @@ class QueryObserver<TData, TError> {
   /// Called when the app lifecycle returns to resumed state.
   void onResume() {
     if (_shouldFetchOnResume(options, _query.state)) {
-      _query.fetch();
+      // Ignore errors - they're handled via query state
+      _query.fetch().ignore();
     }
   }
 
@@ -269,7 +276,8 @@ class QueryObserver<TData, TError> {
     _refetchIntervalTimer = Timer.periodic(
       options.refetchInterval!,
       (_) {
-        _query.fetch();
+        // Ignore errors - they're handled via query state
+        _query.fetch().ignore();
       },
     );
   }

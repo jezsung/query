@@ -3,6 +3,7 @@ import 'package:equatable/equatable.dart';
 
 import 'options/retry.dart';
 import 'options/retry_delay.dart';
+import 'options/stale_duration.dart';
 import 'query_cache.dart';
 import 'query_client.dart';
 import 'query_context.dart';
@@ -45,9 +46,48 @@ class Query<TData, TError> with Removable {
 
   bool get hasObservers => _observers.isNotEmpty;
 
-  Future<void> fetch() async {
-    if (state.fetchStatus == FetchStatus.fetching) return;
+  // Track current fetch future to return same future for concurrent calls
+  Future<TData>? _currentFetch;
 
+  /// Checks if the query data is stale based on the given stale duration.
+  ///
+  /// Returns true if:
+  /// - No data exists
+  /// - Data age exceeds or equals the stale duration
+  ///
+  /// Returns false if:
+  /// - stale duration is infinity or static
+  /// - Data is still fresh
+  ///
+  /// Aligned with TanStack Query's `isStaleByTime` method.
+  bool isStaleByTime(StaleDuration<TData, TError>? staleDuration) {
+    // No data is always stale
+    if (state.data == null) {
+      return true;
+    }
+
+    final resolved =
+        (staleDuration ?? StaleDuration<TData, TError>()).resolve(this);
+
+    return switch (resolved) {
+      StaleDurationDuration duration =>
+        clock.now().difference(state.dataUpdatedAt!) >= duration,
+      StaleDurationInfinity() => false,
+      StaleDurationStatic() => false,
+    };
+  }
+
+  Future<TData> fetch() {
+    // If already fetching, return existing future (TanStack behavior)
+    if (state.fetchStatus == FetchStatus.fetching && _currentFetch != null) {
+      return _currentFetch!;
+    }
+
+    _currentFetch = _doFetch();
+    return _currentFetch!;
+  }
+
+  Future<TData> _doFetch() async {
     _setState(state
         .copyWith(
           fetchStatus: FetchStatus.fetching,
@@ -87,6 +127,8 @@ class Query<TData, TError> with Removable {
         failureCount: 0,
         failureReason: null,
       ));
+
+      return data;
     } catch (error) {
       // Cast error to TError - should already be TError from retryer
       if (error is TError) {
@@ -100,10 +142,10 @@ class Query<TData, TError> with Removable {
           failureCount: state.failureCount + 1,
           failureReason: typedError,
         ));
-      } else {
-        // If it's not TError (e.g., CancelledException), rethrow
-        rethrow;
       }
+      rethrow;
+    } finally {
+      _currentFetch = null;
     }
   }
 
