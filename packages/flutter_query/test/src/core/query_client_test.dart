@@ -226,5 +226,102 @@ void main() {
       expect(receivedContext!.queryKey, equals(const ['users', 123]));
       expect(receivedContext!.client, same(client));
     });
+
+    group('initialData', () {
+      test(
+          'SHOULD NOT fetch and return initialData '
+          'WHEN data is fresh', () async {
+        var attempts = 0;
+
+        final data = await client.fetchQuery<String, Object>(
+          queryKey: const ['key'],
+          queryFn: (context) async {
+            attempts++;
+            return 'data';
+          },
+          initialData: 'initial',
+          staleDuration: StaleDuration.infinity(),
+        );
+
+        expect(data, 'initial');
+        expect(attempts, 0);
+      });
+
+      test(
+          'SHOULD fetch and return fetched data '
+          'WHEN initialData is stale', () async {
+        var attempts = 0;
+
+        final data = await client.fetchQuery<String, Object>(
+          queryKey: const ['key'],
+          queryFn: (context) async {
+            attempts++;
+            return 'data';
+          },
+          initialData: 'initial',
+          staleDuration: StaleDuration.zero(),
+        );
+
+        expect(data, 'data');
+        expect(attempts, 1);
+      });
+
+      test(
+          'SHOULD NOT fetch and return initialData '
+          'WHEN initialDataUpdatedAt is recent and staleDuration > 0',
+          () async {
+        var attempts = 0;
+
+        final data = await client.fetchQuery<String, Object>(
+          queryKey: const ['key'],
+          queryFn: (context) async {
+            attempts++;
+            return 'data';
+          },
+          initialData: 'initial',
+          initialDataUpdatedAt: DateTime.now(),
+          staleDuration: const StaleDuration(minutes: 5),
+        );
+
+        expect(data, 'initial');
+        expect(attempts, 0);
+      });
+
+      test(
+          'SHOULD fetch and return fetched data'
+          'WHEN initialDataUpdatedAt indicates stale data', () async {
+        var attempts = 0;
+
+        final data = await client.fetchQuery<String, Object>(
+          queryKey: const ['key'],
+          queryFn: (context) async {
+            attempts++;
+            return 'data';
+          },
+          initialData: 'initial',
+          initialDataUpdatedAt:
+              DateTime.now().subtract(const Duration(minutes: 10)),
+          staleDuration: const StaleDuration(minutes: 5),
+        );
+
+        expect(data, 'data');
+        expect(attempts, 1);
+      });
+
+      test(
+          'SHOULD populate cache with initialData'
+          '', () async {
+        await client.fetchQuery<String, Object>(
+          queryKey: const ['key'],
+          queryFn: (context) async => 'data',
+          initialData: 'initial',
+          staleDuration: StaleDuration.infinity(),
+        );
+
+        final query = client.cache.get<String, Object>(const ['key']);
+        expect(query, isNotNull);
+        expect(query!.state.data, 'initial');
+      });
+    });
   });
 }

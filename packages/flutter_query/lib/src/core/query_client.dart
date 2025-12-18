@@ -40,6 +40,8 @@ class QueryClient {
     Retry<TError>? retry,
     RetryDelay<TError>? retryDelay,
     GcDurationOption gcDuration = const GcDuration(minutes: 5),
+    TData? initialData,
+    DateTime? initialDataUpdatedAt,
   }) async {
     final queryOptions = QueryOptions<TData, TError>(
       queryKey,
@@ -48,6 +50,8 @@ class QueryClient {
       retry: retry ?? Retry<TError>.never(), // Default to no retry
       retryDelay: retryDelay,
       gcDuration: gcDuration,
+      initialData: initialData,
+      initialDataUpdatedAt: initialDataUpdatedAt,
     );
 
     final query = _cache.build<TData, TError>(queryOptions);
