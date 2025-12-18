@@ -108,8 +108,12 @@ class QueryObserver<TData, TError> {
         newOptions.retryOnMount != oldOptions.retryOnMount;
     final didRetryDelayChange = newOptions.retryDelay != oldOptions.retryDelay;
     // Resolve staleDuration to concrete values before comparing
-    final newStaleDuration = newOptions.staleDuration.resolve(_query);
-    final oldStaleDuration = oldOptions.staleDuration.resolve(_query);
+    final newStaleDuration =
+        (newOptions.staleDuration ?? StaleDuration<TData, TError>())
+            .resolve(_query);
+    final oldStaleDuration =
+        (oldOptions.staleDuration ?? StaleDuration<TData, TError>())
+            .resolve(_query);
     final didStaleDurationChange = newStaleDuration != oldStaleDuration;
 
     // If nothing changed, return early
@@ -328,7 +332,8 @@ class QueryObserver<TData, TError> {
       errorUpdatedAt: state.errorUpdatedAt,
       errorUpdateCount: state.errorUpdateCount,
       isEnabled: options.enabled,
-      staleDuration: options.staleDuration.resolve(_query),
+      staleDuration: (options.staleDuration ?? StaleDuration<TData, TError>())
+          .resolve(_query),
       isPlaceholderData: isPlaceholderData,
       failureCount: state.failureCount,
       failureReason: state.failureReason,
@@ -355,7 +360,9 @@ class QueryObserver<TData, TError> {
     }
 
     // Has data - check staleness and refetchOnMount
-    final staleDuration = options.staleDuration.resolve(_query);
+    final staleDuration =
+        (options.staleDuration ?? StaleDuration<TData, TError>())
+            .resolve(_query);
 
     // With static stale duration, data is always fresh and should never refetch automatically
     if (staleDuration is StaleDurationStatic) {
@@ -373,7 +380,7 @@ class QueryObserver<TData, TError> {
 
     return switch (staleDuration) {
       // Check if age exceeds or equals staleDuration (>= for zero staleDuration)
-      StaleDuration duration => age >= duration,
+      StaleDurationDuration duration => age >= duration,
       // If staleDuration is StaleDurationInfinity, never stale (unless invalidated)
       StaleDurationInfinity() => false,
       // If staleDuration is StaleDurationStatic, never stale
@@ -387,7 +394,9 @@ class QueryObserver<TData, TError> {
   ) {
     if (!options.enabled) return false;
 
-    final staleDuration = options.staleDuration.resolve(_query);
+    final staleDuration =
+        (options.staleDuration ?? StaleDuration<TData, TError>())
+            .resolve(_query);
 
     // With static stale duration, data is always fresh and should never refetch automatically
     if (staleDuration is StaleDurationStatic) {
@@ -411,7 +420,7 @@ class QueryObserver<TData, TError> {
     final age = clock.now().difference(state.dataUpdatedAt!);
 
     return switch (staleDuration) {
-      StaleDuration duration => age >= duration,
+      StaleDurationDuration duration => age >= duration,
       StaleDurationInfinity() => false,
       StaleDurationStatic() => false,
     };
@@ -433,7 +442,7 @@ class QueryOptions<TData, TError> {
     this.retry,
     this.retryOnMount = true,
     this.retryDelay,
-    this.staleDuration = StaleDuration.zero,
+    this.staleDuration,
   });
 
   final List<Object?> queryKey;
@@ -449,5 +458,5 @@ class QueryOptions<TData, TError> {
   final Retry<TError>? retry;
   final bool retryOnMount;
   final RetryDelay<TError>? retryDelay;
-  final StaleDurationOption staleDuration;
+  final StaleDuration<TData, TError>? staleDuration;
 }

@@ -371,7 +371,7 @@ void main() {
         () => useQuery(
           queryKey: const ['key'],
           queryFn: (context) async => 'data',
-          staleDuration: StaleDuration.zero, // Data immediately stale
+          staleDuration: const StaleDuration.zero(), // Data immediately stale
           queryClient: client,
         ),
       );
@@ -420,7 +420,7 @@ void main() {
       expect(hookResult.current.isStale, false);
 
       // Change staleDuration to zero to make data stale immediately
-      await hookResult.rebuildWithProps(StaleDuration.zero);
+      await hookResult.rebuildWithProps(const StaleDuration());
       expect(hookResult.current.isStale, true);
 
       // Change staleDuration to 10 mins to make data fresh again
@@ -525,14 +525,14 @@ void main() {
     testWidgets('SHOULD NOT refetch WHEN data is fresh on mount',
         withCleanup((tester) async {
       // Pre-populate cache with fresh data
-      final query = client.cache.build(QueryOptions(
+      final query = client.cache.build(QueryOptions<String, Object>(
         ['key'],
         (context) async => 'initial',
       ));
       await query.fetch();
 
       final hookResult = await buildHook(
-        () => useQuery(
+        () => useQuery<String, Object>(
           queryKey: ['key'],
           queryFn: (context) async => 'data',
           staleDuration: const StaleDuration(minutes: 5),
@@ -553,7 +553,7 @@ void main() {
         () => useQuery(
           queryKey: const ['key'],
           queryFn: (context) async => 'data',
-          staleDuration: StaleDuration.static, // Never stale
+          staleDuration: StaleDuration.static(), // Never stale
           queryClient: client,
         ),
       );
@@ -578,7 +578,7 @@ void main() {
         () => useQuery(
           queryKey: ['key'],
           queryFn: (context) async => 'data',
-          staleDuration: StaleDuration.static,
+          staleDuration: StaleDuration.static(),
           gcDuration: const GcDuration(minutes: 10),
           queryClient: client,
         ),
@@ -605,7 +605,7 @@ void main() {
         () => useQuery(
           queryKey: ['key'],
           queryFn: (context) async => 'data',
-          staleDuration: StaleDuration.static,
+          staleDuration: StaleDuration.static(),
           gcDuration: const GcDuration(minutes: 10),
           queryClient: client,
         ),
@@ -636,7 +636,7 @@ void main() {
         () => useQuery(
           queryKey: const ['key'],
           queryFn: (context) async => 'data',
-          staleDuration: StaleDuration.infinity, // Never stale
+          staleDuration: StaleDuration.infinity(), // Never stale
           queryClient: client,
         ),
       );
@@ -661,7 +661,7 @@ void main() {
         () => useQuery(
           queryKey: ['key'],
           queryFn: (context) async => 'data',
-          staleDuration: StaleDuration.infinity,
+          staleDuration: StaleDuration.infinity(),
           gcDuration: const GcDuration(minutes: 10),
           queryClient: client,
         ),
@@ -688,7 +688,7 @@ void main() {
         () => useQuery(
           queryKey: ['key'],
           queryFn: (context) async => 'data',
-          staleDuration: StaleDuration.infinity,
+          staleDuration: StaleDuration.infinity(),
           gcDuration: const GcDuration(minutes: 10),
           queryClient: client,
         ),
@@ -718,7 +718,7 @@ void main() {
       var fetchCount = 0;
       final hookResult = await buildHookWithProps(
         (duration) {
-          return useQuery<String, Object>(
+          return useQuery(
             queryKey: const ['key'],
             queryFn: (context) async => 'data-${++fetchCount}',
             staleDuration: StaleDuration.resolveWith((query) {
@@ -728,7 +728,7 @@ void main() {
             queryClient: client,
           );
         },
-        initialProps: StaleDuration(hours: 1),
+        initialProps: const StaleDuration(hours: 1),
       );
 
       // Wait for initial fetch to complete
@@ -772,10 +772,10 @@ void main() {
         () => useQuery<String, Object>(
           queryKey: const ['key1'],
           queryFn: (context) async => 'data',
-          staleDuration: StaleDuration.resolveWith<String, Object>((query) {
+          staleDuration: StaleDuration.resolveWith((query) {
             // Capture the query state for inspection
             capturedState = query.state;
-            return StaleDuration.zero;
+            return const StaleDuration<String, Object>();
           }),
           queryClient: client,
         ),
@@ -795,10 +795,10 @@ void main() {
         () => useQuery<String, Object>(
           queryKey: const ['key2'],
           queryFn: (context) async => throw Exception(),
-          staleDuration: StaleDuration.resolveWith<String, Object>((query) {
+          staleDuration: StaleDuration.resolveWith((query) {
             // Capture the query state for inspection
             capturedState = query.state;
-            return StaleDuration.zero;
+            return const StaleDuration<String, Object>();
           }),
           retry: const Retry.never(),
           queryClient: client,
@@ -822,7 +822,7 @@ void main() {
         () => useQuery(
           queryKey: const ['key'],
           queryFn: (context) async => 'data',
-          // staleDuration defaults to StaleDuration.zero
+          // staleDuration defaults to const StaleDuration()
           queryClient: client,
         ),
       );
@@ -843,7 +843,7 @@ void main() {
           queryKey: const ['key'],
           queryFn: (context) async => 'data',
           refetchOnMount: RefetchOnMount.stale,
-          staleDuration: StaleDuration.zero,
+          staleDuration: const StaleDuration(),
           queryClient: client,
         ),
       );
@@ -868,7 +868,7 @@ void main() {
           queryKey: const ['key'],
           queryFn: (context) async => 'data',
           refetchOnMount: RefetchOnMount.stale,
-          staleDuration: StaleDuration.infinity,
+          staleDuration: StaleDuration.infinity(),
           queryClient: client,
         ),
       );
@@ -893,7 +893,7 @@ void main() {
           queryKey: const ['key'],
           queryFn: (context) async => 'data',
           refetchOnMount: RefetchOnMount.never,
-          staleDuration: StaleDuration.zero,
+          staleDuration: const StaleDuration(),
           queryClient: client,
         ),
       );
@@ -962,7 +962,7 @@ void main() {
           queryKey: const ['key'],
           queryFn: (context) async => 'data',
           refetchOnMount: RefetchOnMount.always,
-          staleDuration: StaleDuration.static,
+          staleDuration: StaleDuration.static(),
           queryClient: client,
         ),
       );
@@ -992,7 +992,7 @@ void main() {
             return 'data-${++fetchCount}';
           },
           refetchOnResume: RefetchOnResume.stale,
-          staleDuration: StaleDuration.zero,
+          staleDuration: const StaleDuration(),
           queryClient: client,
         ),
       );
@@ -1025,7 +1025,7 @@ void main() {
             return 'data-${++fetchCount}';
           },
           refetchOnResume: RefetchOnResume.stale,
-          staleDuration: StaleDuration.infinity,
+          staleDuration: StaleDuration.infinity(),
           queryClient: client,
         ),
       );
@@ -1055,7 +1055,7 @@ void main() {
           queryKey: const ['key'],
           queryFn: (context) async => 'data-${++fetchCount}',
           refetchOnResume: RefetchOnResume.stale,
-          staleDuration: StaleDuration.zero,
+          staleDuration: const StaleDuration(),
           queryClient: client,
         ),
       );
@@ -1084,7 +1084,7 @@ void main() {
           queryKey: const ['key'],
           queryFn: (context) async => 'data-${++fetchCount}',
           refetchOnResume: RefetchOnResume.stale,
-          staleDuration: StaleDuration.infinity,
+          staleDuration: StaleDuration.infinity(),
           queryClient: client,
         ),
       );
@@ -1117,7 +1117,7 @@ void main() {
             return 'data-${++fetchCount}';
           },
           refetchOnResume: RefetchOnResume.never,
-          staleDuration: StaleDuration.zero,
+          staleDuration: const StaleDuration(),
           queryClient: client,
         ),
       );
@@ -1199,7 +1199,7 @@ void main() {
             return 'data-$fetchCount';
           },
           refetchOnResume: RefetchOnResume.always,
-          staleDuration: StaleDuration.infinity,
+          staleDuration: StaleDuration.infinity(),
           queryClient: client,
         ),
       );
@@ -1232,7 +1232,7 @@ void main() {
             return 'data-$fetchCount';
           },
           refetchOnResume: RefetchOnResume.always,
-          staleDuration: StaleDuration.static,
+          staleDuration: StaleDuration.static(),
           queryClient: client,
         ),
       );
@@ -1524,7 +1524,7 @@ void main() {
           queryKey: const ['key'],
           queryFn: (context) async => 'data',
           initialData: 'initial-data',
-          staleDuration: StaleDuration.zero,
+          staleDuration: const StaleDuration(),
           queryClient: client,
         ),
       );
@@ -1773,18 +1773,18 @@ void main() {
 
     testWidgets('SHOULD NOT show placeholder WHEN query already has data',
         withCleanup((tester) async {
-      final query = client.cache.build(QueryOptions(
+      final query = client.cache.build(QueryOptions<String, Object>(
         const ['key'],
         (context) async => 'data-cached',
       ));
       await query.fetch();
 
       final hookResult = await buildHook(
-        () => useQuery(
+        () => useQuery<String, Object>(
           queryKey: const ['key'],
           queryFn: (context) async => 'data',
           placeholderData: PlaceholderData('placeholder'),
-          staleDuration: StaleDuration.infinity,
+          staleDuration: StaleDuration.infinity(),
           queryClient: client,
         ),
       );
@@ -2091,8 +2091,8 @@ void main() {
       late HookResult<UseQueryResult> hookResult;
       for (final staleDuration in [
         StaleDuration(hours: 1),
-        StaleDuration.infinity,
-        StaleDuration.static,
+        StaleDuration.infinity(),
+        StaleDuration.static(),
       ]) {
         final start = clock.now();
         var fetchAttempts = 0;

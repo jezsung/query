@@ -23,7 +23,7 @@ class UseQueryResult<TData, TError> with EquatableMixin {
     required this.failureCount,
     required this.failureReason,
     required this.isEnabled,
-    required StaleDurationValue staleDuration,
+    required StaleDurationValue<TData, TError> staleDuration,
     required this.isPlaceholderData,
     // required this.isFetchedAfterMount,
   }) : _staleDuration = staleDuration;
@@ -40,7 +40,7 @@ class UseQueryResult<TData, TError> with EquatableMixin {
   final TError? failureReason;
   final bool isEnabled;
   final bool isPlaceholderData;
-  final StaleDurationValue _staleDuration;
+  final StaleDurationValue<TData, TError> _staleDuration;
 
   // final bool isFetchedAfterMount;
   // final bool isPlaceholderData;
@@ -68,7 +68,7 @@ class UseQueryResult<TData, TError> with EquatableMixin {
 
     return switch (_staleDuration) {
       // Check if age exceeds or equals staleDuration (>= for zero staleDuration)
-      StaleDuration duration => age >= duration,
+      StaleDurationDuration duration => age >= duration,
       // If staleDuration is StaleDurationInfinity, never stale (unless invalidated)
       StaleDurationInfinity() => false,
       // If staleDuration is StaleDurationStatic, never stale
@@ -107,7 +107,7 @@ UseQueryResult<TData, TError> useQuery<TData, TError>({
   Retry<TError>? retry,
   bool retryOnMount = true,
   RetryDelay<TError>? retryDelay,
-  StaleDurationOption staleDuration = StaleDuration.zero,
+  StaleDuration<TData, TError>? staleDuration,
   QueryClient? queryClient,
   // networkMode: 'online' | 'always' | 'offlineFirst'
   // NetworkMode networkMode = NetworkMode.online,
@@ -135,6 +135,10 @@ UseQueryResult<TData, TError> useQuery<TData, TError>({
   // Get QueryClient from context if not provided
   final client = queryClient ?? useQueryClient();
 
+  // Default staleDuration to zero (immediate staleness) if not provided
+  final effectiveStaleDuration =
+      staleDuration ?? StaleDuration<TData, TError>();
+
   // Create observer once per component instance
   final observer = useMemoized(
     () => QueryObserver<TData, TError>(
@@ -153,7 +157,7 @@ UseQueryResult<TData, TError> useQuery<TData, TError>({
         retry: retry,
         retryOnMount: retryOnMount,
         retryDelay: retryDelay,
-        staleDuration: staleDuration,
+        staleDuration: effectiveStaleDuration,
       ),
     ),
     [],
@@ -176,7 +180,7 @@ UseQueryResult<TData, TError> useQuery<TData, TError>({
       retry: retry,
       retryOnMount: retryOnMount,
       retryDelay: retryDelay,
-      staleDuration: staleDuration,
+      staleDuration: effectiveStaleDuration,
     ),
   );
 

@@ -1,53 +1,37 @@
 import '../query.dart';
 
-/// A callback that computes a [StaleDurationValue] based on the current query state.
+/// A callback that computes a [StaleDuration] based on the current query state.
 ///
 /// This allows for dynamic stale durations that can vary based on query conditions
 /// like error state, data content, or other factors.
-typedef StaleDurationBuilder<TData, TError> = StaleDurationValue Function(
-    Query<TData, TError> query);
+///
+/// The callback should return a concrete stale duration value (not a resolver).
+typedef StaleDurationBuilder<TData, TError> = StaleDuration<TData, TError>
+    Function(Query<TData, TError> query);
 
 /// Base type for all stale duration options.
 ///
 /// This sealed class hierarchy allows specifying stale duration either as:
 /// - A concrete [StaleDurationValue] (Duration, infinity, or static)
-/// - A dynamic [StaleDurationProvider] that computes the duration at runtime
+/// - A dynamic [StaleDurationResolver] that computes the duration at runtime
 ///
 /// Class hierarchy:
 /// ```
-/// StaleDurationOption (sealed)
-/// ├── StaleDurationValue (sealed)
-/// │   ├── StaleDuration (extends Duration)
-/// │   ├── StaleDurationInfinity
-/// │   └── StaleDurationStatic
-/// └── StaleDurationProvider<TData, TError>
+/// StaleDuration<TData, TError> (sealed)
+/// ├── StaleDurationValue<TData, TError> (sealed)
+/// │   ├── StaleDurationDuration<TData, TError> (extends Duration)
+/// │   ├── StaleDurationInfinity<TData, TError>
+/// │   └── StaleDurationStatic<TData, TError>
+/// └── StaleDurationResolver<TData, TError>
 /// ```
-sealed class StaleDurationOption {
-  StaleDurationValue resolve(Query query);
-}
-
-/// A concrete stale duration value (not a function).
 ///
-/// This sealed class represents a resolved stale duration that can be used directly.
-/// Subtypes include:
-/// - [StaleDuration] - A specific time duration
-/// - [StaleDurationInfinity] - Never becomes stale via time (unless manually invalidated)
-/// - [StaleDurationStatic] - Never becomes stale (equivalent to TanStack's 'static')
-sealed class StaleDurationValue implements StaleDurationOption {}
-
-/// A time-based stale duration that specifies when query data becomes stale.
-///
-/// This class extends [Duration] to provide a concrete time period after which
-/// query data is considered stale and eligible for refetching.
-///
-/// Aligned with TanStack Query's `staleTime` option when given a number value.
-class StaleDuration extends Duration implements StaleDurationValue {
-  /// Creates a stale duration with the specified time components.
+/// Aligned with TanStack Query v5's `staleTime` option which accepts:
+/// `number | Infinity | 'static' | (query) => number | Infinity | 'static'`
+sealed class StaleDuration<TData, TError> {
+  /// Creates a time-based stale duration with the specified time components.
   ///
   /// Data becomes stale after the specified duration has elapsed since the
   /// last successful fetch.
-  ///
-  /// This constructor matches [Duration]'s constructor signature for familiarity.
   ///
   /// Example:
   /// ```dart
@@ -55,22 +39,24 @@ class StaleDuration extends Duration implements StaleDurationValue {
   /// StaleDuration(seconds: 30)     // Stale after 30 seconds
   /// StaleDuration(hours: 1, minutes: 30)  // Stale after 1.5 hours
   /// ```
-  const StaleDuration({
-    super.days,
-    super.hours,
-    super.minutes,
-    super.seconds,
-    super.milliseconds,
-    super.microseconds,
-  });
-
-  /// Zero duration - data is immediately stale after fetching.
   ///
-  /// This is useful when you want queries to always refetch on mount or
-  /// when they become active again.
+  /// Aligned with TanStack Query's `staleTime: number`.
+  const factory StaleDuration({
+    int days,
+    int hours,
+    int minutes,
+    int seconds,
+    int milliseconds,
+    int microseconds,
+  }) = StaleDurationDuration<TData, TError>._;
+
+  /// Creates a zero-duration stale time (data is immediately stale).
+  ///
+  /// Equivalent to `const StaleDuration()` but more explicit.
   ///
   /// Aligned with TanStack Query's `staleTime: 0`.
-  static const StaleDuration zero = StaleDuration(seconds: 0);
+  const factory StaleDuration.zero() =
+      StaleDurationDuration<TData, TError>._zero;
 
   /// Data never becomes stale via time-based staleness.
   ///
@@ -80,19 +66,21 @@ class StaleDuration extends Duration implements StaleDurationValue {
   /// Note: Can still be invalidated manually when invalidation is implemented.
   ///
   /// Aligned with TanStack Query's `staleTime: Infinity`.
-  static const StaleDurationInfinity infinity = StaleDurationInfinity._();
+  const factory StaleDuration.infinity() =
+      StaleDurationInfinity<TData, TError>._;
 
   /// Data never becomes stale (equivalent to TanStack Query's 'static').
   ///
-  /// Similar to [infinity], but semantically indicates that the data is
+  /// Similar to [StaleDuration.infinity], but semantically indicates that the data is
   /// truly static and should not be refetched under normal circumstances.
   ///
-  /// Aligned with TanStack Query v5's experimental 'static' staleTime value.
-  static const StaleDurationStatic static = StaleDurationStatic._();
+  /// Aligned with TanStack Query v5's experimental `staleTime: 'static'`.
+  // ignore: library_private_types_in_public_api
+  const factory StaleDuration.static() = StaleDurationStatic<TData, TError>._;
 
   /// Creates a dynamic stale duration that computes based on query state.
   ///
-  /// This factory method creates a [StaleDurationProvider] that evaluates
+  /// This factory creates a [StaleDurationResolver] that evaluates
   /// the stale duration at runtime based on the current [Query] state.
   ///
   /// This is useful for implementing conditional staleness logic, such as:
@@ -101,46 +89,86 @@ class StaleDuration extends Duration implements StaleDurationValue {
   /// - Adjusting staleness based on time of day or other external factors
   ///
   /// The [callback] receives the current [Query] instance and must return
-  /// a [StaleDurationValue] (StaleDuration, infinity, or static).
+  /// a [StaleDurationValue] (StaleDurationDuration, infinity, or static).
   ///
   /// Example:
   /// ```dart
-  /// StaleDuration.resolveWith<User, Exception>((query) {
+  /// StaleDuration.resolveWith((query) {
   ///   // If query has error, make it stale immediately for quick retry
   ///   if (query.state.error != null) {
-  ///     return StaleDuration.zero;
+  ///     return const StaleDuration();
   ///   }
   ///   // Otherwise, keep fresh for 10 minutes
-  ///   return StaleDuration(minutes: 10);
+  ///   return const StaleDuration(minutes: 10);
   /// })
   /// ```
   ///
   /// Aligned with TanStack Query's function-based `staleTime` option.
-  static StaleDurationProvider<TData, TError> resolveWith<TData, TError>(
+  const factory StaleDuration.resolveWith(
     StaleDurationBuilder<TData, TError> callback,
-  ) {
-    return StaleDurationProvider<TData, TError>._(callback);
-  }
+  ) = StaleDurationResolver<TData, TError>._;
+
+  /// Resolves this stale duration option to a concrete [StaleDurationValue].
+  ///
+  /// For concrete values ([StaleDurationDuration], [StaleDurationInfinity],
+  /// [StaleDurationStatic]), returns itself.
+  /// For [StaleDurationResolver], invokes the callback with the given [query].
+  StaleDurationValue<TData, TError> resolve(Query<TData, TError> query);
+}
+
+/// A concrete stale duration value (not a function).
+///
+/// This sealed class represents a resolved stale duration that can be used directly.
+/// Subtypes include:
+/// - [StaleDurationDuration] - A specific time duration
+/// - [StaleDurationInfinity] - Never becomes stale via time (unless manually invalidated)
+/// - [StaleDurationStatic] - Never becomes stale (equivalent to TanStack's 'static')
+sealed class StaleDurationValue<TData, TError>
+    implements StaleDuration<TData, TError> {}
+
+/// A time-based stale duration that specifies when query data becomes stale.
+///
+/// This class extends [Duration] to provide a concrete time period after which
+/// query data is considered stale and eligible for refetching.
+///
+/// Instances are created via the [StaleDuration] factory constructor.
+///
+/// Aligned with TanStack Query's `staleTime` option when given a number value.
+class StaleDurationDuration<TData, TError> extends Duration
+    implements StaleDurationValue<TData, TError> {
+  /// Private constructor - use [StaleDuration()] to create instances.
+  const StaleDurationDuration._({
+    super.days,
+    super.hours,
+    super.minutes,
+    super.seconds,
+    super.milliseconds,
+    super.microseconds,
+  });
+
+  /// Private zero constructor - use [StaleDuration.zero()] to create instances.
+  const StaleDurationDuration._zero() : super();
 
   @override
-  StaleDurationValue resolve(_) => this;
+  StaleDurationValue<TData, TError> resolve(_) => this;
 }
 
 /// Represents an infinite stale duration - data never becomes stale via time.
 ///
-/// This class is used via [StaleDuration.infinity] and indicates that query
+/// This class is used via [StaleDuration.infinity()] and indicates that query
 /// data should remain fresh indefinitely unless manually invalidated.
 ///
 /// This is a singleton-like class with value equality - all instances are
 /// considered equal to each other.
 ///
 /// Aligned with TanStack Query's `staleTime: Infinity`.
-class StaleDurationInfinity implements StaleDurationValue {
-  /// Private constructor to enforce usage via [StaleDuration.infinity].
+class StaleDurationInfinity<TData, TError>
+    implements StaleDurationValue<TData, TError> {
+  /// Private constructor - use [StaleDuration.infinity()] to create instances.
   const StaleDurationInfinity._();
 
   @override
-  StaleDurationValue resolve(_) => this;
+  StaleDurationValue<TData, TError> resolve(_) => this;
 
   /// All [StaleDurationInfinity] instances are considered equal.
   @override
@@ -153,7 +181,7 @@ class StaleDurationInfinity implements StaleDurationValue {
 
 /// Represents static data that never becomes stale.
 ///
-/// This class is used via [StaleDuration.static] and indicates that query
+/// This class is used via [StaleDuration.static()] and indicates that query
 /// data is truly static and should not be refetched under normal circumstances.
 ///
 /// Semantically similar to [StaleDurationInfinity], but explicitly conveys
@@ -163,12 +191,13 @@ class StaleDurationInfinity implements StaleDurationValue {
 /// considered equal to each other.
 ///
 /// Aligned with TanStack Query v5's experimental `staleTime: 'static'` value.
-class StaleDurationStatic implements StaleDurationValue {
-  /// Private constructor to enforce usage via [StaleDuration.static].
+class StaleDurationStatic<TData, TError>
+    implements StaleDurationValue<TData, TError> {
+  /// Private constructor - use [StaleDuration.static()] to create instances.
   const StaleDurationStatic._();
 
   @override
-  StaleDurationValue resolve(_) => this;
+  StaleDurationValue<TData, TError> resolve(_) => this;
 
   /// All [StaleDurationStatic] instances are considered equal.
   @override
@@ -184,18 +213,19 @@ class StaleDurationStatic implements StaleDurationValue {
 /// This class wraps a [StaleDurationBuilder] callback that is invoked at runtime
 /// to determine the stale duration based on the current [Query] state.
 ///
-/// Instances are created via [StaleDuration.resolveWith] factory method.
+/// Instances are created via [StaleDuration.resolveWith] factory constructor.
 ///
-/// The provider evaluates the callback each time the stale duration is needed,
+/// The resolver evaluates the callback each time the stale duration is needed,
 /// allowing for dynamic behavior such as:
 /// - Different stale times based on success vs error states
 /// - Conditional staleness based on data content
 /// - Time-of-day dependent freshness windows
 ///
 /// Aligned with TanStack Query's function-based `staleTime` option.
-class StaleDurationProvider<TData, TError> implements StaleDurationOption {
+class StaleDurationResolver<TData, TError>
+    implements StaleDuration<TData, TError> {
   /// Private constructor - use [StaleDuration.resolveWith] to create instances.
-  const StaleDurationProvider._(this._callback);
+  const StaleDurationResolver._(this._callback);
 
   /// The callback that computes the stale duration value.
   final StaleDurationBuilder<TData, TError> _callback;
@@ -203,7 +233,8 @@ class StaleDurationProvider<TData, TError> implements StaleDurationOption {
   /// Resolves the stale duration by invoking the callback with the given [query].
   ///
   /// Returns a concrete [StaleDurationValue] that can be used for staleness checks.
+  /// If the callback returns another resolver, it will be recursively resolved.
   @override
-  StaleDurationValue resolve(covariant Query<TData, TError> query) =>
-      _callback(query);
+  StaleDurationValue<TData, TError> resolve(Query<TData, TError> query) =>
+      _callback(query).resolve(query);
 }
