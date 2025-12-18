@@ -42,28 +42,6 @@ void main() {
     expect(key1, isNot(equals(key2)));
   });
 
-  test('SHOULD match WHEN order of keys in inner maps are different', () {
-    const key1 = QueryKey([
-      {'id': 123, 'name': 'test'}
-    ]);
-    const key2 = QueryKey([
-      {'name': 'test', 'id': 123}
-    ]);
-
-    expect(key1, equals(key2));
-  });
-
-  test('SHOULD match WHEN order of keys in inner sets are different', () {
-    const key1 = QueryKey([
-      {'users', 123}
-    ]);
-    const key2 = QueryKey([
-      {123, 'users'}
-    ]);
-
-    expect(key1, equals(key2));
-  });
-
   test('SHOULD match WHEN both keys are empty', () {
     const key1 = QueryKey([]);
     const key2 = QueryKey([]);
@@ -90,6 +68,79 @@ void main() {
       ]).toString(),
       "[{id: 123, name: test}]",
     );
+  });
+
+  group('deep collection equality', () {
+    test('SHOULD match WHEN nested lists have same elements in same order', () {
+      final key1 = QueryKey([
+        'users',
+        [1, 2, 3]
+      ]);
+      final key2 = QueryKey([
+        'users',
+        [1, 2, 3]
+      ]);
+
+      expect(key1, equals(key2));
+      expect(key1.hashCode, equals(key2.hashCode));
+    });
+
+    test('SHOULD NOT match WHEN nested lists have different order', () {
+      final key1 = QueryKey([
+        'users',
+        [1, 2, 3]
+      ]);
+      final key2 = QueryKey([
+        'users',
+        [3, 2, 1]
+      ]);
+
+      expect(key1, isNot(equals(key2)));
+    });
+
+    test('SHOULD match WHEN nested maps have different key order', () {
+      const key1 = QueryKey([
+        {'id': 123, 'name': 'test'}
+      ]);
+      const key2 = QueryKey([
+        {'name': 'test', 'id': 123}
+      ]);
+
+      expect(key1, equals(key2));
+      expect(key1.hashCode, equals(key2.hashCode));
+    });
+
+    test('SHOULD match WHEN maps contain equal nested collections', () {
+      final key1 = QueryKey([
+        'query',
+        {
+          'ids': [1, 2],
+          'tags': {'a', 'b'}
+        }
+      ]);
+      final key2 = QueryKey([
+        'query',
+        {
+          'tags': {'b', 'a'},
+          'ids': [1, 2]
+        }
+      ]);
+
+      expect(key1, equals(key2));
+      expect(key1.hashCode, equals(key2.hashCode));
+    });
+
+    test('SHOULD match WHEN nested sets have different element order', () {
+      const key1 = QueryKey([
+        {'users', 123}
+      ]);
+      const key2 = QueryKey([
+        {123, 'users'}
+      ]);
+
+      expect(key1, equals(key2));
+      expect(key1.hashCode, equals(key2.hashCode));
+    });
   });
 
   group('startsWith', () {
@@ -166,6 +217,102 @@ void main() {
       const prefix = QueryKey(['users', '2']);
 
       expect(key.startsWith(prefix), isFalse);
+    });
+
+    group('deep collection equality', () {
+      test('SHOULD return true WHEN segments contain equal nested lists', () {
+        final key = QueryKey([
+          'users',
+          [1, 2, 3],
+          'posts'
+        ]);
+        final prefix = QueryKey([
+          'users',
+          [1, 2, 3]
+        ]);
+
+        expect(key.startsWith(prefix), isTrue);
+      });
+
+      test(
+          'SHOULD return true WHEN segments contain maps with different key order',
+          () {
+        final key = QueryKey([
+          'users',
+          {'id': 1, 'name': 'test'},
+          'posts'
+        ]);
+        final prefix = QueryKey([
+          'users',
+          {'name': 'test', 'id': 1}
+        ]);
+
+        expect(key.startsWith(prefix), isTrue);
+      });
+
+      test(
+          'SHOULD return true WHEN segments contain sets with different element order',
+          () {
+        final key = QueryKey([
+          'users',
+          {1, 2, 3},
+          'posts'
+        ]);
+        final prefix = QueryKey([
+          'users',
+          {3, 2, 1}
+        ]);
+
+        expect(key.startsWith(prefix), isTrue);
+      });
+
+      test(
+          'SHOULD return false WHEN segments contain lists with different order',
+          () {
+        final key = QueryKey([
+          'users',
+          [1, 2, 3],
+          'posts'
+        ]);
+        final prefix = QueryKey([
+          'users',
+          [3, 2, 1]
+        ]);
+
+        expect(key.startsWith(prefix), isFalse);
+      });
+
+      test(
+          'SHOULD return false WHEN segments contain maps with different values',
+          () {
+        final key = QueryKey([
+          'users',
+          {'id': 1, 'name': 'test'},
+          'posts'
+        ]);
+        final prefix = QueryKey([
+          'users',
+          {'id': 2, 'name': 'test'}
+        ]);
+
+        expect(key.startsWith(prefix), isFalse);
+      });
+
+      test(
+          'SHOULD return false WHEN segments contain sets with different elements',
+          () {
+        final key = QueryKey([
+          'users',
+          {1, 2, 3},
+          'posts'
+        ]);
+        final prefix = QueryKey([
+          'users',
+          {4, 5, 6}
+        ]);
+
+        expect(key.startsWith(prefix), isFalse);
+      });
     });
   });
 }
