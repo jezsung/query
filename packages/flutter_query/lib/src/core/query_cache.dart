@@ -1,9 +1,19 @@
 import 'query.dart';
+import 'query_client.dart';
 import 'query_key.dart';
 import 'query_observer.dart';
 
 class QueryCache {
   final Map<QueryKey, Query> _queries = {};
+  QueryClient? _client;
+
+  /// Sets the QueryClient that owns this cache.
+  ///
+  /// This is called by QueryClient during construction to establish
+  /// a back-reference needed for passing the client to Query instances.
+  void setClient(QueryClient client) {
+    _client = client;
+  }
 
   /// Builds or retrieves an existing query from the cache.
   ///
@@ -12,7 +22,7 @@ class QueryCache {
     QueryOptions<TData, TError> options,
   ) {
     final key = QueryKey(options.queryKey);
-    return (_queries[key] ??= Query<TData, TError>(this, options))
+    return (_queries[key] ??= Query<TData, TError>(_client!, this, options))
         as Query<TData, TError>;
   }
 

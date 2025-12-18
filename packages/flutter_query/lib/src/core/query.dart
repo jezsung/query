@@ -4,6 +4,8 @@ import 'package:equatable/equatable.dart';
 import 'options/retry.dart';
 import 'options/retry_delay.dart';
 import 'query_cache.dart';
+import 'query_client.dart';
+import 'query_context.dart';
 import 'query_observer.dart';
 import 'removable.dart';
 import 'retryer.dart';
@@ -14,19 +16,22 @@ enum FetchStatus { fetching, paused, idle }
 
 class Query<TData, TError> with Removable {
   Query(
+    QueryClient client,
     QueryCache cache,
     QueryOptions<TData, TError> options,
-  )   : _cache = cache,
+  )   : _client = client,
+        _cache = cache,
         _options = options,
         _initialState = QueryState.fromOptions(options) {
     _state = _initialState;
   }
 
+  final QueryClient _client;
   final QueryCache _cache;
   QueryOptions<TData, TError> _options;
 
   List<Object?> get queryKey => _options.queryKey;
-  Future<TData> Function() get queryFn => _options.queryFn;
+  Future<TData> Function(QueryContext) get queryFn => _options.queryFn;
 
   late QueryState<TData, TError> _state;
   QueryState<TData, TError> get state => _state;
@@ -50,9 +55,11 @@ class Query<TData, TError> with Removable {
         )
         .copyWithNull(faliureReason: true));
 
+    final context = QueryContext(queryKey: queryKey, client: _client);
+
     final retryer = Retryer<TData, TError>(
       RetryerConfig(
-        fn: queryFn,
+        fn: () => queryFn(context),
         retry: _options.retry ?? Retry<TError>.count(3),
         retryDelay:
             _options.retryDelay ?? RetryDelay<TError>.exponentialBackoff(),

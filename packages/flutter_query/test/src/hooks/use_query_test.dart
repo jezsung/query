@@ -67,7 +67,7 @@ void main() {
     final hookResult = await buildHook(
       () => useQuery(
         queryKey: const ['key'],
-        queryFn: () async {
+        queryFn: (context) async {
           // Take 5 seconds to finish
           await Future.delayed(const Duration(seconds: 5));
           return data;
@@ -111,7 +111,7 @@ void main() {
     final hookResult = await buildHook(
       () => useQuery<String, Object>(
         queryKey: const ['key'],
-        queryFn: () async {
+        queryFn: (context) async {
           // Take 5 seconds to finish
           await Future.delayed(const Duration(seconds: 5));
           throw error;
@@ -149,6 +149,29 @@ void main() {
     expect(result.isEnabled, true);
   }));
 
+  testWidgets('SHOULD pass QueryContext to queryFn',
+      withCleanup((tester) async {
+    QueryContext? capturedContext;
+    final queryKey = ['users', 123];
+
+    await buildHook(
+      () => useQuery(
+        queryKey: queryKey,
+        queryFn: (context) async {
+          capturedContext = context;
+          return 'data';
+        },
+        queryClient: client,
+      ),
+    );
+
+    await tester.pump();
+
+    expect(capturedContext, isNotNull);
+    expect(capturedContext!.queryKey, equals(queryKey));
+    expect(capturedContext!.client, same(client));
+  }));
+
   testWidgets('SHOULD fetch and succeed (synchronous queryFn)',
       withCleanup((tester) async {
     final data = Object();
@@ -156,7 +179,7 @@ void main() {
     final hookResult = await buildHook(
       () => useQuery(
         queryKey: const ['key'],
-        queryFn: () async => data,
+        queryFn: (context) async => data,
         queryClient: client,
       ),
     );
@@ -185,7 +208,7 @@ void main() {
         builder: (context) {
           result1 = useQuery(
             queryKey: ["key"],
-            queryFn: () async => 'data-${++fetchCount}',
+            queryFn: (context) async => 'data-${++fetchCount}',
             queryClient: client,
           );
           return Container();
@@ -195,7 +218,7 @@ void main() {
         builder: (context) {
           result2 = useQuery(
             queryKey: ["key"],
-            queryFn: () async => 'data-${++fetchCount}',
+            queryFn: (context) async => 'data-${++fetchCount}',
             queryClient: client,
           );
           return Container();
@@ -217,7 +240,7 @@ void main() {
     final hookResult = await buildHookWithProps(
       (key) => useQuery<String, Object>(
         queryKey: key,
-        queryFn: () async => 'data-$key',
+        queryFn: (context) async => 'data-$key',
         queryClient: client,
       ),
       initialProps: const ['key1'],
@@ -243,7 +266,7 @@ void main() {
     final hookResult = await buildHook(
       () => useQuery(
         queryKey: const ['key'],
-        queryFn: () async => 'data',
+        queryFn: (context) async => 'data',
         queryClient: client,
       ),
     );
@@ -269,7 +292,7 @@ void main() {
         HookBuilder(builder: (context) {
           result1 = useQuery(
             queryKey: const ['key1'],
-            queryFn: () async => 'data1',
+            queryFn: (context) async => 'data1',
             queryClient: client,
           );
           return Container();
@@ -277,7 +300,7 @@ void main() {
         HookBuilder(builder: (context) {
           result2 = useQuery(
             queryKey: const ['key2'],
-            queryFn: () async => 'data2',
+            queryFn: (context) async => 'data2',
             queryClient: client,
           );
           return Container();
@@ -297,7 +320,7 @@ void main() {
       final hookResult = await buildHook(
         () => useQuery(
           queryKey: const ['key'],
-          queryFn: () async => 'data',
+          queryFn: (context) async => 'data',
           enabled: false,
           queryClient: client,
         ),
@@ -316,7 +339,7 @@ void main() {
       final hookResult = await buildHookWithProps(
         (enabled) => useQuery(
           queryKey: const ['key'],
-          queryFn: () async => 'data',
+          queryFn: (context) async => 'data',
           enabled: enabled,
           queryClient: client,
         ),
@@ -347,7 +370,7 @@ void main() {
       final hookResult = await buildHook(
         () => useQuery(
           queryKey: const ['key'],
-          queryFn: () async => 'data',
+          queryFn: (context) async => 'data',
           staleDuration: StaleDuration.zero, // Data immediately stale
           queryClient: client,
         ),
@@ -364,7 +387,7 @@ void main() {
       final hookResult = await buildHook(
         () => useQuery(
           queryKey: const ['key'],
-          queryFn: () async => 'data',
+          queryFn: (context) async => 'data',
           staleDuration: const StaleDuration(minutes: 5), // Fresh for 5 minutes
           queryClient: client,
         ),
@@ -386,7 +409,7 @@ void main() {
       final hookResult = await buildHookWithProps(
         (staleDuration) => useQuery(
           queryKey: const ['key'],
-          queryFn: () async => 'data',
+          queryFn: (context) async => 'data',
           staleDuration: staleDuration,
           queryClient: client,
         ),
@@ -411,7 +434,7 @@ void main() {
       final hookResult = await buildHookWithProps(
         (staleDuration) => useQuery(
           queryKey: const ['key'],
-          queryFn: () async => 'data',
+          queryFn: (context) async => 'data',
           staleDuration: staleDuration,
           queryClient: client,
         ),
@@ -443,7 +466,7 @@ void main() {
       final hookResult = await buildHookWithProps(
         (staleDuration) => useQuery(
           queryKey: const ['key'],
-          queryFn: () async => 'data',
+          queryFn: (context) async => 'data',
           staleDuration: staleDuration,
           queryClient: client,
         ),
@@ -468,7 +491,7 @@ void main() {
       final hookResult = await buildHook(
         () => useQuery(
           queryKey: const ['key'],
-          queryFn: () async => 'data',
+          queryFn: (context) async => 'data',
           staleDuration: const StaleDuration(minutes: 5),
           queryClient: client,
         ),
@@ -504,14 +527,14 @@ void main() {
       // Pre-populate cache with fresh data
       final query = client.cache.build(QueryOptions(
         ['key'],
-        () async => 'initial',
+        (context) async => 'initial',
       ));
       await query.fetch();
 
       final hookResult = await buildHook(
         () => useQuery(
           queryKey: ['key'],
-          queryFn: () async => 'data',
+          queryFn: (context) async => 'data',
           staleDuration: const StaleDuration(minutes: 5),
           queryClient: client,
         ),
@@ -529,7 +552,7 @@ void main() {
       final hookResult = await buildHook(
         () => useQuery(
           queryKey: const ['key'],
-          queryFn: () async => 'data',
+          queryFn: (context) async => 'data',
           staleDuration: StaleDuration.static, // Never stale
           queryClient: client,
         ),
@@ -554,7 +577,7 @@ void main() {
       final hookResult = await buildHook(
         () => useQuery(
           queryKey: ['key'],
-          queryFn: () async => 'data',
+          queryFn: (context) async => 'data',
           staleDuration: StaleDuration.static,
           gcDuration: const GcDuration(minutes: 10),
           queryClient: client,
@@ -581,7 +604,7 @@ void main() {
       final hookResult = await buildHook(
         () => useQuery(
           queryKey: ['key'],
-          queryFn: () async => 'data',
+          queryFn: (context) async => 'data',
           staleDuration: StaleDuration.static,
           gcDuration: const GcDuration(minutes: 10),
           queryClient: client,
@@ -612,7 +635,7 @@ void main() {
       final hookResult = await buildHook(
         () => useQuery(
           queryKey: const ['key'],
-          queryFn: () async => 'data',
+          queryFn: (context) async => 'data',
           staleDuration: StaleDuration.infinity, // Never stale
           queryClient: client,
         ),
@@ -637,7 +660,7 @@ void main() {
       final hookResult = await buildHook(
         () => useQuery(
           queryKey: ['key'],
-          queryFn: () async => 'data',
+          queryFn: (context) async => 'data',
           staleDuration: StaleDuration.infinity,
           gcDuration: const GcDuration(minutes: 10),
           queryClient: client,
@@ -664,7 +687,7 @@ void main() {
       final hookResult = await buildHook(
         () => useQuery(
           queryKey: ['key'],
-          queryFn: () async => 'data',
+          queryFn: (context) async => 'data',
           staleDuration: StaleDuration.infinity,
           gcDuration: const GcDuration(minutes: 10),
           queryClient: client,
@@ -697,7 +720,7 @@ void main() {
         (duration) {
           return useQuery<String, Object>(
             queryKey: const ['key'],
-            queryFn: () async => 'data-${++fetchCount}',
+            queryFn: (context) async => 'data-${++fetchCount}',
             staleDuration: StaleDuration.resolveWith((query) {
               // Resolve to different durations based on external state
               return duration;
@@ -748,7 +771,7 @@ void main() {
       await buildHook(
         () => useQuery<String, Object>(
           queryKey: const ['key1'],
-          queryFn: () async => 'data',
+          queryFn: (context) async => 'data',
           staleDuration: StaleDuration.resolveWith<String, Object>((query) {
             // Capture the query state for inspection
             capturedState = query.state;
@@ -771,7 +794,7 @@ void main() {
       await buildHook(
         () => useQuery<String, Object>(
           queryKey: const ['key2'],
-          queryFn: () async => throw Exception(),
+          queryFn: (context) async => throw Exception(),
           staleDuration: StaleDuration.resolveWith<String, Object>((query) {
             // Capture the query state for inspection
             capturedState = query.state;
@@ -798,7 +821,7 @@ void main() {
       final hookResult = await buildHook(
         () => useQuery(
           queryKey: const ['key'],
-          queryFn: () async => 'data',
+          queryFn: (context) async => 'data',
           // staleDuration defaults to StaleDuration.zero
           queryClient: client,
         ),
@@ -818,7 +841,7 @@ void main() {
       final hookResult = await buildHook(
         () => useQuery(
           queryKey: const ['key'],
-          queryFn: () async => 'data',
+          queryFn: (context) async => 'data',
           refetchOnMount: RefetchOnMount.stale,
           staleDuration: StaleDuration.zero,
           queryClient: client,
@@ -843,7 +866,7 @@ void main() {
       final hookResult = await buildHook(
         () => useQuery(
           queryKey: const ['key'],
-          queryFn: () async => 'data',
+          queryFn: (context) async => 'data',
           refetchOnMount: RefetchOnMount.stale,
           staleDuration: StaleDuration.infinity,
           queryClient: client,
@@ -868,7 +891,7 @@ void main() {
       final hookResult = await buildHook(
         () => useQuery(
           queryKey: const ['key'],
-          queryFn: () async => 'data',
+          queryFn: (context) async => 'data',
           refetchOnMount: RefetchOnMount.never,
           staleDuration: StaleDuration.zero,
           queryClient: client,
@@ -893,7 +916,7 @@ void main() {
       final hookResult = await buildHook(
         () => useQuery(
           queryKey: const ['key'],
-          queryFn: () async => 'data',
+          queryFn: (context) async => 'data',
           refetchOnMount: RefetchOnMount.never,
           queryClient: client,
         ),
@@ -912,7 +935,7 @@ void main() {
       final hookResult = await buildHook(
         () => useQuery(
           queryKey: const ['key'],
-          queryFn: () async => 'data',
+          queryFn: (context) async => 'data',
           refetchOnMount: RefetchOnMount.always,
           staleDuration: const StaleDuration(minutes: 5),
           queryClient: client,
@@ -937,7 +960,7 @@ void main() {
       final hookResult = await buildHook(
         () => useQuery(
           queryKey: const ['key'],
-          queryFn: () async => 'data',
+          queryFn: (context) async => 'data',
           refetchOnMount: RefetchOnMount.always,
           staleDuration: StaleDuration.static,
           queryClient: client,
@@ -964,7 +987,7 @@ void main() {
       final hookResult = await buildHook(
         () => useQuery(
           queryKey: const ['key'],
-          queryFn: () async {
+          queryFn: (context) async {
             await Future.delayed(const Duration(seconds: 5));
             return 'data-${++fetchCount}';
           },
@@ -997,7 +1020,7 @@ void main() {
       final hookResult = await buildHook(
         () => useQuery(
           queryKey: const ['key'],
-          queryFn: () async {
+          queryFn: (context) async {
             await Future.delayed(const Duration(seconds: 5));
             return 'data-${++fetchCount}';
           },
@@ -1030,7 +1053,7 @@ void main() {
       final hookResult = await buildHook(
         () => useQuery(
           queryKey: const ['key'],
-          queryFn: () async => 'data-${++fetchCount}',
+          queryFn: (context) async => 'data-${++fetchCount}',
           refetchOnResume: RefetchOnResume.stale,
           staleDuration: StaleDuration.zero,
           queryClient: client,
@@ -1059,7 +1082,7 @@ void main() {
       final hookResult = await buildHook(
         () => useQuery(
           queryKey: const ['key'],
-          queryFn: () async => 'data-${++fetchCount}',
+          queryFn: (context) async => 'data-${++fetchCount}',
           refetchOnResume: RefetchOnResume.stale,
           staleDuration: StaleDuration.infinity,
           queryClient: client,
@@ -1089,7 +1112,7 @@ void main() {
       final hookResult = await buildHook(
         () => useQuery(
           queryKey: const ['key'],
-          queryFn: () async {
+          queryFn: (context) async {
             await Future.delayed(const Duration(seconds: 5));
             return 'data-${++fetchCount}';
           },
@@ -1124,7 +1147,7 @@ void main() {
       final hookResult = await buildHook(
         () => useQuery(
           queryKey: const ['key'],
-          queryFn: () async {
+          queryFn: (context) async {
             fetchCount++;
             await Future.delayed(const Duration(seconds: 5));
             if (fetchCount == 1) {
@@ -1170,7 +1193,7 @@ void main() {
       final hookResult = await buildHook(
         () => useQuery(
           queryKey: const ['key'],
-          queryFn: () async {
+          queryFn: (context) async {
             fetchCount++;
             await Future.delayed(const Duration(seconds: 5));
             return 'data-$fetchCount';
@@ -1203,7 +1226,7 @@ void main() {
       final hookResult = await buildHook(
         () => useQuery(
           queryKey: const ['key'],
-          queryFn: () async {
+          queryFn: (context) async {
             fetchCount++;
             await Future.delayed(const Duration(seconds: 5));
             return 'data-$fetchCount';
@@ -1239,7 +1262,7 @@ void main() {
       final hookResult = await buildHook(
         () => useQuery(
           queryKey: const ['key'],
-          queryFn: () async => 'data',
+          queryFn: (context) async => 'data',
           gcDuration: const GcDuration(minutes: 5),
           queryClient: client,
         ),
@@ -1266,7 +1289,7 @@ void main() {
       final hookResult = await buildHook(
         () => useQuery(
           queryKey: const ['key'],
-          queryFn: () async => 'data',
+          queryFn: (context) async => 'data',
           gcDuration: GcDuration.infinity,
           queryClient: client,
         ),
@@ -1297,7 +1320,7 @@ void main() {
             builder: (context) {
               useQuery(
                 queryKey: const ['key'],
-                queryFn: () async => 'data-1',
+                queryFn: (context) async => 'data-1',
                 gcDuration: const GcDuration(minutes: 5),
                 queryClient: client,
               );
@@ -1308,7 +1331,7 @@ void main() {
             builder: (context) {
               useQuery(
                 queryKey: const ['key'],
-                queryFn: () async => 'data-2',
+                queryFn: (context) async => 'data-2',
                 gcDuration: const GcDuration(minutes: 5),
                 queryClient: client,
               );
@@ -1330,7 +1353,7 @@ void main() {
             builder: (context) {
               useQuery(
                 queryKey: const ['key'],
-                queryFn: () async => 'data-2',
+                queryFn: (context) async => 'data-2',
                 gcDuration: const GcDuration(minutes: 5),
                 queryClient: client,
               );
@@ -1361,7 +1384,7 @@ void main() {
       final hookResult = await buildHook(
         () => useQuery(
           queryKey: const ['key'],
-          queryFn: () async => 'data',
+          queryFn: (context) async => 'data',
           // gcDuration defaults to 5 minutes
           queryClient: client,
         ),
@@ -1390,7 +1413,7 @@ void main() {
       final hookResult = await buildHook(
         () => useQuery(
           queryKey: const ['key'],
-          queryFn: () async => 'data',
+          queryFn: (context) async => 'data',
           gcDuration: const GcDuration(minutes: 10),
           queryClient: client,
         ),
@@ -1421,7 +1444,7 @@ void main() {
       final hookResult = await buildHook(
         () => useQuery(
           queryKey: const ['key'],
-          queryFn: () async => 'data',
+          queryFn: (context) async => 'data',
         ),
         wrapper: (child) => QueryClientProvider(
           client: client,
@@ -1441,7 +1464,7 @@ void main() {
       final hookResult = await buildHook(
         () => useQuery(
           queryKey: const ['key'],
-          queryFn: () async => 'data',
+          queryFn: (context) async => 'data',
           queryClient: prioritizedQueryClient,
         ),
         wrapper: (child) => QueryClientProvider(
@@ -1465,7 +1488,7 @@ void main() {
         builder: (context) {
           useQuery<String, Object>(
             queryKey: const ['test'],
-            queryFn: () async => 'data',
+            queryFn: (context) async => 'data',
           );
           return Container();
         },
@@ -1483,7 +1506,7 @@ void main() {
       final hookResult = await buildHook(
         () => useQuery(
           queryKey: const ['key'],
-          queryFn: () async => 'data',
+          queryFn: (context) async => 'data',
           initialData: 'initial-data',
           queryClient: client,
         ),
@@ -1499,7 +1522,7 @@ void main() {
       final hookResult = await buildHook(
         () => useQuery(
           queryKey: const ['key'],
-          queryFn: () async => 'data',
+          queryFn: (context) async => 'data',
           initialData: 'initial-data',
           staleDuration: StaleDuration.zero,
           queryClient: client,
@@ -1523,7 +1546,7 @@ void main() {
       final hookResult = await buildHook(
         () => useQuery(
           queryKey: const ['key'],
-          queryFn: () async => 'data',
+          queryFn: (context) async => 'data',
           initialData: 'initial-data',
           staleDuration: const StaleDuration(minutes: 5),
           queryClient: client,
@@ -1549,7 +1572,7 @@ void main() {
       final hookResult1 = await buildHook(
         () => useQuery(
           queryKey: const ['key'],
-          queryFn: () async {
+          queryFn: (context) async {
             await Future.delayed(const Duration(minutes: 1));
             return 'data-1';
           },
@@ -1569,7 +1592,7 @@ void main() {
       final hookResult2 = await buildHook(
         () => useQuery(
           queryKey: const ['key'],
-          queryFn: () async => 'data-2',
+          queryFn: (context) async => 'data-2',
           initialData: 'initial-data',
           queryClient: client,
         ),
@@ -1590,7 +1613,7 @@ void main() {
       final hookResult = await buildHook(
         () => useQuery(
           queryKey: const ['key'],
-          queryFn: () async => 'data',
+          queryFn: (context) async => 'data',
           initialData: 'initial-data',
           queryClient: client,
         ),
@@ -1606,7 +1629,7 @@ void main() {
       final hookResult = await buildHook(
         () => useQuery(
           queryKey: const ['key'],
-          queryFn: () async => 'data',
+          queryFn: (context) async => 'data',
           initialData: 'initial-data',
           initialDataUpdatedAt: specificTime,
           queryClient: client,
@@ -1622,7 +1645,7 @@ void main() {
       var hookResult = await buildHook(
         () => useQuery(
           queryKey: const ['key', 1],
-          queryFn: () async => 'data',
+          queryFn: (context) async => 'data',
           initialData: 'initial-data',
           initialDataUpdatedAt: clock.minutesAgo(10),
           staleDuration: const StaleDuration(minutes: 5),
@@ -1637,7 +1660,7 @@ void main() {
       hookResult = await buildHook(
         () => useQuery(
           queryKey: const ['key', 2],
-          queryFn: () async => 'data',
+          queryFn: (context) async => 'data',
           initialData: 'initial-data',
           initialDataUpdatedAt: clock.minutesAgo(10),
           staleDuration: const StaleDuration(minutes: 15),
@@ -1656,7 +1679,7 @@ void main() {
       final hookResult = await buildHook(
         () => useQuery(
           queryKey: const ['key'],
-          queryFn: () async => 'data',
+          queryFn: (context) async => 'data',
           initialData: 'initial-data',
           initialDataUpdatedAt: clock.minutesAgo(5),
           staleDuration: const StaleDuration(minutes: 10),
@@ -1693,7 +1716,7 @@ void main() {
       final hookResult = await buildHook(
         () => useQuery(
           queryKey: const ['key'],
-          queryFn: () async => 'data',
+          queryFn: (context) async => 'data',
           placeholderData: PlaceholderData('placeholder'),
           queryClient: client,
         ),
@@ -1711,7 +1734,7 @@ void main() {
       final hookResult = await buildHook(
         () => useQuery(
           queryKey: const ['key'],
-          queryFn: () async => 'data',
+          queryFn: (context) async => 'data',
           placeholderData: PlaceholderData('placeholder'),
           queryClient: client,
         ),
@@ -1733,7 +1756,7 @@ void main() {
       final hookResult = await buildHook(
         () => useQuery(
           queryKey: const ['key'],
-          queryFn: () async => 'data',
+          queryFn: (context) async => 'data',
           placeholderData: PlaceholderData('placeholder'),
           enabled: false,
           queryClient: client,
@@ -1752,14 +1775,14 @@ void main() {
         withCleanup((tester) async {
       final query = client.cache.build(QueryOptions(
         const ['key'],
-        () async => 'data-cached',
+        (context) async => 'data-cached',
       ));
       await query.fetch();
 
       final hookResult = await buildHook(
         () => useQuery(
           queryKey: const ['key'],
-          queryFn: () async => 'data',
+          queryFn: (context) async => 'data',
           placeholderData: PlaceholderData('placeholder'),
           staleDuration: StaleDuration.infinity,
           queryClient: client,
@@ -1776,7 +1799,7 @@ void main() {
       final hookResult = await buildHook(
         () => useQuery(
           queryKey: const ['key'],
-          queryFn: () async => 'data',
+          queryFn: (context) async => 'data',
           initialData: 'initial',
           placeholderData: PlaceholderData('placeholder'),
           queryClient: client,
@@ -1795,7 +1818,7 @@ void main() {
       final hookResult = await buildHook(
         () => useQuery(
           queryKey: const ['key'],
-          queryFn: () async => 'data',
+          queryFn: (context) async => 'data',
           placeholderData: PlaceholderData('placeholder'),
           queryClient: client,
         ),
@@ -1815,7 +1838,7 @@ void main() {
       final hookResult = await buildHookWithProps(
         (placeholder) => useQuery(
           queryKey: const ['key'],
-          queryFn: () async {
+          queryFn: (context) async {
             await Future.delayed(const Duration(seconds: 5));
             return 'data';
           },
@@ -1841,7 +1864,7 @@ void main() {
       final hookResult = await buildHookWithProps(
         (key) => useQuery(
           queryKey: key,
-          queryFn: () async => 'data-1',
+          queryFn: (context) async => 'data-1',
           placeholderData: PlaceholderData.resolveWith(
             (previousValue, _) => previousValue,
           ),
@@ -1870,7 +1893,7 @@ void main() {
       final hookResult = await buildHookWithProps(
         (key) => useQuery<String, Object>(
           queryKey: key,
-          queryFn: () async {
+          queryFn: (context) async {
             await Future.delayed(const Duration(seconds: 5));
             return 'data';
           },
@@ -1918,7 +1941,7 @@ void main() {
       final hookResult = await buildHook(
         () => useQuery(
           queryKey: const ['key'],
-          queryFn: () async {
+          queryFn: (context) async {
             fetchAttempts++;
             await Future.delayed(const Duration(seconds: 3));
             return 'data-$fetchAttempts';
@@ -1955,7 +1978,7 @@ void main() {
       final hookResult = await buildHookWithProps(
         (interval) => useQuery(
           queryKey: const ['key'],
-          queryFn: () async {
+          queryFn: (context) async {
             fetchAttempts++;
             await Future.delayed(const Duration(seconds: 3));
             return 'data-$fetchAttempts';
@@ -2001,7 +2024,7 @@ void main() {
       final hookResult = await buildHook(
         () => useQuery(
           queryKey: const ['key'],
-          queryFn: () async {
+          queryFn: (context) async {
             fetchAttempts++;
             await Future.delayed(const Duration(seconds: 3));
             return 'data-$fetchAttempts';
@@ -2027,7 +2050,7 @@ void main() {
       final hookResult = await buildHookWithProps(
         (enabled) => useQuery(
           queryKey: const ['key'],
-          queryFn: () async {
+          queryFn: (context) async {
             fetchAttempts++;
             await Future.delayed(const Duration(seconds: 3));
             return 'data-$fetchAttempts';
@@ -2077,7 +2100,7 @@ void main() {
         hookResult = await buildHook(
           () => useQuery(
             queryKey: [staleDuration],
-            queryFn: () async {
+            queryFn: (context) async {
               fetchAttempts++;
               await Future.delayed(const Duration(seconds: 3));
               return 'data-$fetchAttempts';
@@ -2108,7 +2131,7 @@ void main() {
         final hook = await buildHook(
           () => useQuery(
             queryKey: ['key', N],
-            queryFn: () async {
+            queryFn: (context) async {
               await Future.delayed(Duration.zero);
               throw Exception();
             },
@@ -2141,7 +2164,7 @@ void main() {
       final hook = await buildHook(
         () => useQuery(
           queryKey: const ['key'],
-          queryFn: () async {
+          queryFn: (context) async {
             await Future.delayed(Duration.zero);
             throw Exception();
           },
@@ -2168,7 +2191,7 @@ void main() {
       final hook = await buildHook(
         () => useQuery<Never, String>(
           queryKey: const ['key'],
-          queryFn: () async {
+          queryFn: (context) async {
             attempts++;
             await Future.delayed(Duration.zero);
             throw 'error-$attempts';
@@ -2204,7 +2227,7 @@ void main() {
       final hook = await buildHook(
         () => useQuery<Never, Exception>(
           queryKey: ['key'],
-          queryFn: () async {
+          queryFn: (context) async {
             await Future.delayed(Duration.zero);
             throw Exception();
           },
@@ -2252,7 +2275,7 @@ void main() {
       final hook = await buildHook(
         () => useQuery(
           queryKey: const ['key'],
-          queryFn: () async {
+          queryFn: (context) async {
             attempts++;
             await Future.delayed(Duration.zero);
             if (attempts < 3) {
@@ -2292,7 +2315,7 @@ void main() {
       final hook = await buildHookWithProps(
         (retry) => useQuery(
           queryKey: ['key'],
-          queryFn: () async {
+          queryFn: (context) async {
             await Future.delayed(Duration.zero);
             throw Exception();
           },
@@ -2330,7 +2353,7 @@ void main() {
       final hook = await buildHook(
         () => useQuery(
           queryKey: const ['key'],
-          queryFn: () async {
+          queryFn: (context) async {
             await Future.delayed(Duration.zero);
             throw Exception();
           },
@@ -2375,7 +2398,7 @@ void main() {
       final hook = await buildHook(
         () => useQuery(
           queryKey: const ['key'],
-          queryFn: () async {
+          queryFn: (context) async {
             attempts++;
             await Future.delayed(Duration.zero);
             throw Exception();
@@ -2422,7 +2445,7 @@ void main() {
       final hook = await buildHook(
         () => useQuery(
           queryKey: const ['key'],
-          queryFn: () async {
+          queryFn: (context) async {
             await Future.delayed(Duration.zero);
             throw Exception();
           },
@@ -2459,7 +2482,7 @@ void main() {
       final hook = await buildHook(
         () => useQuery(
           queryKey: const ['key'],
-          queryFn: () async {
+          queryFn: (context) async {
             await Future.delayed(Duration.zero);
             throw Exception();
           },
@@ -2488,7 +2511,7 @@ void main() {
       final hook = await buildHook(
         () => useQuery(
           queryKey: const ['key'],
-          queryFn: () async {
+          queryFn: (context) async {
             await Future.delayed(Duration.zero);
             throw Exception();
           },
@@ -2534,7 +2557,7 @@ void main() {
       final hook = await buildHook(
         () => useQuery(
           queryKey: const ['key'],
-          queryFn: () async {
+          queryFn: (context) async {
             attempts++;
             await Future.delayed(Duration.zero);
             throw 'error-$attempts';

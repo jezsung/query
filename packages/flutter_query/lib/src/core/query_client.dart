@@ -1,7 +1,9 @@
 import 'query_cache.dart';
 
 class QueryClient {
-  QueryClient({QueryCache? cache}) : _cache = cache ?? QueryCache();
+  QueryClient({QueryCache? cache}) : _cache = cache ?? QueryCache() {
+    _cache.setClient(this);
+  }
 
   final QueryCache _cache;
 

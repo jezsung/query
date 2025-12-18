@@ -95,7 +95,7 @@ class UseQueryResult<TData, TError> with EquatableMixin {
 
 UseQueryResult<TData, TError> useQuery<TData, TError>({
   required List<Object?> queryKey,
-  required Future<TData> Function() queryFn,
+  required Future<TData> Function(QueryContext context) queryFn,
   GcDurationOption gcDuration = const GcDuration(minutes: 5),
   bool enabled = true,
   TData? initialData,

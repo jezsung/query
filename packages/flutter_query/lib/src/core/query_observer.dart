@@ -12,6 +12,7 @@ import 'options/retry_delay.dart';
 import 'options/stale_duration.dart';
 import 'query.dart';
 import 'query_client.dart';
+import 'query_context.dart';
 import 'query_key.dart';
 
 /// Callback type for result change listeners
@@ -436,7 +437,7 @@ class QueryOptions<TData, TError> {
   });
 
   final List<Object?> queryKey;
-  final Future<TData> Function() queryFn;
+  final Future<TData> Function(QueryContext context) queryFn;
   final GcDurationOption gcDuration;
   final bool enabled;
   final TData? initialData;
