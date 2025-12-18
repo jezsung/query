@@ -341,4 +341,58 @@ void main() {
       expect(query!.state.error, isA<Exception>());
     });
   });
+
+  group('getQueryData', () {
+    test(
+        'SHOULD return data '
+        'WHEN query exists with data', () async {
+      await client.fetchQuery<String, Object>(
+        queryKey: const ['key'],
+        queryFn: (context) async => 'data',
+      );
+
+      final data = client.getQueryData<String, Object>(const ['key']);
+
+      expect(data, 'data');
+    });
+
+    test(
+        'SHOULD return null '
+        'WHEN query does not exist', () {
+      final data = client.getQueryData<String, Object>(const ['key']);
+
+      expect(data, isNull);
+    });
+
+    test(
+        'SHOULD return null '
+        'WHEN query exists but has no data yet', () {
+      // Build a query without fetching (query exists but in pending state)
+      client.cache.build<String, Object>(QueryOptions<String, Object>(
+        const ['key'],
+        (context) async => 'data',
+      ));
+
+      final data = client.getQueryData<String, Object>(const ['key']);
+
+      expect(data, isNull);
+    });
+
+    test(
+        'SHOULD use exact key matching'
+        '', () async {
+      await client.fetchQuery<String, Object>(
+        queryKey: const ['users', '1'],
+        queryFn: (context) async => 'data',
+      );
+
+      // Prefix key should not match
+      var data = client.getQueryData<String, Object>(const ['users']);
+      expect(data, isNull);
+
+      // Exact key should match
+      data = client.getQueryData<String, Object>(const ['users', '1']);
+      expect(data, 'data');
+    });
+  });
 }

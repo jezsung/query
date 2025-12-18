@@ -99,4 +99,17 @@ class QueryClient {
       // Silently ignore errors - prefetch is fire-and-forget
     }
   }
+
+  /// Returns the data for a query if it exists in the cache.
+  ///
+  /// This is an imperative way to retrieve cached data by exact query key.
+  /// Returns `null` if the query doesn't exist or has no data yet.
+  ///
+  /// Use this for reading cached data in callbacks or for optimistic updates.
+  /// Do not use inside widgets - use `useQuery` instead for reactive updates.
+  ///
+  /// Aligned with TanStack Query's `getQueryData` method.
+  TData? getQueryData<TData, TError>(List<Object?> queryKey) {
+    return _cache.get<TData, TError>(queryKey)?.state.data;
+  }
 }
