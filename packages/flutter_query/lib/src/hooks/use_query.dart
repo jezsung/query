@@ -9,8 +9,6 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import '../core/core.dart';
 import 'use_query_client.dart';
 
-// enum NetworkMode { online, always, offlineFirst }
-
 class UseQueryResult<TData, TError> with EquatableMixin {
   const UseQueryResult({
     required this.status,
@@ -25,10 +23,8 @@ class UseQueryResult<TData, TError> with EquatableMixin {
     required this.isEnabled,
     required StaleDuration staleDuration,
     required this.isPlaceholderData,
-    // required this.isFetchedAfterMount,
   }) : _staleDuration = staleDuration;
 
-  // Base fields
   final QueryStatus status;
   final FetchStatus fetchStatus;
   final TData? data;
@@ -42,13 +38,6 @@ class UseQueryResult<TData, TError> with EquatableMixin {
   final bool isPlaceholderData;
   final StaleDuration _staleDuration;
 
-  // final bool isFetchedAfterMount;
-  // final bool isPlaceholderData;
-  // final bool isStale;
-  // final T promise; // promise: Promise<TData>
-  // final T refetch; // refetch: (options: { throwOnError: boolean, cancelRefetch: boolean }) => Promise<UseQueryResult>
-
-  // Derived fields - computed from base fields
   bool get isError => status == QueryStatus.error;
   bool get isSuccess => status == QueryStatus.success;
   bool get isPending => status == QueryStatus.pending;
@@ -110,28 +99,6 @@ UseQueryResult<TData, TError> useQuery<TData, TError>({
   StaleDuration? staleDuration,
   StaleDurationResolver<TData, TError>? staleDurationResolver,
   QueryClient? queryClient,
-  // networkMode: 'online' | 'always' | 'offlineFirst'
-  // NetworkMode networkMode = NetworkMode.online,
-  // meta: Record<string, unknown>
-  // Map<String, Object?>? meta,
-  // notifyOnChangeProps: string[] | "all" | (() => string[] | "all" | undefined)
-  // List<String>? notifyOnChangeProps,
-  // queryKeyHashFn: (queryKey: QueryKey) => string
-  // String Function()? queryKeyHashFn,
-  // refetchOnMount: boolean | "always" | ((query: Query) => boolean | "always")
-  // refetchOnMount = true,
-  // refetchOnReconnect: boolean | "always" | ((query: Query) => boolean | "always")
-  // refetchOnReconnect = true,
-  // refetchOnWindowFocus: boolean | "always" | ((query: Query) => boolean | "always")
-  // refetchOnWindowFocus = true,
-  // select: (data: TData) => unknown
-  // Object? Function(TData)? select,
-  // structuralSharing: boolean | (oldData: unknown | undefined, newData: unknown) => unknown
-  // structuralSharing = true,
-  // subscribed: boolean
-  // bool subscribed = true,
-  // throwOnError: undefined | boolean | (error: TError, query: Query) => boolean
-  // throwOnError,
 }) {
   // Get QueryClient from context if not provided
   final client = queryClient ?? useQueryClient();
