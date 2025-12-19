@@ -46,14 +46,14 @@ class DefaultQueryOptions {
   final RefetchOnResume refetchOnResume;
 
   /// Default retry behavior.
-  final Retry<Object?>? retry;
+  final Retry? retry;
 
   /// Default retry on mount behavior.
   final bool retryOnMount;
 
   /// Default retry delay.
-  final RetryDelay<Object?>? retryDelay;
+  final RetryDelay? retryDelay;
 
   /// Default stale duration.
-  final StaleDuration<dynamic, Object?>? staleDuration;
+  final StaleDuration? staleDuration;
 }

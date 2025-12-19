@@ -63,7 +63,7 @@ class QueryOptions<TData, TError> {
         StaleDurationStatic() => StaleDuration<TData, TError>.static(),
         StaleDurationResolver() =>
           StaleDuration<TData, TError>.resolveWith((query) {
-            final resolved = sd.resolve(query as Query<dynamic, Object?>);
+            final resolved = sd.resolve(query as Query<dynamic, dynamic>);
             return switch (resolved) {
               StaleDurationDuration() => StaleDuration<TData, TError>(
                   microseconds: resolved.inMicroseconds,
