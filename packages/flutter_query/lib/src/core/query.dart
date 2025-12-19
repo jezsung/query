@@ -2,8 +2,6 @@ import 'package:clock/clock.dart';
 import 'package:equatable/equatable.dart';
 
 import 'options/gc_duration.dart';
-import 'options/retry.dart';
-import 'options/retry_delay.dart';
 import 'options/stale_duration.dart';
 import 'query_cache.dart';
 import 'query_client.dart';
@@ -119,12 +117,18 @@ class Query<TData, TError> with Removable {
 
     final context = QueryContext(queryKey: queryKey, client: _client);
 
+    // Default retry: 3 retries with exponential backoff
+    Duration? defaultRetry(int retryCount, TError error) {
+      if (retryCount >= 3) return null;
+      // Exponential backoff: 1s, 2s, 4s (capped at 30s)
+      final delayMs = 1000 * (1 << retryCount);
+      return Duration(milliseconds: delayMs > 30000 ? 30000 : delayMs);
+    }
+
     final retryer = Retryer<TData, TError>(
       RetryerConfig(
         fn: () => queryFn(context),
-        retry: _options.retry ?? Retry<TError>.count(3),
-        retryDelay:
-            _options.retryDelay ?? RetryDelay<TError>.exponentialBackoff(),
+        retry: _options.retry ?? defaultRetry,
         onFail: (failureCount, error) {
           // Update state on each failure for reactivity
           _setState(state.copyWith(

@@ -103,10 +103,9 @@ class QueryObserver<TData, TError> {
         newOptions.refetchOnMount != oldOptions.refetchOnMount;
     final didRefetchOnResumeChange =
         newOptions.refetchOnResume != oldOptions.refetchOnResume;
-    final didRetryChange = newOptions.retry != oldOptions.retry;
+    final didRetryChange = !identical(newOptions.retry, oldOptions.retry);
     final didRetryOnMountChange =
         newOptions.retryOnMount != oldOptions.retryOnMount;
-    final didRetryDelayChange = newOptions.retryDelay != oldOptions.retryDelay;
     // Resolve staleDuration to concrete values before comparing
     final newStaleDuration = newOptions.staleDurationResolver != null
         ? newOptions.staleDurationResolver!(_query)
@@ -126,8 +125,7 @@ class QueryObserver<TData, TError> {
         !didRefetchOnMountChange &&
         !didRefetchOnResumeChange &&
         !didRetryChange &&
-        !didRetryOnMountChange &&
-        !didRetryDelayChange) {
+        !didRetryOnMountChange) {
       return;
     }
 
@@ -216,7 +214,7 @@ class QueryObserver<TData, TError> {
     }
 
     // Handle retry option changes
-    if (didRetryChange || didRetryDelayChange) {
+    if (didRetryChange) {
       // Update query options (affects future fetches)
       _query.setOptions(newOptions);
     }

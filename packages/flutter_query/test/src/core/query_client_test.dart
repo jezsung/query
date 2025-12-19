@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'package:fake_async/fake_async.dart';
-import 'package:flutter_test/flutter_test.dart' hide Retry;
+import 'package:flutter_test/flutter_test.dart';
 
 import 'package:flutter_query/flutter_query.dart';
 
@@ -276,8 +276,10 @@ void main() {
           await Future.delayed(const Duration(seconds: 3));
           throw Exception('error');
         },
-        retry: Retry.count(3),
-        retryDelay: const RetryDelay(seconds: 1),
+        retry: (retryCount, error) {
+          if (retryCount >= 3) return null;
+          return const Duration(seconds: 1);
+        },
       ).ignore();
 
       // Initial attempt

@@ -1,7 +1,6 @@
 import 'default_query_options.dart';
 import 'options/gc_duration.dart';
 import 'options/retry.dart';
-import 'options/retry_delay.dart';
 import 'options/stale_duration.dart';
 import 'query.dart';
 import 'query_cache.dart';
@@ -33,7 +32,10 @@ class QueryClient {
   /// final client = QueryClient(
   ///   defaultQueryOptions: DefaultQueryOptions(
   ///     staleDuration: StaleDuration(minutes: 5),
-  ///     retry: Retry.count(3),
+  ///     retry: (retryCount, error) {
+  ///       if (retryCount >= 3) return null;
+  ///       return Duration(seconds: 1 << retryCount);
+  ///     },
   ///   ),
   /// );
   /// ```
@@ -67,8 +69,8 @@ class QueryClient {
   /// - Fetching data in callbacks or event handlers
   /// - Server-side data fetching
   ///
-  /// Unlike useQuery, [retry] defaults to [Retry.never()] (no retries) when not
-  /// specified at either the query level or client default level.
+  /// Unlike useQuery, [retry] defaults to no retries when not specified
+  /// at either the query level or client default level.
   ///
   /// Throws if the fetch fails.
   ///
@@ -79,7 +81,6 @@ class QueryClient {
     StaleDuration? staleDuration,
     StaleDurationResolver<TData, TError>? staleDurationResolver,
     Retry<TError>? retry,
-    RetryDelay<TError>? retryDelay,
     GcDurationOption? gcDuration,
     TData? initialData,
     DateTime? initialDataUpdatedAt,
@@ -91,35 +92,25 @@ class QueryClient {
       staleDuration: staleDuration,
       staleDurationResolver: staleDurationResolver,
       retry: retry,
-      retryDelay: retryDelay,
       gcDuration: gcDuration,
       initialData: initialData,
       initialDataUpdatedAt: initialDataUpdatedAt,
     );
 
     // Merge with client defaults
-    final effectiveOptions = options.mergeWith(defaultQueryOptions);
+    final mergedOptions = options.mergeWith(defaultQueryOptions);
 
-    // Apply fetchQuery-specific default: retry = never if not specified
-    final effectiveRetry = effectiveOptions.retry ?? Retry<TError>.never();
-    final queryOptions = QueryOptions<TData, TError>(
-      effectiveOptions.queryKey,
-      effectiveOptions.queryFn,
-      staleDuration: effectiveOptions.staleDuration,
-      staleDurationResolver: effectiveOptions.staleDurationResolver,
-      retry: effectiveRetry,
-      retryDelay: effectiveOptions.retryDelay,
-      gcDuration: effectiveOptions.gcDuration,
-      initialData: effectiveOptions.initialData,
-      initialDataUpdatedAt: effectiveOptions.initialDataUpdatedAt,
+    // fetchQuery defaults to no retry if not specified
+    final effectiveOptions = mergedOptions.copyWith(
+      retry: mergedOptions.retry ?? (_, __) => null,
     );
 
-    final query = _cache.build<TData, TError>(queryOptions);
+    final query = _cache.build<TData, TError>(effectiveOptions);
 
     // Check if data is stale
     if (query.isStaleByTime(
-      queryOptions.staleDuration,
-      queryOptions.staleDurationResolver,
+      effectiveOptions.staleDuration,
+      effectiveOptions.staleDurationResolver,
     )) {
       return query.fetch();
     }
@@ -143,7 +134,6 @@ class QueryClient {
     StaleDuration? staleDuration,
     StaleDurationResolver<TData, TError>? staleDurationResolver,
     Retry<TError>? retry,
-    RetryDelay<TError>? retryDelay,
     GcDurationOption? gcDuration,
     TData? initialData,
     DateTime? initialDataUpdatedAt,
@@ -155,7 +145,6 @@ class QueryClient {
         staleDuration: staleDuration,
         staleDurationResolver: staleDurationResolver,
         retry: retry,
-        retryDelay: retryDelay,
         gcDuration: gcDuration,
         initialData: initialData,
         initialDataUpdatedAt: initialDataUpdatedAt,

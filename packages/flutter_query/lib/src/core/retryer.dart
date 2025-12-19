@@ -1,5 +1,4 @@
 import 'options/retry.dart';
-import 'options/retry_delay.dart';
 
 /// Configuration for the [Retryer] class.
 ///
@@ -10,13 +9,11 @@ class RetryerConfig<TData, TError> {
   /// Creates a retryer configuration.
   ///
   /// The [fn] is the async function to execute and retry on failure.
-  /// The [retry] option determines whether/how many times to retry.
-  /// The [retryDelay] option determines how long to wait between retries.
+  /// The [retry] callback determines whether to retry and the delay.
   /// The [onFail] callback is invoked after each failed attempt.
   const RetryerConfig({
     required this.fn,
     required this.retry,
-    required this.retryDelay,
     this.onFail,
   });
 
@@ -25,15 +22,10 @@ class RetryerConfig<TData, TError> {
   /// This function will be called initially and after each failed retry attempt.
   final Future<TData> Function() fn;
 
-  /// The retry configuration that determines whether to retry.
+  /// The retry callback that determines whether to retry and how long to wait.
   ///
-  /// See [Retry] for available configurations.
+  /// Returns `null` to stop retrying, or a [Duration] to wait before retrying.
   final Retry<TError> retry;
-
-  /// The retry delay configuration that determines how long to wait between retries.
-  ///
-  /// See [RetryDelay] for available configurations.
-  final RetryDelay<TError> retryDelay;
 
   /// Optional callback invoked after each failed attempt.
   ///
@@ -51,8 +43,7 @@ class RetryerConfig<TData, TError> {
 /// configuration.
 ///
 /// Key features:
-/// - Configurable retry count (none, fixed, infinite, or custom logic)
-/// - Configurable retry delay (fixed, exponential backoff, or custom logic)
+/// - Unified retry control via callback (decision + delay)
 /// - Failure count tracking
 /// - Cancellation support
 /// - Lifecycle callbacks
@@ -65,8 +56,10 @@ class RetryerConfig<TData, TError> {
 ///       // Your async operation
 ///       return await fetchData();
 ///     },
-///     retry: Retry.count(3),
-///     retryDelay: RetryDelay.exponentialBackoff(),
+///     retry: (retryCount, error) {
+///       if (retryCount >= 3) return null; // Stop after 3 retries
+///       return Duration(seconds: 1 << retryCount); // Exponential backoff
+///     },
 ///     onFail: (failureCount, error) {
 ///       print('Attempt $failureCount failed: $error');
 ///     },
@@ -92,11 +85,11 @@ class Retryer<TData, TError> {
   /// Whether the retryer has been cancelled.
   bool _isCancelled = false;
 
-  /// The current failure count.
+  /// The current retry count.
   ///
-  /// This starts at 0 and increments after each failed attempt.
+  /// This starts at 0 and increments after each retry attempt.
   /// It's used to determine whether to retry and to calculate retry delays.
-  int _failureCount = 0;
+  int _retryCount = 0;
 
   /// Starts the retry loop and returns the result.
   ///
@@ -107,16 +100,15 @@ class Retryer<TData, TError> {
   /// 1. Execute the function
   /// 2. If successful, return the result
   /// 3. If failed:
-  ///    a. Check if we should retry (based on retry config)
-  ///    b. If no retry, rethrow the error
-  ///    c. If retry, increment failure count
-  ///    d. Call onFail callback
-  ///    e. Wait for retry delay
-  ///    f. Go back to step 1
+  ///    a. Call retry callback to get delay (or null to stop)
+  ///    b. If null, rethrow the error
+  ///    c. Increment retry count and call onFail callback
+  ///    d. Wait for the delay
+  ///    e. Go back to step 1
   ///
   /// Throws:
   /// - [CancelledException] if the retryer was cancelled during retry
-  /// - The original error if retry limit is reached or retry is not configured
+  /// - The original error if retry callback returns null
   ///
   /// Example:
   /// ```dart
@@ -132,7 +124,7 @@ class Retryer<TData, TError> {
   /// }
   /// ```
   Future<TData> start() async {
-    // Retry loop - continues until success, cancellation, or retry limit reached
+    // Retry loop - continues until success, cancellation, or retry returns null
     while (!_isCancelled) {
       try {
         // Execute the function
@@ -147,22 +139,17 @@ class Retryer<TData, TError> {
         // Explicitly cast to TError after type check
         final typedError = error as TError;
 
-        // Calculate retry delay before incrementing failureCount
-        // (aligned with TanStack Query: retryDelay uses pre-increment count)
-        final delay = _config.retryDelay.resolve(_failureCount, typedError);
+        // Call retry callback to get delay (or null to stop)
+        final delay = _config.retry(_retryCount, typedError);
 
-        // Determine if we should retry
-        final shouldRetry =
-            _config.retry.shouldRetry(_failureCount, typedError);
+        // If null, stop retrying and rethrow the error
+        if (delay == null) rethrow;
 
-        // If no retry, rethrow the error
-        if (!shouldRetry) rethrow;
+        // Increment retry count for next attempt
+        _retryCount++;
 
-        // Increment failure count for next attempt
-        _failureCount++;
-
-        // Notify failure callback (uses post-increment count)
-        _config.onFail?.call(_failureCount, typedError);
+        // Notify failure callback with failureCount (1-indexed for QueryState)
+        _config.onFail?.call(_retryCount, typedError);
 
         // Wait for retry delay
         await Future.delayed(delay);

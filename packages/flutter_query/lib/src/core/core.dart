@@ -14,4 +14,3 @@ export 'options/placeholder_data.dart';
 export 'options/refetch_on_mount.dart';
 export 'options/refetch_on_resume.dart';
 export 'options/retry.dart';
-export 'options/retry_delay.dart';

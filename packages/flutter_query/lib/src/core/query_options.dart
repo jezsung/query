@@ -4,7 +4,6 @@ import 'options/placeholder_data.dart';
 import 'options/refetch_on_mount.dart';
 import 'options/refetch_on_resume.dart';
 import 'options/retry.dart';
-import 'options/retry_delay.dart';
 import 'options/stale_duration.dart';
 import 'query_context.dart';
 
@@ -26,7 +25,6 @@ class QueryOptions<TData, TError> {
     this.refetchOnResume,
     this.retry,
     this.retryOnMount,
-    this.retryDelay,
     this.staleDuration,
     this.staleDurationResolver,
   });
@@ -43,7 +41,6 @@ class QueryOptions<TData, TError> {
   final RefetchOnResume? refetchOnResume;
   final Retry<TError>? retry;
   final bool? retryOnMount;
-  final RetryDelay<TError>? retryDelay;
   final StaleDuration? staleDuration;
   final StaleDurationResolver<TData, TError>? staleDurationResolver;
 
@@ -65,9 +62,44 @@ class QueryOptions<TData, TError> {
       refetchOnResume: refetchOnResume ?? defaults.refetchOnResume,
       retry: retry ?? defaults.retry as Retry<TError>?,
       retryOnMount: retryOnMount ?? defaults.retryOnMount,
-      retryDelay: retryDelay ?? defaults.retryDelay as RetryDelay<TError>?,
       staleDuration: staleDuration ?? defaults.staleDuration,
       staleDurationResolver: staleDurationResolver,
+    );
+  }
+
+  /// Creates a copy of this QueryOptions with the given fields replaced.
+  QueryOptions<TData, TError> copyWith({
+    List<Object?>? queryKey,
+    Future<TData> Function(QueryContext context)? queryFn,
+    bool? enabled,
+    GcDurationOption? gcDuration,
+    TData? initialData,
+    DateTime? initialDataUpdatedAt,
+    PlaceholderData<TData, TError>? placeholderData,
+    Duration? refetchInterval,
+    RefetchOnMount? refetchOnMount,
+    RefetchOnResume? refetchOnResume,
+    Retry<TError>? retry,
+    bool? retryOnMount,
+    StaleDuration? staleDuration,
+    StaleDurationResolver<TData, TError>? staleDurationResolver,
+  }) {
+    return QueryOptions<TData, TError>(
+      queryKey ?? this.queryKey,
+      queryFn ?? this.queryFn,
+      enabled: enabled ?? this.enabled,
+      gcDuration: gcDuration ?? this.gcDuration,
+      initialData: initialData ?? this.initialData,
+      initialDataUpdatedAt: initialDataUpdatedAt ?? this.initialDataUpdatedAt,
+      placeholderData: placeholderData ?? this.placeholderData,
+      refetchInterval: refetchInterval ?? this.refetchInterval,
+      refetchOnMount: refetchOnMount ?? this.refetchOnMount,
+      refetchOnResume: refetchOnResume ?? this.refetchOnResume,
+      retry: retry ?? this.retry,
+      retryOnMount: retryOnMount ?? this.retryOnMount,
+      staleDuration: staleDuration ?? this.staleDuration,
+      staleDurationResolver:
+          staleDurationResolver ?? this.staleDurationResolver,
     );
   }
 }

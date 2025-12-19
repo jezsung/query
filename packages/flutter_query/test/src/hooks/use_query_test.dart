@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:clock/clock.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:flutter_hooks_test/flutter_hooks_test.dart';
-import 'package:flutter_test/flutter_test.dart' hide Retry;
+import 'package:flutter_test/flutter_test.dart';
 
 import 'package:flutter_query/flutter_query.dart';
 
@@ -116,7 +116,7 @@ void main() {
           await Future.delayed(const Duration(seconds: 5));
           throw error;
         },
-        retry: const Retry.never(),
+        retry: (_, __) => null,
         queryClient: client,
       ),
     );
@@ -800,7 +800,7 @@ void main() {
             capturedState = query.state;
             return const StaleDuration();
           },
-          retry: const Retry.never(),
+          retry: (_, __) => null,
           queryClient: client,
         ),
       );
@@ -1156,7 +1156,7 @@ void main() {
             return 'data-$fetchCount';
           },
           refetchOnResume: RefetchOnResume.never,
-          retry: const Retry.never(),
+          retry: (_, __) => null,
           queryClient: client,
         ),
       );
@@ -2125,7 +2125,7 @@ void main() {
   });
 
   group('retry', () {
-    testWidgets('SHOULD retry for N times WHEN retry is Retry.count(N)',
+    testWidgets('SHOULD retry for N times WHEN retry returns duration N times',
         withCleanup((tester) async {
       for (final N in [0, 1, 2, 4, 8, 16, 32, 64, 128]) {
         final hook = await buildHook(
@@ -2135,8 +2135,10 @@ void main() {
               await Future.delayed(Duration.zero);
               throw Exception();
             },
-            retry: Retry.count(N),
-            retryDelay: const RetryDelay(seconds: 1),
+            retry: (retryCount, error) {
+              if (retryCount >= N) return null;
+              return const Duration(seconds: 1);
+            },
             queryClient: client,
           ),
         );
@@ -2154,12 +2156,7 @@ void main() {
       }
     }));
 
-    testWidgets('SHOULD retry forever WHEN retry is Retry.always()',
-        withCleanup((tester) async {
-      // Not implemented yet as there's no manual way to stop infinite retries
-    }));
-
-    testWidgets('SHOULD NOT retry WHEN retry is Retry.never()',
+    testWidgets('SHOULD NOT retry WHEN retry returns null',
         withCleanup((tester) async {
       final hook = await buildHook(
         () => useQuery(
@@ -2168,7 +2165,7 @@ void main() {
             await Future.delayed(Duration.zero);
             throw Exception();
           },
-          retry: const Retry.never(),
+          retry: (_, __) => null,
           queryClient: client,
         ),
       );
@@ -2183,8 +2180,7 @@ void main() {
       expect(hook.current.failureCount, 1);
     }));
 
-    testWidgets(
-        'SHOULD retry with custom logic WHEN retry is Retry.resolveWith()',
+    testWidgets('SHOULD retry with custom logic WHEN retry callback provided',
         withCleanup((tester) async {
       var attempts = 0;
 
@@ -2196,12 +2192,14 @@ void main() {
             await Future.delayed(Duration.zero);
             throw 'error-$attempts';
           },
-          retry: Retry.resolveWith((failureCount, error) {
+          retry: (retryCount, error) {
             // Only retry if error message contains specific text
             // AND retry count is less than 2
-            return error.contains('error-$attempts') && failureCount < 2;
-          }),
-          retryDelay: const RetryDelay(seconds: 1),
+            if (error.contains('error-$attempts') && retryCount < 2) {
+              return const Duration(seconds: 1);
+            }
+            return null;
+          },
           queryClient: client,
         ),
       );
@@ -2231,9 +2229,11 @@ void main() {
             await Future.delayed(Duration.zero);
             throw Exception();
           },
-          retry: Retry.count(5),
+          retry: (retryCount, error) {
+            if (retryCount >= 5) return null;
+            return const Duration(seconds: 1);
+          },
           retryOnMount: true,
-          retryDelay: const RetryDelay(seconds: 1),
           queryClient: client,
         ),
       );
@@ -2283,8 +2283,10 @@ void main() {
             }
             return 'data';
           },
-          retry: const Retry.count(3),
-          retryDelay: const RetryDelay(seconds: 1),
+          retry: (retryCount, error) {
+            if (retryCount >= 3) return null;
+            return const Duration(seconds: 1);
+          },
           queryClient: client,
         ),
       );
@@ -2313,19 +2315,21 @@ void main() {
         'SHOULD retry on mount WHEN retryOnMount is true AND query has error',
         withCleanup((tester) async {
       final hook = await buildHookWithProps(
-        (retry) => useQuery(
+        (maxRetries) => useQuery(
           queryKey: ['key'],
           queryFn: (context) async {
             await Future.delayed(Duration.zero);
             throw Exception();
           },
-          retry: retry,
+          retry: (retryCount, error) {
+            if (retryCount >= maxRetries) return null;
+            return const Duration(seconds: 1);
+          },
           retryOnMount: true,
-          retryDelay: const RetryDelay(seconds: 1),
           queryClient: client,
         ),
         // Don't retry on initial attempt
-        initialProps: const Retry.never(),
+        initialProps: 0,
       );
 
       // Initial attempt
@@ -2333,9 +2337,9 @@ void main() {
       expect(hook.current.status, QueryStatus.error);
       expect(hook.current.failureCount, 1);
 
-      // Remount hook and set retry to 3
+      // Remount hook and set maxRetries to 3
       await hook.unmount();
-      await hook.rebuildWithProps(const Retry.count(3));
+      await hook.rebuildWithProps(3);
 
       // First attempt since remount (not retry)
       await tester.pump(Duration.zero);
@@ -2357,9 +2361,11 @@ void main() {
             await Future.delayed(Duration.zero);
             throw Exception();
           },
-          retry: const Retry.count(1),
+          retry: (retryCount, error) {
+            if (retryCount >= 1) return null;
+            return const Duration(seconds: 1);
+          },
           retryOnMount: false,
-          retryDelay: const RetryDelay(seconds: 1),
           queryClient: client,
         ),
       );
@@ -2403,9 +2409,11 @@ void main() {
             await Future.delayed(Duration.zero);
             throw Exception();
           },
-          retry: const Retry.count(2),
+          retry: (retryCount, error) {
+            if (retryCount >= 2) return null;
+            return const Duration(seconds: 1);
+          },
           retryOnMount: true,
-          retryDelay: const RetryDelay(seconds: 1),
           queryClient: client,
         ),
       );
@@ -2439,7 +2447,7 @@ void main() {
     }));
   });
 
-  group('retryDelay', () {
+  group('retry delay patterns', () {
     testWidgets('SHOULD retry with exponential backoff',
         withCleanup((tester) async {
       final hook = await buildHook(
@@ -2449,8 +2457,12 @@ void main() {
             await Future.delayed(Duration.zero);
             throw Exception();
           },
-          retry: const Retry.count(8),
-          retryDelay: const RetryDelay.exponentialBackoff(),
+          retry: (retryCount, error) {
+            if (retryCount >= 8) return null;
+            // Exponential backoff: 1s, 2s, 4s, 8s, 16s, capped at 30s
+            final delaySeconds = 1 << retryCount;
+            return Duration(seconds: delaySeconds > 30 ? 30 : delaySeconds);
+          },
           queryClient: client,
         ),
       );
@@ -2486,8 +2498,10 @@ void main() {
             await Future.delayed(Duration.zero);
             throw Exception();
           },
-          retry: const Retry.count(8),
-          retryDelay: const RetryDelay(seconds: 1),
+          retry: (retryCount, error) {
+            if (retryCount >= 8) return null;
+            return const Duration(seconds: 1);
+          },
           queryClient: client,
         ),
       );
@@ -2515,13 +2529,13 @@ void main() {
             await Future.delayed(Duration.zero);
             throw Exception();
           },
-          retry: const Retry.count(3),
-          retryDelay: RetryDelay.resolveWith((failureCount, error) {
-            // Linear delay: 1s * (failureCount + 1)
-            final delay = Duration(seconds: 1 * (failureCount + 1));
+          retry: (retryCount, error) {
+            // Linear delay: 1s * (retryCount + 1)
+            final delay = Duration(seconds: 1 * (retryCount + 1));
             delays.add(delay.inSeconds);
+            if (retryCount >= 3) return null;
             return delay;
-          }),
+          },
           queryClient: client,
         ),
       );
@@ -2543,15 +2557,15 @@ void main() {
       expect(hook.current.failureCount, 4);
 
       // Verify linear delays were calculated
-      // Note: resolver is called for each failure, even the last one
-      // that doesn't result in a retry (shouldRetry returns false)
+      // Note: callback is called for each failure, even the last one
+      // that doesn't result in a retry (returns null)
       expect(delays, [1, 2, 3, 4]);
     }));
 
-    testWidgets('SHOULD pass correct args to delay resolver',
+    testWidgets('SHOULD pass correct args to retry callback',
         withCleanup((tester) async {
       var attempts = 0;
-      final failureCounts = [];
+      final retryCounts = [];
       final errors = [];
 
       final hook = await buildHook(
@@ -2562,12 +2576,12 @@ void main() {
             await Future.delayed(Duration.zero);
             throw 'error-$attempts';
           },
-          retry: const Retry.count(3),
-          retryDelay: RetryDelay.resolveWith((failureCount, error) {
-            failureCounts.add(failureCount);
+          retry: (retryCount, error) {
+            retryCounts.add(retryCount);
             errors.add(error);
+            if (retryCount >= 3) return null;
             return const Duration(seconds: 1);
-          }),
+          },
           queryClient: client,
         ),
       );
@@ -2583,11 +2597,11 @@ void main() {
         expect(hook.current.failureCount, 1 + retryNth);
       }
 
-      // Verify resolver received correct failureCount and error for each failure
-      // Note: resolver is called for each failure, even the last one
-      // that doesn't result in a retry (shouldRetry returns false)
+      // Verify callback received correct retryCount and error for each failure
+      // Note: callback is called for each failure, even the last one
+      // that doesn't result in a retry (returns null)
       expect(attempts, 4);
-      expect(failureCounts, [0, 1, 2, 3]);
+      expect(retryCounts, [0, 1, 2, 3]);
       expect(errors, ['error-1', 'error-2', 'error-3', 'error-4']);
     }));
   });

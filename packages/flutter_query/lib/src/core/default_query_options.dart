@@ -2,7 +2,6 @@ import 'options/gc_duration.dart';
 import 'options/refetch_on_mount.dart';
 import 'options/refetch_on_resume.dart';
 import 'options/retry.dart';
-import 'options/retry_delay.dart';
 import 'options/stale_duration.dart';
 
 /// Default options for queries that can be set at the QueryClient level.
@@ -26,7 +25,6 @@ class DefaultQueryOptions {
     this.refetchOnResume = RefetchOnResume.stale,
     this.retry,
     this.retryOnMount = true,
-    this.retryDelay,
     this.staleDuration,
   });
 
@@ -45,14 +43,11 @@ class DefaultQueryOptions {
   /// Default refetch behavior on app resume.
   final RefetchOnResume refetchOnResume;
 
-  /// Default retry behavior.
+  /// Default retry callback.
   final Retry? retry;
 
   /// Default retry on mount behavior.
   final bool retryOnMount;
-
-  /// Default retry delay.
-  final RetryDelay? retryDelay;
 
   /// Default stale duration.
   final StaleDuration? staleDuration;
