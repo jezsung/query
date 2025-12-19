@@ -6,7 +6,6 @@ import 'options/refetch_on_resume.dart';
 import 'options/retry.dart';
 import 'options/retry_delay.dart';
 import 'options/stale_duration.dart';
-import 'query.dart';
 import 'query_context.dart';
 
 /// Options for configuring a query.
@@ -29,6 +28,7 @@ class QueryOptions<TData, TError> {
     this.retryOnMount,
     this.retryDelay,
     this.staleDuration,
+    this.staleDurationResolver,
   });
 
   final List<Object?> queryKey;
@@ -44,38 +44,14 @@ class QueryOptions<TData, TError> {
   final Retry<TError>? retry;
   final bool? retryOnMount;
   final RetryDelay<TError>? retryDelay;
-  final StaleDuration<TData, TError>? staleDuration;
+  final StaleDuration? staleDuration;
+  final StaleDurationResolver<TData, TError>? staleDurationResolver;
 
   /// Merges this QueryOptions with default options.
   ///
   /// Query-specific options take precedence over defaults.
   /// Handles type conversion for generic types (dynamic/Object? -> TData/TError).
   QueryOptions<TData, TError> mergeWith(DefaultQueryOptions defaults) {
-    // Convert staleDuration from dynamic to TData
-    StaleDuration<TData, TError>? defaultStaleDuration;
-    final sd = defaults.staleDuration;
-    if (sd != null) {
-      defaultStaleDuration = switch (sd) {
-        StaleDurationDuration() => StaleDuration<TData, TError>(
-            microseconds: sd.inMicroseconds,
-          ),
-        StaleDurationInfinity() => StaleDuration<TData, TError>.infinity(),
-        StaleDurationStatic() => StaleDuration<TData, TError>.static(),
-        StaleDurationResolver() =>
-          StaleDuration<TData, TError>.resolveWith((query) {
-            final resolved = sd.resolve(query as Query<dynamic, dynamic>);
-            return switch (resolved) {
-              StaleDurationDuration() => StaleDuration<TData, TError>(
-                  microseconds: resolved.inMicroseconds,
-                ),
-              StaleDurationInfinity() =>
-                StaleDuration<TData, TError>.infinity(),
-              StaleDurationStatic() => StaleDuration<TData, TError>.static(),
-            };
-          }),
-      };
-    }
-
     return QueryOptions<TData, TError>(
       queryKey,
       queryFn,
@@ -90,7 +66,8 @@ class QueryOptions<TData, TError> {
       retry: retry ?? defaults.retry as Retry<TError>?,
       retryOnMount: retryOnMount ?? defaults.retryOnMount,
       retryDelay: retryDelay ?? defaults.retryDelay as RetryDelay<TError>?,
-      staleDuration: staleDuration ?? defaultStaleDuration,
+      staleDuration: staleDuration ?? defaults.staleDuration,
+      staleDurationResolver: staleDurationResolver,
     );
   }
 }

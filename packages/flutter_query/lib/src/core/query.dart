@@ -55,6 +55,8 @@ class Query<TData, TError> with Removable {
 
   /// Checks if the query data is stale based on the given stale duration.
   ///
+  /// If [staleDurationResolver] is provided, it takes precedence over [staleDuration].
+  ///
   /// Returns true if:
   /// - No data exists
   /// - Query is invalidated (unless static)
@@ -65,14 +67,19 @@ class Query<TData, TError> with Removable {
   /// - Data is still fresh
   ///
   /// Aligned with TanStack Query's `isStaleByTime` method.
-  bool isStaleByTime(StaleDuration<TData, TError>? staleDuration) {
+  bool isStaleByTime(
+    StaleDuration? staleDuration, [
+    StaleDurationResolver<TData, TError>? staleDurationResolver,
+  ]) {
     // No data is always stale
     if (state.data == null) {
       return true;
     }
 
-    final resolved =
-        (staleDuration ?? StaleDuration<TData, TError>()).resolve(this);
+    // Resolver takes precedence over static value
+    final resolved = staleDurationResolver != null
+        ? staleDurationResolver(this)
+        : (staleDuration ?? const StaleDuration());
 
     // Static queries are never stale
     if (resolved is StaleDurationStatic) {
@@ -290,7 +297,10 @@ class Query<TData, TError> with Removable {
   bool isStatic() {
     if (_observers.isEmpty) return false;
     return _observers.any((observer) {
-      final resolved = observer.options.staleDuration?.resolve(this);
+      final opts = observer.options;
+      final resolved = opts.staleDurationResolver != null
+          ? opts.staleDurationResolver!(this)
+          : opts.staleDuration;
       return resolved is StaleDurationStatic;
     });
   }

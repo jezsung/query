@@ -76,7 +76,8 @@ class QueryClient {
   Future<TData> fetchQuery<TData, TError>({
     required List<Object?> queryKey,
     required Future<TData> Function(QueryContext context) queryFn,
-    StaleDuration<TData, TError>? staleDuration,
+    StaleDuration? staleDuration,
+    StaleDurationResolver<TData, TError>? staleDurationResolver,
     Retry<TError>? retry,
     RetryDelay<TError>? retryDelay,
     GcDurationOption? gcDuration,
@@ -88,6 +89,7 @@ class QueryClient {
       queryKey,
       queryFn,
       staleDuration: staleDuration,
+      staleDurationResolver: staleDurationResolver,
       retry: retry,
       retryDelay: retryDelay,
       gcDuration: gcDuration,
@@ -104,6 +106,7 @@ class QueryClient {
       effectiveOptions.queryKey,
       effectiveOptions.queryFn,
       staleDuration: effectiveOptions.staleDuration,
+      staleDurationResolver: effectiveOptions.staleDurationResolver,
       retry: effectiveRetry,
       retryDelay: effectiveOptions.retryDelay,
       gcDuration: effectiveOptions.gcDuration,
@@ -114,7 +117,10 @@ class QueryClient {
     final query = _cache.build<TData, TError>(queryOptions);
 
     // Check if data is stale
-    if (query.isStaleByTime(queryOptions.staleDuration)) {
+    if (query.isStaleByTime(
+      queryOptions.staleDuration,
+      queryOptions.staleDurationResolver,
+    )) {
       return query.fetch();
     }
 
@@ -134,7 +140,8 @@ class QueryClient {
   Future<void> prefetchQuery<TData, TError>({
     required List<Object?> queryKey,
     required Future<TData> Function(QueryContext context) queryFn,
-    StaleDuration<TData, TError>? staleDuration,
+    StaleDuration? staleDuration,
+    StaleDurationResolver<TData, TError>? staleDurationResolver,
     Retry<TError>? retry,
     RetryDelay<TError>? retryDelay,
     GcDurationOption? gcDuration,
@@ -146,6 +153,7 @@ class QueryClient {
         queryKey: queryKey,
         queryFn: queryFn,
         staleDuration: staleDuration,
+        staleDurationResolver: staleDurationResolver,
         retry: retry,
         retryDelay: retryDelay,
         gcDuration: gcDuration,

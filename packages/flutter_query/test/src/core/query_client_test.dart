@@ -54,7 +54,7 @@ void main() {
         defaultQueryOptions: DefaultQueryOptions(
           gcDuration: GcDuration(minutes: 10),
           refetchOnMount: RefetchOnMount.never,
-          staleDuration: StaleDuration.infinity(),
+          staleDuration: StaleDuration.infinity,
         ),
       );
     });
@@ -102,7 +102,7 @@ void main() {
           return 'data-1';
         },
         // Override with zero stale time
-        staleDuration: StaleDuration.zero(),
+        staleDuration: StaleDuration.zero,
       );
 
       expect(fetches, 1);
@@ -114,7 +114,7 @@ void main() {
           fetches++;
           return 'data-2';
         },
-        staleDuration: StaleDuration.zero(),
+        staleDuration: StaleDuration.zero,
       );
 
       // Should have fetched again
@@ -140,20 +140,20 @@ void main() {
     test(
         'SHOULD update defaultQueryOptions'
         '', () {
-      // Initially set to StaleDuration.infinity()
+      // Initially set to StaleDuration.infinity
       expect(
         client.defaultQueryOptions.staleDuration,
-        StaleDuration.infinity(),
+        StaleDuration.infinity,
       );
 
       client.defaultQueryOptions = DefaultQueryOptions(
-        staleDuration: StaleDuration.zero(),
+        staleDuration: StaleDuration.zero,
       );
 
-      // Should have been set to StaleDuration.zero()
+      // Should have been set to StaleDuration.zero
       expect(
         client.defaultQueryOptions.staleDuration,
-        StaleDuration.zero(),
+        StaleDuration.zero,
       );
     });
   });
@@ -173,14 +173,14 @@ void main() {
       await client.fetchQuery<String, Object>(
         queryKey: const ['key'],
         queryFn: (context) async => 'first',
-        staleDuration: StaleDuration.infinity(),
+        staleDuration: StaleDuration.infinity,
       );
 
       // Second fetch with different queryFn - should return cached
       final data = await client.fetchQuery<String, Object>(
         queryKey: const ['key'],
         queryFn: (context) async => 'second',
-        staleDuration: StaleDuration.infinity(),
+        staleDuration: StaleDuration.infinity,
       );
 
       expect(data, equals('first'));
@@ -194,14 +194,14 @@ void main() {
       data = await client.fetchQuery<String, Object>(
         queryKey: const ['key'],
         queryFn: (context) async => 'data-${++calls}',
-        staleDuration: StaleDuration.zero(),
+        staleDuration: StaleDuration.zero,
       );
       expect(data, equals('data-1'));
 
       data = await client.fetchQuery<String, Object>(
         queryKey: const ['key'],
         queryFn: (context) async => 'data-${++calls}',
-        staleDuration: StaleDuration.zero(),
+        staleDuration: StaleDuration.zero,
       );
       expect(data, equals('data-2'));
     });
@@ -311,7 +311,7 @@ void main() {
       await client.fetchQuery<String, Object>(
         queryKey: const ['key'],
         queryFn: (_) async => 'data-${++callCount}',
-        staleDuration: StaleDuration.infinity(),
+        staleDuration: StaleDuration.infinity,
       );
 
       // Multiple subsequent fetches should all return cached data
@@ -319,7 +319,7 @@ void main() {
         final data = await client.fetchQuery<String, Object>(
           queryKey: const ['key'],
           queryFn: (_) async => 'data-${++callCount}',
-          staleDuration: StaleDuration.infinity(),
+          staleDuration: StaleDuration.infinity,
         );
         expect(data, equals('data-1'));
       }
@@ -357,7 +357,7 @@ void main() {
             return 'data';
           },
           initialData: 'initial',
-          staleDuration: StaleDuration.infinity(),
+          staleDuration: StaleDuration.infinity,
         );
 
         expect(data, 'initial');
@@ -376,7 +376,7 @@ void main() {
             return 'data';
           },
           initialData: 'initial',
-          staleDuration: StaleDuration.zero(),
+          staleDuration: StaleDuration.zero,
         );
 
         expect(data, 'data');
@@ -432,7 +432,7 @@ void main() {
           queryKey: const ['key'],
           queryFn: (context) async => 'data',
           initialData: 'initial',
-          staleDuration: StaleDuration.infinity(),
+          staleDuration: StaleDuration.infinity,
         );
 
         final query = client.cache.get<String, Object>(const ['key']);
@@ -891,7 +891,7 @@ void main() {
             return 'data';
           },
           enabled: true,
-          staleDuration: StaleDuration.static(),
+          staleDuration: StaleDuration.static,
         ),
       );
       addTearDown(observer.dispose);

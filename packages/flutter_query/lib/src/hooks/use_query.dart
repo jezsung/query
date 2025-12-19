@@ -23,7 +23,7 @@ class UseQueryResult<TData, TError> with EquatableMixin {
     required this.failureCount,
     required this.failureReason,
     required this.isEnabled,
-    required StaleDurationValue<TData, TError> staleDuration,
+    required StaleDuration staleDuration,
     required this.isPlaceholderData,
     // required this.isFetchedAfterMount,
   }) : _staleDuration = staleDuration;
@@ -40,7 +40,7 @@ class UseQueryResult<TData, TError> with EquatableMixin {
   final TError? failureReason;
   final bool isEnabled;
   final bool isPlaceholderData;
-  final StaleDurationValue<TData, TError> _staleDuration;
+  final StaleDuration _staleDuration;
 
   // final bool isFetchedAfterMount;
   // final bool isPlaceholderData;
@@ -107,7 +107,8 @@ UseQueryResult<TData, TError> useQuery<TData, TError>({
   Retry<TError>? retry,
   bool? retryOnMount,
   RetryDelay<TError>? retryDelay,
-  StaleDuration<TData, TError>? staleDuration,
+  StaleDuration? staleDuration,
+  StaleDurationResolver<TData, TError>? staleDurationResolver,
   QueryClient? queryClient,
   // networkMode: 'online' | 'always' | 'offlineFirst'
   // NetworkMode networkMode = NetworkMode.online,
@@ -155,6 +156,7 @@ UseQueryResult<TData, TError> useQuery<TData, TError>({
         retryOnMount: retryOnMount,
         retryDelay: retryDelay,
         staleDuration: staleDuration,
+        staleDurationResolver: staleDurationResolver,
       ),
     ),
     [],
@@ -179,6 +181,7 @@ UseQueryResult<TData, TError> useQuery<TData, TError>({
       retryOnMount: retryOnMount,
       retryDelay: retryDelay,
       staleDuration: staleDuration,
+      staleDurationResolver: staleDurationResolver,
     ),
   );
 

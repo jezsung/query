@@ -108,12 +108,12 @@ class QueryObserver<TData, TError> {
         newOptions.retryOnMount != oldOptions.retryOnMount;
     final didRetryDelayChange = newOptions.retryDelay != oldOptions.retryDelay;
     // Resolve staleDuration to concrete values before comparing
-    final newStaleDuration =
-        (newOptions.staleDuration ?? StaleDuration<TData, TError>())
-            .resolve(_query);
-    final oldStaleDuration =
-        (oldOptions.staleDuration ?? StaleDuration<TData, TError>())
-            .resolve(_query);
+    final newStaleDuration = newOptions.staleDurationResolver != null
+        ? newOptions.staleDurationResolver!(_query)
+        : (newOptions.staleDuration ?? const StaleDuration());
+    final oldStaleDuration = oldOptions.staleDurationResolver != null
+        ? oldOptions.staleDurationResolver!(_query)
+        : (oldOptions.staleDuration ?? const StaleDuration());
     final didStaleDurationChange = newStaleDuration != oldStaleDuration;
 
     // If nothing changed, return early
@@ -326,6 +326,11 @@ class QueryObserver<TData, TError> {
       }
     }
 
+    // Resolve staleDuration: resolver takes precedence over static value
+    final staleDuration = options.staleDurationResolver != null
+        ? options.staleDurationResolver!(_query)
+        : (options.staleDuration ?? const StaleDuration());
+
     return UseQueryResult<TData, TError>(
       status: status,
       fetchStatus: fetchStatus,
@@ -335,8 +340,7 @@ class QueryObserver<TData, TError> {
       errorUpdatedAt: state.errorUpdatedAt,
       errorUpdateCount: state.errorUpdateCount,
       isEnabled: options.enabled ?? true,
-      staleDuration: (options.staleDuration ?? StaleDuration<TData, TError>())
-          .resolve(_query),
+      staleDuration: staleDuration,
       isPlaceholderData: isPlaceholderData,
       failureCount: state.failureCount,
       failureReason: state.failureReason,
@@ -367,9 +371,10 @@ class QueryObserver<TData, TError> {
     }
 
     // Has data - check staleness and refetchOnMount
-    final staleDuration =
-        (options.staleDuration ?? StaleDuration<TData, TError>())
-            .resolve(_query);
+    // Resolver takes precedence over static value
+    final staleDuration = options.staleDurationResolver != null
+        ? options.staleDurationResolver!(_query)
+        : (options.staleDuration ?? const StaleDuration());
 
     // With static stale duration, data is always fresh and should never refetch automatically
     if (staleDuration is StaleDurationStatic) {
@@ -404,9 +409,10 @@ class QueryObserver<TData, TError> {
 
     if (!enabled) return false;
 
-    final staleDuration =
-        (options.staleDuration ?? StaleDuration<TData, TError>())
-            .resolve(_query);
+    // Resolver takes precedence over static value
+    final staleDuration = options.staleDurationResolver != null
+        ? options.staleDurationResolver!(_query)
+        : (options.staleDuration ?? const StaleDuration());
 
     // With static stale duration, data is always fresh and should never refetch automatically
     if (staleDuration is StaleDurationStatic) {
