@@ -1,6 +1,7 @@
 import 'package:clock/clock.dart';
 import 'package:equatable/equatable.dart';
 
+import 'options/gc_duration.dart';
 import 'options/retry.dart';
 import 'options/retry_delay.dart';
 import 'options/stale_duration.dart';
@@ -8,6 +9,7 @@ import 'query_cache.dart';
 import 'query_client.dart';
 import 'query_context.dart';
 import 'query_observer.dart';
+import 'query_options.dart';
 import 'removable.dart';
 import 'retryer.dart';
 
@@ -25,6 +27,8 @@ class Query<TData, TError> with Removable {
         _options = options,
         _initialState = QueryState.fromOptions(options) {
     _state = _initialState;
+    setOptions(options);
+    scheduleGc();
   }
 
   final QueryClient _client;
@@ -214,8 +218,9 @@ class Query<TData, TError> with Removable {
   void setOptions(QueryOptions<TData, TError> options) {
     _options = options;
 
-    // Update gcDuration if changed
-    updateGcDuration(options.gcDuration);
+    // Update gcDuration if changed (use built-in default if null)
+    final gcDuration = options.gcDuration ?? const GcDuration(minutes: 5);
+    updateGcDuration(gcDuration);
 
     // If query has no data and options provide initialData, update state
     if (state.data == null && options.initialData != null) {
@@ -257,7 +262,7 @@ class Query<TData, TError> with Removable {
   ///
   /// Aligned with TanStack Query's `Query.isActive` method.
   bool isActive() {
-    return _observers.any((observer) => observer.options.enabled);
+    return _observers.any((observer) => observer.options.enabled ?? true);
   }
 
   /// Returns true if this query is disabled.

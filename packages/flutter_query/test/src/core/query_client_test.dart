@@ -43,6 +43,121 @@ void main() {
     client.dispose();
   });
 
+  group('defaultQueryOptions', () {
+    late QueryCache cache;
+    late QueryClient client;
+
+    setUp(() {
+      cache = QueryCache();
+      client = QueryClient(
+        cache: cache,
+        defaultQueryOptions: DefaultQueryOptions(
+          gcDuration: GcDuration(minutes: 10),
+          refetchOnMount: RefetchOnMount.never,
+          staleDuration: StaleDuration.infinity(),
+        ),
+      );
+    });
+
+    tearDown(() {
+      client.dispose();
+    });
+
+    test(
+        'SHOULD use QueryClient.defaultQueryOptions '
+        'WHEN calling QueryClient.fetchQuery', () async {
+      var fetches = 0;
+
+      await client.fetchQuery<String, Object>(
+        queryKey: const ['key'],
+        queryFn: (context) async {
+          fetches++;
+          return 'data-1';
+        },
+      );
+
+      expect(fetches, 1);
+
+      // Second call should use cached data (infinity stale time from defaults)
+      await client.fetchQuery<String, Object>(
+        queryKey: const ['key'],
+        queryFn: (context) async {
+          fetches++;
+          return 'data-2';
+        },
+      );
+
+      expect(fetches, 1); // Should not have fetched again
+    });
+
+    test(
+        'SHOULD NOT use QueryClient.defaultQueryOptions '
+        'WHEN query specifies option', () async {
+      var fetches = 0;
+
+      await client.fetchQuery(
+        queryKey: const ['key'],
+        queryFn: (context) async {
+          fetches++;
+          return 'data-1';
+        },
+        // Override with zero stale time
+        staleDuration: StaleDuration.zero(),
+      );
+
+      expect(fetches, 1);
+
+      // Second call should refetch (zero stale time overrides default)
+      await client.fetchQuery(
+        queryKey: const ['key'],
+        queryFn: (context) async {
+          fetches++;
+          return 'data-2';
+        },
+        staleDuration: StaleDuration.zero(),
+      );
+
+      // Should have fetched again
+      expect(fetches, 2);
+    });
+
+    test('SHOULD use QueryClient.defaultQueryOptions for gcDuration',
+        withFakeAsync((async) {
+      client.fetchQuery(
+        queryKey: const ['key'],
+        queryFn: (context) async => 'data',
+      );
+
+      // Check if query exists every 10s
+      while (cache.get(const ['key']) != null) {
+        async.elapse(const Duration(seconds: 10));
+      }
+
+      // Should have passed 10 mins when query is removed
+      expect(async.elapsed, const Duration(minutes: 10));
+    }));
+
+    test(
+        'SHOULD update defaultQueryOptions'
+        '', () {
+      // Initially set to StaleDuration.infinity()
+      expect(
+        client.defaultQueryOptions.staleDuration,
+        StaleDuration.infinity(),
+      );
+
+      client.defaultQueryOptions = DefaultQueryOptions(
+        staleDuration: StaleDuration.zero(),
+      );
+
+      // Should have been set to StaleDuration.zero()
+      expect(
+        client.defaultQueryOptions.staleDuration,
+        StaleDuration.zero(),
+      );
+    });
+  });
+
   group('fetchQuery', () {
     test('SHOULD fetch and return data WHEN query does not exist', () async {
       final data = await client.fetchQuery<String, Object>(

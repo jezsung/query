@@ -96,16 +96,16 @@ class UseQueryResult<TData, TError> with EquatableMixin {
 UseQueryResult<TData, TError> useQuery<TData, TError>({
   required List<Object?> queryKey,
   required Future<TData> Function(QueryContext context) queryFn,
-  GcDurationOption gcDuration = const GcDuration(minutes: 5),
-  bool enabled = true,
+  GcDurationOption? gcDuration,
+  bool? enabled,
   TData? initialData,
   DateTime? initialDataUpdatedAt,
   PlaceholderData<TData, TError>? placeholderData,
   Duration? refetchInterval,
-  RefetchOnMount refetchOnMount = RefetchOnMount.stale,
-  RefetchOnResume refetchOnResume = RefetchOnResume.stale,
+  RefetchOnMount? refetchOnMount,
+  RefetchOnResume? refetchOnResume,
   Retry<TError>? retry,
-  bool retryOnMount = true,
+  bool? retryOnMount,
   RetryDelay<TError>? retryDelay,
   StaleDuration<TData, TError>? staleDuration,
   QueryClient? queryClient,
@@ -135,11 +135,8 @@ UseQueryResult<TData, TError> useQuery<TData, TError>({
   // Get QueryClient from context if not provided
   final client = queryClient ?? useQueryClient();
 
-  // Default staleDuration to zero (immediate staleness) if not provided
-  final effectiveStaleDuration =
-      staleDuration ?? StaleDuration<TData, TError>();
-
   // Create observer once per component instance
+  // Client defaults are applied inside QueryObserver constructor
   final observer = useMemoized(
     () => QueryObserver<TData, TError>(
       client,
@@ -157,7 +154,7 @@ UseQueryResult<TData, TError> useQuery<TData, TError>({
         retry: retry,
         retryOnMount: retryOnMount,
         retryDelay: retryDelay,
-        staleDuration: effectiveStaleDuration,
+        staleDuration: staleDuration,
       ),
     ),
     [],
@@ -165,6 +162,7 @@ UseQueryResult<TData, TError> useQuery<TData, TError>({
 
   // Update options during render (before subscribing)
   // This ensures we get the optimistic result immediately when options change
+  // Client defaults are applied inside QueryObserver.updateOptions()
   observer.updateOptions(
     QueryOptions(
       queryKey,
@@ -180,7 +178,7 @@ UseQueryResult<TData, TError> useQuery<TData, TError>({
       retry: retry,
       retryOnMount: retryOnMount,
       retryDelay: retryDelay,
-      staleDuration: effectiveStaleDuration,
+      staleDuration: staleDuration,
     ),
   );
 

@@ -7,31 +7,28 @@ import 'options/gc_duration.dart';
 import 'options/placeholder_data.dart';
 import 'options/refetch_on_mount.dart';
 import 'options/refetch_on_resume.dart';
-import 'options/retry.dart';
-import 'options/retry_delay.dart';
 import 'options/stale_duration.dart';
 import 'query.dart';
 import 'query_client.dart';
-import 'query_context.dart';
 import 'query_key.dart';
+import 'query_options.dart';
 
 /// Callback type for result change listeners
 typedef ResultChangeListener<TData, TError> = void Function(
     UseQueryResult<TData, TError> result);
 
 class QueryObserver<TData, TError> {
-  QueryObserver(this.client, this.options) {
-    // Get or create query using cache.build()
-    _query = client.cache.build<TData, TError>(options);
-
-    // Set options on the query (will set initialData if query has no data)
-    _query.setOptions(options);
-
-    // Register this observer with the query
-    // This will clear any pending gc timeout
+  QueryObserver(
+    QueryClient client,
+    QueryOptions<TData, TError> options,
+  )   : _client = client,
+        _options = options.mergeWith(client.defaultQueryOptions),
+        _query = client.cache.build<TData, TError>(
+          options.mergeWith(client.defaultQueryOptions),
+        ) {
+    _query.setOptions(_options);
     _query.addObserver(this);
 
-    // Track last query with defined data
     if (_query.state.data != null) {
       _lastQueryWithDefinedData = _query;
     }
@@ -40,7 +37,7 @@ class QueryObserver<TData, TError> {
     _result = _getResult(optimistic: true);
 
     // Trigger initial fetch if enabled and (no data or data is stale)
-    if (_shouldFetchOnMount(options, _query.state)) {
+    if (_shouldFetchOnMount(_options, _query.state)) {
       // Ignore result and errors - they're handled via query state
       _query.fetch().ignore();
     }
@@ -49,10 +46,9 @@ class QueryObserver<TData, TError> {
     _updateRefetchInterval();
   }
 
-  final QueryClient client;
-  QueryOptions<TData, TError> options;
-
-  late Query<TData, TError> _query;
+  final QueryClient _client;
+  QueryOptions<TData, TError> _options;
+  Query<TData, TError> _query;
   late UseQueryResult<TData, TError> _result;
 
   /// Tracks the last query that had non-null data for placeholder data resolution.
@@ -66,13 +62,14 @@ class QueryObserver<TData, TError> {
   /// Timer for refetchInterval. Continuously refetches at the specified interval.
   Timer? _refetchIntervalTimer;
 
+  QueryOptions<TData, TError> get options => _options;
+  UseQueryResult<TData, TError> get result => _result;
+
   /// Subscribe to result changes. Returns an unsubscribe function.
   void Function() subscribe(ResultChangeListener<TData, TError> listener) {
     _listeners.add(listener);
     return () => _listeners.remove(listener);
   }
-
-  UseQueryResult<TData, TError> get result => _result;
 
   /// Called by Query when its state changes.
   ///
@@ -88,10 +85,12 @@ class QueryObserver<TData, TError> {
     _setResult(result);
   }
 
-  void updateOptions(final QueryOptions<TData, TError> newOptions) {
-    final oldOptions = options;
-    options = newOptions;
+  void updateOptions(QueryOptions<TData, TError> options) {
+    final oldOptions = _options;
+    final newOptions = options.mergeWith(_client.defaultQueryOptions);
+    _options = newOptions;
 
+    // Compare merged options to detect actual changes
     final didKeyChange =
         QueryKey(newOptions.queryKey) != QueryKey(oldOptions.queryKey);
     final didGcDurationChange = newOptions.gcDuration != oldOptions.gcDuration;
@@ -135,13 +134,8 @@ class QueryObserver<TData, TError> {
     if (didKeyChange) {
       final oldQuery = _query;
 
-      // Get or create query using cache.build()
-      _query = client.cache.build<TData, TError>(newOptions);
-
-      // Set options on the query (will set initialData if query has no data)
+      _query = _client.cache.build<TData, TError>(newOptions);
       _query.setOptions(newOptions);
-
-      // Register with new query
       _query.addObserver(this);
 
       // Track last query with defined data
@@ -171,7 +165,8 @@ class QueryObserver<TData, TError> {
 
     // Update gcDuration if it changed
     if (didGcDurationChange) {
-      _query.updateGcDuration(newOptions.gcDuration);
+      final gcDuration = options.gcDuration ?? const GcDuration(minutes: 5);
+      _query.updateGcDuration(gcDuration);
     }
 
     if (didEnabledChange) {
@@ -267,7 +262,7 @@ class QueryObserver<TData, TError> {
     // - Query is disabled
     // - No refetchInterval is configured
     // - refetchInterval is zero/negative
-    if (!options.enabled ||
+    if (!(options.enabled ?? true) ||
         options.refetchInterval == null ||
         options.refetchInterval!.inMilliseconds <= 0) {
       return;
@@ -339,7 +334,7 @@ class QueryObserver<TData, TError> {
       error: state.error,
       errorUpdatedAt: state.errorUpdatedAt,
       errorUpdateCount: state.errorUpdateCount,
-      isEnabled: options.enabled,
+      isEnabled: options.enabled ?? true,
       staleDuration: (options.staleDuration ?? StaleDuration<TData, TError>())
           .resolve(_query),
       isPlaceholderData: isPlaceholderData,
@@ -353,12 +348,16 @@ class QueryObserver<TData, TError> {
     QueryOptions<TData, TError> options,
     QueryState<TData, TError> state,
   ) {
-    if (!options.enabled) {
+    final enabled = options.enabled ?? true;
+    final retryOnMount = options.retryOnMount ?? true;
+    final refetchOnMount = options.refetchOnMount ?? RefetchOnMount.stale;
+
+    if (!enabled) {
       return false;
     }
 
     // Don't fetch if query has error and retryOnMount is false
-    if (state.status == QueryStatus.error && !options.retryOnMount) {
+    if (state.status == QueryStatus.error && !retryOnMount) {
       return false;
     }
 
@@ -377,10 +376,10 @@ class QueryObserver<TData, TError> {
       return false;
     }
 
-    if (options.refetchOnMount == RefetchOnMount.always) {
+    if (refetchOnMount == RefetchOnMount.always) {
       return true;
     }
-    if (options.refetchOnMount == RefetchOnMount.never) {
+    if (refetchOnMount == RefetchOnMount.never) {
       return false;
     }
 
@@ -400,7 +399,10 @@ class QueryObserver<TData, TError> {
     QueryOptions<TData, TError> options,
     QueryState<TData, TError> state,
   ) {
-    if (!options.enabled) return false;
+    final enabled = options.enabled ?? true;
+    final refetchOnResume = options.refetchOnResume ?? RefetchOnResume.stale;
+
+    if (!enabled) return false;
 
     final staleDuration =
         (options.staleDuration ?? StaleDuration<TData, TError>())
@@ -411,11 +413,11 @@ class QueryObserver<TData, TError> {
       return false;
     }
 
-    if (options.refetchOnResume == RefetchOnResume.never) {
+    if (refetchOnResume == RefetchOnResume.never) {
       return false;
     }
 
-    if (options.refetchOnResume == RefetchOnResume.always) {
+    if (refetchOnResume == RefetchOnResume.always) {
       return true;
     }
 
@@ -433,38 +435,4 @@ class QueryObserver<TData, TError> {
       StaleDurationStatic() => false,
     };
   }
-}
-
-class QueryOptions<TData, TError> {
-  QueryOptions(
-    this.queryKey,
-    this.queryFn, {
-    this.enabled = true,
-    this.gcDuration = const GcDuration(minutes: 5),
-    this.initialData,
-    this.initialDataUpdatedAt,
-    this.placeholderData,
-    this.refetchInterval,
-    this.refetchOnMount = RefetchOnMount.stale,
-    this.refetchOnResume = RefetchOnResume.stale,
-    this.retry,
-    this.retryOnMount = true,
-    this.retryDelay,
-    this.staleDuration,
-  });
-
-  final List<Object?> queryKey;
-  final Future<TData> Function(QueryContext context) queryFn;
-  final GcDurationOption gcDuration;
-  final bool enabled;
-  final TData? initialData;
-  final DateTime? initialDataUpdatedAt;
-  final PlaceholderData<TData, TError>? placeholderData;
-  final Duration? refetchInterval;
-  final RefetchOnMount refetchOnMount;
-  final RefetchOnResume refetchOnResume;
-  final Retry<TError>? retry;
-  final bool retryOnMount;
-  final RetryDelay<TError>? retryDelay;
-  final StaleDuration<TData, TError>? staleDuration;
 }

@@ -1,3 +1,4 @@
+import 'default_query_options.dart';
 import 'options/gc_duration.dart';
 import 'options/retry.dart';
 import 'options/retry_delay.dart';
@@ -5,7 +6,7 @@ import 'options/stale_duration.dart';
 import 'query.dart';
 import 'query_cache.dart';
 import 'query_context.dart';
-import 'query_observer.dart';
+import 'query_options.dart';
 
 /// Controls which queries get refetched after invalidation.
 ///
@@ -25,11 +26,31 @@ enum RefetchType {
 }
 
 class QueryClient {
-  QueryClient({QueryCache? cache}) : _cache = cache ?? QueryCache() {
+  /// Creates a QueryClient with optional cache and default query options.
+  ///
+  /// Example:
+  /// ```dart
+  /// final client = QueryClient(
+  ///   defaultQueryOptions: DefaultQueryOptions(
+  ///     staleDuration: StaleDuration(minutes: 5),
+  ///     retry: Retry.count(3),
+  ///   ),
+  /// );
+  /// ```
+  QueryClient({
+    QueryCache? cache,
+    this.defaultQueryOptions = const DefaultQueryOptions(),
+  }) : _cache = cache ?? QueryCache() {
     _cache.setClient(this);
   }
 
   final QueryCache _cache;
+
+  /// Default options applied to all queries.
+  ///
+  /// Note: Changing this only affects new queries. Existing queries will
+  /// continue to use the options they were created with.
+  DefaultQueryOptions defaultQueryOptions;
 
   /// Gets the query cache
   QueryCache get cache => _cache;
@@ -46,7 +67,8 @@ class QueryClient {
   /// - Fetching data in callbacks or event handlers
   /// - Server-side data fetching
   ///
-  /// Unlike useQuery, [retry] defaults to [Retry.never()] (no retries).
+  /// Unlike useQuery, [retry] defaults to [Retry.never()] (no retries) when not
+  /// specified at either the query level or client default level.
   ///
   /// Throws if the fetch fails.
   ///
@@ -57,25 +79,42 @@ class QueryClient {
     StaleDuration<TData, TError>? staleDuration,
     Retry<TError>? retry,
     RetryDelay<TError>? retryDelay,
-    GcDurationOption gcDuration = const GcDuration(minutes: 5),
+    GcDurationOption? gcDuration,
     TData? initialData,
     DateTime? initialDataUpdatedAt,
   }) async {
-    final queryOptions = QueryOptions<TData, TError>(
+    // Create input options with nullable values
+    final options = QueryOptions<TData, TError>(
       queryKey,
       queryFn,
       staleDuration: staleDuration,
-      retry: retry ?? Retry<TError>.never(), // Default to no retry
+      retry: retry,
       retryDelay: retryDelay,
       gcDuration: gcDuration,
       initialData: initialData,
       initialDataUpdatedAt: initialDataUpdatedAt,
     );
 
+    // Merge with client defaults
+    final effectiveOptions = options.mergeWith(defaultQueryOptions);
+
+    // Apply fetchQuery-specific default: retry = never if not specified
+    final effectiveRetry = effectiveOptions.retry ?? Retry<TError>.never();
+    final queryOptions = QueryOptions<TData, TError>(
+      effectiveOptions.queryKey,
+      effectiveOptions.queryFn,
+      staleDuration: effectiveOptions.staleDuration,
+      retry: effectiveRetry,
+      retryDelay: effectiveOptions.retryDelay,
+      gcDuration: effectiveOptions.gcDuration,
+      initialData: effectiveOptions.initialData,
+      initialDataUpdatedAt: effectiveOptions.initialDataUpdatedAt,
+    );
+
     final query = _cache.build<TData, TError>(queryOptions);
 
     // Check if data is stale
-    if (query.isStaleByTime(staleDuration)) {
+    if (query.isStaleByTime(queryOptions.staleDuration)) {
       return query.fetch();
     }
 
@@ -98,7 +137,7 @@ class QueryClient {
     StaleDuration<TData, TError>? staleDuration,
     Retry<TError>? retry,
     RetryDelay<TError>? retryDelay,
-    GcDurationOption gcDuration = const GcDuration(minutes: 5),
+    GcDurationOption? gcDuration,
     TData? initialData,
     DateTime? initialDataUpdatedAt,
   }) async {

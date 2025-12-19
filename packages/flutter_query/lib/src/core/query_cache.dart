@@ -1,7 +1,7 @@
 import 'query.dart';
 import 'query_client.dart';
 import 'query_key.dart';
-import 'query_observer.dart';
+import 'query_options.dart';
 
 /// Filter type for querying active, inactive, or all queries.
 ///

@@ -12,7 +12,7 @@ import 'options/gc_duration.dart';
 /// Classes that use this mixin must:
 /// - Implement [tryRemove] to define removal logic (including checks for observers, fetching state, etc.)
 mixin Removable {
-  GcDurationOption _gcDuration = GcDuration.zero;
+  GcDurationOption _gcDuration = const GcDuration(minutes: 5);
   Timer? _gcTimer;
 
   /// Updates the garbage collection duration.
