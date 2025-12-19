@@ -3,6 +3,20 @@ import 'query_client.dart';
 import 'query_key.dart';
 import 'query_observer.dart';
 
+/// Filter type for querying active, inactive, or all queries.
+///
+/// Aligned with TanStack Query's `QueryTypeFilter` type.
+enum QueryTypeFilter {
+  /// Match all queries regardless of active state
+  all,
+
+  /// Match only active queries (queries with enabled observers)
+  active,
+
+  /// Match only inactive queries (queries without enabled observers)
+  inactive,
+}
+
 class QueryCache {
   final Map<QueryKey, Query> _queries = {};
   QueryClient? _client;
@@ -87,9 +101,10 @@ class QueryCache {
     List<Object?> queryKey, {
     bool exact = true,
     bool Function(Query)? predicate,
+    QueryTypeFilter type = QueryTypeFilter.all,
   }) {
     for (final query in _queries.values) {
-      if (!_matchesFilters(query, queryKey, exact, predicate)) {
+      if (!_matchesFilters(query, queryKey, exact, predicate, type)) {
         continue;
       }
       return query as Query<TData, TError>;
@@ -99,18 +114,25 @@ class QueryCache {
 
   /// Finds all queries matching the given filters
   /// Returns all queries if no filters are provided
+  ///
+  /// [type] filters by active state:
+  /// - [QueryTypeFilter.all]: Return all matching queries
+  /// - [QueryTypeFilter.active]: Return only queries with enabled observers
+  /// - [QueryTypeFilter.inactive]: Return only queries without enabled observers
   List<Query> findAll({
     List<Object?>? queryKey,
     bool exact = false,
     bool Function(Query)? predicate,
+    QueryTypeFilter type = QueryTypeFilter.all,
   }) {
     // If no filters provided, return all
-    if (queryKey == null && predicate == null) {
+    if (queryKey == null && predicate == null && type == QueryTypeFilter.all) {
       return getAll();
     }
 
     return _queries.values
-        .where((query) => _matchesFilters(query, queryKey, exact, predicate))
+        .where(
+            (query) => _matchesFilters(query, queryKey, exact, predicate, type))
         .toList();
   }
 
@@ -119,8 +141,20 @@ class QueryCache {
     List<Object?>? queryKey,
     bool exact,
     bool Function(Query)? predicate,
+    QueryTypeFilter type,
   ) {
-    // Check predicate first if provided
+    // Check type filter first
+    if (type != QueryTypeFilter.all) {
+      final isActive = query.isActive();
+      if (type == QueryTypeFilter.active && !isActive) {
+        return false;
+      }
+      if (type == QueryTypeFilter.inactive && isActive) {
+        return false;
+      }
+    }
+
+    // Check predicate
     if (predicate != null && !predicate(query)) {
       return false;
     }

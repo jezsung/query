@@ -2,9 +2,27 @@ import 'options/gc_duration.dart';
 import 'options/retry.dart';
 import 'options/retry_delay.dart';
 import 'options/stale_duration.dart';
+import 'query.dart';
 import 'query_cache.dart';
 import 'query_context.dart';
 import 'query_observer.dart';
+
+/// Controls which queries get refetched after invalidation.
+///
+/// Aligned with TanStack Query's `refetchType` option in `InvalidateQueryFilters`.
+enum RefetchType {
+  /// Don't refetch any queries, just mark them as invalidated
+  none,
+
+  /// Refetch all matching queries
+  all,
+
+  /// Refetch only active queries (queries with enabled observers)
+  active,
+
+  /// Refetch only inactive queries (queries without enabled observers)
+  inactive,
+}
 
 class QueryClient {
   QueryClient({QueryCache? cache}) : _cache = cache ?? QueryCache() {
@@ -111,5 +129,115 @@ class QueryClient {
   /// Aligned with TanStack Query's `getQueryData` method.
   TData? getQueryData<TData, TError>(List<Object?> queryKey) {
     return _cache.get<TData, TError>(queryKey)?.state.data;
+  }
+
+  /// Invalidates queries matching the filters and optionally refetches them.
+  ///
+  /// Invalidation marks queries as stale, causing them to refetch when:
+  /// - An observer mounts that subscribes to the query
+  /// - The query is already mounted and [refetchType] is not [RefetchType.none]
+  ///
+  /// By default, only active queries are refetched after invalidation.
+  ///
+  /// Example:
+  /// ```dart
+  /// // Invalidate all queries
+  /// await client.invalidateQueries();
+  ///
+  /// // Invalidate queries with a specific key prefix
+  /// await client.invalidateQueries(queryKey: ['users']);
+  ///
+  /// // Invalidate but don't refetch
+  /// await client.invalidateQueries(
+  ///   queryKey: ['users'],
+  ///   refetchType: RefetchType.none,
+  /// );
+  /// ```
+  ///
+  /// Aligned with TanStack Query's `QueryClient.invalidateQueries` method.
+  Future<void> invalidateQueries({
+    List<Object?>? queryKey,
+    bool exact = false,
+    bool Function(Query)? predicate,
+    RefetchType refetchType = RefetchType.active,
+  }) async {
+    // Find and invalidate all matching queries
+    final queries = _cache.findAll(
+      queryKey: queryKey,
+      exact: exact,
+      predicate: predicate,
+    );
+
+    for (final query in queries) {
+      query.invalidate();
+    }
+
+    // Skip refetch if none
+    if (refetchType == RefetchType.none) return;
+
+    // Refetch based on refetchType
+    final effectiveType = switch (refetchType) {
+      RefetchType.all => QueryTypeFilter.all,
+      RefetchType.active => QueryTypeFilter.active,
+      RefetchType.inactive => QueryTypeFilter.inactive,
+      RefetchType.none => throw UnimplementedError(),
+    };
+
+    await refetchQueries(
+      queryKey: queryKey,
+      exact: exact,
+      predicate: predicate,
+      type: effectiveType,
+    );
+  }
+
+  /// Refetches queries matching the filters.
+  ///
+  /// This method finds all queries matching the filters and triggers a refetch
+  /// for each one. Unlike invalidation, this doesn't mark queries as stale -
+  /// it immediately fetches fresh data.
+  ///
+  /// Skips:
+  /// - Disabled queries (no enabled observers)
+  /// - Static queries (staleDuration = static)
+  /// - Paused queries (fetchStatus = paused)
+  ///
+  /// Example:
+  /// ```dart
+  /// // Refetch all queries
+  /// await client.refetchQueries();
+  ///
+  /// // Refetch queries with a specific key prefix
+  /// await client.refetchQueries(queryKey: ['users']);
+  ///
+  /// // Refetch only active queries
+  /// await client.refetchQueries(type: QueryTypeFilter.active);
+  /// ```
+  ///
+  /// Aligned with TanStack Query's `QueryClient.refetchQueries` method.
+  Future<void> refetchQueries({
+    List<Object?>? queryKey,
+    bool exact = false,
+    bool Function(Query)? predicate,
+    QueryTypeFilter type = QueryTypeFilter.all,
+  }) async {
+    final queries = _cache
+        .findAll(
+          queryKey: queryKey,
+          exact: exact,
+          predicate: predicate,
+          type: type,
+        )
+        .where((query) => !query.isDisabled() && !query.isStatic())
+        .where((query) => query.state.fetchStatus != FetchStatus.paused);
+
+    final futures = <Future<void>>[];
+
+    for (final query in queries) {
+      // Fetch and swallow errors
+      futures.add(query.fetch().then((_) {}).catchError((_) {}));
+    }
+
+    await Future.wait(futures);
   }
 }

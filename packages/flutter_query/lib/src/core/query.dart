@@ -53,6 +53,7 @@ class Query<TData, TError> with Removable {
   ///
   /// Returns true if:
   /// - No data exists
+  /// - Query is invalidated (unless static)
   /// - Data age exceeds or equals the stale duration
   ///
   /// Returns false if:
@@ -68,6 +69,16 @@ class Query<TData, TError> with Removable {
 
     final resolved =
         (staleDuration ?? StaleDuration<TData, TError>()).resolve(this);
+
+    // Static queries are never stale
+    if (resolved is StaleDurationStatic) {
+      return false;
+    }
+
+    // Invalidated queries are always stale (unless static, checked above)
+    if (state.isInvalidated) {
+      return true;
+    }
 
     return switch (resolved) {
       StaleDurationDuration duration =>
@@ -126,6 +137,7 @@ class Query<TData, TError> with Removable {
         errorUpdateCount: state.errorUpdateCount,
         failureCount: 0,
         failureReason: null,
+        isInvalidated: false, // Reset on successful fetch
       ));
 
       return data;
@@ -224,6 +236,59 @@ class Query<TData, TError> with Removable {
       observer.onQueryUpdate();
     }
   }
+
+  /// Invalidates this query, marking it as stale.
+  ///
+  /// When a query is invalidated:
+  /// - [isStaleByTime] will return true regardless of staleDuration
+  /// - Active observers will be notified of the state change
+  ///
+  /// Aligned with TanStack Query's `Query.invalidate` method.
+  void invalidate() {
+    if (!state.isInvalidated) {
+      _setState(state.copyWith(isInvalidated: true));
+    }
+  }
+
+  /// Returns true if this query has at least one enabled observer.
+  ///
+  /// An active query is one that has observers with `enabled: true`.
+  /// This is used by [refetchQueries] to determine which queries to refetch.
+  ///
+  /// Aligned with TanStack Query's `Query.isActive` method.
+  bool isActive() {
+    return _observers.any((observer) => observer.options.enabled);
+  }
+
+  /// Returns true if this query is disabled.
+  ///
+  /// A query is disabled if:
+  /// - It has observers but none are enabled, OR
+  /// - It has no observers and has never fetched data
+  ///
+  /// Aligned with TanStack Query's `Query.isDisabled` method.
+  bool isDisabled() {
+    if (_observers.isNotEmpty) {
+      return !isActive();
+    }
+    // No observers: disabled if never fetched
+    return state.status == QueryStatus.pending &&
+        state.dataUpdatedAt == null &&
+        state.errorUpdatedAt == null;
+  }
+
+  /// Returns true if any observer has staleTime set to static.
+  ///
+  /// Static queries should not be refetched automatically.
+  ///
+  /// Aligned with TanStack Query's `Query.isStatic` method.
+  bool isStatic() {
+    if (_observers.isEmpty) return false;
+    return _observers.any((observer) {
+      final resolved = observer.options.staleDuration?.resolve(this);
+      return resolved is StaleDurationStatic;
+    });
+  }
 }
 
 class QueryState<TData, TError> with EquatableMixin {
@@ -237,6 +302,7 @@ class QueryState<TData, TError> with EquatableMixin {
     this.errorUpdateCount = 0,
     this.failureCount = 0,
     this.failureReason,
+    this.isInvalidated = false,
   });
 
   /// Creates a QueryState from QueryOptions, handling initialData.
@@ -269,6 +335,7 @@ class QueryState<TData, TError> with EquatableMixin {
   final int errorUpdateCount;
   final int failureCount;
   final TError? failureReason;
+  final bool isInvalidated;
 
   QueryState<TData, TError> copyWith({
     QueryStatus? status,
@@ -280,6 +347,7 @@ class QueryState<TData, TError> with EquatableMixin {
     int? errorUpdateCount,
     int? failureCount,
     TError? failureReason,
+    bool? isInvalidated,
   }) {
     return QueryState<TData, TError>(
       status: status ?? this.status,
@@ -291,6 +359,7 @@ class QueryState<TData, TError> with EquatableMixin {
       errorUpdateCount: errorUpdateCount ?? this.errorUpdateCount,
       failureCount: failureCount ?? this.failureCount,
       failureReason: failureReason ?? this.failureReason,
+      isInvalidated: isInvalidated ?? this.isInvalidated,
     );
   }
 
@@ -307,6 +376,7 @@ class QueryState<TData, TError> with EquatableMixin {
       errorUpdateCount: this.errorUpdateCount,
       failureCount: this.failureCount,
       failureReason: faliureReason ? null : this.failureReason,
+      isInvalidated: this.isInvalidated,
     );
   }
 
@@ -321,5 +391,6 @@ class QueryState<TData, TError> with EquatableMixin {
         errorUpdateCount,
         failureCount,
         failureReason,
+        isInvalidated,
       ];
 }
