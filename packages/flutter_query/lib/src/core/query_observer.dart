@@ -370,6 +370,7 @@ class QueryObserver<TData, TError> {
       fetchStatus: fetchStatus,
       data: data,
       dataUpdatedAt: state.dataUpdatedAt,
+      dataUpdateCount: state.dataUpdateCount,
       error: state.error,
       errorUpdatedAt: state.errorUpdatedAt,
       errorUpdateCount: state.errorUpdateCount,

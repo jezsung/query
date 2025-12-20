@@ -10,6 +10,7 @@ class QueryResult<TData, TError> with EquatableMixin {
     required this.fetchStatus,
     required this.data,
     required this.dataUpdatedAt,
+    required this.dataUpdateCount,
     required this.error,
     required this.errorUpdatedAt,
     required this.errorUpdateCount,
@@ -26,6 +27,7 @@ class QueryResult<TData, TError> with EquatableMixin {
   final FetchStatus fetchStatus;
   final TData? data;
   final DateTime? dataUpdatedAt;
+  final int dataUpdateCount;
   final TError? error;
   final DateTime? errorUpdatedAt;
   final int errorUpdateCount;
@@ -53,7 +55,7 @@ class QueryResult<TData, TError> with EquatableMixin {
   bool get isPending => status == QueryStatus.pending;
   bool get isFetching => fetchStatus == FetchStatus.fetching;
   bool get isPaused => fetchStatus == FetchStatus.paused;
-  bool get isFetched => dataUpdatedAt != null;
+  bool get isFetched => dataUpdateCount > 0 || errorUpdateCount > 0;
   bool get isLoading => isPending && isFetching;
   bool get isInitialLoading => isLoading && !isFetched;
   bool get isLoadingError => isError && data == null;
@@ -81,6 +83,7 @@ class QueryResult<TData, TError> with EquatableMixin {
         fetchStatus,
         data,
         dataUpdatedAt,
+        dataUpdateCount,
         error,
         errorUpdatedAt,
         errorUpdateCount,
