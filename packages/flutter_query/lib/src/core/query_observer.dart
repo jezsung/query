@@ -366,6 +366,9 @@ class QueryObserver<TData, TError> {
         ? options.staleDurationResolver!(_query)
         : (options.staleDuration ?? const StaleDuration());
 
+    // Compute isStale using the query's isStaleByTime method
+    final isStale = _query.isStaleByTime(staleDuration);
+
     return QueryResult<TData, TError>(
       status: status,
       fetchStatus: fetchStatus,
@@ -376,7 +379,7 @@ class QueryObserver<TData, TError> {
       errorUpdatedAt: state.errorUpdatedAt,
       errorUpdateCount: state.errorUpdateCount,
       isEnabled: options.enabled ?? true,
-      staleDuration: staleDuration,
+      isStale: isStale,
       isFetchedAfterMount: state.dataUpdateCount > _initialDataUpdateCount ||
           state.errorUpdateCount > _initialErrorUpdateCount,
       isPlaceholderData: isPlaceholderData,

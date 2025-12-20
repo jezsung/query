@@ -1,7 +1,5 @@
-import 'package:clock/clock.dart';
 import 'package:equatable/equatable.dart';
 
-import 'options/stale_duration.dart';
 import 'query.dart';
 
 class QueryResult<TData, TError> with EquatableMixin {
@@ -17,11 +15,11 @@ class QueryResult<TData, TError> with EquatableMixin {
     required this.failureCount,
     required this.failureReason,
     required this.isEnabled,
-    required StaleDuration staleDuration,
+    required this.isStale,
     required this.isFetchedAfterMount,
     required this.isPlaceholderData,
     required this.refetch,
-  }) : _staleDuration = staleDuration;
+  });
 
   final QueryStatus status;
   final FetchStatus fetchStatus;
@@ -34,9 +32,9 @@ class QueryResult<TData, TError> with EquatableMixin {
   final int failureCount;
   final TError? failureReason;
   final bool isEnabled;
+  final bool isStale;
   final bool isFetchedAfterMount;
   final bool isPlaceholderData;
-  final StaleDuration _staleDuration;
 
   /// Manually refetch the query.
   ///
@@ -60,21 +58,6 @@ class QueryResult<TData, TError> with EquatableMixin {
   bool get isLoadingError => isError && data == null;
   bool get isRefetchError => isError && data != null;
   bool get isRefetching => isFetching && !isPending;
-  bool get isStale {
-    // Data is stale if there's no dataUpdatedAt
-    if (dataUpdatedAt == null) return true;
-
-    final age = clock.now().difference(dataUpdatedAt!);
-
-    return switch (_staleDuration) {
-      // Check if age exceeds or equals staleDuration (>= for zero staleDuration)
-      StaleDurationDuration duration => age >= duration,
-      // If staleDuration is StaleDurationInfinity, never stale (unless invalidated)
-      StaleDurationInfinity() => false,
-      // If staleDuration is StaleDurationStatic, never stale
-      StaleDurationStatic() => false,
-    };
-  }
 
   @override
   List<Object?> get props => [
@@ -89,8 +72,8 @@ class QueryResult<TData, TError> with EquatableMixin {
         failureCount,
         failureReason,
         isEnabled,
+        isStale,
         isFetchedAfterMount,
         isPlaceholderData,
-        _staleDuration,
       ];
 }
