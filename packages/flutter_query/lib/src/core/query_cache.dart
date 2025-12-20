@@ -145,7 +145,7 @@ class QueryCache {
   ) {
     // Check type filter first
     if (type != QueryTypeFilter.all) {
-      final isActive = query.isActive();
+      final isActive = query.isActive;
       if (type == QueryTypeFilter.active && !isActive) {
         return false;
       }

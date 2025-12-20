@@ -266,7 +266,7 @@ class QueryClient {
           predicate: predicate,
           type: type,
         )
-        .where((query) => !query.isDisabled() && !query.isStatic())
+        .where((query) => !query.isDisabled && !query.isStatic)
         .where((query) => query.state.fetchStatus != FetchStatus.paused);
 
     final futures = <Future<void>>[];

@@ -60,6 +60,49 @@ class Query<TData, TError> with Removable {
   // State before fetch started, used for reverting on cancel
   QueryState<TData, TError>? _revertState;
 
+  /// Returns true if this query has at least one enabled observer.
+  ///
+  /// An active query is one that has observers with `enabled: true`.
+  /// This is used by [refetchQueries] to determine which queries to refetch.
+  ///
+  /// Aligned with TanStack Query's `Query.isActive` method.
+  bool get isActive {
+    return _observers.any((observer) => observer.options.enabled ?? true);
+  }
+
+  /// Returns true if this query is disabled.
+  ///
+  /// A query is disabled if:
+  /// - It has observers but none are enabled, OR
+  /// - It has no observers and has never fetched data
+  ///
+  /// Aligned with TanStack Query's `Query.isDisabled` method.
+  bool get isDisabled {
+    if (_observers.isNotEmpty) {
+      return !isActive;
+    }
+    // No observers: disabled if never fetched
+    return state.status == QueryStatus.pending &&
+        state.dataUpdatedAt == null &&
+        state.errorUpdatedAt == null;
+  }
+
+  /// Returns true if any observer has staleTime set to static.
+  ///
+  /// Static queries should not be refetched automatically.
+  ///
+  /// Aligned with TanStack Query's `Query.isStatic` method.
+  bool get isStatic {
+    if (_observers.isEmpty) return false;
+    return _observers.any((observer) {
+      final opts = observer.options;
+      final resolved = opts.staleDurationResolver != null
+          ? opts.staleDurationResolver!(this)
+          : opts.staleDuration;
+      return resolved is StaleDurationStatic;
+    });
+  }
+
   /// Checks if the query data is stale based on the given stale duration.
   ///
   /// If [staleDurationResolver] is provided, it takes precedence over [staleDuration].
@@ -382,48 +425,5 @@ class Query<TData, TError> with Removable {
     if (!state.isInvalidated) {
       _setState(state.copyWith(isInvalidated: true));
     }
-  }
-
-  /// Returns true if this query has at least one enabled observer.
-  ///
-  /// An active query is one that has observers with `enabled: true`.
-  /// This is used by [refetchQueries] to determine which queries to refetch.
-  ///
-  /// Aligned with TanStack Query's `Query.isActive` method.
-  bool isActive() {
-    return _observers.any((observer) => observer.options.enabled ?? true);
-  }
-
-  /// Returns true if this query is disabled.
-  ///
-  /// A query is disabled if:
-  /// - It has observers but none are enabled, OR
-  /// - It has no observers and has never fetched data
-  ///
-  /// Aligned with TanStack Query's `Query.isDisabled` method.
-  bool isDisabled() {
-    if (_observers.isNotEmpty) {
-      return !isActive();
-    }
-    // No observers: disabled if never fetched
-    return state.status == QueryStatus.pending &&
-        state.dataUpdatedAt == null &&
-        state.errorUpdatedAt == null;
-  }
-
-  /// Returns true if any observer has staleTime set to static.
-  ///
-  /// Static queries should not be refetched automatically.
-  ///
-  /// Aligned with TanStack Query's `Query.isStatic` method.
-  bool isStatic() {
-    if (_observers.isEmpty) return false;
-    return _observers.any((observer) {
-      final opts = observer.options;
-      final resolved = opts.staleDurationResolver != null
-          ? opts.staleDurationResolver!(this)
-          : opts.staleDuration;
-      return resolved is StaleDurationStatic;
-    });
   }
 }
