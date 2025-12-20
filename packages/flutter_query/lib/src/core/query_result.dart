@@ -57,7 +57,6 @@ class QueryResult<TData, TError> with EquatableMixin {
   bool get isPaused => fetchStatus == FetchStatus.paused;
   bool get isFetched => dataUpdateCount > 0 || errorUpdateCount > 0;
   bool get isLoading => isPending && isFetching;
-  bool get isInitialLoading => isLoading && !isFetched;
   bool get isLoadingError => isError && data == null;
   bool get isRefetchError => isError && data != null;
   bool get isRefetching => isFetching && !isPending;

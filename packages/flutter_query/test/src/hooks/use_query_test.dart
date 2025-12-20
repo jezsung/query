@@ -1950,7 +1950,7 @@ void main() {
           queryClient: client,
         ),
       );
-      expect(hookResult.current.isInitialLoading, isTrue);
+      expect(hookResult.current.isLoading, isTrue);
 
       await tester.pump(const Duration(seconds: 3));
       expect(hookResult.current.isFetched, isTrue);
@@ -1988,7 +1988,7 @@ void main() {
         ),
         initialProps: const Duration(seconds: 10),
       );
-      expect(hookResult.current.isInitialLoading, isTrue);
+      expect(hookResult.current.isLoading, isTrue);
       expect(fetchAttempts, 1);
 
       await tester.pump(const Duration(seconds: 3));
@@ -2061,7 +2061,7 @@ void main() {
         ),
         initialProps: true,
       );
-      expect(hookResult.current.isInitialLoading, isTrue);
+      expect(hookResult.current.isLoading, isTrue);
 
       await tester.pump(const Duration(seconds: 3));
       expect(hookResult.current.isFetched, isTrue);
@@ -2110,7 +2110,7 @@ void main() {
             queryClient: client,
           ),
         );
-        expect(hookResult.current.isInitialLoading, isTrue);
+        expect(hookResult.current.isLoading, isTrue);
 
         await tester.pump(const Duration(seconds: 3));
         expect(hookResult.current.isFetched, isTrue);
