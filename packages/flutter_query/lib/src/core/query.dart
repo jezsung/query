@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:clock/clock.dart';
 import 'package:equatable/equatable.dart';
 
+import 'abort_signal.dart';
 import 'options/gc_duration.dart';
 import 'options/stale_duration.dart';
 import 'query_cache.dart';
@@ -48,8 +51,14 @@ class Query<TData, TError> with Removable {
 
   bool get hasObservers => _observers.isNotEmpty;
 
-  // Track current fetch future to return same future for concurrent calls
-  Future<TData>? _currentFetch;
+  // Current retryer stored at class level (like TanStack's #retryer)
+  Retryer<TData, TError>? _retryer;
+
+  // Abort controller for current fetch operation
+  AbortController? _abortController;
+
+  // State before fetch started, used for reverting on cancel
+  QueryState<TData, TError>? _revertState;
 
   /// Checks if the query data is stale based on the given stale duration.
   ///
@@ -97,17 +106,43 @@ class Query<TData, TError> with Removable {
     };
   }
 
-  Future<TData> fetch() {
-    // If already fetching, return existing future (TanStack behavior)
-    if (state.fetchStatus == FetchStatus.fetching && _currentFetch != null) {
-      return _currentFetch!;
+  /// Fetches data for this query.
+  ///
+  /// If [options] is provided, updates the query's options before fetching.
+  /// This allows `fetchQuery` to pass new options that override existing ones.
+  ///
+  /// If a fetch is already in progress, returns the existing future unless
+  /// [cancelRefetch] is true and data exists, in which case the current
+  /// fetch is cancelled and a new one starts.
+  ///
+  /// Aligned with TanStack Query's `Query.fetch` method.
+  Future<TData> fetch({
+    QueryOptions<TData, TError>? options,
+    bool cancelRefetch = false,
+  }) async {
+    // Handle concurrent fetch
+    if (state.fetchStatus == FetchStatus.fetching && _retryer != null) {
+      if (cancelRefetch && state.data != null) {
+        // Cancel old fetch silently, then start new one
+        cancel(silent: true);
+        // Fall through to create new retryer
+      } else {
+        // Return existing future
+        return _retryer!.future;
+      }
     }
 
-    _currentFetch = _doFetch();
-    return _currentFetch!;
-  }
+    // Update options if passed (like TanStack's setOptions call in fetch)
+    if (options != null) {
+      setOptions(options);
+    }
 
-  Future<TData> _doFetch() async {
+    // Store state for potential revert on cancel
+    _revertState = state;
+
+    // Create abort controller for this fetch
+    _abortController = AbortController();
+
     _setState(state
         .copyWith(
           fetchStatus: FetchStatus.fetching,
@@ -115,7 +150,11 @@ class Query<TData, TError> with Removable {
         )
         .copyWithNull(faliureReason: true));
 
-    final context = QueryContext(queryKey: queryKey, client: _client);
+    final context = QueryContext(
+      queryKey: queryKey,
+      client: _client,
+      signal: _abortController!.signal,
+    );
 
     // Default retry: 3 retries with exponential backoff
     Duration? defaultRetry(int retryCount, TError error) {
@@ -125,22 +164,26 @@ class Query<TData, TError> with Removable {
       return Duration(milliseconds: delayMs > 30000 ? 30000 : delayMs);
     }
 
-    final retryer = Retryer<TData, TError>(
-      RetryerConfig(
-        fn: () => queryFn(context),
-        retry: _options.retry ?? defaultRetry,
-        onFail: (failureCount, error) {
-          // Update state on each failure for reactivity
-          _setState(state.copyWith(
-            failureCount: failureCount,
-            failureReason: error,
-          ));
-        },
-      ),
+    // Create and store retryer BEFORE await (like TanStack)
+    // This is critical for silent cancellation to work correctly
+    _retryer = Retryer<TData, TError>(
+      fn: () => queryFn(context),
+      retry: _options.retry ?? defaultRetry,
+      signal: _abortController!.signal,
+      onFail: (failureCount, error) {
+        // Update state on each failure for reactivity
+        _setState(state.copyWith(
+          failureCount: failureCount,
+          failureReason: error,
+        ));
+      },
     );
 
+    // Store current retryer to detect if a new one is created during cancellation
+    final currentRetryer = _retryer;
+
     try {
-      final data = await retryer.start();
+      final data = await _retryer!.start();
 
       _setState(QueryState<TData, TError>(
         status: QueryStatus.success,
@@ -156,6 +199,41 @@ class Query<TData, TError> with Removable {
       ));
 
       return data;
+    } on AbortedException catch (e) {
+      // Handle abort - revert state if requested
+      if (e.revert && _revertState != null) {
+        _setState(_revertState!.copyWith(fetchStatus: FetchStatus.idle));
+      } else {
+        _setState(state.copyWith(fetchStatus: FetchStatus.idle));
+      }
+
+      if (e.silent) {
+        // Silent cancellation - check if a new fetch started (retryer was replaced)
+        if (_retryer != currentRetryer) {
+          // New fetch started - return its future (piggybacking pattern)
+          return _retryer!.future;
+        }
+        // No new fetch - return existing data if available
+        if (state.data != null) {
+          return state.data as TData;
+        }
+        // No data and no new fetch - return a never-completing future
+        // This prevents throwing while caller waits for next fetch
+        return Completer<TData>().future;
+      } else if (e.revert) {
+        // Revert: only throw if there was no prior data
+        if (state.data == null) {
+          rethrow;
+        }
+        return state.data as TData;
+      } else {
+        // revert: false - don't throw, return existing data or pending future
+        if (state.data != null) {
+          return state.data as TData;
+        }
+        // No data - return a never-completing future (caller can start new fetch)
+        return Completer<TData>().future;
+      }
     } catch (error) {
       // Cast error to TError - should already be TError from retryer
       if (error is TError) {
@@ -172,7 +250,9 @@ class Query<TData, TError> with Removable {
       }
       rethrow;
     } finally {
-      _currentFetch = null;
+      _abortController = null;
+      _revertState = null;
+      // Note: Don't null _retryer - it may be the new one from a cancelRefetch
     }
   }
 
@@ -191,12 +271,25 @@ class Query<TData, TError> with Removable {
   /// Removes an observer from this query.
   ///
   /// Matches TanStack Query's pattern: schedule GC only when the last observer is removed.
+  /// If this is the last observer and a fetch is in progress with a consumed signal,
+  /// the fetch will be cancelled.
   void removeObserver(QueryObserver observer) {
     if (_observers.contains(observer)) {
       _observers.remove(observer);
 
-      // Schedule GC only if there are no more observers
+      // When no observers remain
       if (_observers.isEmpty) {
+        // If fetching and signal was consumed, cancel the fetch
+        if (state.fetchStatus == FetchStatus.fetching &&
+            _abortController != null) {
+          if (_abortController!.wasConsumed) {
+            // Signal was used by queryFn, so abort the operation
+            cancel(revert: true);
+          }
+          // If signal wasn't consumed, let the fetch complete
+          // but the result won't be used (no observers)
+        }
+
         scheduleGc();
       }
     }
@@ -220,6 +313,30 @@ class Query<TData, TError> with Removable {
   void reset() {
     cancelGc();
     _setState(_initialState);
+  }
+
+  /// Cancels any in-progress fetch for this query.
+  ///
+  /// Returns a Future that completes when the fetch has been cancelled.
+  /// If no fetch is in progress, returns an immediately completed Future.
+  ///
+  /// When [revert] is true (default), the query state will be restored to
+  /// what it was before the fetch started. When false, the current state
+  /// is preserved with fetchStatus set to idle.
+  ///
+  /// When [silent] is true, the cancellation will not trigger error callbacks
+  /// or update the query's error state. The query will silently return to its
+  /// previous state.
+  ///
+  /// Aligned with TanStack Query's Query.cancel method.
+  Future<void> cancel({bool revert = true, bool silent = false}) {
+    final retryer = _retryer;
+
+    _abortController?.abort(revert: revert, silent: silent);
+
+    // Wait for the current fetch to complete (success or error)
+    // and swallow any errors
+    return retryer?.future.then((_) {}).catchError((_) {}) ?? Future.value();
   }
 
   /// Sets the query options and updates the state if needed.

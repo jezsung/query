@@ -112,7 +112,9 @@ class QueryClient {
       effectiveOptions.staleDuration,
       effectiveOptions.staleDurationResolver,
     )) {
-      return query.fetch();
+      // Pass options to fetch so query updates its stored options
+      // This matches TanStack Query's behavior where fetch(options) calls setOptions
+      return query.fetch(options: effectiveOptions);
     }
 
     // Data is fresh, return cached data
@@ -273,6 +275,50 @@ class QueryClient {
       // Fetch and swallow errors
       futures.add(query.fetch().then((_) {}).catchError((_) {}));
     }
+
+    await Future.wait(futures);
+  }
+
+  /// Cancels all in-progress fetches for queries matching the filters.
+  ///
+  /// Returns a Future that completes when all matching queries have been
+  /// cancelled. Queries that are not currently fetching complete immediately.
+  ///
+  /// When [revert] is true (default), cancelled queries will restore their
+  /// state to what it was before the fetch started.
+  ///
+  /// When [silent] is true, the cancellation will not trigger error callbacks
+  /// or update the query's error state.
+  ///
+  /// Example:
+  /// ```dart
+  /// // Cancel all queries and wait
+  /// await client.cancelQueries();
+  ///
+  /// // Cancel queries with a specific key prefix
+  /// await client.cancelQueries(queryKey: ['users']);
+  ///
+  /// // Cancel silently without reverting
+  /// await client.cancelQueries(queryKey: ['users'], revert: false, silent: true);
+  /// ```
+  ///
+  /// Aligned with TanStack Query's `QueryClient.cancelQueries` method.
+  Future<void> cancelQueries({
+    List<Object?>? queryKey,
+    bool exact = false,
+    bool Function(Query)? predicate,
+    bool revert = true,
+    bool silent = false,
+  }) async {
+    final queries = _cache.findAll(
+      queryKey: queryKey,
+      exact: exact,
+      predicate: predicate,
+    );
+
+    final futures = queries.map(
+      (query) => query.cancel(revert: revert, silent: silent),
+    );
 
     await Future.wait(futures);
   }

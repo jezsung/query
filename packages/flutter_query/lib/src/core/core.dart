@@ -1,3 +1,4 @@
+export 'abort_signal.dart';
 export 'default_query_options.dart';
 export 'query.dart';
 export 'query_cache.dart';

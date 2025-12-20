@@ -950,4 +950,350 @@ void main() {
       expect(fetchesInactive, 1);
     }));
   });
+
+  group('cancelQueries', () {
+    /// Creates an abortable query function for testing.
+    ///
+    /// This simulates a real network request that respects the abort signal.
+    /// It checks the signal every 100ms and throws [AbortedException] if aborted.
+    ///
+    /// The [fn] callback is invoked after the duration elapses. It can return
+    /// a value or throw an error to test failure cases.
+    Future<T> Function(QueryContext) abortableQueryFn<T>(
+      Duration duration,
+      T Function() fn,
+    ) {
+      return (context) async {
+        // Race between delay and abort signal
+        await Future.any([
+          Future.delayed(duration),
+          context.signal.whenAbort,
+        ]);
+        context.signal.throwIfAborted();
+        return fn();
+      };
+    }
+
+    test(
+        'SHOULD cancel in-progress fetch'
+        '', withFakeAsync((async) {
+      // Use abortable query function that checks signal
+      // Use ignore to prevent uncaught async error (expected to throw when cancelled with no prior data)
+      client.fetchQuery(
+        queryKey: const ['key'],
+        queryFn: abortableQueryFn(
+          const Duration(seconds: 3),
+          () => 'data',
+        ),
+      ).ignore();
+
+      // Should be fetching
+      final query = cache.get(const ['key'])!;
+      expect(query.state.fetchStatus, FetchStatus.fetching);
+
+      // Cancel - elapse time so the signal check runs
+      client.cancelQueries(queryKey: const ['key']);
+      async.flushMicrotasks();
+
+      // Should be idle after cancel
+      expect(query.state.fetchStatus, FetchStatus.idle);
+    }));
+
+    test(
+        'SHOULD complete immediately '
+        'WHEN no fetch in progress', withFakeAsync((async) {
+      client.fetchQuery(
+        queryKey: const ['key'],
+        queryFn: abortableQueryFn(
+          const Duration(seconds: 3),
+          () => 'data',
+        ),
+      );
+
+      final query = cache.get(const ['key'])!;
+
+      async.elapse(const Duration(seconds: 3));
+
+      expect(query.state.fetchStatus, FetchStatus.idle);
+      expect(query.state.data, 'data');
+
+      // Should complete without error
+      client.cancelQueries(queryKey: const ['key']);
+
+      // State should be unchanged
+      expect(query.state.fetchStatus, FetchStatus.idle);
+      expect(query.state.data, 'data');
+    }));
+
+    test(
+        'SHOULD cancel queries matching queryKey prefix'
+        '', withFakeAsync((async) {
+      // Use abortable query for the one we want to cancel
+      client.fetchQuery(
+        queryKey: const ['users', 1],
+        queryFn: abortableQueryFn(
+          const Duration(seconds: 10),
+          () => 'data',
+        ),
+      ).ignore();
+      // Use non-abortable (Completer) for the one that should keep fetching
+      client.fetchQuery(
+        queryKey: const ['posts', 1],
+        queryFn: (context) => Completer<String>().future,
+      );
+
+      // Cancel only users queries
+      client.cancelQueries(queryKey: const ['users']);
+      async.flushMicrotasks();
+
+      final usersQuery = cache.get(const ['users', 1])!;
+      final postsQuery = cache.get(const ['posts', 1])!;
+
+      // Users query should be cancelled (idle)
+      expect(usersQuery.state.fetchStatus, FetchStatus.idle);
+      // Posts query should still be fetching
+      expect(postsQuery.state.fetchStatus, FetchStatus.fetching);
+    }));
+
+    test(
+        'SHOULD ONLY cancel queries matching predicate'
+        'WHEN predicate != null', withFakeAsync((async) {
+      client.fetchQuery(
+        queryKey: const ['query', 1],
+        queryFn: abortableQueryFn(
+          const Duration(seconds: 3),
+          () => 'data',
+        ),
+      ).ignore();
+      client.fetchQuery(
+        queryKey: const ['query', 2],
+        queryFn: (context) => Completer<String>().future,
+      );
+
+      // Cancel only query with key ending in 1
+      client.cancelQueries(predicate: (q) => q.queryKey.last == 1);
+      async.flushMicrotasks();
+
+      final query1 = cache.get(const ['query', 1])!;
+      final query2 = cache.get(const ['query', 2])!;
+
+      expect(query1.state.fetchStatus, FetchStatus.idle);
+      expect(query2.state.fetchStatus, FetchStatus.fetching);
+    }));
+
+    test(
+        'SHOULD ONLY cancel query matching exact query key '
+        'WHEN exact == true', withFakeAsync((async) {
+      client.fetchQuery(
+        queryKey: const ['users', 1],
+        queryFn: abortableQueryFn(
+          const Duration(seconds: 3),
+          () => 'data-1',
+        ),
+      ).ignore();
+      client.fetchQuery(
+        queryKey: const ['users', 2],
+        queryFn: abortableQueryFn(
+          const Duration(seconds: 3),
+          () => 'data-2',
+        ),
+      );
+
+      // Cancel with exact match - should only match ['users', 1]
+      client.cancelQueries(queryKey: const ['users', 1], exact: true);
+      async.flushMicrotasks();
+
+      final queyr1 = cache.get(const ['users', 1])!;
+      final query2 = cache.get(const ['users', 2])!;
+
+      expect(queyr1.state.fetchStatus, FetchStatus.idle);
+      expect(query2.state.fetchStatus, FetchStatus.fetching);
+    }));
+
+    test(
+        'SHOULD cancel AND revert back to previous state '
+        'WHEN revert == true', withFakeAsync((async) {
+      // Fetch initial data
+      client.fetchQuery<String, Object>(
+        queryKey: const ['key'],
+        queryFn: abortableQueryFn(
+          const Duration(seconds: 3),
+          () => 'data-initial',
+        ),
+      );
+      async.elapse(const Duration(seconds: 3));
+
+      final query = cache.get(const ['key'])!;
+      // Initial failureCount == 0
+      expect(query.state.failureCount, 0);
+
+      client.fetchQuery<String, Object>(
+        queryKey: const ['key'],
+        queryFn: abortableQueryFn(
+          const Duration(seconds: 3),
+          () => throw Exception(),
+        ),
+        retry: (retryCount, error) => const Duration(seconds: 1),
+      );
+
+      // Wait for initial fetch to fail
+      async.elapse(const Duration(seconds: 3));
+      // Should have incremented failureCount
+      expect(query.state.failureCount, 1);
+
+      // Cancel while retrying
+      client.cancelQueries(queryKey: const ['key'], revert: true);
+      async.flushMicrotasks();
+
+      // Should have reverted to previous state
+      expect(query.state.fetchStatus, FetchStatus.idle);
+      expect(query.state.failureCount, 0);
+    }));
+
+    test(
+        'SHOULD cancel AND preserve current state '
+        'WHEN revert == false', withFakeAsync((async) {
+      // Fetch initial data
+      client.fetchQuery<String, Object>(
+        queryKey: const ['key'],
+        queryFn: abortableQueryFn(
+          const Duration(seconds: 3),
+          () => 'data-initial',
+        ),
+      );
+      async.elapse(const Duration(seconds: 3));
+
+      final query = cache.get(const ['key'])!;
+      // Initial failureCount == 0
+      expect(query.state.failureCount, 0);
+
+      // Start new fetch that will fail
+      client.fetchQuery<String, Object>(
+        queryKey: const ['key'],
+        queryFn: abortableQueryFn(
+          const Duration(seconds: 3),
+          () => throw Exception(),
+        ),
+        retry: (retryCount, error) => const Duration(seconds: 1),
+      );
+
+      // Wait for initial fetch to fail
+      async.elapse(const Duration(seconds: 3));
+      // Should have incremented failureCount
+      expect(query.state.failureCount, 1);
+
+      // Cancel while retrying
+      client.cancelQueries(queryKey: const ['key'], revert: false);
+      async.flushMicrotasks();
+
+      // Should have set fetchStatus to FetchStatus.idle even when revert == true
+      expect(query.state.fetchStatus, FetchStatus.idle);
+      // Should have preserved failureCount
+      expect(query.state.failureCount, 1);
+    }));
+
+    test(
+        'SHOULD NOT throw '
+        'WHEN revert == true AND has prior data', withFakeAsync((async) {
+      Object? caughtError;
+
+      client.fetchQuery(
+        queryKey: const ['key'],
+        queryFn: abortableQueryFn(
+          const Duration(seconds: 3),
+          () => 'data-initial',
+        ),
+      );
+      async.elapse(const Duration(seconds: 3));
+
+      client.fetchQuery(
+        queryKey: const ['key'],
+        queryFn: abortableQueryFn(
+          const Duration(seconds: 3),
+          () => 'data-new',
+        ),
+      ).catchError((e) {
+        caughtError = e;
+        return 'error';
+      });
+
+      // Cancel with revert
+      client.cancelQueries(queryKey: const ['key'], revert: true);
+      async.flushMicrotasks();
+
+      // Should NOT have thrown (prior data exists)
+      expect(caughtError, isNull);
+    }));
+
+    test(
+        'SHOULD throw AbortedException '
+        'WHEN revert == true AND has no prior data', withFakeAsync((async) {
+      Object? caughtError;
+
+      client.fetchQuery(
+        queryKey: const ['key'],
+        queryFn: abortableQueryFn(
+          const Duration(seconds: 3),
+          () => 'data',
+        ),
+      ).catchError((e) {
+        caughtError = e;
+        return 'error';
+      });
+
+      // Cancel with revert
+      client.cancelQueries(queryKey: const ['key'], revert: true);
+      async.flushMicrotasks();
+
+      // Should have thrown AbortedException (no prior data)
+      expect(caughtError, isA<AbortedException>());
+    }));
+
+    test(
+        'SHOULD NOT throw '
+        'WHEN silent == true', withFakeAsync((async) {
+      Object? caughtError;
+
+      client.fetchQuery<String, Object>(
+        queryKey: const ['key'],
+        queryFn: abortableQueryFn(
+          const Duration(seconds: 3),
+          () => 'data',
+        ),
+      ).catchError((e) {
+        caughtError = e;
+        return 'error';
+      });
+
+      // Cancel with silent: true
+      client.cancelQueries(queryKey: const ['key'], silent: true);
+      async.flushMicrotasks();
+
+      // Should NOT have thrown even without prior data
+      expect(caughtError, isNull);
+    }));
+
+    test(
+        'SHOULD throw AbortedException '
+        'WHEN silent == false', withFakeAsync((async) {
+      Object? caughtError;
+
+      // Start fetch with abortable queryFn
+      client.fetchQuery<String, Object>(
+        queryKey: const ['key'],
+        queryFn: abortableQueryFn(const Duration(seconds: 10), () => 'data'),
+      ).catchError((e) {
+        caughtError = e;
+        return 'error';
+      });
+
+      async.flushMicrotasks();
+
+      // Cancel with silent: false (default)
+      client.cancelQueries(queryKey: const ['key'], silent: false);
+      async.elapse(const Duration(milliseconds: 100));
+
+      expect(caughtError, isA<AbortedException>());
+    }));
+  });
 }

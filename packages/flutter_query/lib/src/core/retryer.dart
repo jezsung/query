@@ -1,20 +1,55 @@
+import 'abort_signal.dart';
 import 'options/retry.dart';
 
-/// Configuration for the [Retryer] class.
+/// A retry engine that executes async functions with configurable retry logic.
 ///
-/// Specifies how retries should be handled for a query fetch operation.
+/// The Retryer implements TanStack Query v5's retry behavior, executing
+/// a function and automatically retrying on failure based on the provided
+/// configuration.
 ///
-/// Aligned with TanStack Query v5's retryer configuration.
-class RetryerConfig<TData, TError> {
-  /// Creates a retryer configuration.
+/// Key features:
+/// - Unified retry control via callback (decision + delay)
+/// - Failure count tracking
+/// - Abort signal support
+/// - Lifecycle callbacks
+///
+/// Example:
+/// ```dart
+/// final retryer = Retryer<String, Exception>(
+///   fn: () async {
+///     // Your async operation
+///     return await fetchData();
+///   },
+///   retry: (retryCount, error) {
+///     if (retryCount >= 3) return null; // Stop after 3 retries
+///     return Duration(seconds: 1 << retryCount); // Exponential backoff
+///   },
+///   onFail: (failureCount, error) {
+///     print('Attempt $failureCount failed: $error');
+///   },
+/// );
+///
+/// try {
+///   final result = await retryer.start();
+///   print('Success: $result');
+/// } catch (error) {
+///   print('All retry attempts failed: $error');
+/// }
+/// ```
+///
+/// Aligned with TanStack Query's `retryer.ts` implementation.
+class Retryer<TData, TError> {
+  /// Creates a new retryer.
   ///
   /// The [fn] is the async function to execute and retry on failure.
   /// The [retry] callback determines whether to retry and the delay.
   /// The [onFail] callback is invoked after each failed attempt.
-  const RetryerConfig({
+  /// The [signal] allows external abort control.
+  Retryer({
     required this.fn,
     required this.retry,
     this.onFail,
+    this.signal,
   });
 
   /// The async function to execute.
@@ -34,56 +69,12 @@ class RetryerConfig<TData, TError> {
   ///
   /// This is useful for updating state during retry attempts.
   final void Function(int failureCount, TError error)? onFail;
-}
 
-/// A retry engine that executes async functions with configurable retry logic.
-///
-/// The Retryer implements TanStack Query v5's retry behavior, executing
-/// a function and automatically retrying on failure based on the provided
-/// configuration.
-///
-/// Key features:
-/// - Unified retry control via callback (decision + delay)
-/// - Failure count tracking
-/// - Cancellation support
-/// - Lifecycle callbacks
-///
-/// Example:
-/// ```dart
-/// final retryer = Retryer<String, Exception>(
-///   RetryerConfig(
-///     fn: () async {
-///       // Your async operation
-///       return await fetchData();
-///     },
-///     retry: (retryCount, error) {
-///       if (retryCount >= 3) return null; // Stop after 3 retries
-///       return Duration(seconds: 1 << retryCount); // Exponential backoff
-///     },
-///     onFail: (failureCount, error) {
-///       print('Attempt $failureCount failed: $error');
-///     },
-///   ),
-/// );
-///
-/// try {
-///   final result = await retryer.start();
-///   print('Success: $result');
-/// } catch (error) {
-///   print('All retry attempts failed: $error');
-/// }
-/// ```
-///
-/// Aligned with TanStack Query's `retryer.ts` implementation.
-class Retryer<TData, TError> {
-  /// Creates a new retryer with the specified configuration.
-  Retryer(this._config);
-
-  /// The retryer configuration.
-  final RetryerConfig<TData, TError> _config;
-
-  /// Whether the retryer has been cancelled.
-  bool _isCancelled = false;
+  /// Optional abort signal for external cancellation control.
+  ///
+  /// When the signal is aborted, the retryer will stop and throw
+  /// [AbortedException].
+  final AbortSignal? signal;
 
   /// The current retry count.
   ///
@@ -91,10 +82,23 @@ class Retryer<TData, TError> {
   /// It's used to determine whether to retry and to calculate retry delays.
   int _retryCount = 0;
 
-  /// Starts the retry loop and returns the result.
+  /// The cached future for this retryer's execution.
+  Future<TData>? _future;
+
+  /// The Future for this retryer's execution.
   ///
-  /// This method executes the configured function and automatically retries
-  /// on failure based on the retry configuration.
+  /// Returns the same Future on subsequent calls, following the
+  /// [Completer.future] pattern. If [start] hasn't been called yet,
+  /// this will call it automatically.
+  ///
+  /// Aligned with TanStack Query's `Retryer.promise` property.
+  Future<TData> get future => _future ?? start();
+
+  /// Starts the retry loop and returns the future.
+  ///
+  /// Subsequent calls return the same future. This method executes the
+  /// configured function and automatically retries on failure based on
+  /// the retry configuration.
   ///
   /// The retry flow:
   /// 1. Execute the function
@@ -107,7 +111,7 @@ class Retryer<TData, TError> {
   ///    e. Go back to step 1
   ///
   /// Throws:
-  /// - [CancelledException] if the retryer was cancelled during retry
+  /// - [AbortedException] if the operation was aborted via signal
   /// - The original error if retry callback returns null
   ///
   /// Example:
@@ -116,22 +120,36 @@ class Retryer<TData, TError> {
   ///   final result = await retryer.start();
   ///   // Handle success
   /// } catch (error) {
-  ///   if (error is CancelledException) {
-  ///     // Handle cancellation
+  ///   if (error is AbortedException) {
+  ///     // Handle abort
   ///   } else {
   ///     // Handle final failure
   ///   }
   /// }
   /// ```
-  Future<TData> start() async {
-    // Retry loop - continues until success, cancellation, or retry returns null
-    while (!_isCancelled) {
+  Future<TData> start() {
+    return _future ??= _execute();
+  }
+
+  Future<TData> _execute() async {
+    // Retry loop - continues until success, abort, or retry returns null
+    while (true) {
+      // Check if aborted via signal before starting
+      if (signal != null && signal!.isAborted) {
+        signal!.throwIfAborted();
+      }
+
       try {
         // Execute the function
-        return await _config.fn();
+        return await fn();
+      } on AbortedException {
+        // AbortedException should be rethrown directly
+        rethrow;
       } catch (error) {
-        // If cancelled during execution, rethrow immediately
-        if (_isCancelled) rethrow;
+        // Check if aborted via signal after execution
+        if (signal != null && signal!.isAborted) {
+          signal!.throwIfAborted();
+        }
 
         // Cast error to TError - if it's not TError, rethrow
         if (error is! TError) rethrow;
@@ -140,7 +158,7 @@ class Retryer<TData, TError> {
         final typedError = error as TError;
 
         // Call retry callback to get delay (or null to stop)
-        final delay = _config.retry(_retryCount, typedError);
+        final delay = retry(_retryCount, typedError);
 
         // If null, stop retrying and rethrow the error
         if (delay == null) rethrow;
@@ -149,71 +167,21 @@ class Retryer<TData, TError> {
         _retryCount++;
 
         // Notify failure callback with failureCount (1-indexed for QueryState)
-        _config.onFail?.call(_retryCount, typedError);
+        onFail?.call(_retryCount, typedError);
 
-        // Wait for retry delay
-        await Future.delayed(delay);
+        // Wait for retry delay, but abort immediately if signal fires
+        if (signal != null) {
+          await Future.any([
+            Future.delayed(delay),
+            signal!.whenAbort,
+          ]);
+          signal!.throwIfAborted();
+        } else {
+          await Future.delayed(delay);
+        }
 
         // Loop continues - will retry the function
       }
     }
-
-    // If we exit the loop, it means we were cancelled
-    throw const CancelledException();
   }
-
-  /// Cancels the retry operation.
-  ///
-  /// If a retry is in progress, it will be cancelled and [start] will throw
-  /// a [CancelledException].
-  ///
-  /// This is useful for cleanup when a query is disposed or when the user
-  /// navigates away.
-  ///
-  /// Example:
-  /// ```dart
-  /// final retryer = Retryer<String, Exception>(config);
-  ///
-  /// // Start the retry operation
-  /// final future = retryer.start();
-  ///
-  /// // Later, if needed, cancel it
-  /// retryer.cancel();
-  ///
-  /// // The future will throw CancelledException
-  /// try {
-  ///   await future;
-  /// } catch (error) {
-  ///   if (error is CancelledException) {
-  ///     print('Operation was cancelled');
-  ///   }
-  /// }
-  /// ```
-  void cancel() {
-    _isCancelled = true;
-  }
-}
-
-/// Exception thrown when a [Retryer] operation is cancelled.
-///
-/// This exception is thrown by [Retryer.start] when [Retryer.cancel] is called
-/// during a retry operation.
-///
-/// Example:
-/// ```dart
-/// try {
-///   await retryer.start();
-/// } catch (error) {
-///   if (error is CancelledException) {
-///     // Handle cancellation
-///     print('Retry was cancelled');
-///   }
-/// }
-/// ```
-class CancelledException implements Exception {
-  /// Creates a cancelled exception.
-  const CancelledException();
-
-  @override
-  String toString() => 'CancelledException: Retryer operation was cancelled';
 }
