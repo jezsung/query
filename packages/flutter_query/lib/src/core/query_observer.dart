@@ -33,6 +33,10 @@ class QueryObserver<TData, TError> {
       _lastQueryWithDefinedData = _query;
     }
 
+    // Capture initial state counters for isFetchedAfterMount calculation
+    _initialDataUpdateCount = _query.state.dataUpdateCount;
+    _initialErrorUpdateCount = _query.state.errorUpdateCount;
+
     // Get initial optimistic result
     _result = _getResult(optimistic: true);
 
@@ -50,6 +54,14 @@ class QueryObserver<TData, TError> {
   QueryOptions<TData, TError> _options;
   Query<TData, TError> _query;
   late UseQueryResult<TData, TError> _result;
+
+  /// Tracks the initial dataUpdateCount when observer was created.
+  /// Used to compute isFetchedAfterMount.
+  late int _initialDataUpdateCount;
+
+  /// Tracks the initial errorUpdateCount when observer was created.
+  /// Used to compute isFetchedAfterMount.
+  late int _initialErrorUpdateCount;
 
   /// Tracks the last query that had non-null data for placeholder data resolution.
   /// This is used when calling PlaceholderData.resolveWith() callbacks.
@@ -140,6 +152,10 @@ class QueryObserver<TData, TError> {
       if (_query.state.data != null) {
         _lastQueryWithDefinedData = _query;
       }
+
+      // Reset initial counters for the new query (for isFetchedAfterMount)
+      _initialDataUpdateCount = _query.state.dataUpdateCount;
+      _initialErrorUpdateCount = _query.state.errorUpdateCount;
 
       // Get optimistic result
       final result = _getResult(optimistic: true);
@@ -359,6 +375,8 @@ class QueryObserver<TData, TError> {
       errorUpdateCount: state.errorUpdateCount,
       isEnabled: options.enabled ?? true,
       staleDuration: staleDuration,
+      isFetchedAfterMount: state.dataUpdateCount > _initialDataUpdateCount ||
+          state.errorUpdateCount > _initialErrorUpdateCount,
       isPlaceholderData: isPlaceholderData,
       failureCount: state.failureCount,
       failureReason: state.failureReason,

@@ -22,6 +22,7 @@ class UseQueryResult<TData, TError> with EquatableMixin {
     required this.failureReason,
     required this.isEnabled,
     required StaleDuration staleDuration,
+    required this.isFetchedAfterMount,
     required this.isPlaceholderData,
     required this.refetch,
   }) : _staleDuration = staleDuration;
@@ -36,6 +37,7 @@ class UseQueryResult<TData, TError> with EquatableMixin {
   final int failureCount;
   final TError? failureReason;
   final bool isEnabled;
+  final bool isFetchedAfterMount;
   final bool isPlaceholderData;
   final StaleDuration _staleDuration;
 
@@ -90,6 +92,7 @@ class UseQueryResult<TData, TError> with EquatableMixin {
         failureCount,
         failureReason,
         isEnabled,
+        isFetchedAfterMount,
         isPlaceholderData,
         _staleDuration,
       ];

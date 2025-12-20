@@ -190,6 +190,7 @@ class Query<TData, TError> with Removable {
         fetchStatus: FetchStatus.idle,
         data: data,
         dataUpdatedAt: clock.now(),
+        dataUpdateCount: state.dataUpdateCount + 1,
         error: null,
         errorUpdatedAt: state.errorUpdatedAt,
         errorUpdateCount: state.errorUpdateCount,
@@ -433,6 +434,7 @@ class QueryState<TData, TError> with EquatableMixin {
     this.fetchStatus = FetchStatus.idle,
     this.data,
     this.dataUpdatedAt,
+    this.dataUpdateCount = 0,
     this.error,
     this.errorUpdatedAt,
     this.errorUpdateCount = 0,
@@ -466,6 +468,7 @@ class QueryState<TData, TError> with EquatableMixin {
   final FetchStatus fetchStatus;
   final TData? data;
   final DateTime? dataUpdatedAt;
+  final int dataUpdateCount;
   final TError? error;
   final DateTime? errorUpdatedAt;
   final int errorUpdateCount;
@@ -478,6 +481,7 @@ class QueryState<TData, TError> with EquatableMixin {
     FetchStatus? fetchStatus,
     TData? data,
     DateTime? dataUpdatedAt,
+    int? dataUpdateCount,
     TError? error,
     DateTime? errorUpdatedAt,
     int? errorUpdateCount,
@@ -490,6 +494,7 @@ class QueryState<TData, TError> with EquatableMixin {
       fetchStatus: fetchStatus ?? this.fetchStatus,
       data: data ?? this.data,
       dataUpdatedAt: dataUpdatedAt ?? this.dataUpdatedAt,
+      dataUpdateCount: dataUpdateCount ?? this.dataUpdateCount,
       error: error ?? this.error,
       errorUpdatedAt: errorUpdatedAt ?? this.errorUpdatedAt,
       errorUpdateCount: errorUpdateCount ?? this.errorUpdateCount,
@@ -507,6 +512,7 @@ class QueryState<TData, TError> with EquatableMixin {
       fetchStatus: this.fetchStatus,
       data: this.data,
       dataUpdatedAt: this.dataUpdatedAt,
+      dataUpdateCount: this.dataUpdateCount,
       error: this.error,
       errorUpdatedAt: this.errorUpdatedAt,
       errorUpdateCount: this.errorUpdateCount,
@@ -522,6 +528,7 @@ class QueryState<TData, TError> with EquatableMixin {
         fetchStatus,
         data,
         dataUpdatedAt,
+        dataUpdateCount,
         error,
         errorUpdatedAt,
         errorUpdateCount,

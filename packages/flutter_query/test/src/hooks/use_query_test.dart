@@ -2857,4 +2857,127 @@ void main() {
       expect(result.data, 'data-2');
     }));
   });
+
+  group('isFetchedAfterMount', () {
+    testWidgets('SHOULD be false initially and true after successful fetch',
+        withCleanup((tester) async {
+      final hook = await buildHook(
+        () => useQuery(
+          queryKey: const ['key'],
+          queryFn: (context) async {
+            await Future.delayed(const Duration(seconds: 1));
+            return 'data';
+          },
+          queryClient: client,
+        ),
+      );
+
+      // Initially false (no fetch completed yet)
+      expect(hook.current.isFetchedAfterMount, false);
+
+      // Wait for fetch to complete
+      await tester.pump(const Duration(seconds: 1));
+
+      // Now true after successful fetch
+      expect(hook.current.isFetchedAfterMount, true);
+    }));
+
+    testWidgets('SHOULD be true after failed fetch',
+        withCleanup((tester) async {
+      final hook = await buildHook(
+        () => useQuery<String, Object>(
+          queryKey: const ['key'],
+          queryFn: (context) async {
+            await Future.delayed(const Duration(seconds: 1));
+            throw Exception('error');
+          },
+          retry: (_, __) => null,
+          queryClient: client,
+        ),
+      );
+
+      // Initially false
+      expect(hook.current.isFetchedAfterMount, false);
+
+      // Wait for fetch to fail
+      await tester.pump(const Duration(seconds: 1));
+
+      // True after fetch (even though it failed)
+      expect(hook.current.status, QueryStatus.error);
+      expect(hook.current.isFetchedAfterMount, true);
+    }));
+
+    testWidgets('SHOULD be false when using cached data from before mount',
+        withCleanup((tester) async {
+      // First, prime the cache with data
+      final hook1 = await buildHook(
+        () => useQuery(
+          queryKey: const ['key'],
+          queryFn: (context) async {
+            await Future.delayed(const Duration(seconds: 1));
+            return 'cached-data';
+          },
+          queryClient: client,
+        ),
+      );
+
+      // Wait for first fetch to complete
+      await tester.pump(const Duration(seconds: 1));
+      expect(hook1.current.data, 'cached-data');
+      expect(hook1.current.isFetchedAfterMount, true);
+
+      // Unmount first widget
+      await tester.pumpWidget(Container());
+
+      // Mount a new widget with the same key and staleDuration.infinity
+      // so it won't refetch
+      final hook2 = await buildHook(
+        () => useQuery(
+          queryKey: const ['key'],
+          queryFn: (context) async {
+            await Future.delayed(const Duration(seconds: 1));
+            return 'new-data';
+          },
+          staleDuration: StaleDuration.infinity,
+          queryClient: client,
+        ),
+      );
+
+      // Should have cached data immediately but isFetchedAfterMount is false
+      // because the data was cached before this observer mounted
+      expect(hook2.current.data, 'cached-data');
+      expect(hook2.current.isFetchedAfterMount, false);
+    }));
+
+    testWidgets('SHOULD reset to false when query key changes',
+        withCleanup((tester) async {
+      final hook = await buildHookWithProps(
+        (key) => useQuery(
+          queryKey: key,
+          queryFn: (context) async {
+            await Future.delayed(const Duration(seconds: 1));
+            return 'data-${key.first}';
+          },
+          queryClient: client,
+        ),
+        initialProps: const ['key-1'],
+      );
+
+      // Wait for initial fetch to complete
+      await tester.pump(const Duration(seconds: 1));
+      expect(hook.current.isFetchedAfterMount, true);
+
+      // Change query key
+      await hook.rebuildWithProps(const ['key-2']);
+
+      // Should be false for the new query (hasn't fetched yet)
+      expect(hook.current.isFetchedAfterMount, false);
+
+      // Wait for new fetch to complete
+      await tester.pump(const Duration(seconds: 1));
+
+      // Now true again after fetch completed
+      expect(hook.current.isFetchedAfterMount, true);
+    }));
+  });
 }
