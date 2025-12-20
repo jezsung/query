@@ -366,8 +366,10 @@ class QueryObserver<TData, TError> {
         ? options.staleDurationResolver!(_query)
         : (options.staleDuration ?? const StaleDuration());
 
-    // Compute isStale using the query's isStaleByTime method
-    final isStale = _query.isStaleByTime(staleDuration);
+    // Compute isStale: disabled queries are never considered stale
+    // This matches TanStack Query's behavior
+    final isEnabled = options.enabled ?? true;
+    final isStale = isEnabled && _query.isStaleByTime(staleDuration);
 
     return QueryResult<TData, TError>(
       status: status,
@@ -378,7 +380,7 @@ class QueryObserver<TData, TError> {
       error: state.error,
       errorUpdatedAt: state.errorUpdatedAt,
       errorUpdateCount: state.errorUpdateCount,
-      isEnabled: options.enabled ?? true,
+      isEnabled: isEnabled,
       isStale: isStale,
       isFetchedAfterMount: state.dataUpdateCount > _initialDataUpdateCount ||
           state.errorUpdateCount > _initialErrorUpdateCount,

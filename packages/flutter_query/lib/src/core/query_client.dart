@@ -107,11 +107,13 @@ class QueryClient {
 
     final query = _cache.build<TData, TError>(effectiveOptions);
 
+    // Resolve stale duration
+    final resolvedStaleDuration = effectiveOptions.staleDurationResolver != null
+        ? effectiveOptions.staleDurationResolver!(query)
+        : (effectiveOptions.staleDuration ?? const StaleDuration());
+
     // Check if data is stale
-    if (query.isStaleByTime(
-      effectiveOptions.staleDuration,
-      effectiveOptions.staleDurationResolver,
-    )) {
+    if (query.isStaleByTime(resolvedStaleDuration)) {
       // Pass options to fetch so query updates its stored options
       // This matches TanStack Query's behavior where fetch(options) calls setOptions
       return query.fetch(options: effectiveOptions);

@@ -105,7 +105,7 @@ class Query<TData, TError> with Removable {
 
   /// Checks if the query data is stale based on the given stale duration.
   ///
-  /// If [staleDurationResolver] is provided, it takes precedence over [staleDuration].
+  /// The [staleDuration] should be pre-resolved by the caller (e.g., QueryObserver).
   ///
   /// Returns true if:
   /// - No data exists
@@ -117,22 +117,14 @@ class Query<TData, TError> with Removable {
   /// - Data is still fresh
   ///
   /// Aligned with TanStack Query's `isStaleByTime` method.
-  bool isStaleByTime(
-    StaleDuration? staleDuration, [
-    StaleDurationResolver<TData, TError>? staleDurationResolver,
-  ]) {
+  bool isStaleByTime(StaleDuration staleDuration) {
     // No data is always stale
     if (state.data == null) {
       return true;
     }
 
-    // Resolver takes precedence over static value
-    final resolved = staleDurationResolver != null
-        ? staleDurationResolver(this)
-        : (staleDuration ?? const StaleDuration());
-
     // Static queries are never stale
-    if (resolved is StaleDurationStatic) {
+    if (staleDuration is StaleDurationStatic) {
       return false;
     }
 
@@ -141,7 +133,7 @@ class Query<TData, TError> with Removable {
       return true;
     }
 
-    return switch (resolved) {
+    return switch (staleDuration) {
       StaleDurationDuration duration =>
         clock.now().difference(state.dataUpdatedAt!) >= duration,
       StaleDurationInfinity() => false,
