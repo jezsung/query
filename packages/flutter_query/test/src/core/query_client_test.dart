@@ -610,46 +610,48 @@ void main() {
 
     test(
         'SHOULD ONLY refetch active queries '
-        'WHEN refetchType == RefetchType.active', () async {
+        'WHEN refetchType == RefetchType.active', withFakeAsync((async) {
       var activeQueryFetches = 0;
       var inactiveQueryFetches = 0;
 
-      // Create an active observer
+      // Active query
       final activeObserver = QueryObserver(
         client,
         QueryOptions(
           const ['active'],
           (context) async {
+            await Future.delayed(const Duration(seconds: 3));
             activeQueryFetches++;
-            await Future.delayed(const Duration(seconds: 1));
             return 'data-active';
           },
           enabled: true,
         ),
       );
-      await client.fetchQuery(
+      addTearDown(activeObserver.dispose);
+      // Inactive query
+      client.fetchQuery(
         queryKey: const ['inactive'],
         queryFn: (context) async {
+          await Future.delayed(const Duration(seconds: 3));
           inactiveQueryFetches++;
-          await Future.delayed(const Duration(seconds: 1));
           return 'data-inactive';
         },
       );
 
       // Wait for initial fetch
-      await Future.delayed(Duration.zero);
+      async.elapse(const Duration(seconds: 3));
       expect(activeQueryFetches, 1);
       expect(inactiveQueryFetches, 1);
 
-      await client.invalidateQueries(refetchType: RefetchType.active);
+      client.invalidateQueries(refetchType: RefetchType.active);
+      // Wait for initial fetch
+      async.elapse(const Duration(seconds: 3));
 
       // Should have refetched active query
       expect(activeQueryFetches, 2);
       // Should NOT have refetched inactive query
       expect(inactiveQueryFetches, 1);
-
-      activeObserver.dispose();
-    });
+    }));
 
     test(
         'SHOULD ONLY refetch inactive queries '
