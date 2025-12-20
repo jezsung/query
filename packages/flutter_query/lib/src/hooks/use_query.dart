@@ -23,6 +23,7 @@ class UseQueryResult<TData, TError> with EquatableMixin {
     required this.isEnabled,
     required StaleDuration staleDuration,
     required this.isPlaceholderData,
+    required this.refetch,
   }) : _staleDuration = staleDuration;
 
   final QueryStatus status;
@@ -37,6 +38,18 @@ class UseQueryResult<TData, TError> with EquatableMixin {
   final bool isEnabled;
   final bool isPlaceholderData;
   final StaleDuration _staleDuration;
+
+  /// Manually refetch the query.
+  ///
+  /// Returns a [Future] that resolves to the updated [UseQueryResult].
+  ///
+  /// Options:
+  /// - [cancelRefetch]: If true (default), cancels any in-progress fetch.
+  /// - [throwOnError]: If true, rethrows errors instead of capturing in state.
+  final Future<UseQueryResult<TData, TError>> Function({
+    bool cancelRefetch, // Defaults to true
+    bool throwOnError, // Defaults to false
+  }) refetch;
 
   bool get isError => status == QueryStatus.error;
   bool get isSuccess => status == QueryStatus.success;

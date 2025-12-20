@@ -2605,4 +2605,256 @@ void main() {
       expect(errors, ['error-1', 'error-2', 'error-3', 'error-4']);
     }));
   });
+
+  group('refetch', () {
+    testWidgets(
+        'SHOULD refetch'
+        'WHEN refetch is called', withCleanup((tester) async {
+      var fetches = 0;
+
+      final hook = await buildHook(
+        () => useQuery(
+          queryKey: const ['key'],
+          queryFn: (context) async {
+            fetches++;
+            await Future.delayed(const Duration(seconds: 1));
+            return 'data-$fetches';
+          },
+          staleDuration: StaleDuration.infinity,
+          queryClient: client,
+        ),
+      );
+
+      expect(hook.current.fetchStatus, FetchStatus.fetching);
+      expect(fetches, 1);
+
+      // Wait for initial fetch to complete
+      await tester.pump(const Duration(seconds: 1));
+
+      expect(hook.current.fetchStatus, FetchStatus.idle);
+      expect(hook.current.data, 'data-1');
+
+      // Call refetch using act to trigger state updates
+      await act(() => hook.current.refetch());
+
+      expect(hook.current.fetchStatus, FetchStatus.fetching);
+      expect(fetches, 2);
+
+      // Wait for refetch to complete
+      await tester.pump(const Duration(seconds: 1));
+
+      expect(hook.current.fetchStatus, FetchStatus.idle);
+      expect(hook.current.data, 'data-2');
+    }));
+
+    testWidgets(
+        'SHOULD cancel in-progress fetch AND refetch again '
+        'WHEN cancelRefetch == true', withCleanup((tester) async {
+      var fetches = 0;
+
+      final hook = await buildHook(
+        () => useQuery(
+          queryKey: const ['key'],
+          queryFn: (context) async {
+            fetches++;
+            await Future.delayed(const Duration(seconds: 5));
+            return 'data-$fetches';
+          },
+          staleDuration: StaleDuration.infinity,
+          queryClient: client,
+        ),
+      );
+
+      // Wait for initial fetch to complete so we have data
+      await tester.pump(const Duration(seconds: 5));
+      expect(hook.current.data, 'data-1');
+      expect(fetches, 1);
+
+      // Start a refetch
+      await act(() => hook.current.refetch());
+      expect(hook.current.fetchStatus, FetchStatus.fetching);
+      expect(fetches, 2);
+
+      // Wait 2 seconds into the fetch (fetch takes 5 seconds)
+      await tester.pump(const Duration(seconds: 2));
+
+      // Call refetch again with cancelRefetch == true to cancel the in-progress fetch
+      await act(() => hook.current.refetch(cancelRefetch: true));
+
+      // New fetch should have started (the second fetch was cancelled)
+      expect(hook.current.fetchStatus, FetchStatus.fetching);
+      expect(hook.current.data, 'data-1');
+      expect(fetches, 3);
+
+      // Wait for new fetch to complete
+      await tester.pump(const Duration(seconds: 5));
+
+      // Should have data from third fetch
+      expect(hook.current.fetchStatus, FetchStatus.idle);
+      expect(hook.current.data, 'data-3');
+    }));
+
+    testWidgets(
+        'SHOULD return in-progress fetch result '
+        'WHEN cancelRefetch == false', withCleanup((tester) async {
+      var fetches = 0;
+
+      final hook = await buildHook(
+        () => useQuery(
+          queryKey: const ['key'],
+          queryFn: (context) async {
+            fetches++;
+            await Future.delayed(const Duration(seconds: 5));
+            return 'data-$fetches';
+          },
+          staleDuration: StaleDuration.infinity,
+          queryClient: client,
+        ),
+      );
+
+      // Wait for initial fetch to complete so we have data
+      await tester.pump(const Duration(seconds: 5));
+      expect(hook.current.data, 'data-1');
+      expect(fetches, 1);
+
+      // Start a refetch
+      await act(() => hook.current.refetch());
+      expect(hook.current.fetchStatus, FetchStatus.fetching);
+      expect(fetches, 2);
+
+      // Wait 2 seconds into the fetch
+      await tester.pump(const Duration(seconds: 2));
+
+      // Call refetch with cancelRefetch == false - should NOT cancel current fetch
+      await act(() => hook.current.refetch(cancelRefetch: false));
+
+      // Should NOT have started a new fetch
+      expect(fetches, 2);
+
+      // Wait for fetch to complete
+      await tester.pump(const Duration(seconds: 3));
+
+      // Should have data from second fetch
+      expect(hook.current.data, 'data-2');
+      expect(fetches, 2);
+    }));
+
+    testWidgets(
+        'SHOULD swallow errors '
+        'WHEN throwOnError == false', withCleanup((tester) async {
+      var fetches = 0;
+
+      final hook = await buildHook(
+        () => useQuery<String, Object>(
+          queryKey: const ['key'],
+          queryFn: (context) async {
+            fetches++;
+            await Future.delayed(const Duration(seconds: 3));
+            throw Exception();
+          },
+          retry: (_, __) => null,
+          queryClient: client,
+        ),
+      );
+
+      // Wait for initial fetch to fail
+      await tester.pump(const Duration(seconds: 3));
+      expect(hook.current.status, QueryStatus.error);
+      expect(hook.current.error, isA<Exception>());
+      expect(fetches, 1);
+
+      // Call refetch using act - should NOT throw
+      Object? caughtError;
+
+      await act(() async {
+        try {
+          await hook.current.refetch(throwOnError: false);
+        } catch (e) {
+          caughtError = e;
+        }
+      });
+
+      await tester.pump(const Duration(seconds: 3));
+
+      expect(caughtError, isNull);
+      expect(fetches, 2);
+    }));
+
+    testWidgets(
+        'SHOULD propagate errors '
+        'WHEN throwOnError == true', withCleanup((tester) async {
+      var fetches = 0;
+      final thrownError = Exception();
+
+      final hook = await buildHook(
+        () => useQuery<String, Object>(
+          queryKey: const ['key'],
+          queryFn: (context) async {
+            fetches++;
+            await Future.delayed(const Duration(seconds: 3));
+            throw thrownError;
+          },
+          retry: (_, __) => null,
+          queryClient: client,
+        ),
+      );
+
+      // Wait for initial fetch to fail
+      await tester.pump(const Duration(seconds: 3));
+      expect(hook.current.status, QueryStatus.error);
+      expect(hook.current.error, same(thrownError));
+      expect(fetches, 1);
+
+      Object? caughtError;
+
+      await act(() async {
+        try {
+          await hook.current.refetch(throwOnError: true);
+        } catch (e) {
+          caughtError = e;
+        }
+      });
+
+      await tester.pump(const Duration(seconds: 3));
+
+      // Verify the error was thrown
+      expect(caughtError, same(thrownError));
+      expect(fetches, 2);
+    }));
+
+    testWidgets(
+        'SHOULD return updated UseQueryResult'
+        '', withCleanup((tester) async {
+      var fetches = 0;
+
+      final hook = await buildHook(
+        () => useQuery(
+          queryKey: const ['key'],
+          queryFn: (context) async {
+            fetches++;
+            await Future.delayed(const Duration(seconds: 3));
+            return 'data-$fetches';
+          },
+          staleDuration: StaleDuration.infinity,
+          queryClient: client,
+        ),
+      );
+
+      // Wait for initial fetch to complete
+      await tester.pump(const Duration(seconds: 3));
+      expect(hook.current.data, 'data-1');
+
+      // Call refetch and capture returned result
+      late final UseQueryResult result;
+
+      await act(() async {
+        result = await hook.current.refetch();
+      });
+
+      // Wait for refetch to complete
+      await tester.pump(const Duration(seconds: 3));
+      // Should return updated data
+      expect(result.data, 'data-2');
+    }));
+  });
 }

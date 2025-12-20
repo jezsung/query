@@ -244,6 +244,26 @@ class QueryObserver<TData, TError> {
     }
   }
 
+  /// Manually refetch the query.
+  ///
+  /// [cancelRefetch] - If true (default), cancels any in-progress fetch before
+  /// starting a new one. If false, returns the result of the existing fetch.
+  ///
+  /// [throwOnError] - If true, rethrows any error that occurs during the fetch.
+  /// If false (default), errors are swallowed and captured in query state.
+  Future<UseQueryResult<TData, TError>> refetch({
+    bool cancelRefetch = true,
+    bool throwOnError = false,
+  }) async {
+    try {
+      await _query.fetch(cancelRefetch: cancelRefetch);
+    } catch (e) {
+      if (throwOnError) rethrow;
+      // Swallow error - it's captured in query state
+    }
+    return _getResult();
+  }
+
   void dispose() {
     _listeners.clear();
     _cancelRefetchInterval();
@@ -342,7 +362,7 @@ class QueryObserver<TData, TError> {
       isPlaceholderData: isPlaceholderData,
       failureCount: state.failureCount,
       failureReason: state.failureReason,
-      // isFetchedAfterMount: state.dataUpdatedAt != null, // Simplified for now
+      refetch: refetch,
     );
   }
 
