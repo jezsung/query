@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:clock/clock.dart';
 
-import '../hooks/use_query.dart';
 import 'options/gc_duration.dart';
 import 'options/placeholder_data.dart';
 import 'options/refetch_on_mount.dart';
@@ -12,10 +11,11 @@ import 'query.dart';
 import 'query_client.dart';
 import 'query_key.dart';
 import 'query_options.dart';
+import 'query_result.dart';
 
 /// Callback type for result change listeners
 typedef ResultChangeListener<TData, TError> = void Function(
-    UseQueryResult<TData, TError> result);
+    QueryResult<TData, TError> result);
 
 class QueryObserver<TData, TError> {
   QueryObserver(
@@ -53,7 +53,7 @@ class QueryObserver<TData, TError> {
   final QueryClient _client;
   QueryOptions<TData, TError> _options;
   Query<TData, TError> _query;
-  late UseQueryResult<TData, TError> _result;
+  late QueryResult<TData, TError> _result;
 
   /// Tracks the initial dataUpdateCount when observer was created.
   /// Used to compute isFetchedAfterMount.
@@ -75,7 +75,7 @@ class QueryObserver<TData, TError> {
   Timer? _refetchIntervalTimer;
 
   QueryOptions<TData, TError> get options => _options;
-  UseQueryResult<TData, TError> get result => _result;
+  QueryResult<TData, TError> get result => _result;
 
   /// Subscribe to result changes. Returns an unsubscribe function.
   void Function() subscribe(ResultChangeListener<TData, TError> listener) {
@@ -267,7 +267,7 @@ class QueryObserver<TData, TError> {
   ///
   /// [throwOnError] - If true, rethrows any error that occurs during the fetch.
   /// If false (default), errors are swallowed and captured in query state.
-  Future<UseQueryResult<TData, TError>> refetch({
+  Future<QueryResult<TData, TError>> refetch({
     bool cancelRefetch = true,
     bool throwOnError = false,
   }) async {
@@ -316,7 +316,7 @@ class QueryObserver<TData, TError> {
     _refetchIntervalTimer = null;
   }
 
-  void _setResult(UseQueryResult<TData, TError> newResult) {
+  void _setResult(QueryResult<TData, TError> newResult) {
     // Only notify if the result actually changed, preventing infinite loops
     if (newResult != _result) {
       _result = newResult;
@@ -327,7 +327,7 @@ class QueryObserver<TData, TError> {
     }
   }
 
-  UseQueryResult<TData, TError> _getResult({bool optimistic = false}) {
+  QueryResult<TData, TError> _getResult({bool optimistic = false}) {
     // Pull fresh state from query
     final state = _query.state;
 
@@ -365,7 +365,7 @@ class QueryObserver<TData, TError> {
         ? options.staleDurationResolver!(_query)
         : (options.staleDuration ?? const StaleDuration());
 
-    return UseQueryResult<TData, TError>(
+    return QueryResult<TData, TError>(
       status: status,
       fetchStatus: fetchStatus,
       data: data,

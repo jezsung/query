@@ -200,8 +200,8 @@ void main() {
   testWidgets('SHOULD fetch only once WHEN multiple hooks share same key',
       withCleanup((tester) async {
     var fetchCount = 0;
-    late UseQueryResult<String, Object> result1;
-    late UseQueryResult<String, Object> result2;
+    late QueryResult<String, Object> result1;
+    late QueryResult<String, Object> result2;
 
     await tester.pumpWidget(Column(children: [
       HookBuilder(
@@ -284,8 +284,8 @@ void main() {
 
   testWidgets('SHOULD distinguish between different query keys',
       withCleanup((tester) async {
-    late UseQueryResult<String, Object> result1;
-    late UseQueryResult<String, Object> result2;
+    late QueryResult<String, Object> result1;
+    late QueryResult<String, Object> result2;
 
     await tester.pumpWidget(Column(
       children: [
@@ -2088,7 +2088,7 @@ void main() {
 
     testWidgets('SHOULD refetch at interval WHEN data is fresh',
         withCleanup((tester) async {
-      late HookResult<UseQueryResult> hookResult;
+      late HookResult<QueryResult> hookResult;
       for (final staleDuration in [
         StaleDuration(hours: 1),
         StaleDuration.infinity,
@@ -2823,7 +2823,7 @@ void main() {
     }));
 
     testWidgets(
-        'SHOULD return updated UseQueryResult'
+        'SHOULD return updated QueryResult'
         '', withCleanup((tester) async {
       var fetches = 0;
 
@@ -2845,7 +2845,7 @@ void main() {
       expect(hook.current.data, 'data-1');
 
       // Call refetch and capture returned result
-      late final UseQueryResult result;
+      late final QueryResult result;
 
       await act(() async {
         result = await hook.current.refetch();
