@@ -1,4 +1,6 @@
+import 'default_mutation_options.dart';
 import 'default_query_options.dart';
+import 'mutation_cache.dart';
 import 'options/gc_duration.dart';
 import 'options/retry.dart';
 import 'options/stale_duration.dart';
@@ -25,7 +27,7 @@ enum RefetchType {
 }
 
 class QueryClient {
-  /// Creates a QueryClient with optional cache and default query options.
+  /// Creates a QueryClient with optional cache and default options.
   ///
   /// Example:
   /// ```dart
@@ -37,16 +39,27 @@ class QueryClient {
   ///       return Duration(seconds: 1 << retryCount);
   ///     },
   ///   ),
+  ///   defaultMutationOptions: DefaultMutationOptions(
+  ///     retry: (retryCount, error) {
+  ///       if (retryCount >= 1) return null;
+  ///       return Duration(seconds: 1);
+  ///     },
+  ///   ),
   /// );
   /// ```
   QueryClient({
     QueryCache? cache,
+    MutationCache? mutationCache,
     this.defaultQueryOptions = const DefaultQueryOptions(),
-  }) : _cache = cache ?? QueryCache() {
+    this.defaultMutationOptions = const DefaultMutationOptions(),
+  })  : _cache = cache ?? QueryCache(),
+        _mutationCache = mutationCache ?? MutationCache() {
     _cache.setClient(this);
+    _mutationCache.client = this;
   }
 
   final QueryCache _cache;
+  final MutationCache _mutationCache;
 
   /// Default options applied to all queries.
   ///
@@ -54,12 +67,22 @@ class QueryClient {
   /// continue to use the options they were created with.
   DefaultQueryOptions defaultQueryOptions;
 
+  /// Default options applied to all mutations.
+  ///
+  /// Note: Changing this only affects new mutations. Existing mutations will
+  /// continue to use the options they were created with.
+  DefaultMutationOptions defaultMutationOptions;
+
   /// Gets the query cache
   QueryCache get cache => _cache;
 
-  /// Disposes the query client and clears all queries from the cache
+  /// Gets the mutation cache
+  MutationCache get mutationCache => _mutationCache;
+
+  /// Disposes the query client and clears all queries and mutations from the cache
   void dispose() {
     _cache.clear();
+    _mutationCache.clear();
   }
 
   /// Fetches a query, returning cached data if fresh or fetching new data if stale.

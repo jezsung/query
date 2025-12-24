@@ -1,0 +1,114 @@
+import 'dart:async';
+
+import 'default_mutation_options.dart';
+import 'mutation_function_context.dart';
+import 'options/gc_duration.dart';
+import 'options/retry.dart';
+
+/// Options for configuring a mutation.
+///
+/// Contains all the configuration options for a mutation including the mutation
+/// function and callbacks for lifecycle events.
+class MutationOptions<TData, TError, TVariables, TOnMutateResult> {
+  MutationOptions({
+    required this.mutationFn,
+    this.mutationKey,
+    this.meta,
+    this.onMutate,
+    this.onSuccess,
+    this.onError,
+    this.onSettled,
+    this.retry,
+    this.gcDuration,
+  });
+
+  /// The function that performs the mutation.
+  final Future<TData> Function(
+    TVariables variables,
+    MutationFunctionContext context,
+  ) mutationFn;
+
+  /// Optional key to identify this mutation.
+  final List<Object?>? mutationKey;
+
+  /// Optional metadata associated with the mutation.
+  final Map<String, dynamic>? meta;
+
+  /// Called before the mutation function is fired.
+  ///
+  /// Can be used to perform optimistic updates. The returned value
+  /// is passed to onSuccess, onError, and onSettled callbacks as `onMutateResult`.
+  final FutureOr<TOnMutateResult?> Function(
+    TVariables variables,
+    MutationFunctionContext context,
+  )? onMutate;
+
+  /// Called when the mutation is successful.
+  final FutureOr<void> Function(
+    TData data,
+    TVariables variables,
+    TOnMutateResult? onMutateResult,
+    MutationFunctionContext context,
+  )? onSuccess;
+
+  /// Called when the mutation encounters an error.
+  final FutureOr<void> Function(
+    TError error,
+    TVariables variables,
+    TOnMutateResult? onMutateResult,
+    MutationFunctionContext context,
+  )? onError;
+
+  /// Called when the mutation is either successful or errors.
+  final FutureOr<void> Function(
+    TData? data,
+    TError? error,
+    TVariables variables,
+    TOnMutateResult? onMutateResult,
+    MutationFunctionContext context,
+  )? onSettled;
+
+  /// Retry configuration.
+  ///
+  /// Defaults to 0 (no retries) for mutations, unlike queries which default to 3.
+  final Retry<TError>? retry;
+
+  /// Duration after which the mutation can be garbage collected.
+  final GcDurationOption? gcDuration;
+
+  @override
+  String toString() {
+    return 'MutationOptions('
+        'mutationKey: $mutationKey, '
+        'meta: $meta, '
+        'onMutate: ${onMutate != null ? '<Function>' : 'null'}, '
+        'onSuccess: ${onSuccess != null ? '<Function>' : 'null'}, '
+        'onError: ${onError != null ? '<Function>' : 'null'}, '
+        'onSettled: ${onSettled != null ? '<Function>' : 'null'}, '
+        'retry: ${retry != null ? '<Function>' : 'null'}, '
+        'gcDuration: $gcDuration)';
+  }
+}
+
+/// Internal extension for merging mutation options with defaults.
+extension MergeWith<TData, TError, TVariables, TOnMutateResult>
+    on MutationOptions<TData, TError, TVariables, TOnMutateResult> {
+  /// Merges these options with the given defaults.
+  ///
+  /// Options specified here take precedence over defaults (null coalescing).
+  MutationOptions<TData, TError, TVariables, TOnMutateResult> mergeWith(
+    DefaultMutationOptions defaults,
+  ) {
+    return MutationOptions<TData, TError, TVariables, TOnMutateResult>(
+      mutationFn: mutationFn,
+      mutationKey: mutationKey,
+      meta: meta,
+      onMutate: onMutate,
+      onSuccess: onSuccess,
+      onError: onError,
+      onSettled: onSettled,
+      retry: retry ?? defaults.retry as Retry<TError>?,
+      gcDuration: gcDuration ?? defaults.gcDuration,
+    );
+  }
+}

@@ -1,5 +1,13 @@
 export 'abort_signal.dart';
+export 'default_mutation_options.dart';
 export 'default_query_options.dart';
+export 'mutation.dart';
+export 'mutation_cache.dart';
+export 'mutation_function_context.dart';
+export 'mutation_observer.dart';
+export 'mutation_options.dart' show MutationOptions;
+export 'mutation_result.dart';
+export 'mutation_state.dart' show MutationStatus, MutationState;
 export 'query.dart';
 export 'query_cache.dart';
 export 'query_client.dart';
