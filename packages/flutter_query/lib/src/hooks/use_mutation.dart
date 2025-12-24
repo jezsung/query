@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter_hooks/flutter_hooks.dart';
 
 import '../core/mutation_function_context.dart';
@@ -9,6 +7,7 @@ import '../core/mutation_result.dart';
 import '../core/options/gc_duration.dart';
 import '../core/options/retry.dart';
 import '../core/query_client.dart';
+import '../core/types.dart';
 import 'use_query_client.dart';
 
 /// Hook for performing mutations (create, update, delete operations).
@@ -42,29 +41,10 @@ MutationResult<TData, TError, TVariables, TOnMutateResult>
   ) mutationFn,
   List<Object?>? mutationKey,
   Map<String, dynamic>? meta,
-  FutureOr<TOnMutateResult?> Function(
-    TVariables variables,
-    MutationFunctionContext context,
-  )? onMutate,
-  FutureOr<void> Function(
-    TData data,
-    TVariables variables,
-    TOnMutateResult? onMutateResult,
-    MutationFunctionContext fnContext,
-  )? onSuccess,
-  FutureOr<void> Function(
-    TError error,
-    TVariables variables,
-    TOnMutateResult? onMutateResult,
-    MutationFunctionContext fnContext,
-  )? onError,
-  FutureOr<void> Function(
-    TData? data,
-    TError? error,
-    TVariables variables,
-    TOnMutateResult? onMutateResult,
-    MutationFunctionContext fnContext,
-  )? onSettled,
+  MutationOnMutate<TVariables, TOnMutateResult>? onMutate,
+  MutationOnSuccess<TData, TVariables, TOnMutateResult>? onSuccess,
+  MutationOnError<TError, TVariables, TOnMutateResult>? onError,
+  MutationOnSettled<TData, TError, TVariables, TOnMutateResult>? onSettled,
   Retry<TError>? retry,
   GcDurationOption? gcDuration,
   QueryClient? queryClient,

@@ -1,9 +1,8 @@
-import 'dart:async';
-
 import 'default_mutation_options.dart';
 import 'mutation_function_context.dart';
 import 'options/gc_duration.dart';
 import 'options/retry.dart';
+import 'types.dart';
 
 /// Options for configuring a mutation.
 ///
@@ -38,35 +37,17 @@ class MutationOptions<TData, TError, TVariables, TOnMutateResult> {
   ///
   /// Can be used to perform optimistic updates. The returned value
   /// is passed to onSuccess, onError, and onSettled callbacks as `onMutateResult`.
-  final FutureOr<TOnMutateResult?> Function(
-    TVariables variables,
-    MutationFunctionContext context,
-  )? onMutate;
+  final MutationOnMutate<TVariables, TOnMutateResult>? onMutate;
 
   /// Called when the mutation is successful.
-  final FutureOr<void> Function(
-    TData data,
-    TVariables variables,
-    TOnMutateResult? onMutateResult,
-    MutationFunctionContext context,
-  )? onSuccess;
+  final MutationOnSuccess<TData, TVariables, TOnMutateResult>? onSuccess;
 
   /// Called when the mutation encounters an error.
-  final FutureOr<void> Function(
-    TError error,
-    TVariables variables,
-    TOnMutateResult? onMutateResult,
-    MutationFunctionContext context,
-  )? onError;
+  final MutationOnError<TError, TVariables, TOnMutateResult>? onError;
 
   /// Called when the mutation is either successful or errors.
-  final FutureOr<void> Function(
-    TData? data,
-    TError? error,
-    TVariables variables,
-    TOnMutateResult? onMutateResult,
-    MutationFunctionContext context,
-  )? onSettled;
+  final MutationOnSettled<TData, TError, TVariables, TOnMutateResult>?
+      onSettled;
 
   /// Retry configuration.
   ///
