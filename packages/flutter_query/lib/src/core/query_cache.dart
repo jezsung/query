@@ -36,7 +36,7 @@ class QueryCache {
     QueryOptions<TData, TError> options,
   ) {
     final key = QueryKey(options.queryKey);
-    return (_queries[key] ??= Query<TData, TError>(_client!, this, options))
+    return (_queries[key] ??= Query<TData, TError>(_client!, options))
         as Query<TData, TError>;
   }
 

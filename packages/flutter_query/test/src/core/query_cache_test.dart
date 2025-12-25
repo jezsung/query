@@ -164,7 +164,6 @@ void main() {
       // Manually create a different query instance (not in cache)
       final query2 = Query(
         client,
-        cache,
         QueryOptions(
           const ['key1'],
           (context) async => 'data2',

@@ -21,10 +21,8 @@ enum FetchStatus { fetching, paused, idle }
 class Query<TData, TError> with Removable {
   Query(
     QueryClient client,
-    QueryCache cache,
     QueryOptions<TData, TError> options,
   )   : _client = client,
-        _cache = cache,
         _options = options,
         _initialState = QueryState.fromOptions(options) {
     _state = _initialState;
@@ -33,7 +31,7 @@ class Query<TData, TError> with Removable {
   }
 
   final QueryClient _client;
-  final QueryCache _cache;
+  QueryCache get _cache => _client.cache;
   QueryOptions<TData, TError> _options;
 
   List<Object?> get queryKey => _options.queryKey;

@@ -31,11 +31,9 @@ Future<T> Function(QueryContext) abortableQueryFn<T>(
 
 void main() {
   late QueryClient client;
-  late QueryCache cache;
 
   setUp(() {
     client = QueryClient();
-    cache = client.cache;
   });
 
   tearDown(() {
@@ -51,7 +49,6 @@ void main() {
 
         final query = Query<String, Object>(
           client,
-          cache,
           QueryOptions(
             const ['key'],
             (context) async {
@@ -96,7 +93,6 @@ void main() {
 
         final query = Query<String, Object>(
           client,
-          cache,
           QueryOptions(
             const ['key'],
             (context) async {
