@@ -26,7 +26,7 @@ class Query<TData, TError> with GarbageCollectable {
           options.initialDataUpdatedAt,
         ) {
     _state = _initialState;
-    setOptions(options);
+    this.options = options;
     scheduleGc();
   }
 
@@ -67,40 +67,13 @@ class Query<TData, TError> with GarbageCollectable {
     });
   }
 
-  bool isStaleByTime(StaleDuration staleDuration) {
-    if (state.data == null) {
-      return true;
-    }
+  set options(QueryOptions<TData, TError> newOptions) {
+    _options = newOptions;
 
-    if (staleDuration is StaleDurationStatic) {
-      return false;
-    }
-
-    if (state.isInvalidated) {
-      return true;
-    }
-
-    return switch (staleDuration) {
-      StaleDurationDuration duration =>
-        clock.now().difference(state.dataUpdatedAt!) >= duration,
-      StaleDurationInfinity() => false,
-      StaleDurationStatic() => false,
-    };
-  }
-
-  void invalidate() {
-    if (!state.isInvalidated) {
-      _setState(state.copyWith(isInvalidated: true));
-    }
-  }
-
-  void setOptions(QueryOptions<TData, TError> options) {
-    _options = options;
-
-    if (state.data == null && options.initialData != null) {
+    if (state.data == null && newOptions.initialData != null) {
       final defaultState = QueryState<TData, TError>.fromSeed(
-        options.initialData,
-        options.initialDataUpdatedAt,
+        newOptions.initialData,
+        newOptions.initialDataUpdatedAt,
       );
       if (defaultState.data != null) {
         _setState(defaultState);
@@ -122,7 +95,7 @@ class Query<TData, TError> with GarbageCollectable {
     }
 
     if (options != null) {
-      setOptions(options);
+      this.options = options;
     }
 
     _revertState = state;
@@ -225,10 +198,42 @@ class Query<TData, TError> with GarbageCollectable {
     }
   }
 
+  void invalidate() {
+    if (!state.isInvalidated) {
+      _setState(state.copyWith(isInvalidated: true));
+    }
+  }
+
   Future<void> cancel({bool revert = true, bool silent = false}) {
     final retryer = _retryer;
     _abortController?.abort(revert: revert, silent: silent);
     return retryer?.future.then((_) {}).catchError((_) {}) ?? Future.value();
+  }
+
+  void reset() {
+    cancelGc();
+    _setState(_initialState);
+  }
+
+  bool isStaleByTime(StaleDuration staleDuration) {
+    if (state.data == null) {
+      return true;
+    }
+
+    if (staleDuration is StaleDurationStatic) {
+      return false;
+    }
+
+    if (state.isInvalidated) {
+      return true;
+    }
+
+    return switch (staleDuration) {
+      StaleDurationDuration duration =>
+        clock.now().difference(state.dataUpdatedAt!) >= duration,
+      StaleDurationInfinity() => false,
+      StaleDurationStatic() => false,
+    };
   }
 
   void addObserver(QueryObserver<TData, TError> observer) {
@@ -250,11 +255,6 @@ class Query<TData, TError> with GarbageCollectable {
       }
       scheduleGc();
     }
-  }
-
-  void reset() {
-    cancelGc();
-    _setState(_initialState);
   }
 
   void _setState(QueryState<TData, TError> newState) {
