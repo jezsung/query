@@ -136,7 +136,7 @@ class Query<TData, TError> with Removable {
           fetchStatus: FetchStatus.fetching,
           failureCount: 0,
         )
-        .copyWithNull(faliureReason: true));
+        .copyWithNull(failureReason: true));
 
     final context = QueryContext(
       queryKey: queryKey,

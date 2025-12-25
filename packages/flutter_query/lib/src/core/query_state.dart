@@ -52,6 +52,23 @@ class QueryState<TData, TError> with EquatableMixin {
   final TError? failureReason;
   final bool isInvalidated;
 
+  @override
+  List<Object?> get props => [
+        status,
+        fetchStatus,
+        data,
+        dataUpdatedAt,
+        dataUpdateCount,
+        error,
+        errorUpdatedAt,
+        errorUpdateCount,
+        failureCount,
+        failureReason,
+        isInvalidated,
+      ];
+}
+
+extension QueryStateCopyWith<TData, TError> on QueryState<TData, TError> {
   QueryState<TData, TError> copyWith({
     QueryStatus? status,
     FetchStatus? fetchStatus,
@@ -81,35 +98,24 @@ class QueryState<TData, TError> with EquatableMixin {
   }
 
   QueryState<TData, TError> copyWithNull({
-    bool faliureReason = false,
+    bool data = false,
+    bool dataUpdatedAt = false,
+    bool error = false,
+    bool errorUpdatedAt = false,
+    bool failureReason = false,
   }) {
     return QueryState<TData, TError>(
-      status: this.status,
-      fetchStatus: this.fetchStatus,
-      data: this.data,
-      dataUpdatedAt: this.dataUpdatedAt,
-      dataUpdateCount: this.dataUpdateCount,
-      error: this.error,
-      errorUpdatedAt: this.errorUpdatedAt,
-      errorUpdateCount: this.errorUpdateCount,
-      failureCount: this.failureCount,
-      failureReason: faliureReason ? null : this.failureReason,
-      isInvalidated: this.isInvalidated,
+      status: status,
+      fetchStatus: fetchStatus,
+      data: data ? null : this.data,
+      dataUpdatedAt: dataUpdatedAt ? null : this.dataUpdatedAt,
+      dataUpdateCount: dataUpdateCount,
+      error: error ? null : this.error,
+      errorUpdatedAt: errorUpdatedAt ? null : this.errorUpdatedAt,
+      errorUpdateCount: errorUpdateCount,
+      failureCount: failureCount,
+      failureReason: failureReason ? null : this.failureReason,
+      isInvalidated: isInvalidated,
     );
   }
-
-  @override
-  List<Object?> get props => [
-        status,
-        fetchStatus,
-        data,
-        dataUpdatedAt,
-        dataUpdateCount,
-        error,
-        errorUpdatedAt,
-        errorUpdateCount,
-        failureCount,
-        failureReason,
-        isInvalidated,
-      ];
 }

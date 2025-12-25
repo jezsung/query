@@ -16,7 +16,7 @@ export 'query_key.dart';
 export 'query_observer.dart';
 export 'query_options.dart';
 export 'query_result.dart';
-export 'query_state.dart';
+export 'query_state.dart' show QueryState;
 export 'removable.dart';
 export 'retryer.dart';
 export 'options/stale_duration.dart';
