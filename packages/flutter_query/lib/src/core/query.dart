@@ -21,7 +21,10 @@ class Query<TData, TError> with GarbageCollectable {
     QueryOptions<TData, TError> options,
   )   : _client = client,
         _options = options,
-        _initialState = QueryState.fromOptions(options) {
+        _initialState = QueryState.fromSeed(
+          options.initialData,
+          options.initialDataUpdatedAt,
+        ) {
     _state = _initialState;
     setOptions(options);
     scheduleGc();
@@ -29,8 +32,8 @@ class Query<TData, TError> with GarbageCollectable {
 
   final QueryClient _client;
   QueryOptions<TData, TError> _options;
-  late QueryState<TData, TError> _state;
   QueryState<TData, TError> _initialState;
+  late QueryState<TData, TError> _state;
   final List<QueryObserver> _observers = [];
   Retryer<TData, TError>? _retryer;
   AbortController? _abortController;
@@ -95,7 +98,10 @@ class Query<TData, TError> with GarbageCollectable {
     _options = options;
 
     if (state.data == null && options.initialData != null) {
-      final defaultState = QueryState<TData, TError>.fromOptions(options);
+      final defaultState = QueryState<TData, TError>.fromSeed(
+        options.initialData,
+        options.initialDataUpdatedAt,
+      );
       if (defaultState.data != null) {
         _setState(defaultState);
         _initialState = defaultState;

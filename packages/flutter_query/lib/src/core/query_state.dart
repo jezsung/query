@@ -1,8 +1,6 @@
 import 'package:clock/clock.dart';
 import 'package:collection/collection.dart';
 
-import 'query_options.dart';
-
 enum QueryStatus { pending, error, success }
 
 enum FetchStatus { fetching, paused, idle }
@@ -22,25 +20,22 @@ class QueryState<TData, TError> {
     this.isInvalidated = false,
   });
 
-  /// Creates a QueryState from QueryOptions, handling initialData.
-  ///
-  /// This matches TanStack Query's getDefaultState function behavior.
-  factory QueryState.fromOptions(QueryOptions<TData, TError> options) {
-    if (options.initialData != null) {
-      return QueryState<TData, TError>(
-        status: QueryStatus.success,
-        fetchStatus: FetchStatus.idle,
-        data: options.initialData,
-        dataUpdatedAt: options.initialDataUpdatedAt ?? clock.now(),
-        error: null,
-        errorUpdatedAt: null,
-        errorUpdateCount: 0,
-        failureCount: 0,
-        failureReason: null,
-      );
+  factory QueryState.fromSeed(TData? seed, DateTime? seedUpdatedAt) {
+    if (seed == null) {
+      return QueryState();
     }
 
-    return QueryState<TData, TError>();
+    return QueryState<TData, TError>(
+      status: QueryStatus.success,
+      fetchStatus: FetchStatus.idle,
+      data: seed,
+      dataUpdatedAt: seedUpdatedAt ?? clock.now(),
+      error: null,
+      errorUpdatedAt: null,
+      errorUpdateCount: 0,
+      failureCount: 0,
+      failureReason: null,
+    );
   }
 
   final QueryStatus status;
