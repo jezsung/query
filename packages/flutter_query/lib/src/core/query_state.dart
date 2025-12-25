@@ -1,10 +1,12 @@
 import 'package:clock/clock.dart';
-import 'package:equatable/equatable.dart';
+import 'package:collection/collection.dart';
 
 import 'query.dart';
 import 'query_options.dart';
 
-class QueryState<TData, TError> with EquatableMixin {
+const DeepCollectionEquality _equality = DeepCollectionEquality();
+
+class QueryState<TData, TError> {
   const QueryState({
     this.status = QueryStatus.pending,
     this.fetchStatus = FetchStatus.idle,
@@ -53,19 +55,36 @@ class QueryState<TData, TError> with EquatableMixin {
   final bool isInvalidated;
 
   @override
-  List<Object?> get props => [
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is QueryState<TData, TError> &&
+        status == other.status &&
+        fetchStatus == other.fetchStatus &&
+        _equality.equals(data, other.data) &&
+        dataUpdatedAt == other.dataUpdatedAt &&
+        dataUpdateCount == other.dataUpdateCount &&
+        _equality.equals(error, other.error) &&
+        errorUpdatedAt == other.errorUpdatedAt &&
+        errorUpdateCount == other.errorUpdateCount &&
+        failureCount == other.failureCount &&
+        _equality.equals(failureReason, other.failureReason) &&
+        isInvalidated == other.isInvalidated;
+  }
+
+  @override
+  int get hashCode => Object.hash(
         status,
         fetchStatus,
-        data,
+        _equality.hash(data),
         dataUpdatedAt,
         dataUpdateCount,
-        error,
+        _equality.hash(error),
         errorUpdatedAt,
         errorUpdateCount,
         failureCount,
-        failureReason,
+        _equality.hash(failureReason),
         isInvalidated,
-      ];
+      );
 }
 
 extension QueryStateCopyWith<TData, TError> on QueryState<TData, TError> {
