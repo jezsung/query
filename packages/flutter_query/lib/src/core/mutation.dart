@@ -21,7 +21,7 @@ import 'retryer.dart';
 /// Aligned with TanStack Query's Mutation class.
 class Mutation<TData, TError, TVariables, TOnMutateResult>
     with
-        Observable<
+        Observable<MutationState<TData, TError, TVariables, TOnMutateResult>,
             MutationObserver<TData, TError, TVariables, TOnMutateResult>>,
         GarbageCollectable {
   Mutation({
@@ -62,7 +62,7 @@ class Mutation<TData, TError, TVariables, TOnMutateResult>
   ) {
     if (newState != _state) {
       _state = newState;
-      notifyObservers();
+      notifyObservers(newState);
     }
   }
 

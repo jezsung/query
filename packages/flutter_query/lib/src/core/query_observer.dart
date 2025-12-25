@@ -18,7 +18,7 @@ import 'query_state.dart';
 typedef ResultChangeListener<TData, TError> = void Function(
     QueryResult<TData, TError> result);
 
-class QueryObserver<TData, TError> with Observer {
+class QueryObserver<TData, TError> with Observer<QueryState<TData, TError>> {
   QueryObserver(
     QueryClient client,
     QueryOptions<TData, TError> options,
@@ -86,8 +86,8 @@ class QueryObserver<TData, TError> with Observer {
 
   /// Called by Query when its state changes.
   @override
-  void onNotified() {
-    if (_query.state.data != null) {
+  void onNotified(QueryState<TData, TError> newState) {
+    if (newState.data != null) {
       _lastQueryWithDefinedData = _query;
     }
 

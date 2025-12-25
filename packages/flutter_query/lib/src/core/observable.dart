@@ -1,10 +1,10 @@
 import 'package:meta/meta.dart';
 
-mixin Observer {
-  void onNotified();
+mixin Observer<TValue> {
+  void onNotified(TValue value);
 }
 
-mixin Observable<TObserver extends Observer> {
+mixin Observable<TValue, TObserver extends Observer<TValue>> {
   final List<TObserver> _observers = <TObserver>[];
   void Function(TObserver observer)? _onAdd;
   void Function(TObserver observer)? _onRemove;
@@ -33,9 +33,9 @@ mixin Observable<TObserver extends Observer> {
     _onRemove?.call(observer);
   }
 
-  void notifyObservers() {
+  void notifyObservers(TValue value) {
     for (final observer in _observers) {
-      observer.onNotified();
+      observer.onNotified(value);
     }
   }
 }

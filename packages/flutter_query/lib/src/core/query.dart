@@ -18,7 +18,9 @@ import 'query_state.dart';
 import 'retryer.dart';
 
 class Query<TData, TError>
-    with Observable<QueryObserver<TData, TError>>, GarbageCollectable {
+    with
+        Observable<QueryState<TData, TError>, QueryObserver<TData, TError>>,
+        GarbageCollectable {
   Query(
     QueryClient client,
     QueryOptions<TData, TError> options,
@@ -98,7 +100,7 @@ class Query<TData, TError>
   @protected
   set state(QueryState<TData, TError> newState) {
     _currentState = newState;
-    notifyObservers();
+    notifyObservers(newState);
   }
 
   Future<TData> fetch({

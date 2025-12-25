@@ -17,7 +17,7 @@ typedef MutationResultListener<TData, TError, TVariables, TOnMutateResult>
 ///
 /// Aligned with TanStack Query's MutationObserver.
 class MutationObserver<TData, TError, TVariables, TOnMutateResult>
-    with Observer {
+    with Observer<MutationState<TData, TError, TVariables, TOnMutateResult>> {
   MutationObserver(
     QueryClient client,
     MutationOptions<TData, TError, TVariables, TOnMutateResult> options,
@@ -63,8 +63,10 @@ class MutationObserver<TData, TError, TVariables, TOnMutateResult>
 
   /// Called by Mutation when its state changes.
   @override
-  void onNotified() {
-    final newResult = _buildResult(_mutation?.state);
+  void onNotified(
+    MutationState<TData, TError, TVariables, TOnMutateResult> newState,
+  ) {
+    final newResult = _buildResult(newState);
     _setResult(newResult);
   }
 
