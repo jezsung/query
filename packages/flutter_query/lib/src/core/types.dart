@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'mutation_function_context.dart';
-import 'query_context.dart';
+import 'query_function_context.dart';
 
 /// Function that fetches data for a query.
 ///

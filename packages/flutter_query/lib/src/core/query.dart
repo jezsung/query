@@ -7,7 +7,7 @@ import 'options/gc_duration.dart';
 import 'options/stale_duration.dart';
 import 'query_cache.dart';
 import 'query_client.dart';
-import 'query_context.dart';
+import 'query_function_context.dart';
 import 'query_key.dart';
 import 'query_observer.dart';
 import 'query_options.dart';

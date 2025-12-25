@@ -6,7 +6,7 @@ import 'options/retry.dart';
 import 'options/stale_duration.dart';
 import 'query.dart';
 import 'query_cache.dart';
-import 'query_context.dart';
+import 'query_function_context.dart';
 import 'query_options.dart';
 import 'query_state.dart';
 
