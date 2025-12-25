@@ -22,27 +22,31 @@ class Query<TData, TError> with GarbageCollectable {
     QueryOptions<TData, TError> options,
   )   : _client = client,
         _options = options,
+        _currentState = QueryState.fromSeed(
+          options.initialData,
+          options.initialDataUpdatedAt,
+        ),
         _initialState = QueryState.fromSeed(
           options.initialData,
           options.initialDataUpdatedAt,
         ) {
-    _state = _initialState;
-    this.options = options;
     scheduleGc();
   }
 
   final QueryClient _client;
   QueryOptions<TData, TError> _options;
+  QueryState<TData, TError> _currentState;
   QueryState<TData, TError> _initialState;
-  late QueryState<TData, TError> _state;
+
   final List<QueryObserver> _observers = [];
+  bool get hasObservers => _observers.isNotEmpty;
+
   Retryer<TData, TError>? _retryer;
   AbortController? _abortController;
   QueryState<TData, TError>? _revertState;
 
   List<Object?> get queryKey => _options.queryKey;
-  QueryState<TData, TError> get state => _state;
-  bool get hasObservers => _observers.isNotEmpty;
+  QueryState<TData, TError> get state => _currentState;
 
   bool get isActive {
     return _observers.any((observer) => observer.options.enabled ?? true);
@@ -85,7 +89,7 @@ class Query<TData, TError> with GarbageCollectable {
 
   @protected
   set state(QueryState<TData, TError> newState) {
-    _state = newState;
+    _currentState = newState;
     for (final observer in _observers) {
       observer.onQueryUpdate();
     }
