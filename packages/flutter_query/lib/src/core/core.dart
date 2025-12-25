@@ -19,6 +19,7 @@ export 'query_result.dart';
 export 'query_state.dart' show QueryState;
 export 'removable.dart';
 export 'retryer.dart';
+export 'types.dart';
 export 'options/stale_duration.dart';
 export 'options/retry.dart';
 export 'options/refetch_on_resume.dart';

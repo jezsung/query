@@ -14,6 +14,7 @@ import 'query_options.dart';
 import 'query_state.dart';
 import 'removable.dart';
 import 'retryer.dart';
+import 'types.dart';
 
 enum QueryStatus { pending, error, success }
 
@@ -42,7 +43,7 @@ class Query<TData, TError> with Removable {
 
   QueryCache get _cache => _client.cache;
   List<Object?> get queryKey => _options.queryKey;
-  Future<TData> Function(QueryContext) get queryFn => _options.queryFn;
+  QueryFn<TData> get queryFn => _options.queryFn;
   QueryState<TData, TError> get state => _state;
   bool get hasObservers => _observers.isNotEmpty;
 

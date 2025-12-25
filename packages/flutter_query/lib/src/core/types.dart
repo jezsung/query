@@ -1,6 +1,13 @@
 import 'dart:async';
 
 import 'mutation_function_context.dart';
+import 'query_context.dart';
+
+/// Function that fetches data for a query.
+///
+/// The function receives a [QueryContext] containing the query key, client,
+/// and abort signal for cancellation support.
+typedef QueryFn<TData> = Future<TData> Function(QueryContext context);
 
 /// Callback invoked before the mutation function is executed.
 ///

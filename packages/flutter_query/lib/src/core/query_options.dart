@@ -5,7 +5,7 @@ import 'options/refetch_on_mount.dart';
 import 'options/refetch_on_resume.dart';
 import 'options/retry.dart';
 import 'options/stale_duration.dart';
-import 'query_context.dart';
+import 'types.dart';
 
 /// Options for configuring a query.
 ///
@@ -30,7 +30,7 @@ class QueryOptions<TData, TError> {
   });
 
   final List<Object?> queryKey;
-  final Future<TData> Function(QueryContext context) queryFn;
+  final QueryFn<TData> queryFn;
   final GcDuration? gcDuration;
   final bool? enabled;
   final TData? initialData;
@@ -70,7 +70,7 @@ class QueryOptions<TData, TError> {
   /// Creates a copy of this QueryOptions with the given fields replaced.
   QueryOptions<TData, TError> copyWith({
     List<Object?>? queryKey,
-    Future<TData> Function(QueryContext context)? queryFn,
+    QueryFn<TData>? queryFn,
     bool? enabled,
     GcDuration? gcDuration,
     TData? initialData,

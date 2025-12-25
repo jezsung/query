@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter/widgets.dart';
 
 import 'package:flutter_hooks/flutter_hooks.dart';
@@ -9,7 +7,7 @@ import 'use_query_client.dart';
 
 QueryResult<TData, TError> useQuery<TData, TError>({
   required List<Object?> queryKey,
-  required Future<TData> Function(QueryContext context) queryFn,
+  required QueryFn<TData> queryFn,
   GcDuration? gcDuration,
   bool? enabled,
   TData? initialData,
