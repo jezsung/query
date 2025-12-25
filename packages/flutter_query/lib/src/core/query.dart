@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:clock/clock.dart';
+import 'package:meta/meta.dart';
 
 import 'abort_signal.dart';
 import 'garbage_collectable.dart';
@@ -76,9 +77,17 @@ class Query<TData, TError> with GarbageCollectable {
         newOptions.initialDataUpdatedAt,
       );
       if (defaultState.data != null) {
-        _setState(defaultState);
+        state = defaultState;
         _initialState = defaultState;
       }
+    }
+  }
+
+  @protected
+  set state(QueryState<TData, TError> newState) {
+    _state = newState;
+    for (final observer in _observers) {
+      observer.onQueryUpdate();
     }
   }
 
@@ -101,12 +110,12 @@ class Query<TData, TError> with GarbageCollectable {
     _revertState = state;
     _abortController = AbortController();
 
-    _setState(state
+    state = state
         .copyWith(
           fetchStatus: FetchStatus.fetching,
           failureCount: 0,
         )
-        .copyWithNull(failureReason: true));
+        .copyWithNull(failureReason: true);
 
     final context = QueryFunctionContext(
       queryKey: queryKey,
@@ -125,10 +134,10 @@ class Query<TData, TError> with GarbageCollectable {
       retry: _options.retry ?? defaultRetry,
       signal: _abortController!.signal,
       onFail: (failureCount, error) {
-        _setState(state.copyWith(
+        state = state.copyWith(
           failureCount: failureCount,
           failureReason: error,
-        ));
+        );
       },
     );
 
@@ -137,7 +146,7 @@ class Query<TData, TError> with GarbageCollectable {
     try {
       final data = await _retryer!.start();
 
-      _setState(QueryState<TData, TError>(
+      state = QueryState<TData, TError>(
         status: QueryStatus.success,
         fetchStatus: FetchStatus.idle,
         data: data,
@@ -149,14 +158,14 @@ class Query<TData, TError> with GarbageCollectable {
         failureCount: 0,
         failureReason: null,
         isInvalidated: false,
-      ));
+      );
 
       return data;
     } on AbortedException catch (e) {
       if (e.revert && _revertState != null) {
-        _setState(_revertState!.copyWith(fetchStatus: FetchStatus.idle));
+        state = _revertState!.copyWith(fetchStatus: FetchStatus.idle);
       } else {
-        _setState(state.copyWith(fetchStatus: FetchStatus.idle));
+        state = state.copyWith(fetchStatus: FetchStatus.idle);
       }
 
       if (e.silent) {
@@ -181,7 +190,7 @@ class Query<TData, TError> with GarbageCollectable {
     } catch (error) {
       if (error is TError) {
         final typedError = error as TError;
-        _setState(state.copyWith(
+        state = state.copyWith(
           status: QueryStatus.error,
           fetchStatus: FetchStatus.idle,
           error: typedError,
@@ -189,7 +198,7 @@ class Query<TData, TError> with GarbageCollectable {
           errorUpdateCount: state.errorUpdateCount + 1,
           failureCount: state.failureCount + 1,
           failureReason: typedError,
-        ));
+        );
       }
       rethrow;
     } finally {
@@ -200,7 +209,7 @@ class Query<TData, TError> with GarbageCollectable {
 
   void invalidate() {
     if (!state.isInvalidated) {
-      _setState(state.copyWith(isInvalidated: true));
+      state = state.copyWith(isInvalidated: true);
     }
   }
 
@@ -212,7 +221,7 @@ class Query<TData, TError> with GarbageCollectable {
 
   void reset() {
     cancelGc();
-    _setState(_initialState);
+    state = _initialState;
   }
 
   bool isStaleByTime(StaleDuration staleDuration) {
@@ -254,13 +263,6 @@ class Query<TData, TError> with GarbageCollectable {
         }
       }
       scheduleGc();
-    }
-  }
-
-  void _setState(QueryState<TData, TError> newState) {
-    _state = newState;
-    for (final observer in _observers) {
-      observer.onQueryUpdate();
     }
   }
 
