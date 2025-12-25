@@ -1,3 +1,5 @@
+import 'package:collection/collection.dart';
+
 import 'default_query_options.dart';
 import 'options/gc_duration.dart';
 import 'options/placeholder_data.dart';
@@ -43,7 +45,47 @@ class QueryOptions<TData, TError> {
   final bool? retryOnMount;
   final StaleDuration? staleDuration;
   final StaleDurationResolver<TData, TError>? staleDurationResolver;
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is QueryOptions<TData, TError> &&
+        _equality.equals(queryKey, other.queryKey) &&
+        identical(queryFn, other.queryFn) &&
+        gcDuration == other.gcDuration &&
+        enabled == other.enabled &&
+        _equality.equals(initialData, other.initialData) &&
+        initialDataUpdatedAt == other.initialDataUpdatedAt &&
+        identical(placeholderData, other.placeholderData) &&
+        refetchInterval == other.refetchInterval &&
+        refetchOnMount == other.refetchOnMount &&
+        refetchOnResume == other.refetchOnResume &&
+        identical(retry, other.retry) &&
+        retryOnMount == other.retryOnMount &&
+        staleDuration == other.staleDuration &&
+        identical(staleDurationResolver, other.staleDurationResolver);
+  }
+
+  @override
+  int get hashCode => Object.hash(
+        _equality.hash(queryKey),
+        identityHashCode(queryFn),
+        gcDuration,
+        enabled,
+        _equality.hash(initialData),
+        initialDataUpdatedAt,
+        identityHashCode(placeholderData),
+        refetchInterval,
+        refetchOnMount,
+        refetchOnResume,
+        identityHashCode(retry),
+        retryOnMount,
+        staleDuration,
+        identityHashCode(staleDurationResolver),
+      );
 }
+
+const DeepCollectionEquality _equality = DeepCollectionEquality();
 
 extension QueryOptionsMergeWith<TData, TError> on QueryOptions<TData, TError> {
   /// Merges this QueryOptions with default options.
