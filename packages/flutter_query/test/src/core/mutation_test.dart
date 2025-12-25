@@ -34,7 +34,7 @@ void main() {
             String?, Object?, String, String?, MutationFunctionContext)?
         onSettled,
     Duration? Function(int, Object)? retry,
-    GcDurationOption? gcDuration,
+    GcDuration? gcDuration,
   }) {
     return MutationOptions<String, Object, String, String>(
       mutationFn:

@@ -55,7 +55,7 @@ class MutationOptions<TData, TError, TVariables, TOnMutateResult> {
   final Retry<TError>? retry;
 
   /// Duration after which the mutation can be garbage collected.
-  final GcDurationOption? gcDuration;
+  final GcDuration? gcDuration;
 
   @override
   String toString() {

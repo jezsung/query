@@ -32,7 +32,7 @@ class DefaultQueryOptions {
   final bool enabled;
 
   /// Default garbage collection duration.
-  final GcDurationOption? gcDuration;
+  final GcDuration? gcDuration;
 
   /// Default refetch interval.
   final Duration? refetchInterval;

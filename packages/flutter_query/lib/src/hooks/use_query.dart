@@ -10,7 +10,7 @@ import 'use_query_client.dart';
 QueryResult<TData, TError> useQuery<TData, TError>({
   required List<Object?> queryKey,
   required Future<TData> Function(QueryContext context) queryFn,
-  GcDurationOption? gcDuration,
+  GcDuration? gcDuration,
   bool? enabled,
   TData? initialData,
   DateTime? initialDataUpdatedAt,

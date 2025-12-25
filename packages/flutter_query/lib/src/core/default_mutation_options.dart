@@ -30,7 +30,7 @@ class DefaultMutationOptions {
   /// Default garbage collection duration.
   ///
   /// Defaults to 5 minutes.
-  final GcDurationOption gcDuration;
+  final GcDuration gcDuration;
 
   @override
   String toString() {

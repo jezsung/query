@@ -31,7 +31,7 @@ class QueryOptions<TData, TError> {
 
   final List<Object?> queryKey;
   final Future<TData> Function(QueryContext context) queryFn;
-  final GcDurationOption? gcDuration;
+  final GcDuration? gcDuration;
   final bool? enabled;
   final TData? initialData;
   final DateTime? initialDataUpdatedAt;
@@ -72,7 +72,7 @@ class QueryOptions<TData, TError> {
     List<Object?>? queryKey,
     Future<TData> Function(QueryContext context)? queryFn,
     bool? enabled,
-    GcDurationOption? gcDuration,
+    GcDuration? gcDuration,
     TData? initialData,
     DateTime? initialDataUpdatedAt,
     PlaceholderData<TData, TError>? placeholderData,

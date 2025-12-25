@@ -104,7 +104,7 @@ class QueryClient {
     StaleDuration? staleDuration,
     StaleDurationResolver<TData, TError>? staleDurationResolver,
     Retry<TError>? retry,
-    GcDurationOption? gcDuration,
+    GcDuration? gcDuration,
     TData? initialData,
     DateTime? initialDataUpdatedAt,
   }) async {
@@ -161,7 +161,7 @@ class QueryClient {
     StaleDuration? staleDuration,
     StaleDurationResolver<TData, TError>? staleDurationResolver,
     Retry<TError>? retry,
-    GcDurationOption? gcDuration,
+    GcDuration? gcDuration,
     TData? initialData,
     DateTime? initialDataUpdatedAt,
   }) async {

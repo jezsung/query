@@ -46,7 +46,7 @@ MutationResult<TData, TError, TVariables, TOnMutateResult>
   MutationOnError<TError, TVariables, TOnMutateResult>? onError,
   MutationOnSettled<TData, TError, TVariables, TOnMutateResult>? onSettled,
   Retry<TError>? retry,
-  GcDurationOption? gcDuration,
+  GcDuration? gcDuration,
   QueryClient? queryClient,
 }) {
   // Get QueryClient from context if not provided

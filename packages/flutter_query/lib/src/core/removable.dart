@@ -12,7 +12,7 @@ import 'options/gc_duration.dart';
 /// Classes that use this mixin must:
 /// - Implement [tryRemove] to define removal logic (including checks for observers, fetching state, etc.)
 mixin Removable {
-  GcDurationOption _gcDuration = const GcDuration(minutes: 5);
+  GcDuration _gcDuration = const GcDuration(minutes: 5);
   Timer? _gcTimer;
 
   /// Updates the garbage collection duration.
@@ -23,7 +23,7 @@ mixin Removable {
   /// This matches TanStack Query's `updateGcTime` behavior which uses `Math.max`,
   /// meaning the gcTime can only increase, never decrease during a Query's lifetime.
   /// This is intentional to prevent premature garbage collection.
-  void updateGcDuration(GcDurationOption newGcDuration) {
+  void updateGcDuration(GcDuration newGcDuration) {
     // Use Math.max equivalent - always keep the longest duration
     // This works because GcDurationInfinity > any GcDuration
     _gcDuration = _gcDuration > newGcDuration ? _gcDuration : newGcDuration;
