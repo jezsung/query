@@ -1,5 +1,6 @@
 import 'package:clock/clock.dart';
 import 'package:collection/collection.dart';
+import 'package:meta/meta.dart';
 
 import 'garbage_collectable.dart';
 import 'mutation_cache.dart';
@@ -55,6 +56,16 @@ class Mutation<TData, TError, TVariables, TOnMutateResult>
 
   MutationState<TData, TError, TVariables, TOnMutateResult> get state => _state;
 
+  @protected
+  set state(
+    MutationState<TData, TError, TVariables, TOnMutateResult> newState,
+  ) {
+    if (newState != _state) {
+      _state = newState;
+      notifyObservers();
+    }
+  }
+
   /// Executes the mutation with the given variables.
   ///
   /// This is the main entry point for running a mutation. It:
@@ -78,29 +89,29 @@ class Mutation<TData, TError, TVariables, TOnMutateResult>
       fn: () => options.mutationFn(variables, fnContext),
       retry: options.retry ?? defaultRetry,
       onFail: (failureCount, error) {
-        _setState(_state.copyWith(
+        state = _state.copyWith(
           failureCount: failureCount,
           failureReason: error,
-        ));
+        );
       },
     );
 
     try {
       // Dispatch pending state
-      _setState(MutationState<TData, TError, TVariables, TOnMutateResult>(
+      state = MutationState<TData, TError, TVariables, TOnMutateResult>(
         status: MutationStatus.pending,
         variables: variables,
         submittedAt: clock.now(),
         failureCount: 0,
         isPaused: false,
-      ));
+      );
 
       // Call onMutate callback
       TOnMutateResult? onMutateResult;
       if (options.onMutate != null) {
         onMutateResult = await options.onMutate!(variables, fnContext);
         if (onMutateResult != _state.onMutateResult) {
-          _setState(_state.copyWith(onMutateResult: onMutateResult));
+          state = _state.copyWith(onMutateResult: onMutateResult);
         }
       }
 
@@ -120,7 +131,7 @@ class Mutation<TData, TError, TVariables, TOnMutateResult>
       }
 
       // Dispatch success state
-      _setState(_state
+      state = _state
           .copyWith(
             status: MutationStatus.success,
             data: data,
@@ -130,7 +141,7 @@ class Mutation<TData, TError, TVariables, TOnMutateResult>
           .copyWithNull(
             error: true,
             failureReason: true,
-          ));
+          );
 
       return data;
     } catch (error) {
@@ -159,7 +170,7 @@ class Mutation<TData, TError, TVariables, TOnMutateResult>
         rethrow;
       } finally {
         // Dispatch error state
-        _setState(_state
+        state = _state
             .copyWith(
               status: MutationStatus.error,
               error: error as TError,
@@ -167,19 +178,9 @@ class Mutation<TData, TError, TVariables, TOnMutateResult>
               failureReason: error as TError,
               isPaused: false,
             )
-            .copyWithNull(data: true));
+            .copyWithNull(data: true);
       }
     }
-  }
-
-  void _setState(
-    MutationState<TData, TError, TVariables, TOnMutateResult> newState,
-  ) {
-    if (newState == _state) return;
-
-    _state = newState;
-
-    notifyObservers();
   }
 
   @override
