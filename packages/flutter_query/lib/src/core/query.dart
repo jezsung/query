@@ -21,22 +21,18 @@ class Query<TData, TError> with GarbageCollectable {
     QueryClient client,
     QueryOptions<TData, TError> options,
   )   : _client = client,
-        _options = options,
-        _currentState = QueryState.fromSeed(
-          options.initialData,
-          options.initialDataUpdatedAt,
-        ),
-        _initialState = QueryState.fromSeed(
-          options.initialData,
-          options.initialDataUpdatedAt,
-        ) {
+        _options = options.mergeWith(client.defaultQueryOptions) {
+    _currentState = _initialState = QueryState.fromSeed(
+      _options.initialData,
+      _options.initialDataUpdatedAt,
+    );
     scheduleGc();
   }
 
   final QueryClient _client;
   QueryOptions<TData, TError> _options;
-  QueryState<TData, TError> _currentState;
-  QueryState<TData, TError> _initialState;
+  late QueryState<TData, TError> _currentState;
+  late QueryState<TData, TError> _initialState;
 
   final List<QueryObserver> _observers = [];
   bool get hasObservers => _observers.isNotEmpty;
