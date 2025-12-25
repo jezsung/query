@@ -5,6 +5,7 @@ import 'package:meta/meta.dart';
 
 import 'abort_signal.dart';
 import 'garbage_collectable.dart';
+import 'observable.dart';
 import 'options/gc_duration.dart';
 import 'options/stale_duration.dart';
 import 'query_cache.dart';
@@ -16,7 +17,8 @@ import 'query_options.dart';
 import 'query_state.dart';
 import 'retryer.dart';
 
-class Query<TData, TError> with GarbageCollectable {
+class Query<TData, TError>
+    with Observable<QueryObserver<TData, TError>>, GarbageCollectable {
   Query(
     QueryClient client,
     QueryOptions<TData, TError> options,
@@ -26,10 +28,10 @@ class Query<TData, TError> with GarbageCollectable {
       _options.initialData,
       _options.initialDataUpdatedAt,
     );
-    observers.onAdd = (_) {
+    onAdd = (_) {
       cancelGc();
     };
-    observers.onRemove = (_) {
+    onRemove = (_) {
       if (observers.isEmpty) {
         scheduleGc();
         if (state.fetchStatus == FetchStatus.fetching &&
@@ -47,10 +49,6 @@ class Query<TData, TError> with GarbageCollectable {
   late QueryState<TData, TError> _currentState;
   late QueryState<TData, TError> _initialState;
 
-  final QueryObservers<TData, TError> observers =
-      QueryObservers<TData, TError>();
-  bool get hasObservers => observers.isNotEmpty;
-
   Retryer<TData, TError>? _retryer;
   AbortController? _abortController;
   QueryState<TData, TError>? _revertState;
@@ -59,7 +57,7 @@ class Query<TData, TError> with GarbageCollectable {
   QueryState<TData, TError> get state => _currentState;
 
   bool get isActive {
-    return observers.options.any((opt) => opt.enabled ?? true);
+    return observers.any((obs) => obs.options.enabled ?? true);
   }
 
   bool get isDisabled {
@@ -73,7 +71,8 @@ class Query<TData, TError> with GarbageCollectable {
 
   bool get isStatic {
     if (observers.isEmpty) return false;
-    return observers.options.any((opt) {
+    return observers.any((obs) {
+      final opt = obs.options;
       final resolved = opt.staleDurationResolver != null
           ? opt.staleDurationResolver!(this)
           : opt.staleDuration;
@@ -99,7 +98,7 @@ class Query<TData, TError> with GarbageCollectable {
   @protected
   set state(QueryState<TData, TError> newState) {
     _currentState = newState;
-    observers.notify();
+    notifyObservers();
   }
 
   Future<TData> fetch({
@@ -258,8 +257,8 @@ class Query<TData, TError> with GarbageCollectable {
 
   @override
   GcDuration get gcDuration {
-    return observers.options
-        .map((opt) => opt.gcDuration)
+    return observers
+        .map((obs) => obs.options.gcDuration)
         .whereType<GcDuration>()
         .fold(
           // Defaults to 5 minutes
@@ -328,41 +327,5 @@ extension QueryMatches on Query {
     }
 
     return true;
-  }
-}
-
-class QueryObservers<TData, TError> {
-  QueryObservers({
-    this.onAdd,
-    this.onRemove,
-  });
-
-  final List<QueryObserver<TData, TError>> _observers = [];
-
-  void Function(QueryObserver<TData, TError> observer)? onAdd;
-  void Function(QueryObserver<TData, TError> observer)? onRemove;
-
-  bool get isEmpty => _observers.isEmpty;
-  bool get isNotEmpty => _observers.isNotEmpty;
-
-  List<QueryOptions<TData, TError>> get options =>
-      _observers.map((ob) => ob.options).toList();
-
-  void add(QueryObserver<TData, TError> observer) {
-    if (!_observers.contains(observer)) {
-      _observers.add(observer);
-      onAdd?.call(observer);
-    }
-  }
-
-  void remove(QueryObserver<TData, TError> observer) {
-    _observers.remove(observer);
-    onRemove?.call(observer);
-  }
-
-  void notify() {
-    for (final observer in _observers) {
-      observer.onQueryUpdate();
-    }
   }
 }

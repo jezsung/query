@@ -255,7 +255,7 @@ void main() {
         client,
         QueryOptions(const ['test'], (context) async => 'data'),
       );
-      query.observers.add(observer);
+      query.addObserver(observer);
 
       expect(
         query.matches(type: QueryTypeFilter.active),
@@ -271,7 +271,7 @@ void main() {
         client,
         QueryOptions(const ['test'], (context) async => 'data'),
       );
-      query.observers.add(observer);
+      query.addObserver(observer);
 
       expect(
         query.matches(type: QueryTypeFilter.inactive),
@@ -291,7 +291,7 @@ void main() {
           enabled: false,
         ),
       );
-      query.observers.add(observer);
+      query.addObserver(observer);
 
       expect(
         query.matches(type: QueryTypeFilter.inactive),

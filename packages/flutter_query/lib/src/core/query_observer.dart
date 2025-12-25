@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:clock/clock.dart';
 
+import 'observable.dart';
 import 'options/placeholder_data.dart';
 import 'options/refetch_on_mount.dart';
 import 'options/refetch_on_resume.dart';
@@ -17,7 +18,7 @@ import 'query_state.dart';
 typedef ResultChangeListener<TData, TError> = void Function(
     QueryResult<TData, TError> result);
 
-class QueryObserver<TData, TError> {
+class QueryObserver<TData, TError> with Observer {
   QueryObserver(
     QueryClient client,
     QueryOptions<TData, TError> options,
@@ -27,7 +28,7 @@ class QueryObserver<TData, TError> {
           options.mergeWith(client.defaultQueryOptions),
         ) {
     _query.options = _options;
-    _query.observers.add(this);
+    _query.addObserver(this);
 
     if (_query.state.data != null) {
       _lastQueryWithDefinedData = _query;
@@ -84,11 +85,8 @@ class QueryObserver<TData, TError> {
   }
 
   /// Called by Query when its state changes.
-  ///
-  /// Matches TanStack Query's pattern: Query notifies observers via direct method call,
-  /// and Observer pulls the current state from Query.
-  void onQueryUpdate() {
-    // Track last query with defined data
+  @override
+  void onNotified() {
     if (_query.state.data != null) {
       _lastQueryWithDefinedData = _query;
     }
@@ -144,7 +142,7 @@ class QueryObserver<TData, TError> {
 
       _query = _client.cache.build<TData, TError>(newOptions);
       _query.options = newOptions;
-      _query.observers.add(this);
+      _query.addObserver(this);
 
       // Track last query with defined data
       if (_query.state.data != null) {
@@ -170,7 +168,7 @@ class QueryObserver<TData, TError> {
 
       // Remove this observer from the old query
       // This will schedule GC if it was the last observer
-      oldQuery.observers.remove(this);
+      oldQuery.removeObserver(this);
 
       return;
     }
@@ -278,7 +276,7 @@ class QueryObserver<TData, TError> {
 
     // Remove this observer from the query
     // This will schedule GC if it was the last observer
-    _query.observers.remove(this);
+    _query.removeObserver(this);
   }
 
   void _updateRefetchInterval() {
