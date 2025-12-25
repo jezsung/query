@@ -149,9 +149,9 @@ void main() {
     expect(result.isEnabled, true);
   }));
 
-  testWidgets('SHOULD pass QueryContext to queryFn',
+  testWidgets('SHOULD pass QueryFunctionContext to queryFn',
       withCleanup((tester) async {
-    QueryContext? capturedContext;
+    QueryFunctionContext? capturedContext;
     final queryKey = ['users', 123];
 
     await buildHook(

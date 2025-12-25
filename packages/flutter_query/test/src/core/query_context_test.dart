@@ -21,14 +21,14 @@ void main() {
   });
 
   test(
-      'SHOULD NOT match another QueryContext '
+      'SHOULD NOT match another QueryFunctionContext '
       'WHEN queryKey != queryKey', () {
-    final context1 = QueryContext(
+    final context1 = QueryFunctionContext(
       queryKey: ['users', 123],
       client: client1,
       signal: controller1.signal,
     );
-    final context2 = QueryContext(
+    final context2 = QueryFunctionContext(
       queryKey: ['users', 456],
       client: client1,
       signal: controller1.signal,
@@ -38,14 +38,14 @@ void main() {
   });
 
   test(
-      'SHOULD NOT match another QueryContext '
+      'SHOULD NOT match another QueryFunctionContext '
       'WHEN client != client', () {
-    final context1 = QueryContext(
+    final context1 = QueryFunctionContext(
       queryKey: ['users', 123],
       client: client1,
       signal: controller1.signal,
     );
-    final context2 = QueryContext(
+    final context2 = QueryFunctionContext(
       queryKey: ['users', 123],
       client: client2,
       signal: controller1.signal,
@@ -55,17 +55,17 @@ void main() {
   });
 
   test(
-      'SHOULD match another QueryContext '
+      'SHOULD match another QueryFunctionContext '
       'WHEN signal == signal OR signal != signal '
       'AND other properties all match', () {
     // signal == signal
     {
-      final context1 = QueryContext(
+      final context1 = QueryFunctionContext(
         queryKey: ['users', 123],
         client: client1,
         signal: controller1.signal,
       );
-      final context2 = QueryContext(
+      final context2 = QueryFunctionContext(
         queryKey: ['users', 123],
         client: client1,
         signal: controller1.signal,
@@ -75,12 +75,12 @@ void main() {
     }
     // signal != signal
     {
-      final context1 = QueryContext(
+      final context1 = QueryFunctionContext(
         queryKey: ['users', 123],
         client: client1,
         signal: controller1.signal,
       );
-      final context2 = QueryContext(
+      final context2 = QueryFunctionContext(
         queryKey: ['users', 123],
         client: client1,
         signal: controller2.signal,

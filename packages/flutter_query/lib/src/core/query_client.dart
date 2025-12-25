@@ -100,7 +100,7 @@ class QueryClient {
   /// Aligned with TanStack Query's `fetchQuery` method.
   Future<TData> fetchQuery<TData, TError>({
     required List<Object?> queryKey,
-    required Future<TData> Function(QueryContext context) queryFn,
+    required Future<TData> Function(QueryFunctionContext context) queryFn,
     StaleDuration? staleDuration,
     StaleDurationResolver<TData, TError>? staleDurationResolver,
     Retry<TError>? retry,
@@ -157,7 +157,7 @@ class QueryClient {
   /// Aligned with TanStack Query's `prefetchQuery` method.
   Future<void> prefetchQuery<TData, TError>({
     required List<Object?> queryKey,
-    required Future<TData> Function(QueryContext context) queryFn,
+    required Future<TData> Function(QueryFunctionContext context) queryFn,
     StaleDuration? staleDuration,
     StaleDurationResolver<TData, TError>? staleDurationResolver,
     Retry<TError>? retry,

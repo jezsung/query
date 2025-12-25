@@ -34,7 +34,7 @@ class AbortedException implements Exception {
 
 /// A read-only signal that indicates whether an operation has been aborted.
 ///
-/// This is passed to query functions via [QueryContext] and allows the
+/// This is passed to query functions via [QueryFunctionContext] and allows the
 /// function to check if it should stop execution or clean up resources.
 ///
 /// The signal provides multiple ways to check for abort:
@@ -141,7 +141,7 @@ class AbortSignal {
 /// final signal = controller.signal;
 ///
 /// // Pass signal to query function
-/// queryFn(QueryContext(signal: signal, ...));
+/// queryFn(QueryFunctionContext(signal: signal, ...));
 ///
 /// // Later, abort the operation
 /// controller.abort();

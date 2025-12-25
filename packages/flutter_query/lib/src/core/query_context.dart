@@ -4,8 +4,7 @@ import 'query_key.dart';
 
 /// Context passed to query functions containing the query key, client, and signal.
 ///
-/// This aligns with TanStack Query v5's QueryFunctionContext pattern,
-/// using a more Dart-idiomatic name.
+/// Aligned with TanStack Query v5's QueryFunctionContext.
 ///
 /// The [signal] property allows query functions to respond to cancellation:
 /// ```dart
@@ -19,8 +18,8 @@ import 'query_key.dart';
 ///   context.signal.throwIfAborted();
 /// }
 /// ```
-final class QueryContext {
-  const QueryContext({
+final class QueryFunctionContext {
+  const QueryFunctionContext({
     required this.queryKey,
     required this.client,
     required this.signal,
@@ -41,7 +40,7 @@ final class QueryContext {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      other is QueryContext &&
+      other is QueryFunctionContext &&
           QueryKey(queryKey) == QueryKey(other.queryKey) &&
           client == other.client;
 

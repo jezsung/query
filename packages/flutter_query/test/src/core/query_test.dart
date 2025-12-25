@@ -15,7 +15,7 @@ void Function() withFakeAsync(void Function(FakeAsync fakeTime) testBody) {
 ///
 /// The [fn] callback is invoked after the duration elapses. It can return
 /// a value or throw an error to test failure cases.
-Future<T> Function(QueryContext) abortableQueryFn<T>(
+Future<T> Function(QueryFunctionContext) abortableQueryFn<T>(
   Duration duration,
   T Function() fn,
 ) {

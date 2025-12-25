@@ -329,9 +329,9 @@ void main() {
       expect(callCount, equals(1)); // Only called once
     });
 
-    test('SHOULD pass QueryContext with queryKey and client to queryFn',
+    test('SHOULD pass QueryFunctionContext with queryKey and client to queryFn',
         () async {
-      QueryContext? receivedContext;
+      QueryFunctionContext? receivedContext;
 
       await client.fetchQuery<String, Object>(
         queryKey: const ['users', 123],
@@ -961,7 +961,7 @@ void main() {
     ///
     /// The [fn] callback is invoked after the duration elapses. It can return
     /// a value or throw an error to test failure cases.
-    Future<T> Function(QueryContext) abortableQueryFn<T>(
+    Future<T> Function(QueryFunctionContext) abortableQueryFn<T>(
       Duration duration,
       T Function() fn,
     ) {

@@ -139,7 +139,7 @@ class Query<TData, TError> with Removable {
         )
         .copyWithNull(failureReason: true));
 
-    final context = QueryContext(
+    final context = QueryFunctionContext(
       queryKey: queryKey,
       client: _client,
       signal: _abortController!.signal,
