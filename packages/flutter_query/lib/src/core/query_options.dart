@@ -43,7 +43,9 @@ class QueryOptions<TData, TError> {
   final bool? retryOnMount;
   final StaleDuration? staleDuration;
   final StaleDurationResolver<TData, TError>? staleDurationResolver;
+}
 
+extension QueryOptionsMergeWith<TData, TError> on QueryOptions<TData, TError> {
   /// Merges this QueryOptions with default options.
   ///
   /// Query-specific options take precedence over defaults.
@@ -66,8 +68,9 @@ class QueryOptions<TData, TError> {
       staleDurationResolver: staleDurationResolver,
     );
   }
+}
 
-  /// Creates a copy of this QueryOptions with the given fields replaced.
+extension QueryOptionsCopyWith<TData, TError> on QueryOptions<TData, TError> {
   QueryOptions<TData, TError> copyWith({
     List<Object?>? queryKey,
     QueryFn<TData>? queryFn,

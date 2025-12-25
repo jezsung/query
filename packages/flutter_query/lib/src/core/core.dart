@@ -14,7 +14,7 @@ export 'query_client.dart';
 export 'query_context.dart';
 export 'query_key.dart';
 export 'query_observer.dart';
-export 'query_options.dart';
+export 'query_options.dart' show QueryOptions;
 export 'query_result.dart';
 export 'query_state.dart' show QueryState, QueryStatus, FetchStatus;
 export 'removable.dart';
