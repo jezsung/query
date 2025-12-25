@@ -40,6 +40,18 @@ void main() {
     client.dispose();
   });
 
+  Query<String, Object> createQuery({
+    List<Object?> queryKey = const ['test'],
+  }) {
+    return Query<String, Object>(
+      client,
+      QueryOptions(
+        queryKey,
+        (context) async => 'data',
+      ),
+    );
+  }
+
   group('fetch', () {
     group('cancelRefetch', () {
       test(
@@ -130,6 +142,187 @@ void main() {
         expect(result1, 'data-3');
         expect(result2, 'data-3');
       }));
+    });
+  });
+
+  group('QueryMatches.matches', () {
+    test(
+        'SHOULD match '
+        'WHEN no filters provided', () {
+      final query = createQuery();
+
+      expect(query.matches(), isTrue);
+    });
+
+    test(
+        'SHOULD match exact key '
+        'WHEN exact == true AND key matches', () {
+      final query = createQuery(queryKey: const ['users', '1']);
+
+      expect(
+        query.matches(exact: true, queryKey: const ['users', '1']),
+        isTrue,
+      );
+    });
+
+    test(
+        'SHOULD NOT match '
+        'WHEN exact == true AND key differs', () {
+      final query = createQuery(queryKey: const ['users', '1']);
+
+      expect(
+        query.matches(exact: true, queryKey: const ['users', '2']),
+        isFalse,
+      );
+    });
+
+    test('SHOULD match partial key', () {
+      final query = createQuery(queryKey: const ['users', '1', 'profile']);
+
+      expect(
+        query.matches(queryKey: const ['users', '1']),
+        isTrue,
+      );
+    });
+
+    test(
+        'SHOULD NOT match partial key '
+        'WHEN filter is longer than key', () {
+      final query = createQuery(queryKey: const ['users']);
+
+      expect(
+        query.matches(exact: false, queryKey: const ['users', '1']),
+        isFalse,
+      );
+    });
+
+    test('SHOULD match predicate', () {
+      final query = createQuery(queryKey: const ['users']);
+
+      expect(
+        query.matches(predicate: (q) => q.queryKey.first == 'users'),
+        isTrue,
+      );
+    });
+
+    test('SHOULD NOT match predicate', () {
+      final query = createQuery(queryKey: const ['posts']);
+
+      expect(
+        query.matches(predicate: (q) => q.queryKey.first == 'users'),
+        isFalse,
+      );
+    });
+
+    test(
+        'SHOULD match type == all '
+        'WHEN query has no observers', () {
+      final query = createQuery();
+
+      expect(
+        query.matches(type: QueryTypeFilter.all),
+        isTrue,
+      );
+    });
+
+    test(
+        'SHOULD match type == inactive '
+        'WHEN query has no observers', () {
+      final query = createQuery();
+
+      expect(
+        query.matches(type: QueryTypeFilter.inactive),
+        isTrue,
+      );
+    });
+
+    test(
+        'SHOULD NOT match type == active '
+        'WHEN query has no observers', () {
+      final query = createQuery();
+
+      expect(
+        query.matches(type: QueryTypeFilter.active),
+        isFalse,
+      );
+    });
+
+    test(
+        'SHOULD match type == active '
+        'WHEN query has enabled observer', () {
+      final query = createQuery();
+      final observer = QueryObserver<String, Object>(
+        client,
+        QueryOptions(const ['test'], (context) async => 'data'),
+      );
+      query.addObserver(observer);
+
+      expect(
+        query.matches(type: QueryTypeFilter.active),
+        isTrue,
+      );
+    });
+
+    test(
+        'SHOULD NOT match type == inactive '
+        'WHEN query has enabled observer', () {
+      final query = createQuery();
+      final observer = QueryObserver<String, Object>(
+        client,
+        QueryOptions(const ['test'], (context) async => 'data'),
+      );
+      query.addObserver(observer);
+
+      expect(
+        query.matches(type: QueryTypeFilter.inactive),
+        isFalse,
+      );
+    });
+
+    test(
+        'SHOULD match type == inactive '
+        'WHEN query has disabled observer', () {
+      final query = createQuery();
+      final observer = QueryObserver<String, Object>(
+        client,
+        QueryOptions(
+          const ['test'],
+          (context) async => 'data',
+          enabled: false,
+        ),
+      );
+      query.addObserver(observer);
+
+      expect(
+        query.matches(type: QueryTypeFilter.inactive),
+        isTrue,
+      );
+    });
+
+    test('SHOULD require ALL filters to match (AND logic)', () {
+      final query = createQuery(queryKey: const ['users', '1']);
+
+      // All match
+      expect(
+        query.matches(
+          queryKey: const ['users'],
+          exact: false,
+          type: QueryTypeFilter.all,
+          predicate: (q) => true,
+        ),
+        isTrue,
+      );
+
+      // One doesn't match (predicate fails)
+      expect(
+        query.matches(
+          queryKey: const ['users'],
+          exact: false,
+          type: QueryTypeFilter.all,
+          predicate: (q) => false,
+        ),
+        isFalse,
+      );
     });
   });
 }

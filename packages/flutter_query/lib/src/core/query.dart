@@ -8,6 +8,7 @@ import 'options/stale_duration.dart';
 import 'query_cache.dart';
 import 'query_client.dart';
 import 'query_context.dart';
+import 'query_key.dart';
 import 'query_observer.dart';
 import 'query_options.dart';
 import 'query_state.dart';
@@ -415,5 +416,60 @@ class Query<TData, TError> with Removable {
     if (!state.isInvalidated) {
       _setState(state.copyWith(isInvalidated: true));
     }
+  }
+}
+
+/// Extension methods for matching queries against filters.
+///
+/// Aligned with TanStack Query's matchQuery utility function.
+extension QueryMatches on Query {
+  /// Returns true if this query matches the given filters.
+  ///
+  /// - [exact]: when true, the query key must exactly equal the filter key;
+  ///   when false (default), the query key only needs to start with the filter key
+  /// - [predicate]: custom filter function that receives the query and returns
+  ///   whether it should be included
+  /// - [queryKey]: the key to match against
+  /// - [type]: filters queries by their active state (all, active, inactive)
+  bool matches({
+    bool exact = false,
+    bool Function(Query)? predicate,
+    List<Object?>? queryKey,
+    QueryTypeFilter type = QueryTypeFilter.all,
+  }) {
+    // Check type filter first
+    if (type != QueryTypeFilter.all) {
+      final active = isActive;
+      if (type == QueryTypeFilter.active && !active) {
+        return false;
+      }
+      if (type == QueryTypeFilter.inactive && active) {
+        return false;
+      }
+    }
+
+    // Check predicate
+    if (predicate != null && !predicate(this)) {
+      return false;
+    }
+
+    // Check query key if provided
+    if (queryKey != null) {
+      final key = QueryKey(this.queryKey);
+      final filterKey = QueryKey(queryKey);
+      if (exact) {
+        // Exact match
+        if (key != filterKey) {
+          return false;
+        }
+      } else {
+        // Prefix match
+        if (!key.startsWith(filterKey)) {
+          return false;
+        }
+      }
+    }
+
+    return true;
   }
 }

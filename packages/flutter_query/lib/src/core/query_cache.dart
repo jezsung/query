@@ -1,3 +1,5 @@
+import 'package:collection/collection.dart';
+
 import 'query.dart';
 import 'query_client.dart';
 import 'query_key.dart';
@@ -103,13 +105,12 @@ class QueryCache {
     bool Function(Query)? predicate,
     QueryTypeFilter type = QueryTypeFilter.all,
   }) {
-    for (final query in _queries.values) {
-      if (!_matchesFilters(query, queryKey, exact, predicate, type)) {
-        continue;
-      }
-      return query as Query<TData, TError>;
-    }
-    return null;
+    return _queries.values.firstWhereOrNull((q) => q.matches(
+          queryKey: queryKey,
+          exact: exact,
+          predicate: predicate,
+          type: type,
+        )) as Query<TData, TError>?;
   }
 
   /// Finds all queries matching the given filters
@@ -131,51 +132,12 @@ class QueryCache {
     }
 
     return _queries.values
-        .where(
-            (query) => _matchesFilters(query, queryKey, exact, predicate, type))
+        .where((query) => query.matches(
+              queryKey: queryKey,
+              exact: exact,
+              predicate: predicate,
+              type: type,
+            ))
         .toList();
-  }
-
-  bool _matchesFilters(
-    Query query,
-    List<Object?>? queryKey,
-    bool exact,
-    bool Function(Query)? predicate,
-    QueryTypeFilter type,
-  ) {
-    // Check type filter first
-    if (type != QueryTypeFilter.all) {
-      final isActive = query.isActive;
-      if (type == QueryTypeFilter.active && !isActive) {
-        return false;
-      }
-      if (type == QueryTypeFilter.inactive && isActive) {
-        return false;
-      }
-    }
-
-    // Check predicate
-    if (predicate != null && !predicate(query)) {
-      return false;
-    }
-
-    // Check query key if provided
-    if (queryKey != null) {
-      final key = QueryKey(query.queryKey);
-      final filterKey = QueryKey(queryKey);
-      if (exact) {
-        // Exact match
-        if (key != filterKey) {
-          return false;
-        }
-      } else {
-        // Prefix match
-        if (!key.startsWith(filterKey)) {
-          return false;
-        }
-      }
-    }
-
-    return true;
   }
 }
