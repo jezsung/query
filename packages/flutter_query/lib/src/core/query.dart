@@ -37,7 +37,6 @@ class Query<TData, TError> with GarbageCollectable {
   AbortController? _abortController;
   QueryState<TData, TError>? _revertState;
 
-  QueryCache get _cache => _client.cache;
   List<Object?> get queryKey => _options.queryKey;
   QueryFn<TData> get queryFn => _options.queryFn;
   QueryState<TData, TError> get state => _state;
@@ -276,7 +275,7 @@ class Query<TData, TError> with GarbageCollectable {
   @override
   void tryRemove() {
     if (!hasObservers && state.fetchStatus == FetchStatus.idle) {
-      _cache.remove(this);
+      _client.cache.remove(this);
     }
   }
 }
