@@ -1,8 +1,10 @@
-import 'package:equatable/equatable.dart';
+import 'package:collection/collection.dart';
 
 import 'query.dart';
 
-class QueryResult<TData, TError> with EquatableMixin {
+const DeepCollectionEquality _equality = DeepCollectionEquality();
+
+class QueryResult<TData, TError> {
   const QueryResult({
     required this.status,
     required this.fetchStatus,
@@ -60,20 +62,40 @@ class QueryResult<TData, TError> with EquatableMixin {
   bool get isRefetching => isFetching && !isPending;
 
   @override
-  List<Object?> get props => [
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is QueryResult<TData, TError> &&
+        status == other.status &&
+        fetchStatus == other.fetchStatus &&
+        _equality.equals(data, other.data) &&
+        dataUpdatedAt == other.dataUpdatedAt &&
+        dataUpdateCount == other.dataUpdateCount &&
+        _equality.equals(error, other.error) &&
+        errorUpdatedAt == other.errorUpdatedAt &&
+        errorUpdateCount == other.errorUpdateCount &&
+        failureCount == other.failureCount &&
+        _equality.equals(failureReason, other.failureReason) &&
+        isEnabled == other.isEnabled &&
+        isStale == other.isStale &&
+        isFetchedAfterMount == other.isFetchedAfterMount &&
+        isPlaceholderData == other.isPlaceholderData;
+  }
+
+  @override
+  int get hashCode => Object.hash(
         status,
         fetchStatus,
-        data,
+        _equality.hash(data),
         dataUpdatedAt,
         dataUpdateCount,
-        error,
+        _equality.hash(error),
         errorUpdatedAt,
         errorUpdateCount,
         failureCount,
-        failureReason,
+        _equality.hash(failureReason),
         isEnabled,
         isStale,
         isFetchedAfterMount,
         isPlaceholderData,
-      ];
+      );
 }
