@@ -1,6 +1,6 @@
 import 'package:collection/collection.dart';
 
-import 'query.dart';
+import 'query_state.dart';
 
 typedef Refetch<TData, TError> = Future<QueryResult<TData, TError>> Function({
   bool cancelRefetch,

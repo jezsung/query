@@ -1,10 +1,11 @@
 import 'package:clock/clock.dart';
 import 'package:collection/collection.dart';
 
-import 'query.dart';
 import 'query_options.dart';
 
-const DeepCollectionEquality _equality = DeepCollectionEquality();
+enum QueryStatus { pending, error, success }
+
+enum FetchStatus { fetching, paused, idle }
 
 class QueryState<TData, TError> {
   const QueryState({
@@ -138,3 +139,5 @@ extension QueryStateCopyWith<TData, TError> on QueryState<TData, TError> {
     );
   }
 }
+
+const DeepCollectionEquality _equality = DeepCollectionEquality();

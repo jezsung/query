@@ -16,10 +16,6 @@ import 'removable.dart';
 import 'retryer.dart';
 import 'types.dart';
 
-enum QueryStatus { pending, error, success }
-
-enum FetchStatus { fetching, paused, idle }
-
 class Query<TData, TError> with Removable {
   Query(
     QueryClient client,

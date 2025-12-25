@@ -8,6 +8,7 @@ import 'query.dart';
 import 'query_cache.dart';
 import 'query_context.dart';
 import 'query_options.dart';
+import 'query_state.dart';
 
 /// Controls which queries get refetched after invalidation.
 ///
