@@ -2,6 +2,7 @@ import 'mutation.dart';
 import 'mutation_options.dart';
 import 'mutation_result.dart';
 import 'mutation_state.dart';
+import 'observable.dart';
 import 'query_client.dart';
 
 /// Callback type for mutation result change listeners.
@@ -15,7 +16,8 @@ typedef MutationResultListener<TData, TError, TVariables, TOnMutateResult>
 /// the result to the UI layer.
 ///
 /// Aligned with TanStack Query's MutationObserver.
-class MutationObserver<TData, TError, TVariables, TOnMutateResult> {
+class MutationObserver<TData, TError, TVariables, TOnMutateResult>
+    with Observer {
   MutationObserver(
     QueryClient client,
     MutationOptions<TData, TError, TVariables, TOnMutateResult> options,
@@ -60,7 +62,8 @@ class MutationObserver<TData, TError, TVariables, TOnMutateResult> {
   }
 
   /// Called by Mutation when its state changes.
-  void onMutationUpdate() {
+  @override
+  void onNotified() {
     final newResult = _buildResult(_mutation?.state);
     _setResult(newResult);
   }

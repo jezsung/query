@@ -7,6 +7,7 @@ import 'mutation_function_context.dart';
 import 'mutation_observer.dart';
 import 'mutation_options.dart';
 import 'mutation_state.dart';
+import 'observable.dart';
 import 'options/gc_duration.dart';
 import 'query_client.dart';
 import 'retryer.dart';
@@ -18,7 +19,10 @@ import 'retryer.dart';
 ///
 /// Aligned with TanStack Query's Mutation class.
 class Mutation<TData, TError, TVariables, TOnMutateResult>
-    with GarbageCollectable {
+    with
+        Observable<
+            MutationObserver<TData, TError, TVariables, TOnMutateResult>>,
+        GarbageCollectable {
   Mutation({
     required QueryClient client,
     required MutationCache cache,
@@ -31,6 +35,12 @@ class Mutation<TData, TError, TVariables, TOnMutateResult>
         _state = state ??
             MutationState<TData, TError, TVariables, TOnMutateResult>() {
     scheduleGc();
+    onAdd = (_) {
+      cancelGc();
+    };
+    onRemove = (_) {
+      scheduleGc();
+    };
   }
 
   final QueryClient _client;
@@ -169,43 +179,13 @@ class Mutation<TData, TError, TVariables, TOnMutateResult>
 
     _state = newState;
 
-    // Notify all observers
-    for (final observer in _observers) {
-      observer.onMutationUpdate();
-    }
+    notifyObservers();
   }
-
-  // ---------------------------------------------------------------------------
-  // Observer Management
-  // ---------------------------------------------------------------------------
-  final List<MutationObserver<TData, TError, TVariables, TOnMutateResult>>
-      _observers = [];
-
-  bool get hasObservers => _observers.isNotEmpty;
-
-  /// Adds an observer to this mutation.
-  void addObserver(
-    MutationObserver<TData, TError, TVariables, TOnMutateResult> observer,
-  ) {
-    if (!_observers.contains(observer)) {
-      _observers.add(observer);
-      cancelGc();
-    }
-  }
-
-  /// Removes an observer from this mutation.
-  void removeObserver(
-    MutationObserver<TData, TError, TVariables, TOnMutateResult> observer,
-  ) {
-    _observers.remove(observer);
-    scheduleGc();
-  }
-  // ---------------------------------------------------------------------------
 
   @override
   GcDuration get gcDuration {
-    return _observers
-        .map((ob) => ob.options.gcDuration)
+    return observers
+        .map((obs) => obs.options.gcDuration)
         .whereType<GcDuration>()
         .fold(
           // Defaults to 5 minutes
