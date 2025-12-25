@@ -28,10 +28,10 @@ class Query<TData, TError>
       _options.initialData,
       _options.initialDataUpdatedAt,
     );
-    onAdd = (_) {
+    onAddObserver = (_) {
       cancelGc();
     };
-    onRemove = (_) {
+    onRemoveObserver = (_) {
       if (observers.isEmpty) {
         scheduleGc();
         if (state.fetchStatus == FetchStatus.fetching &&

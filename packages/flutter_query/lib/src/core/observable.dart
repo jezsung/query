@@ -13,10 +13,11 @@ mixin Observable<TObserver extends Observer> {
   List<TObserver> get observers => List.unmodifiable(_observers);
 
   @protected
-  set onAdd(void Function(TObserver) callback) => _onAdd = callback;
+  set onAddObserver(void Function(TObserver) callback) => _onAdd = callback;
 
   @protected
-  set onRemove(void Function(TObserver) callback) => _onRemove = callback;
+  set onRemoveObserver(void Function(TObserver) callback) =>
+      _onRemove = callback;
 
   bool get hasObservers => observers.isNotEmpty;
 

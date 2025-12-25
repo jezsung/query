@@ -35,10 +35,10 @@ class Mutation<TData, TError, TVariables, TOnMutateResult>
         _state = state ??
             MutationState<TData, TError, TVariables, TOnMutateResult>() {
     scheduleGc();
-    onAdd = (_) {
+    onAddObserver = (_) {
       cancelGc();
     };
-    onRemove = (_) {
+    onRemoveObserver = (_) {
       scheduleGc();
     };
   }
