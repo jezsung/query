@@ -2,7 +2,10 @@ import 'package:collection/collection.dart';
 
 import 'query.dart';
 
-const DeepCollectionEquality _equality = DeepCollectionEquality();
+typedef Refetch<TData, TError> = Future<QueryResult<TData, TError>> Function({
+  bool cancelRefetch,
+  bool throwOnError,
+});
 
 class QueryResult<TData, TError> {
   const QueryResult({
@@ -37,18 +40,7 @@ class QueryResult<TData, TError> {
   final bool isStale;
   final bool isFetchedAfterMount;
   final bool isPlaceholderData;
-
-  /// Manually refetch the query.
-  ///
-  /// Returns a [Future] that resolves to the updated [QueryResult].
-  ///
-  /// Options:
-  /// - [cancelRefetch]: If true (default), cancels any in-progress fetch.
-  /// - [throwOnError]: If true, rethrows errors instead of capturing in state.
-  final Future<QueryResult<TData, TError>> Function({
-    bool cancelRefetch, // Defaults to true
-    bool throwOnError, // Defaults to false
-  }) refetch;
+  final Refetch<TData, TError> refetch;
 
   bool get isError => status == QueryStatus.error;
   bool get isSuccess => status == QueryStatus.success;
@@ -99,3 +91,5 @@ class QueryResult<TData, TError> {
         isPlaceholderData,
       );
 }
+
+const DeepCollectionEquality _equality = DeepCollectionEquality();
