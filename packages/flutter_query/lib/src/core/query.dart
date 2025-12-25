@@ -14,7 +14,6 @@ import 'query_observer.dart';
 import 'query_options.dart';
 import 'query_state.dart';
 import 'retryer.dart';
-import 'types.dart';
 
 class Query<TData, TError> with GarbageCollectable {
   Query(
@@ -38,7 +37,6 @@ class Query<TData, TError> with GarbageCollectable {
   QueryState<TData, TError>? _revertState;
 
   List<Object?> get queryKey => _options.queryKey;
-  QueryFn<TData> get queryFn => _options.queryFn;
   QueryState<TData, TError> get state => _state;
   bool get hasObservers => _observers.isNotEmpty;
 
@@ -144,7 +142,7 @@ class Query<TData, TError> with GarbageCollectable {
     }
 
     _retryer = Retryer<TData, TError>(
-      fn: () => queryFn(context),
+      fn: () => _options.queryFn(context),
       retry: _options.retry ?? defaultRetry,
       signal: _abortController!.signal,
       onFail: (failureCount, error) {
