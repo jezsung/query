@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:clock/clock.dart';
 
 import 'abort_signal.dart';
+import 'garbage_collectable.dart';
 import 'options/gc_duration.dart';
 import 'options/stale_duration.dart';
 import 'query_cache.dart';
@@ -12,11 +13,10 @@ import 'query_key.dart';
 import 'query_observer.dart';
 import 'query_options.dart';
 import 'query_state.dart';
-import 'removable.dart';
 import 'retryer.dart';
 import 'types.dart';
 
-class Query<TData, TError> with Removable {
+class Query<TData, TError> with GarbageCollectable {
   Query(
     QueryClient client,
     QueryOptions<TData, TError> options,
@@ -96,9 +96,6 @@ class Query<TData, TError> with Removable {
 
   void setOptions(QueryOptions<TData, TError> options) {
     _options = options;
-
-    final gcDuration = options.gcDuration ?? const GcDuration(minutes: 5);
-    updateGcDuration(gcDuration);
 
     if (state.data == null && options.initialData != null) {
       final defaultState = QueryState<TData, TError>.fromOptions(options);
@@ -231,33 +228,24 @@ class Query<TData, TError> with Removable {
     return retryer?.future.then((_) {}).catchError((_) {}) ?? Future.value();
   }
 
-  void addObserver(QueryObserver observer) {
+  void addObserver(QueryObserver<TData, TError> observer) {
     if (!_observers.contains(observer)) {
       _observers.add(observer);
       cancelGc();
     }
   }
 
-  void removeObserver(QueryObserver observer) {
-    if (_observers.contains(observer)) {
-      _observers.remove(observer);
+  void removeObserver(QueryObserver<TData, TError> observer) {
+    _observers.remove(observer);
 
-      if (_observers.isEmpty) {
-        if (state.fetchStatus == FetchStatus.fetching &&
-            _abortController != null) {
-          if (_abortController!.wasConsumed) {
-            cancel(revert: true);
-          }
+    if (_observers.isEmpty) {
+      if (state.fetchStatus == FetchStatus.fetching &&
+          _abortController != null) {
+        if (_abortController!.wasConsumed) {
+          cancel(revert: true);
         }
-        scheduleGc();
       }
-    }
-  }
-
-  @override
-  void tryRemove() {
-    if (!hasObservers && state.fetchStatus == FetchStatus.idle) {
-      _cache.remove(this);
+      scheduleGc();
     }
   }
 
@@ -270,6 +258,25 @@ class Query<TData, TError> with Removable {
     _state = newState;
     for (final observer in _observers) {
       observer.onQueryUpdate();
+    }
+  }
+
+  @override
+  GcDuration get gcDuration {
+    return _observers
+        .map((ob) => ob.options.gcDuration)
+        .whereType<GcDuration>()
+        .fold(
+          // Defaults to 5 minutes
+          _options.gcDuration ?? const GcDuration(minutes: 5),
+          (longest, duration) => duration > longest ? duration : longest,
+        );
+  }
+
+  @override
+  void tryRemove() {
+    if (!hasObservers && state.fetchStatus == FetchStatus.idle) {
+      _cache.remove(this);
     }
   }
 }

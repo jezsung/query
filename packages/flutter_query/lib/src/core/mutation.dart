@@ -1,6 +1,7 @@
 import 'package:clock/clock.dart';
 import 'package:collection/collection.dart';
 
+import 'garbage_collectable.dart';
 import 'mutation_cache.dart';
 import 'mutation_function_context.dart';
 import 'mutation_observer.dart';
@@ -8,7 +9,6 @@ import 'mutation_options.dart';
 import 'mutation_state.dart';
 import 'options/gc_duration.dart';
 import 'query_client.dart';
-import 'removable.dart';
 import 'retryer.dart';
 
 /// A mutation instance that manages the execution and state of a single mutation.
@@ -17,58 +17,33 @@ import 'retryer.dart';
 /// queries which are used for fetching data.
 ///
 /// Aligned with TanStack Query's Mutation class.
-class Mutation<TData, TError, TVariables, TOnMutateResult> with Removable {
+class Mutation<TData, TError, TVariables, TOnMutateResult>
+    with GarbageCollectable {
   Mutation({
     required QueryClient client,
     required MutationCache cache,
     required int mutationId,
-    required MutationOptions<TData, TError, TVariables, TOnMutateResult>
-        options,
+    required this.options,
     MutationState<TData, TError, TVariables, TOnMutateResult>? state,
   })  : _client = client,
         _cache = cache,
         _mutationId = mutationId,
-        _options = options,
         _state = state ??
             MutationState<TData, TError, TVariables, TOnMutateResult>() {
-    updateGcDuration(_options.gcDuration ?? const GcDuration(minutes: 5));
     scheduleGc();
   }
 
   final QueryClient _client;
   final MutationCache _cache;
   final int _mutationId;
-  MutationOptions<TData, TError, TVariables, TOnMutateResult> _options;
+  MutationOptions<TData, TError, TVariables, TOnMutateResult> options;
   MutationState<TData, TError, TVariables, TOnMutateResult> _state;
 
   Retryer<TData, TError>? _retryer;
 
   int get mutationId => _mutationId;
-  MutationOptions<TData, TError, TVariables, TOnMutateResult> get options =>
-      _options;
+
   MutationState<TData, TError, TVariables, TOnMutateResult> get state => _state;
-
-  set options(
-    MutationOptions<TData, TError, TVariables, TOnMutateResult> newOption,
-  ) {
-    _options = newOption;
-    if (newOption.gcDuration != null) {
-      updateGcDuration(newOption.gcDuration!);
-    }
-  }
-
-  /// Attempts to remove the mutation from cache.
-  @override
-  void tryRemove() {
-    if (!hasObservers) {
-      if (_state.status == MutationStatus.pending) {
-        // Don't remove pending mutations, reschedule GC
-        scheduleGc();
-      } else {
-        _cache.remove(this);
-      }
-    }
-  }
 
   /// Executes the mutation with the given variables.
   ///
@@ -80,8 +55,8 @@ class Mutation<TData, TError, TVariables, TOnMutateResult> with Removable {
   Future<TData> execute(TVariables variables) async {
     final fnContext = MutationFunctionContext(
       client: _client,
-      meta: _options.meta,
-      mutationKey: _options.mutationKey,
+      meta: options.meta,
+      mutationKey: options.mutationKey,
     );
 
     // Default retry: 0 retries for mutations (unlike queries which default to 3)
@@ -90,8 +65,8 @@ class Mutation<TData, TError, TVariables, TOnMutateResult> with Removable {
     }
 
     _retryer = Retryer<TData, TError>(
-      fn: () => _options.mutationFn(variables, fnContext),
-      retry: _options.retry ?? defaultRetry,
+      fn: () => options.mutationFn(variables, fnContext),
+      retry: options.retry ?? defaultRetry,
       onFail: (failureCount, error) {
         _setState(_state.copyWith(
           failureCount: failureCount,
@@ -112,8 +87,8 @@ class Mutation<TData, TError, TVariables, TOnMutateResult> with Removable {
 
       // Call onMutate callback
       TOnMutateResult? onMutateResult;
-      if (_options.onMutate != null) {
-        onMutateResult = await _options.onMutate!(variables, fnContext);
+      if (options.onMutate != null) {
+        onMutateResult = await options.onMutate!(variables, fnContext);
         if (onMutateResult != _state.onMutateResult) {
           _setState(_state.copyWith(onMutateResult: onMutateResult));
         }
@@ -123,14 +98,14 @@ class Mutation<TData, TError, TVariables, TOnMutateResult> with Removable {
       final data = await _retryer!.start();
 
       // Call onSuccess callback
-      if (_options.onSuccess != null) {
-        await _options.onSuccess!(
+      if (options.onSuccess != null) {
+        await options.onSuccess!(
             data, variables, _state.onMutateResult, fnContext);
       }
 
       // Call onSettled callback
-      if (_options.onSettled != null) {
-        await _options.onSettled!(
+      if (options.onSettled != null) {
+        await options.onSettled!(
             data, null, variables, _state.onMutateResult, fnContext);
       }
 
@@ -151,8 +126,8 @@ class Mutation<TData, TError, TVariables, TOnMutateResult> with Removable {
     } catch (error) {
       try {
         // Call onError callback
-        if (_options.onError != null) {
-          await _options.onError!(
+        if (options.onError != null) {
+          await options.onError!(
             error as TError,
             variables,
             _state.onMutateResult,
@@ -161,8 +136,8 @@ class Mutation<TData, TError, TVariables, TOnMutateResult> with Removable {
         }
 
         // Call onSettled callback
-        if (_options.onSettled != null) {
-          await _options.onSettled!(
+        if (options.onSettled != null) {
+          await options.onSettled!(
             null,
             error as TError,
             variables,
@@ -210,7 +185,8 @@ class Mutation<TData, TError, TVariables, TOnMutateResult> with Removable {
 
   /// Adds an observer to this mutation.
   void addObserver(
-      MutationObserver<TData, TError, TVariables, TOnMutateResult> observer) {
+    MutationObserver<TData, TError, TVariables, TOnMutateResult> observer,
+  ) {
     if (!_observers.contains(observer)) {
       _observers.add(observer);
       cancelGc();
@@ -219,11 +195,36 @@ class Mutation<TData, TError, TVariables, TOnMutateResult> with Removable {
 
   /// Removes an observer from this mutation.
   void removeObserver(
-      MutationObserver<TData, TError, TVariables, TOnMutateResult> observer) {
+    MutationObserver<TData, TError, TVariables, TOnMutateResult> observer,
+  ) {
     _observers.remove(observer);
     scheduleGc();
   }
   // ---------------------------------------------------------------------------
+
+  @override
+  GcDuration get gcDuration {
+    return _observers
+        .map((ob) => ob.options.gcDuration)
+        .whereType<GcDuration>()
+        .fold(
+          // Defaults to 5 minutes
+          options.gcDuration ?? const GcDuration(minutes: 5),
+          (longest, duration) => duration > longest ? duration : longest,
+        );
+  }
+
+  @override
+  void tryRemove() {
+    if (!hasObservers) {
+      if (_state.status == MutationStatus.pending) {
+        // Don't remove pending mutations, reschedule GC
+        scheduleGc();
+      } else {
+        _cache.remove(this);
+      }
+    }
+  }
 }
 
 const _equality = DeepCollectionEquality();

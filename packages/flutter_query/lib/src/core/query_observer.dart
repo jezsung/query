@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:clock/clock.dart';
 
-import 'options/gc_duration.dart';
 import 'options/placeholder_data.dart';
 import 'options/refetch_on_mount.dart';
 import 'options/refetch_on_resume.dart';
@@ -106,7 +105,6 @@ class QueryObserver<TData, TError> {
     // Compare merged options to detect actual changes
     final didKeyChange =
         QueryKey(newOptions.queryKey) != QueryKey(oldOptions.queryKey);
-    final didGcDurationChange = newOptions.gcDuration != oldOptions.gcDuration;
     final didEnabledChange = newOptions.enabled != oldOptions.enabled;
     final didPlaceholderDataChange =
         newOptions.placeholderData != oldOptions.placeholderData;
@@ -132,7 +130,6 @@ class QueryObserver<TData, TError> {
     if (!didKeyChange &&
         !didEnabledChange &&
         !didStaleDurationChange &&
-        !didGcDurationChange &&
         !didPlaceholderDataChange &&
         !didRefetchIntervalChange &&
         !didRefetchOnMountChange &&
@@ -176,12 +173,6 @@ class QueryObserver<TData, TError> {
       oldQuery.removeObserver(this);
 
       return;
-    }
-
-    // Update gcDuration if it changed
-    if (didGcDurationChange) {
-      final gcDuration = options.gcDuration ?? const GcDuration(minutes: 5);
-      _query.updateGcDuration(gcDuration);
     }
 
     if (didEnabledChange) {
