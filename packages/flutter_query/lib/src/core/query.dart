@@ -26,6 +26,19 @@ class Query<TData, TError> with GarbageCollectable {
       _options.initialData,
       _options.initialDataUpdatedAt,
     );
+    observers.onAdd = (_) {
+      cancelGc();
+    };
+    observers.onRemove = (_) {
+      if (observers.isEmpty) {
+        scheduleGc();
+        if (state.fetchStatus == FetchStatus.fetching &&
+            _abortController != null &&
+            _abortController!.wasConsumed) {
+          cancel(revert: true);
+        }
+      }
+    };
     scheduleGc();
   }
 
@@ -34,8 +47,9 @@ class Query<TData, TError> with GarbageCollectable {
   late QueryState<TData, TError> _currentState;
   late QueryState<TData, TError> _initialState;
 
-  final List<QueryObserver> _observers = [];
-  bool get hasObservers => _observers.isNotEmpty;
+  final QueryObservers<TData, TError> observers =
+      QueryObservers<TData, TError>();
+  bool get hasObservers => observers.isNotEmpty;
 
   Retryer<TData, TError>? _retryer;
   AbortController? _abortController;
@@ -45,11 +59,11 @@ class Query<TData, TError> with GarbageCollectable {
   QueryState<TData, TError> get state => _currentState;
 
   bool get isActive {
-    return _observers.any((observer) => observer.options.enabled ?? true);
+    return observers.options.any((opt) => opt.enabled ?? true);
   }
 
   bool get isDisabled {
-    if (_observers.isNotEmpty) {
+    if (observers.isNotEmpty) {
       return !isActive;
     }
     return state.status == QueryStatus.pending &&
@@ -58,12 +72,11 @@ class Query<TData, TError> with GarbageCollectable {
   }
 
   bool get isStatic {
-    if (_observers.isEmpty) return false;
-    return _observers.any((observer) {
-      final opts = observer.options;
-      final resolved = opts.staleDurationResolver != null
-          ? opts.staleDurationResolver!(this)
-          : opts.staleDuration;
+    if (observers.isEmpty) return false;
+    return observers.options.any((opt) {
+      final resolved = opt.staleDurationResolver != null
+          ? opt.staleDurationResolver!(this)
+          : opt.staleDuration;
       return resolved is StaleDurationStatic;
     });
   }
@@ -86,9 +99,7 @@ class Query<TData, TError> with GarbageCollectable {
   @protected
   set state(QueryState<TData, TError> newState) {
     _currentState = newState;
-    for (final observer in _observers) {
-      observer.onQueryUpdate();
-    }
+    observers.notify();
   }
 
   Future<TData> fetch({
@@ -245,31 +256,10 @@ class Query<TData, TError> with GarbageCollectable {
     };
   }
 
-  void addObserver(QueryObserver<TData, TError> observer) {
-    if (!_observers.contains(observer)) {
-      _observers.add(observer);
-      cancelGc();
-    }
-  }
-
-  void removeObserver(QueryObserver<TData, TError> observer) {
-    _observers.remove(observer);
-
-    if (_observers.isEmpty) {
-      if (state.fetchStatus == FetchStatus.fetching &&
-          _abortController != null) {
-        if (_abortController!.wasConsumed) {
-          cancel(revert: true);
-        }
-      }
-      scheduleGc();
-    }
-  }
-
   @override
   GcDuration get gcDuration {
-    return _observers
-        .map((ob) => ob.options.gcDuration)
+    return observers.options
+        .map((opt) => opt.gcDuration)
         .whereType<GcDuration>()
         .fold(
           // Defaults to 5 minutes
@@ -338,5 +328,41 @@ extension QueryMatches on Query {
     }
 
     return true;
+  }
+}
+
+class QueryObservers<TData, TError> {
+  QueryObservers({
+    this.onAdd,
+    this.onRemove,
+  });
+
+  final List<QueryObserver<TData, TError>> _observers = [];
+
+  void Function(QueryObserver<TData, TError> observer)? onAdd;
+  void Function(QueryObserver<TData, TError> observer)? onRemove;
+
+  bool get isEmpty => _observers.isEmpty;
+  bool get isNotEmpty => _observers.isNotEmpty;
+
+  List<QueryOptions<TData, TError>> get options =>
+      _observers.map((ob) => ob.options).toList();
+
+  void add(QueryObserver<TData, TError> observer) {
+    if (!_observers.contains(observer)) {
+      _observers.add(observer);
+      onAdd?.call(observer);
+    }
+  }
+
+  void remove(QueryObserver<TData, TError> observer) {
+    _observers.remove(observer);
+    onRemove?.call(observer);
+  }
+
+  void notify() {
+    for (final observer in _observers) {
+      observer.onQueryUpdate();
+    }
   }
 }

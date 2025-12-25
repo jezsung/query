@@ -27,7 +27,7 @@ class QueryObserver<TData, TError> {
           options.mergeWith(client.defaultQueryOptions),
         ) {
     _query.options = _options;
-    _query.addObserver(this);
+    _query.observers.add(this);
 
     if (_query.state.data != null) {
       _lastQueryWithDefinedData = _query;
@@ -144,7 +144,7 @@ class QueryObserver<TData, TError> {
 
       _query = _client.cache.build<TData, TError>(newOptions);
       _query.options = newOptions;
-      _query.addObserver(this);
+      _query.observers.add(this);
 
       // Track last query with defined data
       if (_query.state.data != null) {
@@ -170,7 +170,7 @@ class QueryObserver<TData, TError> {
 
       // Remove this observer from the old query
       // This will schedule GC if it was the last observer
-      oldQuery.removeObserver(this);
+      oldQuery.observers.remove(this);
 
       return;
     }
@@ -278,7 +278,7 @@ class QueryObserver<TData, TError> {
 
     // Remove this observer from the query
     // This will schedule GC if it was the last observer
-    _query.removeObserver(this);
+    _query.observers.remove(this);
   }
 
   void _updateRefetchInterval() {
