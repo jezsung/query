@@ -499,7 +499,7 @@ void main() {
       // Create active query (with enabled observer)
       final observer = QueryObserver<String, Object>(
         client,
-        QueryOptions(
+        QueryObserverOptions(
           const ['active'],
           (_) async => 'data',
           enabled: true,
@@ -523,7 +523,7 @@ void main() {
       // Create active query (with enabled observer)
       final observer = QueryObserver<String, Object>(
         client,
-        QueryOptions(
+        QueryObserverOptions(
           const ['active'],
           (_) async => 'data',
           enabled: true,
@@ -548,7 +548,7 @@ void main() {
       // Create active query (with enabled observer)
       final observer = QueryObserver<String, Object>(
         client,
-        QueryOptions(
+        QueryObserverOptions(
           const ['active'],
           (_) async => 'data',
           enabled: true,
@@ -567,7 +567,7 @@ void main() {
       // Create query with disabled observer
       final disabledObserver = QueryObserver<String, Object>(
         client,
-        QueryOptions(
+        QueryObserverOptions(
           const ['disabled'],
           (_) async => 'data',
           enabled: false,
@@ -577,7 +577,7 @@ void main() {
       // Create active query
       final enabledObserver = QueryObserver<String, Object>(
         client,
-        QueryOptions(
+        QueryObserverOptions(
           const ['enabled'],
           (_) async => 'data',
           enabled: true,
@@ -607,7 +607,7 @@ void main() {
       // Create active users query
       final usersObserver = QueryObserver<String, Object>(
         client,
-        QueryOptions(
+        QueryObserverOptions(
           const ['users', 'active'],
           (_) async => 'data',
           enabled: true,
@@ -617,7 +617,7 @@ void main() {
       // Create active posts query
       final postsObserver = QueryObserver<String, Object>(
         client,
-        QueryOptions(
+        QueryObserverOptions(
           const ['posts', 'active'],
           (_) async => 'data',
           enabled: true,

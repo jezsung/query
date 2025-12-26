@@ -9,38 +9,24 @@ import 'options/retry.dart';
 import 'query_key.dart';
 import 'types.dart';
 
-/// Options for configuring a query.
+/// Base options for configuring a query at the cache level.
 ///
-/// Contains all the configuration options for a query including the query key,
-/// query function, and various behavioral options like expiresIn, retry, etc.
+/// Contains core configuration that affects the Query instance itself,
+/// shared across all observers watching this query.
 class QueryOptions<TData, TError> {
   QueryOptions(
     this.queryKey,
     this.queryFn, {
-    this.enabled,
-    this.expiresIn,
     this.gcDuration,
-    this.placeholder,
-    this.refetchInterval,
-    this.refetchOnMount,
-    this.refetchOnResume,
     this.retry,
-    this.retryOnMount,
     this.seed,
     this.seedUpdatedAt,
   });
 
   final List<Object?> queryKey;
   final QueryFn<TData> queryFn;
-  final bool? enabled;
-  final Expiry? expiresIn;
   final GcDuration? gcDuration;
-  final TData? placeholder;
-  final Duration? refetchInterval;
-  final RefetchOnMount? refetchOnMount;
-  final RefetchOnResume? refetchOnResume;
   final RetryResolver<TError>? retry;
-  final bool? retryOnMount;
   final TData? seed;
   final DateTime? seedUpdatedAt;
 
@@ -50,15 +36,8 @@ class QueryOptions<TData, TError> {
     return other is QueryOptions<TData, TError> &&
         _equality.equals(queryKey, other.queryKey) &&
         identical(queryFn, other.queryFn) &&
-        enabled == other.enabled &&
-        expiresIn == other.expiresIn &&
         gcDuration == other.gcDuration &&
-        _equality.equals(placeholder, other.placeholder) &&
-        refetchInterval == other.refetchInterval &&
-        refetchOnMount == other.refetchOnMount &&
-        refetchOnResume == other.refetchOnResume &&
         identical(retry, other.retry) &&
-        retryOnMount == other.retryOnMount &&
         _equality.equals(seed, other.seed) &&
         seedUpdatedAt == other.seedUpdatedAt;
   }
@@ -67,42 +46,131 @@ class QueryOptions<TData, TError> {
   int get hashCode => Object.hash(
         _equality.hash(queryKey),
         identityHashCode(queryFn),
-        enabled,
-        expiresIn,
         gcDuration,
-        _equality.hash(placeholder),
-        refetchInterval,
-        refetchOnMount,
-        refetchOnResume,
         identityHashCode(retry),
-        retryOnMount,
         _equality.hash(seed),
         seedUpdatedAt,
       );
 }
 
+/// Observer-specific options that extend the base QueryOptions.
+///
+/// Contains configuration that affects individual QueryObserver instances,
+/// allowing different observers to have different behaviors for the same query.
+class QueryObserverOptions<TData, TError> extends QueryOptions<TData, TError> {
+  QueryObserverOptions(
+    super.queryKey,
+    super.queryFn, {
+    super.gcDuration,
+    super.retry,
+    super.seed,
+    super.seedUpdatedAt,
+    this.enabled,
+    this.expiresIn,
+    this.placeholder,
+    this.refetchInterval,
+    this.refetchOnMount,
+    this.refetchOnResume,
+    this.retryOnMount,
+  });
+
+  final bool? enabled;
+  final Expiry? expiresIn;
+  final TData? placeholder;
+  final Duration? refetchInterval;
+  final RefetchOnMount? refetchOnMount;
+  final RefetchOnResume? refetchOnResume;
+  final bool? retryOnMount;
+
+  /// Extracts the base QueryOptions from observer options.
+  QueryOptions<TData, TError> toQueryOptions() {
+    return QueryOptions<TData, TError>(
+      queryKey,
+      queryFn,
+      gcDuration: gcDuration,
+      retry: retry,
+      seed: seed,
+      seedUpdatedAt: seedUpdatedAt,
+    );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is QueryObserverOptions<TData, TError> &&
+        _equality.equals(queryKey, other.queryKey) &&
+        identical(queryFn, other.queryFn) &&
+        gcDuration == other.gcDuration &&
+        identical(retry, other.retry) &&
+        _equality.equals(seed, other.seed) &&
+        seedUpdatedAt == other.seedUpdatedAt &&
+        enabled == other.enabled &&
+        expiresIn == other.expiresIn &&
+        _equality.equals(placeholder, other.placeholder) &&
+        refetchInterval == other.refetchInterval &&
+        refetchOnMount == other.refetchOnMount &&
+        refetchOnResume == other.refetchOnResume &&
+        retryOnMount == other.retryOnMount;
+  }
+
+  @override
+  int get hashCode => Object.hash(
+        _equality.hash(queryKey),
+        identityHashCode(queryFn),
+        gcDuration,
+        identityHashCode(retry),
+        _equality.hash(seed),
+        seedUpdatedAt,
+        enabled,
+        expiresIn,
+        _equality.hash(placeholder),
+        refetchInterval,
+        refetchOnMount,
+        refetchOnResume,
+        retryOnMount,
+      );
+}
+
 const DeepCollectionEquality _equality = DeepCollectionEquality();
 
-extension QueryOptionsMergeWith<TData, TError> on QueryOptions<TData, TError> {
+extension QueryOptionsWithDefaults<TData, TError>
+    on QueryOptions<TData, TError> {
   /// Merges this QueryOptions with default options.
   ///
   /// Query-specific options take precedence over defaults.
-  /// Handles type conversion for generic types (dynamic/Object? -> TData/TError).
   QueryOptions<TData, TError> withDefaults(DefaultQueryOptions defaults) {
     return QueryOptions<TData, TError>(
       queryKey,
       queryFn,
+      gcDuration: gcDuration ?? defaults.gcDuration,
+      retry: retry ?? defaults.retry as RetryResolver<TError>?,
+      seed: seed,
+      seedUpdatedAt: seedUpdatedAt,
+    );
+  }
+}
+
+extension QueryObserverOptionsWithDefaults<TData, TError>
+    on QueryObserverOptions<TData, TError> {
+  /// Merges this QueryObserverOptions with default options.
+  ///
+  /// Observer-specific options take precedence over defaults.
+  QueryObserverOptions<TData, TError> withDefaults(
+      DefaultQueryOptions defaults) {
+    return QueryObserverOptions<TData, TError>(
+      queryKey,
+      queryFn,
+      gcDuration: gcDuration ?? defaults.gcDuration,
+      retry: retry ?? defaults.retry as RetryResolver<TError>?,
+      seed: seed,
+      seedUpdatedAt: seedUpdatedAt,
       enabled: enabled ?? defaults.enabled,
       expiresIn: expiresIn ?? defaults.expiresIn,
-      gcDuration: gcDuration ?? defaults.gcDuration,
       placeholder: placeholder,
       refetchInterval: refetchInterval ?? defaults.refetchInterval,
       refetchOnMount: refetchOnMount ?? defaults.refetchOnMount,
       refetchOnResume: refetchOnResume ?? defaults.refetchOnResume,
-      retry: retry ?? defaults.retry as RetryResolver<TError>?,
       retryOnMount: retryOnMount ?? defaults.retryOnMount,
-      seed: seed,
-      seedUpdatedAt: seedUpdatedAt,
     );
   }
 }
@@ -114,66 +182,13 @@ extension QueryOptionsMerge<TData, TError> on QueryOptions<TData, TError> {
     return QueryOptions<TData, TError>(
       options.queryKey,
       options.queryFn,
-      enabled: switch ((options.enabled, enabled)) {
-        (null, null) => null,
-        (final a, null) => a,
-        (null, final b) => b,
-        (true, _) => true,
-        (_, true) => true,
-        (false, false) => false,
-      },
-      expiresIn: switch ((options.expiresIn, expiresIn)) {
-        (null, null) => null,
-        (final a?, null) => a,
-        (null, final b?) => b,
-        (ExpiryNever(), _) => Expiry.never,
-        (_, ExpiryNever()) => Expiry.never,
-        (ExpiryInfinity(), _) => Expiry.infinity,
-        (_, ExpiryInfinity()) => Expiry.infinity,
-        (ExpiryDuration a, ExpiryDuration b) => a < b ? a : b,
-      },
       gcDuration: switch ((options.gcDuration, gcDuration)) {
         (null, null) => null,
         (final a?, null) => a,
         (null, final b?) => b,
         (final a?, final b?) => a > b ? a : b,
       },
-      placeholder: options.placeholder ?? placeholder,
-      refetchInterval: switch ((options.refetchInterval, refetchInterval)) {
-        (null, null) => null,
-        (final a?, null) => a,
-        (null, final b?) => b,
-        (final a?, final b?) => a < b ? a : b,
-      },
-      refetchOnMount: switch ((options.refetchOnMount, refetchOnMount)) {
-        (null, null) => null,
-        (final a?, null) => a,
-        (null, final b?) => b,
-        (RefetchOnMount.always, _) => RefetchOnMount.always,
-        (_, RefetchOnMount.always) => RefetchOnMount.always,
-        (RefetchOnMount.stale, _) => RefetchOnMount.stale,
-        (_, RefetchOnMount.stale) => RefetchOnMount.stale,
-        (RefetchOnMount.never, RefetchOnMount.never) => RefetchOnMount.never,
-      },
-      refetchOnResume: switch ((options.refetchOnResume, refetchOnResume)) {
-        (null, null) => null,
-        (final a?, null) => a,
-        (null, final b?) => b,
-        (RefetchOnResume.always, _) => RefetchOnResume.always,
-        (_, RefetchOnResume.always) => RefetchOnResume.always,
-        (RefetchOnResume.stale, _) => RefetchOnResume.stale,
-        (_, RefetchOnResume.stale) => RefetchOnResume.stale,
-        (RefetchOnResume.never, RefetchOnResume.never) => RefetchOnResume.never,
-      },
       retry: options.retry ?? retry,
-      retryOnMount: switch ((options.retryOnMount, retryOnMount)) {
-        (null, null) => null,
-        (final a, null) => a,
-        (null, final b) => b,
-        (true, _) => true,
-        (_, true) => true,
-        (false, false) => false,
-      },
       seed: switch ((options.seed, seed)) {
         (null, null) => null,
         (final TData a, null) => a,
@@ -186,40 +201,6 @@ extension QueryOptionsMerge<TData, TError> on QueryOptions<TData, TError> {
         (null, final b?) => b,
         (final a?, final b?) => a.isBefore(b) ? a : b,
       },
-    );
-  }
-}
-
-extension QueryOptionsCopyWith<TData, TError> on QueryOptions<TData, TError> {
-  QueryOptions<TData, TError> copyWith({
-    List<Object?>? queryKey,
-    QueryFn<TData>? queryFn,
-    bool? enabled,
-    Expiry? expiresIn,
-    GcDuration? gcDuration,
-    TData? placeholder,
-    Duration? refetchInterval,
-    RefetchOnMount? refetchOnMount,
-    RefetchOnResume? refetchOnResume,
-    RetryResolver<TError>? retry,
-    bool? retryOnMount,
-    TData? seed,
-    DateTime? seedUpdatedAt,
-  }) {
-    return QueryOptions<TData, TError>(
-      queryKey ?? this.queryKey,
-      queryFn ?? this.queryFn,
-      enabled: enabled ?? this.enabled,
-      expiresIn: expiresIn ?? this.expiresIn,
-      gcDuration: gcDuration ?? this.gcDuration,
-      placeholder: placeholder ?? this.placeholder,
-      refetchInterval: refetchInterval ?? this.refetchInterval,
-      refetchOnMount: refetchOnMount ?? this.refetchOnMount,
-      refetchOnResume: refetchOnResume ?? this.refetchOnResume,
-      retry: retry ?? this.retry,
-      retryOnMount: retryOnMount ?? this.retryOnMount,
-      seed: seed ?? this.seed,
-      seedUpdatedAt: seedUpdatedAt ?? this.seedUpdatedAt,
     );
   }
 }

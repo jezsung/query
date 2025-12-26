@@ -108,11 +108,10 @@ class QueryClient {
     TData? seed,
     DateTime? seedUpdatedAt,
   }) async {
-    // Create input options with nullable values
+    // Create base query options (cache-level)
     final options = QueryOptions<TData, TError>(
       queryKey,
       queryFn,
-      expiresIn: expiresIn,
       retry: retry,
       gcDuration: gcDuration,
       seed: seed,
@@ -123,13 +122,20 @@ class QueryClient {
     final mergedOptions = options.withDefaults(defaultQueryOptions);
 
     // fetchQuery defaults to no retry if not specified
-    final effectiveOptions = mergedOptions.copyWith(
+    final effectiveOptions = QueryOptions<TData, TError>(
+      mergedOptions.queryKey,
+      mergedOptions.queryFn,
       retry: mergedOptions.retry ?? (_, __) => null,
+      gcDuration: mergedOptions.gcDuration,
+      seed: mergedOptions.seed,
+      seedUpdatedAt: mergedOptions.seedUpdatedAt,
     );
 
     final query = _cache.build<TData, TError>(effectiveOptions);
 
-    final expiresInValue = effectiveOptions.expiresIn ?? const Expiry();
+    // Use expiresIn for staleness check (observer-level concept, but used here imperatively)
+    final expiresInValue =
+        expiresIn ?? defaultQueryOptions.expiresIn ?? const Expiry();
 
     // Check if data is stale
     if (query.isStaleByTime(expiresInValue)) {

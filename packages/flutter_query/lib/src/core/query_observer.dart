@@ -20,11 +20,11 @@ typedef ResultChangeListener<TData, TError> = void Function(
 class QueryObserver<TData, TError> with Observer<QueryState<TData, TError>> {
   QueryObserver(
     QueryClient client,
-    QueryOptions<TData, TError> options,
+    QueryObserverOptions<TData, TError> options,
   )   : _client = client,
         _options = options.withDefaults(client.defaultQueryOptions),
         _query = client.cache.build<TData, TError>(
-          options.withDefaults(client.defaultQueryOptions),
+          options.withDefaults(client.defaultQueryOptions).toQueryOptions(),
         ) {
     _query.addObserver(this);
 
@@ -46,7 +46,7 @@ class QueryObserver<TData, TError> with Observer<QueryState<TData, TError>> {
   }
 
   final QueryClient _client;
-  QueryOptions<TData, TError> _options;
+  QueryObserverOptions<TData, TError> _options;
   Query<TData, TError> _query;
   late QueryResult<TData, TError> _result;
 
@@ -65,7 +65,7 @@ class QueryObserver<TData, TError> with Observer<QueryState<TData, TError>> {
   /// Timer for refetchInterval. Continuously refetches at the specified interval.
   Timer? _refetchIntervalTimer;
 
-  QueryOptions<TData, TError> get options => _options;
+  QueryObserverOptions<TData, TError> get options => _options;
   QueryResult<TData, TError> get result => _result;
 
   /// Subscribe to result changes. Returns an unsubscribe function.
@@ -81,7 +81,7 @@ class QueryObserver<TData, TError> with Observer<QueryState<TData, TError>> {
     _setResult(result);
   }
 
-  void updateOptions(QueryOptions<TData, TError> options) {
+  void updateOptions(QueryObserverOptions<TData, TError> options) {
     final oldOptions = _options;
     final newOptions = options.withDefaults(_client.defaultQueryOptions);
     _options = newOptions;
@@ -119,7 +119,7 @@ class QueryObserver<TData, TError> with Observer<QueryState<TData, TError>> {
     if (didKeyChange) {
       final oldQuery = _query;
 
-      _query = _client.cache.build<TData, TError>(newOptions);
+      _query = _client.cache.build<TData, TError>(newOptions.toQueryOptions());
       _query.addObserver(this);
 
       // Reset initial counters for the new query (for isFetchedAfterMount)
@@ -343,7 +343,7 @@ class QueryObserver<TData, TError> with Observer<QueryState<TData, TError>> {
   }
 
   bool _shouldFetchOnMount(
-    QueryOptions<TData, TError> options,
+    QueryObserverOptions<TData, TError> options,
     QueryState<TData, TError> state,
   ) {
     final enabled = options.enabled ?? true;
@@ -392,7 +392,7 @@ class QueryObserver<TData, TError> with Observer<QueryState<TData, TError>> {
   }
 
   bool _shouldFetchOnResume(
-    QueryOptions<TData, TError> options,
+    QueryObserverOptions<TData, TError> options,
     QueryState<TData, TError> state,
   ) {
     final enabled = options.enabled ?? true;

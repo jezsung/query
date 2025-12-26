@@ -58,10 +58,7 @@ class Query<TData, TError>
   List<Object?> get queryKey => options.queryKey;
   QueryState<TData, TError> get state => _currentState;
   QueryOptions<TData, TError> get options {
-    return observers.fold(
-      _baseOptions.withDefaults(_client.defaultQueryOptions),
-      (acc, obs) => acc.merge(obs.options),
-    );
+    return _baseOptions.withDefaults(_client.defaultQueryOptions);
   }
 
   bool get isActive {

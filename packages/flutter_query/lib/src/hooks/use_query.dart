@@ -29,7 +29,7 @@ QueryResult<TData, TError> useQuery<TData, TError>({
   final observer = useMemoized(
     () => QueryObserver<TData, TError>(
       client,
-      QueryOptions(
+      QueryObserverOptions(
         queryKey,
         queryFn,
         enabled: enabled,
@@ -52,7 +52,7 @@ QueryResult<TData, TError> useQuery<TData, TError>({
   // This ensures we get the optimistic result immediately when options change
   // Client defaults are applied inside QueryObserver.updateOptions()
   observer.updateOptions(
-    QueryOptions(
+    QueryObserverOptions(
       queryKey,
       queryFn,
       enabled: enabled,

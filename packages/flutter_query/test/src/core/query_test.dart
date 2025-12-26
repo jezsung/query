@@ -253,7 +253,7 @@ void main() {
       final query = createQuery();
       final observer = QueryObserver<String, Object>(
         client,
-        QueryOptions(const ['test'], (context) async => 'data'),
+        QueryObserverOptions(const ['test'], (context) async => 'data'),
       );
       query.addObserver(observer);
 
@@ -269,7 +269,7 @@ void main() {
       final query = createQuery();
       final observer = QueryObserver<String, Object>(
         client,
-        QueryOptions(const ['test'], (context) async => 'data'),
+        QueryObserverOptions(const ['test'], (context) async => 'data'),
       );
       query.addObserver(observer);
 
@@ -285,7 +285,7 @@ void main() {
       final query = createQuery();
       final observer = QueryObserver<String, Object>(
         client,
-        QueryOptions(
+        QueryObserverOptions(
           const ['test'],
           (context) async => 'data',
           enabled: false,

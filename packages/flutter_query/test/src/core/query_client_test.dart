@@ -569,7 +569,7 @@ void main() {
 
       final activeObserver = QueryObserver(
         client,
-        QueryOptions(
+        QueryObserverOptions(
           const ['active'],
           (context) async {
             activeQueryFetches++;
@@ -615,7 +615,7 @@ void main() {
       // Active query
       final activeObserver = QueryObserver(
         client,
-        QueryOptions(
+        QueryObserverOptions(
           const ['active'],
           (context) async {
             await Future.delayed(const Duration(seconds: 3));
@@ -659,7 +659,7 @@ void main() {
 
       final activeObserver = QueryObserver(
         client,
-        QueryOptions(
+        QueryObserverOptions(
           const ['active'],
           (context) async {
             activeQueryFetches++;
@@ -699,7 +699,7 @@ void main() {
 
       final activeObserver = QueryObserver(
         client,
-        QueryOptions(
+        QueryObserverOptions(
           const ['active'],
           (context) async {
             activeQueryFetches++;
@@ -735,7 +735,7 @@ void main() {
         '', withFakeAsync((async) {
       final observer = QueryObserver(
         client,
-        QueryOptions(
+        QueryObserverOptions(
           const ['key'],
           (context) async {
             await Future.delayed(const Duration(seconds: 1));
@@ -769,7 +769,7 @@ void main() {
         'WHEN no filters are provided', () async {
       final activeObserver1 = QueryObserver(
         client,
-        QueryOptions(
+        QueryObserverOptions(
           const ['active', 1],
           (context) async => 'data',
           enabled: true,
@@ -777,7 +777,7 @@ void main() {
       );
       final activeObserver2 = QueryObserver(
         client,
-        QueryOptions(
+        QueryObserverOptions(
           const ['active', 2],
           (context) async => 'data',
           enabled: true,
@@ -793,7 +793,7 @@ void main() {
       );
       final disabledObserver = QueryObserver(
         client,
-        QueryOptions(
+        QueryObserverOptions(
           const ['disabled', 1],
           (context) async => 'data',
           enabled: false,
@@ -854,7 +854,7 @@ void main() {
       // Create a disabled observer
       final observer = QueryObserver(
         client,
-        QueryOptions(
+        QueryObserverOptions(
           const ['key'],
           (context) async {
             fetches++;
@@ -885,7 +885,7 @@ void main() {
       // Create an observer with static stale duration
       final observer = QueryObserver<String, Object>(
         client,
-        QueryOptions(
+        QueryObserverOptions(
           const ['key'],
           (context) async {
             fetches++;
@@ -918,7 +918,7 @@ void main() {
       // Create active observer
       final observer = QueryObserver<String, Object>(
         client,
-        QueryOptions(
+        QueryObserverOptions(
           const ['active'],
           (context) async {
             fetchesActive++;
