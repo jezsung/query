@@ -3,9 +3,9 @@ import 'dart:async';
 import 'package:clock/clock.dart';
 
 import 'observable.dart';
+import 'options/expiry.dart';
 import 'options/refetch_on_mount.dart';
 import 'options/refetch_on_resume.dart';
-import 'options/stale_duration.dart';
 import 'query.dart';
 import 'query_client.dart';
 import 'query_key.dart';
@@ -90,8 +90,8 @@ class QueryObserver<TData, TError> with Observer<QueryState<TData, TError>> {
     final didKeyChange =
         QueryKey(newOptions.queryKey) != QueryKey(oldOptions.queryKey);
     final didEnabledChange = newOptions.enabled != oldOptions.enabled;
-    final didPlaceholderDataChange =
-        newOptions.placeholderData != oldOptions.placeholderData;
+    final didPlaceholderChange =
+        newOptions.placeholder != oldOptions.placeholder;
     final didRefetchIntervalChange =
         newOptions.refetchInterval != oldOptions.refetchInterval;
     final didRefetchOnMountChange =
@@ -101,14 +101,13 @@ class QueryObserver<TData, TError> with Observer<QueryState<TData, TError>> {
     final didRetryChange = !identical(newOptions.retry, oldOptions.retry);
     final didRetryOnMountChange =
         newOptions.retryOnMount != oldOptions.retryOnMount;
-    final didStaleDurationChange =
-        newOptions.staleDuration != oldOptions.staleDuration;
+    final didExpiresInChange = newOptions.expiresIn != oldOptions.expiresIn;
 
     // If nothing changed, return early
     if (!didKeyChange &&
         !didEnabledChange &&
-        !didStaleDurationChange &&
-        !didPlaceholderDataChange &&
+        !didExpiresInChange &&
+        !didPlaceholderChange &&
         !didRefetchIntervalChange &&
         !didRefetchOnMountChange &&
         !didRefetchOnResumeChange &&
@@ -158,8 +157,8 @@ class QueryObserver<TData, TError> with Observer<QueryState<TData, TError>> {
       }
     }
 
-    if (didPlaceholderDataChange) {
-      // Recalculate optimistic result to reflect new placeholder data
+    if (didPlaceholderChange) {
+      // Recalculate optimistic result to reflect new placeholder
       final result = _getResult(optimistic: true);
       _setResult(result);
     }
@@ -181,12 +180,12 @@ class QueryObserver<TData, TError> with Observer<QueryState<TData, TError>> {
       _setResult(result);
     }
 
-    if (didStaleDurationChange) {
-      // Update staleDuration - recalculate result to update isStale getter
+    if (didExpiresInChange) {
+      // Update expiresIn - recalculate result to update isStale getter
       final result = _getResult(optimistic: true);
       _setResult(result);
 
-      // If data becomes stale with the new staleDuration, trigger refetch
+      // If data becomes stale with the new expiresIn, trigger refetch
       if (_shouldFetchOnMount(newOptions, _query.state)) {
         // Ignore errors - they're handled via query state
         _query.fetch().ignore();
@@ -307,21 +306,21 @@ class QueryObserver<TData, TError> with Observer<QueryState<TData, TError>> {
           : state.fetchStatus;
     }
 
-    // Use placeholderData if needed (when query is pending and has no data)
-    if (options.placeholderData != null &&
+    // Use placeholder if needed (when query is pending and has no data)
+    if (options.placeholder != null &&
         data == null &&
         status == QueryStatus.pending) {
       status = QueryStatus.success;
-      data = options.placeholderData;
+      data = options.placeholder;
       isPlaceholderData = true;
     }
 
-    final staleDuration = options.staleDuration ?? const StaleDuration();
+    final expiresIn = options.expiresIn ?? const Expiry();
 
     // Compute isStale: disabled queries are never considered stale
     // This matches TanStack Query's behavior
     final isEnabled = options.enabled ?? true;
-    final isStale = isEnabled && _query.isStaleByTime(staleDuration);
+    final isStale = isEnabled && _query.isStaleByTime(expiresIn);
 
     return QueryResult<TData, TError>(
       status: status,
@@ -366,10 +365,10 @@ class QueryObserver<TData, TError> with Observer<QueryState<TData, TError>> {
     }
 
     // Has data - check staleness and refetchOnMount
-    final staleDuration = options.staleDuration ?? const StaleDuration();
+    final expiresIn = options.expiresIn ?? const Expiry();
 
-    // With static stale duration, data is always fresh and should never refetch automatically
-    if (staleDuration is StaleDurationStatic) {
+    // With never expiry, data is always fresh and should never refetch automatically
+    if (expiresIn is ExpiryNever) {
       return false;
     }
 
@@ -382,13 +381,13 @@ class QueryObserver<TData, TError> with Observer<QueryState<TData, TError>> {
 
     final age = clock.now().difference(state.dataUpdatedAt!);
 
-    return switch (staleDuration) {
-      // Check if age exceeds or equals staleDuration (>= for zero staleDuration)
-      StaleDurationDuration duration => age >= duration,
-      // If staleDuration is StaleDurationInfinity, never stale (unless invalidated)
-      StaleDurationInfinity() => false,
-      // If staleDuration is StaleDurationStatic, never stale
-      StaleDurationStatic() => false,
+    return switch (expiresIn) {
+      // Check if age exceeds or equals expiresIn (>= for zero expiresIn)
+      ExpiryDuration duration => age >= duration,
+      // If expiresIn is ExpiryInfinity, never stale (unless invalidated)
+      ExpiryInfinity() => false,
+      // If expiresIn is ExpiryNever, never stale
+      ExpiryNever() => false,
     };
   }
 
@@ -401,10 +400,10 @@ class QueryObserver<TData, TError> with Observer<QueryState<TData, TError>> {
 
     if (!enabled) return false;
 
-    final staleDuration = options.staleDuration ?? const StaleDuration();
+    final expiresIn = options.expiresIn ?? const Expiry();
 
-    // With static stale duration, data is always fresh and should never refetch automatically
-    if (staleDuration is StaleDurationStatic) {
+    // With never expiry, data is always fresh and should never refetch automatically
+    if (expiresIn is ExpiryNever) {
       return false;
     }
 
@@ -424,10 +423,10 @@ class QueryObserver<TData, TError> with Observer<QueryState<TData, TError>> {
 
     final age = clock.now().difference(state.dataUpdatedAt!);
 
-    return switch (staleDuration) {
-      StaleDurationDuration duration => age >= duration,
-      StaleDurationInfinity() => false,
-      StaleDurationStatic() => false,
+    return switch (expiresIn) {
+      ExpiryDuration duration => age >= duration,
+      ExpiryInfinity() => false,
+      ExpiryNever() => false,
     };
   }
 }

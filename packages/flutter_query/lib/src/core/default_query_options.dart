@@ -1,14 +1,14 @@
+import 'options/expiry.dart';
 import 'options/gc_duration.dart';
 import 'options/refetch_on_mount.dart';
 import 'options/refetch_on_resume.dart';
 import 'options/retry.dart';
-import 'options/stale_duration.dart';
 
 /// Default options for queries that can be set at the QueryClient level.
 ///
 /// These options are applied to all queries unless overridden by query-specific
 /// options. Omits `queryKey` and `queryFn` since those are always required
-/// per-query, and `initialData`, `initialDataUpdatedAt`, `placeholderData`
+/// per-query, and `seed`, `seedUpdatedAt`, `placeholder`
 /// since those are inherently query-specific.
 ///
 /// Uses `dynamic`/`Object?` for generic type parameters because defaults apply
@@ -19,17 +19,20 @@ import 'options/stale_duration.dart';
 class DefaultQueryOptions {
   const DefaultQueryOptions({
     this.enabled = true,
+    this.expiresIn,
     this.gcDuration,
     this.refetchInterval,
     this.refetchOnMount = RefetchOnMount.stale,
     this.refetchOnResume = RefetchOnResume.stale,
     this.retry,
     this.retryOnMount = true,
-    this.staleDuration,
   });
 
   /// Whether queries are enabled by default.
   final bool enabled;
+
+  /// Default expiry duration (when data becomes stale).
+  final Expiry? expiresIn;
 
   /// Default garbage collection duration.
   final GcDuration? gcDuration;
@@ -48,7 +51,4 @@ class DefaultQueryOptions {
 
   /// Default retry on mount behavior.
   final bool retryOnMount;
-
-  /// Default stale duration.
-  final StaleDuration? staleDuration;
 }

@@ -1,9 +1,9 @@
 import 'default_mutation_options.dart';
 import 'default_query_options.dart';
 import 'mutation_cache.dart';
+import 'options/expiry.dart';
 import 'options/gc_duration.dart';
 import 'options/retry.dart';
-import 'options/stale_duration.dart';
 import 'query.dart';
 import 'query_cache.dart';
 import 'query_function_context.dart';
@@ -34,7 +34,7 @@ class QueryClient {
   /// ```dart
   /// final client = QueryClient(
   ///   defaultQueryOptions: DefaultQueryOptions(
-  ///     staleDuration: StaleDuration(minutes: 5),
+  ///     expiresIn: Expiry(minutes: 5),
   ///     retry: (retryCount, error) {
   ///       if (retryCount >= 3) return null;
   ///       return Duration(seconds: 1 << retryCount);
@@ -102,21 +102,21 @@ class QueryClient {
   Future<TData> fetchQuery<TData, TError>({
     required List<Object?> queryKey,
     required Future<TData> Function(QueryFunctionContext context) queryFn,
-    StaleDuration? staleDuration,
+    Expiry? expiresIn,
     RetryResolver<TError>? retry,
     GcDuration? gcDuration,
-    TData? initialData,
-    DateTime? initialDataUpdatedAt,
+    TData? seed,
+    DateTime? seedUpdatedAt,
   }) async {
     // Create input options with nullable values
     final options = QueryOptions<TData, TError>(
       queryKey,
       queryFn,
-      staleDuration: staleDuration,
+      expiresIn: expiresIn,
       retry: retry,
       gcDuration: gcDuration,
-      initialData: initialData,
-      initialDataUpdatedAt: initialDataUpdatedAt,
+      seed: seed,
+      seedUpdatedAt: seedUpdatedAt,
     );
 
     // Merge with client defaults
@@ -129,11 +129,10 @@ class QueryClient {
 
     final query = _cache.build<TData, TError>(effectiveOptions);
 
-    final staleDurationValue =
-        effectiveOptions.staleDuration ?? const StaleDuration();
+    final expiresInValue = effectiveOptions.expiresIn ?? const Expiry();
 
     // Check if data is stale
-    if (query.isStaleByTime(staleDurationValue)) {
+    if (query.isStaleByTime(expiresInValue)) {
       // Pass options to fetch so query updates its stored options
       // This matches TanStack Query's behavior where fetch(options) calls setOptions
       return query.fetch();
@@ -155,21 +154,21 @@ class QueryClient {
   Future<void> prefetchQuery<TData, TError>({
     required List<Object?> queryKey,
     required Future<TData> Function(QueryFunctionContext context) queryFn,
-    StaleDuration? staleDuration,
+    Expiry? expiresIn,
     RetryResolver<TError>? retry,
     GcDuration? gcDuration,
-    TData? initialData,
-    DateTime? initialDataUpdatedAt,
+    TData? seed,
+    DateTime? seedUpdatedAt,
   }) async {
     try {
       await fetchQuery<TData, TError>(
         queryKey: queryKey,
         queryFn: queryFn,
-        staleDuration: staleDuration,
+        expiresIn: expiresIn,
         retry: retry,
         gcDuration: gcDuration,
-        initialData: initialData,
-        initialDataUpdatedAt: initialDataUpdatedAt,
+        seed: seed,
+        seedUpdatedAt: seedUpdatedAt,
       );
     } catch (_) {
       // Silently ignore errors - prefetch is fire-and-forget
@@ -257,7 +256,7 @@ class QueryClient {
   ///
   /// Skips:
   /// - Disabled queries (no enabled observers)
-  /// - Static queries (staleDuration = static)
+  /// - Static queries (expiresIn = never)
   /// - Paused queries (fetchStatus = paused)
   ///
   /// Example:

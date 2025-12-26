@@ -6,9 +6,9 @@ import 'package:meta/meta.dart';
 import 'abort_signal.dart';
 import 'garbage_collectable.dart';
 import 'observable.dart';
+import 'options/expiry.dart';
 import 'options/gc_duration.dart';
 import 'options/retry.dart';
-import 'options/stale_duration.dart';
 import 'query_client.dart';
 import 'query_function_context.dart';
 import 'query_key.dart';
@@ -27,8 +27,8 @@ class Query<TData, TError>
   )   : _client = client,
         _baseOptions = options {
     _currentState = _initialState = QueryState.fromSeed(
-      options.initialData,
-      options.initialDataUpdatedAt,
+      options.seed,
+      options.seedUpdatedAt,
     );
     onAddObserver = (_) {
       cancelGc();
@@ -79,8 +79,7 @@ class Query<TData, TError>
 
   bool get isStatic {
     if (observers.isEmpty) return false;
-    return observers
-        .any((obs) => obs.options.staleDuration == StaleDuration.static);
+    return observers.any((obs) => obs.options.expiresIn == Expiry.never);
   }
 
   @protected
@@ -91,10 +90,10 @@ class Query<TData, TError>
 
   Query<TData, TError> withOptions(QueryOptions<TData, TError> newOptions) {
     _baseOptions = newOptions;
-    if (state.data == null && newOptions.initialData != null) {
+    if (state.data == null && newOptions.seed != null) {
       final defaultState = QueryState<TData, TError>.fromSeed(
-        newOptions.initialData,
-        newOptions.initialDataUpdatedAt,
+        newOptions.seed,
+        newOptions.seedUpdatedAt,
       );
       if (defaultState.data != null) {
         state = defaultState;
@@ -224,12 +223,12 @@ class Query<TData, TError>
     state = _initialState;
   }
 
-  bool isStaleByTime(StaleDuration staleDuration) {
+  bool isStaleByTime(Expiry expiresIn) {
     if (state.data == null) {
       return true;
     }
 
-    if (staleDuration is StaleDurationStatic) {
+    if (expiresIn is ExpiryNever) {
       return false;
     }
 
@@ -237,11 +236,11 @@ class Query<TData, TError>
       return true;
     }
 
-    return switch (staleDuration) {
-      StaleDurationDuration duration =>
+    return switch (expiresIn) {
+      ExpiryDuration duration =>
         clock.now().difference(state.dataUpdatedAt!) >= duration,
-      StaleDurationInfinity() => false,
-      StaleDurationStatic() => false,
+      ExpiryInfinity() => false,
+      ExpiryNever() => false,
     };
   }
 

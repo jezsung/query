@@ -364,14 +364,14 @@ void main() {
     }));
   });
 
-  group('staleDuration', () {
-    testWidgets('SHOULD mark data as stale WHEN staleDuration is zero',
+  group('expiresIn', () {
+    testWidgets('SHOULD mark data as stale WHEN expiresIn is zero',
         withCleanup((tester) async {
       final hookResult = await buildHook(
         () => useQuery(
           queryKey: const ['key'],
           queryFn: (context) async => 'data',
-          staleDuration: StaleDuration.zero, // Data immediately stale
+          expiresIn: Expiry.zero, // Data immediately stale
           queryClient: client,
         ),
       );
@@ -382,13 +382,13 @@ void main() {
       expect(hookResult.current.isStale, true);
     }));
 
-    testWidgets('SHOULD mark data as fresh WHEN within staleDuration',
+    testWidgets('SHOULD mark data as fresh WHEN within expiresIn',
         withCleanup((tester) async {
       final hookResult = await buildHook(
         () => useQuery(
           queryKey: const ['key'],
           queryFn: (context) async => 'data',
-          staleDuration: const StaleDuration(minutes: 5), // Fresh for 5 minutes
+          expiresIn: const Expiry(minutes: 5), // Fresh for 5 minutes
           queryClient: client,
         ),
       );
@@ -398,58 +398,57 @@ void main() {
 
       expect(hookResult.current.isStale, false);
 
-      // Advance time by 3 minutes, still within 5 minute staleDuration
+      // Advance time by 3 minutes, still within 5 minute expiresIn
       await tester.binding.delayed(const Duration(minutes: 3));
 
       expect(hookResult.current.isStale, false);
     }));
 
-    testWidgets('SHOULD update isStale WHEN staleDuration changes',
+    testWidgets('SHOULD update isStale WHEN expiresIn changes',
         withCleanup((tester) async {
       final hookResult = await buildHookWithProps(
-        (staleDuration) => useQuery(
+        (expiresIn) => useQuery(
           queryKey: const ['key'],
           queryFn: (context) async => 'data',
-          staleDuration: staleDuration,
+          expiresIn: expiresIn,
           queryClient: client,
         ),
-        initialProps: const StaleDuration(minutes: 5),
+        initialProps: const Expiry(minutes: 5),
       );
       await tester.pumpAndSettle();
 
       expect(hookResult.current.isStale, false);
 
-      // Change staleDuration to zero to make data stale immediately
-      await hookResult.rebuildWithProps(const StaleDuration());
+      // Change expiresIn to zero to make data stale immediately
+      await hookResult.rebuildWithProps(const Expiry());
       expect(hookResult.current.isStale, true);
 
-      // Change staleDuration to 10 mins to make data fresh again
-      await hookResult.rebuildWithProps(const StaleDuration(minutes: 10));
+      // Change expiresIn to 10 mins to make data fresh again
+      await hookResult.rebuildWithProps(const Expiry(minutes: 10));
       expect(hookResult.current.isStale, false);
     }));
 
-    testWidgets(
-        'SHOULD refetch WHEN staleDuration changes and data becomes stale',
+    testWidgets('SHOULD refetch WHEN expiresIn changes and data becomes stale',
         withCleanup((tester) async {
       final hookResult = await buildHookWithProps(
-        (staleDuration) => useQuery(
+        (expiresIn) => useQuery(
           queryKey: const ['key'],
           queryFn: (context) async => 'data',
-          staleDuration: staleDuration,
+          expiresIn: expiresIn,
           queryClient: client,
         ),
-        initialProps: const StaleDuration(minutes: 5),
+        initialProps: const Expiry(minutes: 5),
       );
 
       // Wait for initial fetch to complete
       await tester.pumpAndSettle();
 
       // Advance time by 1 minute and,
-      // Change staleDuration to 30 seconds, data must become stale
+      // Change expiresIn to 30 seconds, data must become stale
       await tester.binding.delayed(const Duration(minutes: 1));
-      await hookResult.rebuildWithProps(const StaleDuration(seconds: 30));
+      await hookResult.rebuildWithProps(const Expiry(seconds: 30));
 
-      // Should be fetching because data became stale with new staleDuration
+      // Should be fetching because data became stale with new expiresIn
       expect(hookResult.current.fetchStatus, FetchStatus.fetching);
       expect(hookResult.current.isStale, true);
 
@@ -461,25 +460,25 @@ void main() {
     }));
 
     testWidgets(
-        'SHOULD NOT refetch WHEN staleDuration changes and data remains fresh',
+        'SHOULD NOT refetch WHEN expiresIn changes and data remains fresh',
         withCleanup((tester) async {
       final hookResult = await buildHookWithProps(
-        (staleDuration) => useQuery(
+        (expiresIn) => useQuery(
           queryKey: const ['key'],
           queryFn: (context) async => 'data',
-          staleDuration: staleDuration,
+          expiresIn: expiresIn,
           queryClient: client,
         ),
-        initialProps: const StaleDuration(minutes: 5),
+        initialProps: const Expiry(minutes: 5),
       );
 
       // Wait for initial fetch to complete
       await tester.pumpAndSettle();
 
-      // Advance time by 8 minutes, exceeding initial staleDuration
+      // Advance time by 8 minutes, exceeding initial expiresIn
       await tester.binding.delayed(const Duration(minutes: 8));
-      // Change staleDuration to 10 minutes
-      await hookResult.rebuildWithProps(const StaleDuration(minutes: 10));
+      // Change expiresIn to 10 minutes
+      await hookResult.rebuildWithProps(const Expiry(minutes: 10));
 
       // Should NOT have triggered refetch because data is still fresh
       expect(hookResult.current.fetchStatus, FetchStatus.idle);
@@ -492,7 +491,7 @@ void main() {
         () => useQuery(
           queryKey: const ['key'],
           queryFn: (context) async => 'data',
-          staleDuration: const StaleDuration(minutes: 5),
+          expiresIn: const Expiry(minutes: 5),
           queryClient: client,
         ),
       );
@@ -535,7 +534,7 @@ void main() {
         () => useQuery<String, Object>(
           queryKey: ['key'],
           queryFn: (context) async => 'data',
-          staleDuration: const StaleDuration(minutes: 5),
+          expiresIn: const Expiry(minutes: 5),
           queryClient: client,
         ),
       );
@@ -547,13 +546,13 @@ void main() {
       expect(result.isStale, false); // Data is fresh
     }));
 
-    testWidgets('SHOULD NOT mark data as stale WHEN using static',
+    testWidgets('SHOULD NOT mark data as stale WHEN using never',
         withCleanup((tester) async {
       final hookResult = await buildHook(
         () => useQuery(
           queryKey: const ['key'],
           queryFn: (context) async => 'data',
-          staleDuration: StaleDuration.static, // Never stale
+          expiresIn: Expiry.never, // Never stale
           queryClient: client,
         ),
       );
@@ -572,13 +571,13 @@ void main() {
     }));
 
     testWidgets(
-        'SHOULD NOT refetch on mount WHEN using static and time passed was shorter than gcDuration',
+        'SHOULD NOT refetch on mount WHEN using never and time passed was shorter than gcDuration',
         withCleanup((tester) async {
       final hookResult = await buildHook(
         () => useQuery(
           queryKey: ['key'],
           queryFn: (context) async => 'data',
-          staleDuration: StaleDuration.static,
+          expiresIn: Expiry.never,
           gcDuration: const GcDuration(minutes: 10),
           queryClient: client,
         ),
@@ -599,13 +598,13 @@ void main() {
     }));
 
     testWidgets(
-        'SHOULD refetch on mount WHEN using static and time passed was longer than gcDuration',
+        'SHOULD refetch on mount WHEN using never and time passed was longer than gcDuration',
         withCleanup((tester) async {
       final hookResult = await buildHook(
         () => useQuery(
           queryKey: ['key'],
           queryFn: (context) async => 'data',
-          staleDuration: StaleDuration.static,
+          expiresIn: Expiry.never,
           gcDuration: const GcDuration(minutes: 10),
           queryClient: client,
         ),
@@ -630,13 +629,13 @@ void main() {
       expect(hookResult.current.isStale, false);
     }));
 
-    testWidgets('SHOULD NOT mark data as stale WHEN using infinity',
+    testWidgets('SHOULD NOT mark data as stale WHEN using Expiry.infinity',
         withCleanup((tester) async {
       final hookResult = await buildHook(
         () => useQuery(
           queryKey: const ['key'],
           queryFn: (context) async => 'data',
-          staleDuration: StaleDuration.infinity, // Never stale
+          expiresIn: Expiry.infinity, // Never stale
           queryClient: client,
         ),
       );
@@ -655,13 +654,13 @@ void main() {
     }));
 
     testWidgets(
-        'SHOULD NOT refetch on mount WHEN using infinity and time passed was shorter than gcDuration',
+        'SHOULD NOT refetch on mount WHEN using Expiry.infinity and time passed was shorter than gcDuration',
         withCleanup((tester) async {
       final hookResult = await buildHook(
         () => useQuery(
           queryKey: ['key'],
           queryFn: (context) async => 'data',
-          staleDuration: StaleDuration.infinity,
+          expiresIn: Expiry.infinity,
           gcDuration: const GcDuration(minutes: 10),
           queryClient: client,
         ),
@@ -682,13 +681,13 @@ void main() {
     }));
 
     testWidgets(
-        'SHOULD refetch on mount WHEN using infinity and time passed was longer than gcDuration',
+        'SHOULD refetch on mount WHEN using Expiry.infinity and time passed was longer than gcDuration',
         withCleanup((tester) async {
       final hookResult = await buildHook(
         () => useQuery(
           queryKey: ['key'],
           queryFn: (context) async => 'data',
-          staleDuration: StaleDuration.infinity,
+          expiresIn: Expiry.infinity,
           gcDuration: const GcDuration(minutes: 10),
           queryClient: client,
         ),
@@ -729,7 +728,7 @@ void main() {
     //         queryClient: client,
     //       );
     //     },
-    //     initialProps: const StaleDuration(hours: 1),
+    //     initialProps: const Expiry(hours: 1),
     //   );
 
     //   // Wait for initial fetch to complete
@@ -752,7 +751,7 @@ void main() {
     //   await tester.binding.delayed(const Duration(minutes: 5));
     //   await hookResult.rebuildWithProps(const StaleDuration(minutes: 5));
 
-    //   // Now data is stale (5 minutes old with 5 minute staleDuration)
+    //   // Now data is stale (5 minutes old with 5 minute expiresIn)
     //   // Should trigger refetch on remount
     //   expect(hookResult.current.fetchStatus, FetchStatus.fetching);
     //   expect(hookResult.current.isStale, true);
@@ -777,7 +776,7 @@ void main() {
     //       staleDurationResolver: (query) {
     //         // Capture the query state for inspection
     //         capturedState = query.state;
-    //         return const StaleDuration();
+    //         return const Expiry();
     //       },
     //       queryClient: client,
     //     ),
@@ -800,7 +799,7 @@ void main() {
     //       staleDurationResolver: (query) {
     //         // Capture the query state for inspection
     //         capturedState = query.state;
-    //         return const StaleDuration();
+    //         return const Expiry();
     //       },
     //       retry: (_, __) => null,
     //       queryClient: client,
@@ -818,13 +817,13 @@ void main() {
     //   expect(capturedState.errorUpdateCount, 1);
     // }));
 
-    testWidgets('SHOULD default to zero WHEN staleDuration is not specified',
+    testWidgets('SHOULD default to zero WHEN expiresIn is not specified',
         withCleanup((tester) async {
       final hookResult = await buildHook(
         () => useQuery(
           queryKey: const ['key'],
           queryFn: (context) async => 'data',
-          // staleDuration defaults to const StaleDuration()
+          // staleDuration defaults to const Expiry()
           queryClient: client,
         ),
       );
@@ -832,7 +831,7 @@ void main() {
       // Wait for initial fetch to complete
       await tester.pumpAndSettle();
 
-      // Should be immediately stale with zero stale duration
+      // Should be immediately stale with zero expiry
       expect(hookResult.current.isStale, true);
     }));
   });
@@ -845,7 +844,7 @@ void main() {
           queryKey: const ['key'],
           queryFn: (context) async => 'data',
           refetchOnMount: RefetchOnMount.stale,
-          staleDuration: const StaleDuration(),
+          expiresIn: const Expiry(),
           queryClient: client,
         ),
       );
@@ -870,7 +869,7 @@ void main() {
           queryKey: const ['key'],
           queryFn: (context) async => 'data',
           refetchOnMount: RefetchOnMount.stale,
-          staleDuration: StaleDuration.infinity,
+          expiresIn: Expiry.infinity,
           queryClient: client,
         ),
       );
@@ -895,7 +894,7 @@ void main() {
           queryKey: const ['key'],
           queryFn: (context) async => 'data',
           refetchOnMount: RefetchOnMount.never,
-          staleDuration: const StaleDuration(),
+          expiresIn: const Expiry(),
           queryClient: client,
         ),
       );
@@ -939,7 +938,7 @@ void main() {
           queryKey: const ['key'],
           queryFn: (context) async => 'data',
           refetchOnMount: RefetchOnMount.always,
-          staleDuration: const StaleDuration(minutes: 5),
+          expiresIn: const Expiry(minutes: 5),
           queryClient: client,
         ),
       );
@@ -957,14 +956,14 @@ void main() {
     }));
 
     testWidgets(
-        'SHOULD NOT refetch on mount WHEN set to always AND stale duration is static',
+        'SHOULD NOT refetch on mount WHEN set to always AND expiry is never',
         withCleanup((tester) async {
       final hookResult = await buildHook(
         () => useQuery(
           queryKey: const ['key'],
           queryFn: (context) async => 'data',
           refetchOnMount: RefetchOnMount.always,
-          staleDuration: StaleDuration.static,
+          expiresIn: Expiry.never,
           queryClient: client,
         ),
       );
@@ -976,7 +975,7 @@ void main() {
       await hookResult.unmount();
       await hookResult.rebuild();
 
-      // Should NOT be fetching as stale duration is set to static
+      // Should NOT be fetching as expiry is set to static
       expect(hookResult.current.fetchStatus, FetchStatus.idle);
       expect(hookResult.current.isStale, false);
     }));
@@ -994,7 +993,7 @@ void main() {
             return 'data-${++fetchCount}';
           },
           refetchOnResume: RefetchOnResume.stale,
-          staleDuration: const StaleDuration(),
+          expiresIn: const Expiry(),
           queryClient: client,
         ),
       );
@@ -1027,7 +1026,7 @@ void main() {
             return 'data-${++fetchCount}';
           },
           refetchOnResume: RefetchOnResume.stale,
-          staleDuration: StaleDuration.infinity,
+          expiresIn: Expiry.infinity,
           queryClient: client,
         ),
       );
@@ -1057,7 +1056,7 @@ void main() {
           queryKey: const ['key'],
           queryFn: (context) async => 'data-${++fetchCount}',
           refetchOnResume: RefetchOnResume.stale,
-          staleDuration: const StaleDuration(),
+          expiresIn: const Expiry(),
           queryClient: client,
         ),
       );
@@ -1086,7 +1085,7 @@ void main() {
           queryKey: const ['key'],
           queryFn: (context) async => 'data-${++fetchCount}',
           refetchOnResume: RefetchOnResume.stale,
-          staleDuration: StaleDuration.infinity,
+          expiresIn: Expiry.infinity,
           queryClient: client,
         ),
       );
@@ -1119,7 +1118,7 @@ void main() {
             return 'data-${++fetchCount}';
           },
           refetchOnResume: RefetchOnResume.never,
-          staleDuration: const StaleDuration(),
+          expiresIn: const Expiry(),
           queryClient: client,
         ),
       );
@@ -1201,7 +1200,7 @@ void main() {
             return 'data-$fetchCount';
           },
           refetchOnResume: RefetchOnResume.always,
-          staleDuration: StaleDuration.infinity,
+          expiresIn: Expiry.infinity,
           queryClient: client,
         ),
       );
@@ -1222,7 +1221,7 @@ void main() {
       expect(hookResult.current.fetchStatus, FetchStatus.idle);
       expect(hookResult.current.data, 'data-2');
     }));
-    testWidgets('SHOULD NOT refetch on mount WHEN stale duration is static',
+    testWidgets('SHOULD NOT refetch on mount WHEN expiry is never',
         withCleanup((tester) async {
       var fetchCount = 0;
       final hookResult = await buildHook(
@@ -1234,7 +1233,7 @@ void main() {
             return 'data-$fetchCount';
           },
           refetchOnResume: RefetchOnResume.always,
-          staleDuration: StaleDuration.static,
+          expiresIn: Expiry.never,
           queryClient: client,
         ),
       );
@@ -1502,14 +1501,14 @@ void main() {
     });
   });
 
-  group('initialData', () {
-    testWidgets('SHOULD start with success status WHEN initialData is provided',
+  group('seed', () {
+    testWidgets('SHOULD start with success status WHEN seed is provided',
         withCleanup((tester) async {
       final hookResult = await buildHook(
         () => useQuery(
           queryKey: const ['key'],
           queryFn: (context) async => 'data',
-          initialData: 'initial-data',
+          seed: 'initial-data',
           queryClient: client,
         ),
       );
@@ -1519,14 +1518,14 @@ void main() {
       expect(result.data, 'initial-data');
     }));
 
-    testWidgets('SHOULD refetch WHEN initialData is stale',
+    testWidgets('SHOULD refetch WHEN seed is stale',
         withCleanup((tester) async {
       final hookResult = await buildHook(
         () => useQuery(
           queryKey: const ['key'],
           queryFn: (context) async => 'data',
-          initialData: 'initial-data',
-          staleDuration: const StaleDuration(),
+          seed: 'initial-data',
+          expiresIn: const Expiry(),
           queryClient: client,
         ),
       );
@@ -1543,14 +1542,14 @@ void main() {
       expect(hookResult.current.data, 'data');
     }));
 
-    testWidgets('SHOULD NOT refetch WHEN initialData is fresh',
+    testWidgets('SHOULD NOT refetch WHEN seed is fresh',
         withCleanup((tester) async {
       final hookResult = await buildHook(
         () => useQuery(
           queryKey: const ['key'],
           queryFn: (context) async => 'data',
-          initialData: 'initial-data',
-          staleDuration: const StaleDuration(minutes: 5),
+          seed: 'initial-data',
+          expiresIn: const Expiry(minutes: 5),
           queryClient: client,
         ),
       );
@@ -1568,7 +1567,7 @@ void main() {
     }));
 
     testWidgets(
-        'SHOULD update initialData WHEN Query exists without data and observer is created with initialData',
+        'SHOULD update initialData WHEN Query exists without data and observer is created with seed',
         withCleanup((tester) async {
       // First, create a query without data by starting a slow fetch
       final hookResult1 = await buildHook(
@@ -1590,12 +1589,12 @@ void main() {
       // Unmount the first hook
       await hookResult1.unmount();
 
-      // Now create a new observer with initialData
+      // Now create a new observer with seed
       final hookResult2 = await buildHook(
         () => useQuery(
           queryKey: const ['key'],
           queryFn: (context) async => 'data-2',
-          initialData: 'initial-data',
+          seed: 'initial-data',
           queryClient: client,
         ),
       );
@@ -1609,14 +1608,14 @@ void main() {
     }));
   });
 
-  group('initialDataUpdatedAt', () {
-    testWidgets('SHOULD use current time WHEN initialDataUpdatedAt is not set',
+  group('seedUpdatedAt', () {
+    testWidgets('SHOULD use current time WHEN seedUpdatedAt is not set',
         withCleanup((tester) async {
       final hookResult = await buildHook(
         () => useQuery(
           queryKey: const ['key'],
           queryFn: (context) async => 'data',
-          initialData: 'initial-data',
+          seed: 'initial-data',
           queryClient: client,
         ),
       );
@@ -1624,7 +1623,7 @@ void main() {
       expect(hookResult.current.dataUpdatedAt, clock.now());
     }));
 
-    testWidgets('SHOULD use provided time WHEN initialDataUpdatedAt is set',
+    testWidgets('SHOULD use provided time WHEN seedUpdatedAt is set',
         withCleanup((tester) async {
       final specificTime = DateTime(2025, 1, 1, 12, 0, 0);
 
@@ -1632,8 +1631,8 @@ void main() {
         () => useQuery(
           queryKey: const ['key'],
           queryFn: (context) async => 'data',
-          initialData: 'initial-data',
-          initialDataUpdatedAt: specificTime,
+          seed: 'initial-data',
+          seedUpdatedAt: specificTime,
           queryClient: client,
         ),
       );
@@ -1642,20 +1641,20 @@ void main() {
     }));
 
     testWidgets(
-        'SHOULD determine staleness based on initialDataUpdatedAt and staleDuration',
+        'SHOULD determine staleness based on seedUpdatedAt and expiresIn',
         withCleanup((tester) async {
       var hookResult = await buildHook(
         () => useQuery(
           queryKey: const ['key', 1],
           queryFn: (context) async => 'data',
-          initialData: 'initial-data',
-          initialDataUpdatedAt: clock.minutesAgo(10),
-          staleDuration: const StaleDuration(minutes: 5),
+          seed: 'initial-data',
+          seedUpdatedAt: clock.minutesAgo(10),
+          expiresIn: const Expiry(minutes: 5),
           queryClient: client,
         ),
       );
 
-      // Data is 10 minutes old with 5 minute staleDuration, so it's stale
+      // Data is 10 minutes old with 5 minute expiresIn, so it's stale
       expect(hookResult.current.fetchStatus, FetchStatus.fetching);
       expect(hookResult.current.isStale, true);
 
@@ -1663,28 +1662,27 @@ void main() {
         () => useQuery(
           queryKey: const ['key', 2],
           queryFn: (context) async => 'data',
-          initialData: 'initial-data',
-          initialDataUpdatedAt: clock.minutesAgo(10),
-          staleDuration: const StaleDuration(minutes: 15),
+          seed: 'initial-data',
+          seedUpdatedAt: clock.minutesAgo(10),
+          expiresIn: const Expiry(minutes: 15),
           queryClient: client,
         ),
       );
 
-      // Data is 10 minutes old with 15 minute staleDuration, so it's fresh
+      // Data is 10 minutes old with 15 minute expiresIn, so it's fresh
       expect(hookResult.current.fetchStatus, FetchStatus.idle);
       expect(hookResult.current.isStale, false);
     }));
 
-    testWidgets(
-        'SHOULD refetch on mount WHEN initialData becomes stale over time',
+    testWidgets('SHOULD refetch on mount WHEN seed becomes stale over time',
         withCleanup((tester) async {
       final hookResult = await buildHook(
         () => useQuery(
           queryKey: const ['key'],
           queryFn: (context) async => 'data',
-          initialData: 'initial-data',
-          initialDataUpdatedAt: clock.minutesAgo(5),
-          staleDuration: const StaleDuration(minutes: 10),
+          seed: 'initial-data',
+          seedUpdatedAt: clock.minutesAgo(5),
+          expiresIn: const Expiry(minutes: 10),
           gcDuration: GcDuration.infinity,
           queryClient: client,
         ),
@@ -1713,13 +1711,13 @@ void main() {
     }));
   });
 
-  group('placeholderData', () {
+  group('placeholder', () {
     testWidgets('SHOULD show placeholder data', withCleanup((tester) async {
       final hookResult = await buildHook(
         () => useQuery(
           queryKey: const ['key'],
           queryFn: (context) async => 'data',
-          placeholderData: 'placeholder',
+          placeholder: 'placeholder',
           queryClient: client,
         ),
       );
@@ -1737,7 +1735,7 @@ void main() {
         () => useQuery(
           queryKey: const ['key'],
           queryFn: (context) async => 'data',
-          placeholderData: 'placeholder',
+          placeholder: 'placeholder',
           queryClient: client,
         ),
       );
@@ -1759,7 +1757,7 @@ void main() {
         () => useQuery(
           queryKey: const ['key'],
           queryFn: (context) async => 'data',
-          placeholderData: 'placeholder',
+          placeholder: 'placeholder',
           enabled: false,
           queryClient: client,
         ),
@@ -1785,8 +1783,8 @@ void main() {
         () => useQuery<String, Object>(
           queryKey: const ['key'],
           queryFn: (context) async => 'data',
-          placeholderData: 'placeholder',
-          staleDuration: StaleDuration.infinity,
+          placeholder: 'placeholder',
+          expiresIn: Expiry.infinity,
           queryClient: client,
         ),
       );
@@ -1796,14 +1794,14 @@ void main() {
       expect(result.isPlaceholderData, false);
     }));
 
-    testWidgets('SHOULD NOT show placeholder data WHEN initialData is provided',
+    testWidgets('SHOULD NOT show placeholder data WHEN seed is provided',
         withCleanup((tester) async {
       final hookResult = await buildHook(
         () => useQuery(
           queryKey: const ['key'],
           queryFn: (context) async => 'data',
-          initialData: 'initial',
-          placeholderData: 'placeholder',
+          seed: 'initial',
+          placeholder: 'placeholder',
           queryClient: client,
         ),
       );
@@ -1821,7 +1819,7 @@ void main() {
         () => useQuery(
           queryKey: const ['key'],
           queryFn: (context) async => 'data',
-          placeholderData: 'placeholder',
+          placeholder: 'placeholder',
           queryClient: client,
         ),
       );
@@ -1844,7 +1842,7 @@ void main() {
             await Future.delayed(const Duration(seconds: 5));
             return 'data';
           },
-          placeholderData: placeholder,
+          placeholder: placeholder,
           queryClient: client,
         ),
         initialProps: 'placeholder-1',
@@ -1868,7 +1866,7 @@ void main() {
     //     (key) => useQuery(
     //       queryKey: key,
     //       queryFn: (context) async => 'data-1',
-    //       placeholderData: PlaceholderData.resolveWith(
+    //       placeholder: PlaceholderData.resolveWith(
     //         (previousValue, _) => previousValue,
     //       ),
     //       queryClient: client,
@@ -1901,7 +1899,7 @@ void main() {
     //         await Future.delayed(const Duration(seconds: 5));
     //         return 'data';
     //       },
-    //       placeholderData: PlaceholderData.resolveWith(
+    //       placeholder: PlaceholderData.resolveWith(
     //         (previousValue, previousQuery) {
     //           capturedValue = previousValue;
     //           capturedQuery = previousQuery;
@@ -2093,24 +2091,24 @@ void main() {
     testWidgets('SHOULD refetch at interval WHEN data is fresh',
         withCleanup((tester) async {
       late HookResult<QueryResult> hookResult;
-      for (final staleDuration in [
-        StaleDuration(hours: 1),
-        StaleDuration.infinity,
-        StaleDuration.static,
+      for (final expiresIn in [
+        Expiry(hours: 1),
+        Expiry.infinity,
+        Expiry.never,
       ]) {
         final start = clock.now();
         var fetchAttempts = 0;
 
         hookResult = await buildHook(
           () => useQuery(
-            queryKey: [staleDuration],
+            queryKey: [expiresIn],
             queryFn: (context) async {
               fetchAttempts++;
               await Future.delayed(const Duration(seconds: 3));
               return 'data-$fetchAttempts';
             },
             refetchInterval: const Duration(seconds: 10),
-            staleDuration: staleDuration,
+            expiresIn: expiresIn,
             queryClient: client,
           ),
         );
@@ -2624,7 +2622,7 @@ void main() {
             await Future.delayed(const Duration(seconds: 1));
             return 'data-$fetches';
           },
-          staleDuration: StaleDuration.infinity,
+          expiresIn: Expiry.infinity,
           queryClient: client,
         ),
       );
@@ -2664,7 +2662,7 @@ void main() {
             await Future.delayed(const Duration(seconds: 5));
             return 'data-$fetches';
           },
-          staleDuration: StaleDuration.infinity,
+          expiresIn: Expiry.infinity,
           queryClient: client,
         ),
       );
@@ -2711,7 +2709,7 @@ void main() {
             await Future.delayed(const Duration(seconds: 5));
             return 'data-$fetches';
           },
-          staleDuration: StaleDuration.infinity,
+          expiresIn: Expiry.infinity,
           queryClient: client,
         ),
       );
@@ -2839,7 +2837,7 @@ void main() {
             await Future.delayed(const Duration(seconds: 3));
             return 'data-$fetches';
           },
-          staleDuration: StaleDuration.infinity,
+          expiresIn: Expiry.infinity,
           queryClient: client,
         ),
       );
@@ -2942,7 +2940,7 @@ void main() {
             await Future.delayed(const Duration(seconds: 1));
             return 'new-data';
           },
-          staleDuration: StaleDuration.infinity,
+          expiresIn: Expiry.infinity,
           queryClient: client,
         ),
       );

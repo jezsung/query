@@ -54,7 +54,7 @@ void main() {
         defaultQueryOptions: DefaultQueryOptions(
           gcDuration: GcDuration(minutes: 10),
           refetchOnMount: RefetchOnMount.never,
-          staleDuration: StaleDuration.infinity,
+          expiresIn: Expiry.infinity,
         ),
       );
     });
@@ -102,7 +102,7 @@ void main() {
           return 'data-1';
         },
         // Override with zero stale time
-        staleDuration: StaleDuration.zero,
+        expiresIn: Expiry.zero,
       );
 
       expect(fetches, 1);
@@ -114,7 +114,7 @@ void main() {
           fetches++;
           return 'data-2';
         },
-        staleDuration: StaleDuration.zero,
+        expiresIn: Expiry.zero,
       );
 
       // Should have fetched again
@@ -140,20 +140,20 @@ void main() {
     test(
         'SHOULD update defaultQueryOptions'
         '', () {
-      // Initially set to StaleDuration.infinity
+      // Initially set to Expiry.infinity
       expect(
-        client.defaultQueryOptions.staleDuration,
-        StaleDuration.infinity,
+        client.defaultQueryOptions.expiresIn,
+        Expiry.infinity,
       );
 
       client.defaultQueryOptions = DefaultQueryOptions(
-        staleDuration: StaleDuration.zero,
+        expiresIn: Expiry.zero,
       );
 
-      // Should have been set to StaleDuration.zero
+      // Should have been set to Expiry.zero
       expect(
-        client.defaultQueryOptions.staleDuration,
-        StaleDuration.zero,
+        client.defaultQueryOptions.expiresIn,
+        Expiry.zero,
       );
     });
   });
@@ -173,14 +173,14 @@ void main() {
       await client.fetchQuery<String, Object>(
         queryKey: const ['key'],
         queryFn: (context) async => 'first',
-        staleDuration: StaleDuration.infinity,
+        expiresIn: Expiry.infinity,
       );
 
       // Second fetch with different queryFn - should return cached
       final data = await client.fetchQuery<String, Object>(
         queryKey: const ['key'],
         queryFn: (context) async => 'second',
-        staleDuration: StaleDuration.infinity,
+        expiresIn: Expiry.infinity,
       );
 
       expect(data, equals('first'));
@@ -194,14 +194,14 @@ void main() {
       data = await client.fetchQuery<String, Object>(
         queryKey: const ['key'],
         queryFn: (context) async => 'data-${++calls}',
-        staleDuration: StaleDuration.zero,
+        expiresIn: Expiry.zero,
       );
       expect(data, equals('data-1'));
 
       data = await client.fetchQuery<String, Object>(
         queryKey: const ['key'],
         queryFn: (context) async => 'data-${++calls}',
-        staleDuration: StaleDuration.zero,
+        expiresIn: Expiry.zero,
       );
       expect(data, equals('data-2'));
     });
@@ -306,14 +306,14 @@ void main() {
       expect(query!.state.data, equals('cached data'));
     });
 
-    test('SHOULD use fresh data with infinity staleDuration', () async {
+    test('SHOULD use fresh data with infinity expiresIn', () async {
       int callCount = 0;
 
       // First fetch
       await client.fetchQuery<String, Object>(
         queryKey: const ['key'],
         queryFn: (_) async => 'data-${++callCount}',
-        staleDuration: StaleDuration.infinity,
+        expiresIn: Expiry.infinity,
       );
 
       // Multiple subsequent fetches should all return cached data
@@ -321,7 +321,7 @@ void main() {
         final data = await client.fetchQuery<String, Object>(
           queryKey: const ['key'],
           queryFn: (_) async => 'data-${++callCount}',
-          staleDuration: StaleDuration.infinity,
+          expiresIn: Expiry.infinity,
         );
         expect(data, equals('data-1'));
       }
@@ -346,9 +346,9 @@ void main() {
       expect(receivedContext!.client, same(client));
     });
 
-    group('initialData', () {
+    group('seed', () {
       test(
-          'SHOULD NOT fetch and return initialData '
+          'SHOULD NOT fetch and return seed '
           'WHEN data is fresh', () async {
         var attempts = 0;
 
@@ -358,8 +358,8 @@ void main() {
             attempts++;
             return 'data';
           },
-          initialData: 'initial',
-          staleDuration: StaleDuration.infinity,
+          seed: 'initial',
+          expiresIn: Expiry.infinity,
         );
 
         expect(data, 'initial');
@@ -368,7 +368,7 @@ void main() {
 
       test(
           'SHOULD fetch and return fetched data '
-          'WHEN initialData is stale', () async {
+          'WHEN seed is stale', () async {
         var attempts = 0;
 
         final data = await client.fetchQuery<String, Object>(
@@ -377,8 +377,8 @@ void main() {
             attempts++;
             return 'data';
           },
-          initialData: 'initial',
-          staleDuration: StaleDuration.zero,
+          seed: 'initial',
+          expiresIn: Expiry.zero,
         );
 
         expect(data, 'data');
@@ -386,9 +386,8 @@ void main() {
       });
 
       test(
-          'SHOULD NOT fetch and return initialData '
-          'WHEN initialDataUpdatedAt is recent and staleDuration > 0',
-          () async {
+          'SHOULD NOT fetch and return seed '
+          'WHEN seedUpdatedAt is recent and expiresIn > 0', () async {
         var attempts = 0;
 
         final data = await client.fetchQuery<String, Object>(
@@ -397,9 +396,9 @@ void main() {
             attempts++;
             return 'data';
           },
-          initialData: 'initial',
-          initialDataUpdatedAt: DateTime.now(),
-          staleDuration: const StaleDuration(minutes: 5),
+          seed: 'initial',
+          seedUpdatedAt: DateTime.now(),
+          expiresIn: const Expiry(minutes: 5),
         );
 
         expect(data, 'initial');
@@ -408,7 +407,7 @@ void main() {
 
       test(
           'SHOULD fetch and return fetched data'
-          'WHEN initialDataUpdatedAt indicates stale data', () async {
+          'WHEN seedUpdatedAt indicates stale data', () async {
         var attempts = 0;
 
         final data = await client.fetchQuery<String, Object>(
@@ -417,10 +416,9 @@ void main() {
             attempts++;
             return 'data';
           },
-          initialData: 'initial',
-          initialDataUpdatedAt:
-              DateTime.now().subtract(const Duration(minutes: 10)),
-          staleDuration: const StaleDuration(minutes: 5),
+          seed: 'initial',
+          seedUpdatedAt: DateTime.now().subtract(const Duration(minutes: 10)),
+          expiresIn: const Expiry(minutes: 5),
         );
 
         expect(data, 'data');
@@ -428,13 +426,13 @@ void main() {
       });
 
       test(
-          'SHOULD populate cache with initialData'
+          'SHOULD populate cache with seed'
           '', () async {
         await client.fetchQuery<String, Object>(
           queryKey: const ['key'],
           queryFn: (context) async => 'data',
-          initialData: 'initial',
-          staleDuration: StaleDuration.infinity,
+          seed: 'initial',
+          expiresIn: Expiry.infinity,
         );
 
         final query = client.cache.get<String, Object>(const ['key']);
@@ -895,7 +893,7 @@ void main() {
             return 'data';
           },
           enabled: true,
-          staleDuration: StaleDuration.static,
+          expiresIn: Expiry.never,
         ),
       );
       addTearDown(observer.dispose);

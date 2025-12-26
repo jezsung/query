@@ -20,7 +20,7 @@ export 'query_state.dart' show QueryState, QueryStatus, FetchStatus;
 export 'garbage_collectable.dart';
 export 'retryer.dart';
 export 'types.dart';
-export 'options/stale_duration.dart';
+export 'options/expiry.dart';
 export 'options/retry.dart';
 export 'options/refetch_on_resume.dart';
 export 'options/refetch_on_mount.dart';
