@@ -25,10 +25,10 @@ class Query<TData, TError>
     QueryClient client,
     QueryOptions<TData, TError> options,
   )   : _client = client,
-        _options = options.mergeWith(client.defaultQueryOptions) {
+        _baseOptions = options {
     _currentState = _initialState = QueryState.fromSeed(
-      _options.initialData,
-      _options.initialDataUpdatedAt,
+      options.initialData,
+      options.initialDataUpdatedAt,
     );
     onAddObserver = (_) {
       cancelGc();
@@ -47,7 +47,7 @@ class Query<TData, TError>
   }
 
   final QueryClient _client;
-  QueryOptions<TData, TError> _options;
+  QueryOptions<TData, TError> _baseOptions;
   late QueryState<TData, TError> _currentState;
   late QueryState<TData, TError> _initialState;
 
@@ -55,8 +55,14 @@ class Query<TData, TError>
   AbortController? _abortController;
   QueryState<TData, TError>? _revertState;
 
-  List<Object?> get queryKey => _options.queryKey;
+  List<Object?> get queryKey => options.queryKey;
   QueryState<TData, TError> get state => _currentState;
+  QueryOptions<TData, TError> get options {
+    return observers.fold(
+      _baseOptions.withDefaults(_client.defaultQueryOptions),
+      (acc, obs) => acc.overriddenBy(obs.options),
+    );
+  }
 
   bool get isActive {
     return observers.any((obs) => obs.options.enabled ?? true);
@@ -82,9 +88,14 @@ class Query<TData, TError>
     });
   }
 
-  set options(QueryOptions<TData, TError> newOptions) {
-    _options = newOptions;
+  @protected
+  set state(QueryState<TData, TError> newState) {
+    _currentState = newState;
+    notifyObservers(newState);
+  }
 
+  Query<TData, TError> withOptions(QueryOptions<TData, TError> newOptions) {
+    _baseOptions = newOptions;
     if (state.data == null && newOptions.initialData != null) {
       final defaultState = QueryState<TData, TError>.fromSeed(
         newOptions.initialData,
@@ -95,28 +106,16 @@ class Query<TData, TError>
         _initialState = defaultState;
       }
     }
+    return this;
   }
 
-  @protected
-  set state(QueryState<TData, TError> newState) {
-    _currentState = newState;
-    notifyObservers(newState);
-  }
-
-  Future<TData> fetch({
-    QueryOptions<TData, TError>? options,
-    bool cancelRefetch = false,
-  }) async {
+  Future<TData> fetch({bool cancelRefetch = false}) async {
     if (state.fetchStatus == FetchStatus.fetching && _retryer != null) {
       if (cancelRefetch && state.data != null) {
         cancel(silent: true);
       } else {
         return _retryer!.future;
       }
-    }
-
-    if (options != null) {
-      this.options = options;
     }
 
     _revertState = state;
@@ -142,8 +141,8 @@ class Query<TData, TError>
     }
 
     _retryer = Retryer<TData, TError>(
-      fn: () => _options.queryFn(context),
-      retry: _options.retry ?? defaultRetry,
+      fn: () => options.queryFn(context),
+      retry: options.retry ?? defaultRetry,
       signal: _abortController!.signal,
       onFail: (failureCount, error) {
         state = state.copyWith(
@@ -264,7 +263,7 @@ class Query<TData, TError>
         .whereType<GcDuration>()
         .fold(
           // Defaults to 5 minutes
-          _options.gcDuration ?? const GcDuration(minutes: 5),
+          options.gcDuration ?? const GcDuration(minutes: 5),
           (longest, duration) => duration > longest ? duration : longest,
         );
   }

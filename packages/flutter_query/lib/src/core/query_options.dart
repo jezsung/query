@@ -92,7 +92,7 @@ extension QueryOptionsMergeWith<TData, TError> on QueryOptions<TData, TError> {
   ///
   /// Query-specific options take precedence over defaults.
   /// Handles type conversion for generic types (dynamic/Object? -> TData/TError).
-  QueryOptions<TData, TError> mergeWith(DefaultQueryOptions defaults) {
+  QueryOptions<TData, TError> withDefaults(DefaultQueryOptions defaults) {
     return QueryOptions<TData, TError>(
       queryKey,
       queryFn,
@@ -108,6 +108,32 @@ extension QueryOptionsMergeWith<TData, TError> on QueryOptions<TData, TError> {
       retryOnMount: retryOnMount ?? defaults.retryOnMount,
       staleDuration: staleDuration ?? defaults.staleDuration,
       staleDurationResolver: staleDurationResolver,
+    );
+  }
+}
+
+extension QueryOptionsOverriddenBy<TData, TError>
+    on QueryOptions<TData, TError> {
+  QueryOptions<TData, TError> overriddenBy(
+    QueryOptions<TData, TError> options,
+  ) {
+    return QueryOptions<TData, TError>(
+      options.queryKey,
+      options.queryFn,
+      enabled: options.enabled ?? enabled,
+      gcDuration: options.gcDuration ?? gcDuration,
+      initialData: options.initialData ?? initialData,
+      initialDataUpdatedAt:
+          options.initialDataUpdatedAt ?? initialDataUpdatedAt,
+      placeholderData: options.placeholderData ?? placeholderData,
+      refetchInterval: options.refetchInterval ?? refetchInterval,
+      refetchOnMount: options.refetchOnMount ?? refetchOnMount,
+      refetchOnResume: options.refetchOnResume ?? refetchOnResume,
+      retry: options.retry ?? retry,
+      retryOnMount: options.retryOnMount ?? retryOnMount,
+      staleDuration: options.staleDuration ?? staleDuration,
+      staleDurationResolver:
+          options.staleDurationResolver ?? staleDurationResolver,
     );
   }
 }

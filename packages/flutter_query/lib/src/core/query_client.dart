@@ -122,7 +122,7 @@ class QueryClient {
     );
 
     // Merge with client defaults
-    final mergedOptions = options.mergeWith(defaultQueryOptions);
+    final mergedOptions = options.withDefaults(defaultQueryOptions);
 
     // fetchQuery defaults to no retry if not specified
     final effectiveOptions = mergedOptions.copyWith(
@@ -140,7 +140,7 @@ class QueryClient {
     if (query.isStaleByTime(resolvedStaleDuration)) {
       // Pass options to fetch so query updates its stored options
       // This matches TanStack Query's behavior where fetch(options) calls setOptions
-      return query.fetch(options: effectiveOptions);
+      return query.fetch();
     }
 
     // Data is fresh, return cached data

@@ -38,8 +38,12 @@ class QueryCache {
     QueryOptions<TData, TError> options,
   ) {
     final key = QueryKey(options.queryKey);
-    return (_queries[key] ??= Query<TData, TError>(_client!, options))
-        as Query<TData, TError>;
+    final query = _queries[key]?.withOptions(options) as Query<TData, TError>?;
+    if (query == null) {
+      return _queries[key] = Query<TData, TError>(_client!, options);
+    } else {
+      return query;
+    }
   }
 
   /// Gets a query from the cache by key

@@ -23,11 +23,10 @@ class QueryObserver<TData, TError> with Observer<QueryState<TData, TError>> {
     QueryClient client,
     QueryOptions<TData, TError> options,
   )   : _client = client,
-        _options = options.mergeWith(client.defaultQueryOptions),
+        _options = options.withDefaults(client.defaultQueryOptions),
         _query = client.cache.build<TData, TError>(
-          options.mergeWith(client.defaultQueryOptions),
+          options.withDefaults(client.defaultQueryOptions),
         ) {
-    _query.options = _options;
     _query.addObserver(this);
 
     if (_query.state.data != null) {
@@ -97,7 +96,7 @@ class QueryObserver<TData, TError> with Observer<QueryState<TData, TError>> {
 
   void updateOptions(QueryOptions<TData, TError> options) {
     final oldOptions = _options;
-    final newOptions = options.mergeWith(_client.defaultQueryOptions);
+    final newOptions = options.withDefaults(_client.defaultQueryOptions);
     _options = newOptions;
 
     // Compare merged options to detect actual changes
@@ -141,7 +140,6 @@ class QueryObserver<TData, TError> with Observer<QueryState<TData, TError>> {
       final oldQuery = _query;
 
       _query = _client.cache.build<TData, TError>(newOptions);
-      _query.options = newOptions;
       _query.addObserver(this);
 
       // Track last query with defined data
@@ -219,11 +217,11 @@ class QueryObserver<TData, TError> with Observer<QueryState<TData, TError>> {
       }
     }
 
-    // Handle retry option changes
-    if (didRetryChange) {
-      // Update query options (affects future fetches)
-      _query.options = newOptions;
-    }
+    // // Handle retry option changes
+    // if (didRetryChange) {
+    //   // Update query options (affects future fetches)
+    //   _query.options = newOptions;
+    // }
 
     if (didRetryOnMountChange) {
       // Recalculate result and maybe refetch
