@@ -24,5 +24,4 @@ export 'options/stale_duration.dart';
 export 'options/retry.dart';
 export 'options/refetch_on_resume.dart';
 export 'options/refetch_on_mount.dart';
-export 'options/placeholder_data.dart';
 export 'options/gc_duration.dart';

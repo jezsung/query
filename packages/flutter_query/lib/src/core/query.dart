@@ -80,13 +80,8 @@ class Query<TData, TError>
 
   bool get isStatic {
     if (observers.isEmpty) return false;
-    return observers.any((obs) {
-      final opt = obs.options;
-      final resolved = opt.staleDurationResolver != null
-          ? opt.staleDurationResolver!(this)
-          : opt.staleDuration;
-      return resolved is StaleDurationStatic;
-    });
+    return observers
+        .any((obs) => obs.options.staleDuration == StaleDuration.static);
   }
 
   @protected

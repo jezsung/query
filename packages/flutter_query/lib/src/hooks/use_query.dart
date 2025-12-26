@@ -12,14 +12,13 @@ QueryResult<TData, TError> useQuery<TData, TError>({
   bool? enabled,
   TData? initialData,
   DateTime? initialDataUpdatedAt,
-  PlaceholderData<TData, TError>? placeholderData,
+  TData? placeholderData,
   Duration? refetchInterval,
   RefetchOnMount? refetchOnMount,
   RefetchOnResume? refetchOnResume,
   RetryResolver<TError>? retry,
   bool? retryOnMount,
   StaleDuration? staleDuration,
-  StaleDurationResolver<TData, TError>? staleDurationResolver,
   QueryClient? queryClient,
 }) {
   // Get QueryClient from context if not provided
@@ -44,7 +43,6 @@ QueryResult<TData, TError> useQuery<TData, TError>({
         retry: retry,
         retryOnMount: retryOnMount,
         staleDuration: staleDuration,
-        staleDurationResolver: staleDurationResolver,
       ),
     ),
     [],
@@ -68,7 +66,6 @@ QueryResult<TData, TError> useQuery<TData, TError>({
       retry: retry,
       retryOnMount: retryOnMount,
       staleDuration: staleDuration,
-      staleDurationResolver: staleDurationResolver,
     ),
   );
 

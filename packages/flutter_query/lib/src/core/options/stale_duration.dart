@@ -1,28 +1,3 @@
-import '../query.dart';
-
-/// A callback that computes a [StaleDuration] based on the current query state.
-///
-/// This allows for dynamic stale durations that can vary based on query conditions
-/// like error state, data content, or other factors.
-///
-/// The callback should return a concrete stale duration value.
-///
-/// Example:
-/// ```dart
-/// staleDurationResolver: (query) {
-///   // If query has error, make it stale immediately for quick retry
-///   if (query.state.error != null) {
-///     return const StaleDuration();
-///   }
-///   // Otherwise, keep fresh for 10 minutes
-///   return const StaleDuration(minutes: 10);
-/// }
-/// ```
-///
-/// Aligned with TanStack Query's function-based `staleTime` option.
-typedef StaleDurationResolver<TData, TError> = StaleDuration Function(
-    Query<TData, TError> query);
-
 /// Base type for all stale duration options.
 ///
 /// This sealed class hierarchy allows specifying stale duration either as:

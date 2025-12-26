@@ -103,7 +103,6 @@ class QueryClient {
     required List<Object?> queryKey,
     required Future<TData> Function(QueryFunctionContext context) queryFn,
     StaleDuration? staleDuration,
-    StaleDurationResolver<TData, TError>? staleDurationResolver,
     RetryResolver<TError>? retry,
     GcDuration? gcDuration,
     TData? initialData,
@@ -114,7 +113,6 @@ class QueryClient {
       queryKey,
       queryFn,
       staleDuration: staleDuration,
-      staleDurationResolver: staleDurationResolver,
       retry: retry,
       gcDuration: gcDuration,
       initialData: initialData,
@@ -131,13 +129,11 @@ class QueryClient {
 
     final query = _cache.build<TData, TError>(effectiveOptions);
 
-    // Resolve stale duration
-    final resolvedStaleDuration = effectiveOptions.staleDurationResolver != null
-        ? effectiveOptions.staleDurationResolver!(query)
-        : (effectiveOptions.staleDuration ?? const StaleDuration());
+    final staleDurationValue =
+        effectiveOptions.staleDuration ?? const StaleDuration();
 
     // Check if data is stale
-    if (query.isStaleByTime(resolvedStaleDuration)) {
+    if (query.isStaleByTime(staleDurationValue)) {
       // Pass options to fetch so query updates its stored options
       // This matches TanStack Query's behavior where fetch(options) calls setOptions
       return query.fetch();
@@ -160,7 +156,6 @@ class QueryClient {
     required List<Object?> queryKey,
     required Future<TData> Function(QueryFunctionContext context) queryFn,
     StaleDuration? staleDuration,
-    StaleDurationResolver<TData, TError>? staleDurationResolver,
     RetryResolver<TError>? retry,
     GcDuration? gcDuration,
     TData? initialData,
@@ -171,7 +166,6 @@ class QueryClient {
         queryKey: queryKey,
         queryFn: queryFn,
         staleDuration: staleDuration,
-        staleDurationResolver: staleDurationResolver,
         retry: retry,
         gcDuration: gcDuration,
         initialData: initialData,

@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:clock/clock.dart';
 
 import 'observable.dart';
-import 'options/placeholder_data.dart';
 import 'options/refetch_on_mount.dart';
 import 'options/refetch_on_resume.dart';
 import 'options/stale_duration.dart';
@@ -28,10 +27,6 @@ class QueryObserver<TData, TError> with Observer<QueryState<TData, TError>> {
           options.withDefaults(client.defaultQueryOptions),
         ) {
     _query.addObserver(this);
-
-    if (_query.state.data != null) {
-      _lastQueryWithDefinedData = _query;
-    }
 
     // Capture initial state counters for isFetchedAfterMount calculation
     _initialDataUpdateCount = _query.state.dataUpdateCount;
@@ -63,10 +58,6 @@ class QueryObserver<TData, TError> with Observer<QueryState<TData, TError>> {
   /// Used to compute isFetchedAfterMount.
   late int _initialErrorUpdateCount;
 
-  /// Tracks the last query that had non-null data for placeholder data resolution.
-  /// This is used when calling PlaceholderData.resolveWith() callbacks.
-  Query<TData, TError>? _lastQueryWithDefinedData;
-
   /// Listeners that are notified when the result changes.
   /// Uses direct callback pattern instead of streams for synchronous updates.
   final Set<ResultChangeListener<TData, TError>> _listeners = {};
@@ -86,10 +77,6 @@ class QueryObserver<TData, TError> with Observer<QueryState<TData, TError>> {
   /// Called by Query when its state changes.
   @override
   void onNotified(QueryState<TData, TError> newState) {
-    if (newState.data != null) {
-      _lastQueryWithDefinedData = _query;
-    }
-
     final result = _getResult();
     _setResult(result);
   }
@@ -114,14 +101,8 @@ class QueryObserver<TData, TError> with Observer<QueryState<TData, TError>> {
     final didRetryChange = !identical(newOptions.retry, oldOptions.retry);
     final didRetryOnMountChange =
         newOptions.retryOnMount != oldOptions.retryOnMount;
-    // Resolve staleDuration to concrete values before comparing
-    final newStaleDuration = newOptions.staleDurationResolver != null
-        ? newOptions.staleDurationResolver!(_query)
-        : (newOptions.staleDuration ?? const StaleDuration());
-    final oldStaleDuration = oldOptions.staleDurationResolver != null
-        ? oldOptions.staleDurationResolver!(_query)
-        : (oldOptions.staleDuration ?? const StaleDuration());
-    final didStaleDurationChange = newStaleDuration != oldStaleDuration;
+    final didStaleDurationChange =
+        newOptions.staleDuration != oldOptions.staleDuration;
 
     // If nothing changed, return early
     if (!didKeyChange &&
@@ -141,11 +122,6 @@ class QueryObserver<TData, TError> with Observer<QueryState<TData, TError>> {
 
       _query = _client.cache.build<TData, TError>(newOptions);
       _query.addObserver(this);
-
-      // Track last query with defined data
-      if (_query.state.data != null) {
-        _lastQueryWithDefinedData = _query;
-      }
 
       // Reset initial counters for the new query (for isFetchedAfterMount)
       _initialDataUpdateCount = _query.state.dataUpdateCount;
@@ -335,23 +311,12 @@ class QueryObserver<TData, TError> with Observer<QueryState<TData, TError>> {
     if (options.placeholderData != null &&
         data == null &&
         status == QueryStatus.pending) {
-      // Resolve placeholder data (handles both value and callback forms)
-      final resolvedPlaceholderData = options.placeholderData!.resolve(
-        _lastQueryWithDefinedData?.state.data,
-        _lastQueryWithDefinedData,
-      );
-
-      if (resolvedPlaceholderData != null) {
-        status = QueryStatus.success;
-        data = resolvedPlaceholderData;
-        isPlaceholderData = true;
-      }
+      status = QueryStatus.success;
+      data = options.placeholderData;
+      isPlaceholderData = true;
     }
 
-    // Resolve staleDuration: resolver takes precedence over static value
-    final staleDuration = options.staleDurationResolver != null
-        ? options.staleDurationResolver!(_query)
-        : (options.staleDuration ?? const StaleDuration());
+    final staleDuration = options.staleDuration ?? const StaleDuration();
 
     // Compute isStale: disabled queries are never considered stale
     // This matches TanStack Query's behavior
@@ -401,10 +366,7 @@ class QueryObserver<TData, TError> with Observer<QueryState<TData, TError>> {
     }
 
     // Has data - check staleness and refetchOnMount
-    // Resolver takes precedence over static value
-    final staleDuration = options.staleDurationResolver != null
-        ? options.staleDurationResolver!(_query)
-        : (options.staleDuration ?? const StaleDuration());
+    final staleDuration = options.staleDuration ?? const StaleDuration();
 
     // With static stale duration, data is always fresh and should never refetch automatically
     if (staleDuration is StaleDurationStatic) {
@@ -439,10 +401,7 @@ class QueryObserver<TData, TError> with Observer<QueryState<TData, TError>> {
 
     if (!enabled) return false;
 
-    // Resolver takes precedence over static value
-    final staleDuration = options.staleDurationResolver != null
-        ? options.staleDurationResolver!(_query)
-        : (options.staleDuration ?? const StaleDuration());
+    final staleDuration = options.staleDuration ?? const StaleDuration();
 
     // With static stale duration, data is always fresh and should never refetch automatically
     if (staleDuration is StaleDurationStatic) {

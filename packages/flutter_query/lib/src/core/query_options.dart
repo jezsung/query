@@ -2,7 +2,6 @@ import 'package:collection/collection.dart';
 
 import 'default_query_options.dart';
 import 'options/gc_duration.dart';
-import 'options/placeholder_data.dart';
 import 'options/refetch_on_mount.dart';
 import 'options/refetch_on_resume.dart';
 import 'options/retry.dart';
@@ -29,7 +28,6 @@ class QueryOptions<TData, TError> {
     this.retry,
     this.retryOnMount,
     this.staleDuration,
-    this.staleDurationResolver,
   });
 
   final List<Object?> queryKey;
@@ -38,14 +36,13 @@ class QueryOptions<TData, TError> {
   final bool? enabled;
   final TData? initialData;
   final DateTime? initialDataUpdatedAt;
-  final PlaceholderData<TData, TError>? placeholderData;
+  final TData? placeholderData;
   final Duration? refetchInterval;
   final RefetchOnMount? refetchOnMount;
   final RefetchOnResume? refetchOnResume;
   final RetryResolver<TError>? retry;
   final bool? retryOnMount;
   final StaleDuration? staleDuration;
-  final StaleDurationResolver<TData, TError>? staleDurationResolver;
 
   @override
   bool operator ==(Object other) {
@@ -57,14 +54,13 @@ class QueryOptions<TData, TError> {
         enabled == other.enabled &&
         _equality.equals(initialData, other.initialData) &&
         initialDataUpdatedAt == other.initialDataUpdatedAt &&
-        identical(placeholderData, other.placeholderData) &&
+        _equality.equals(placeholderData, other.placeholderData) &&
         refetchInterval == other.refetchInterval &&
         refetchOnMount == other.refetchOnMount &&
         refetchOnResume == other.refetchOnResume &&
         identical(retry, other.retry) &&
         retryOnMount == other.retryOnMount &&
-        staleDuration == other.staleDuration &&
-        identical(staleDurationResolver, other.staleDurationResolver);
+        staleDuration == other.staleDuration;
   }
 
   @override
@@ -75,14 +71,13 @@ class QueryOptions<TData, TError> {
         enabled,
         _equality.hash(initialData),
         initialDataUpdatedAt,
-        identityHashCode(placeholderData),
+        _equality.hash(placeholderData),
         refetchInterval,
         refetchOnMount,
         refetchOnResume,
         identityHashCode(retry),
         retryOnMount,
         staleDuration,
-        identityHashCode(staleDurationResolver),
       );
 }
 
@@ -108,7 +103,6 @@ extension QueryOptionsMergeWith<TData, TError> on QueryOptions<TData, TError> {
       retry: retry ?? defaults.retry as RetryResolver<TError>?,
       retryOnMount: retryOnMount ?? defaults.retryOnMount,
       staleDuration: staleDuration ?? defaults.staleDuration,
-      staleDurationResolver: staleDurationResolver,
     );
   }
 }
@@ -195,8 +189,6 @@ extension QueryOptionsMerge<TData, TError> on QueryOptions<TData, TError> {
         (_, StaleDurationInfinity()) => StaleDuration.infinity,
         (StaleDurationDuration a, StaleDurationDuration b) => a < b ? a : b,
       },
-      staleDurationResolver:
-          options.staleDurationResolver ?? staleDurationResolver,
     );
   }
 }
@@ -209,14 +201,13 @@ extension QueryOptionsCopyWith<TData, TError> on QueryOptions<TData, TError> {
     GcDuration? gcDuration,
     TData? initialData,
     DateTime? initialDataUpdatedAt,
-    PlaceholderData<TData, TError>? placeholderData,
+    TData? placeholderData,
     Duration? refetchInterval,
     RefetchOnMount? refetchOnMount,
     RefetchOnResume? refetchOnResume,
     RetryResolver<TError>? retry,
     bool? retryOnMount,
     StaleDuration? staleDuration,
-    StaleDurationResolver<TData, TError>? staleDurationResolver,
   }) {
     return QueryOptions<TData, TError>(
       queryKey ?? this.queryKey,
@@ -232,8 +223,6 @@ extension QueryOptionsCopyWith<TData, TError> on QueryOptions<TData, TError> {
       retry: retry ?? this.retry,
       retryOnMount: retryOnMount ?? this.retryOnMount,
       staleDuration: staleDuration ?? this.staleDuration,
-      staleDurationResolver:
-          staleDurationResolver ?? this.staleDurationResolver,
     );
   }
 }
