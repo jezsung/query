@@ -41,7 +41,7 @@ class QueryOptions<TData, TError> {
   final Duration? refetchInterval;
   final RefetchOnMount? refetchOnMount;
   final RefetchOnResume? refetchOnResume;
-  final Retry<TError>? retry;
+  final RetryResolver<TError>? retry;
   final bool? retryOnMount;
   final StaleDuration? staleDuration;
   final StaleDurationResolver<TData, TError>? staleDurationResolver;
@@ -104,7 +104,7 @@ extension QueryOptionsMergeWith<TData, TError> on QueryOptions<TData, TError> {
       refetchInterval: refetchInterval ?? defaults.refetchInterval,
       refetchOnMount: refetchOnMount ?? defaults.refetchOnMount,
       refetchOnResume: refetchOnResume ?? defaults.refetchOnResume,
-      retry: retry ?? defaults.retry as Retry<TError>?,
+      retry: retry ?? defaults.retry as RetryResolver<TError>?,
       retryOnMount: retryOnMount ?? defaults.retryOnMount,
       staleDuration: staleDuration ?? defaults.staleDuration,
       staleDurationResolver: staleDurationResolver,
@@ -150,7 +150,7 @@ extension QueryOptionsCopyWith<TData, TError> on QueryOptions<TData, TError> {
     Duration? refetchInterval,
     RefetchOnMount? refetchOnMount,
     RefetchOnResume? refetchOnResume,
-    Retry<TError>? retry,
+    RetryResolver<TError>? retry,
     bool? retryOnMount,
     StaleDuration? staleDuration,
     StaleDurationResolver<TData, TError>? staleDurationResolver,

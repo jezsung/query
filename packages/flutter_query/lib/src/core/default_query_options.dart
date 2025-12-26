@@ -44,7 +44,7 @@ class DefaultQueryOptions {
   final RefetchOnResume refetchOnResume;
 
   /// Default retry callback.
-  final Retry? retry;
+  final RetryResolver? retry;
 
   /// Default retry on mount behavior.
   final bool retryOnMount;

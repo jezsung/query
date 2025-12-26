@@ -16,7 +16,7 @@ QueryResult<TData, TError> useQuery<TData, TError>({
   Duration? refetchInterval,
   RefetchOnMount? refetchOnMount,
   RefetchOnResume? refetchOnResume,
-  Retry<TError>? retry,
+  RetryResolver<TError>? retry,
   bool? retryOnMount,
   StaleDuration? staleDuration,
   StaleDurationResolver<TData, TError>? staleDurationResolver,

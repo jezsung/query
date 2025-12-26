@@ -10,6 +10,7 @@ import 'mutation_options.dart';
 import 'mutation_state.dart';
 import 'observable.dart';
 import 'options/gc_duration.dart';
+import 'options/retry.dart';
 import 'query_client.dart';
 import 'retryer.dart';
 
@@ -80,14 +81,9 @@ class Mutation<TData, TError, TVariables, TOnMutateResult>
       mutationKey: options.mutationKey,
     );
 
-    // Default retry: 0 retries for mutations (unlike queries which default to 3)
-    Duration? defaultRetry(int retryCount, TError error) {
-      return null; // No retries by default
-    }
-
     _retryer = Retryer<TData, TError>(
       fn: () => options.mutationFn(variables, fnContext),
-      retry: options.retry ?? defaultRetry,
+      retry: options.retry ?? retryNever,
       onFail: (failureCount, error) {
         state = _state.copyWith(
           failureCount: failureCount,

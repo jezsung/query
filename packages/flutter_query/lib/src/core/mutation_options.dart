@@ -52,7 +52,7 @@ class MutationOptions<TData, TError, TVariables, TOnMutateResult> {
   /// Retry configuration.
   ///
   /// Defaults to 0 (no retries) for mutations, unlike queries which default to 3.
-  final Retry<TError>? retry;
+  final RetryResolver<TError>? retry;
 
   /// Duration after which the mutation can be garbage collected.
   final GcDuration? gcDuration;
@@ -88,7 +88,7 @@ extension MergeWith<TData, TError, TVariables, TOnMutateResult>
       onSuccess: onSuccess,
       onError: onError,
       onSettled: onSettled,
-      retry: retry ?? defaults.retry as Retry<TError>?,
+      retry: retry ?? defaults.retry as RetryResolver<TError>?,
       gcDuration: gcDuration ?? defaults.gcDuration,
     );
   }

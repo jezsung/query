@@ -7,6 +7,7 @@ import 'abort_signal.dart';
 import 'garbage_collectable.dart';
 import 'observable.dart';
 import 'options/gc_duration.dart';
+import 'options/retry.dart';
 import 'options/stale_duration.dart';
 import 'query_cache.dart';
 import 'query_client.dart';
@@ -134,15 +135,9 @@ class Query<TData, TError>
       signal: _abortController!.signal,
     );
 
-    Duration? defaultRetry(int retryCount, TError error) {
-      if (retryCount >= 3) return null;
-      final delayMs = 1000 * (1 << retryCount);
-      return Duration(milliseconds: delayMs > 30000 ? 30000 : delayMs);
-    }
-
     _retryer = Retryer<TData, TError>(
       fn: () => options.queryFn(context),
-      retry: options.retry ?? defaultRetry,
+      retry: options.retry ?? retryExponentialBackoff(),
       signal: _abortController!.signal,
       onFail: (failureCount, error) {
         state = state.copyWith(

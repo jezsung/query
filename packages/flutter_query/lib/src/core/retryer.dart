@@ -60,7 +60,7 @@ class Retryer<TData, TError> {
   /// The retry callback that determines whether to retry and how long to wait.
   ///
   /// Returns `null` to stop retrying, or a [Duration] to wait before retrying.
-  final Retry<TError> retry;
+  final RetryResolver<TError> retry;
 
   /// Optional callback invoked after each failed attempt.
   ///

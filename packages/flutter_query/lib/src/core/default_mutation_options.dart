@@ -1,9 +1,6 @@
 import 'options/gc_duration.dart';
 import 'options/retry.dart';
 
-/// Default retry function that never retries.
-Duration? _noRetry(int retryCount, Object? error) => null;
-
 /// Default options for mutations that can be set at the QueryClient level.
 ///
 /// These options are applied to all mutations unless overridden by
@@ -18,14 +15,14 @@ Duration? _noRetry(int retryCount, Object? error) => null;
 /// Aligned with TanStack Query v5's `DefaultOptions.mutations`.
 class DefaultMutationOptions {
   const DefaultMutationOptions({
-    this.retry = _noRetry,
+    this.retry = retryNever,
     this.gcDuration = const GcDuration(minutes: 5),
   });
 
   /// Default retry callback.
   ///
   /// By default, mutations do not retry (unlike queries which default to 3).
-  final Retry retry;
+  final RetryResolver retry;
 
   /// Default garbage collection duration.
   ///
