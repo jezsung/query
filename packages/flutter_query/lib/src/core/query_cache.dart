@@ -5,20 +5,6 @@ import 'query_client.dart';
 import 'query_key.dart';
 import 'query_options.dart';
 
-/// Filter type for querying active, inactive, or all queries.
-///
-/// Aligned with TanStack Query's `QueryTypeFilter` type.
-enum QueryTypeFilter {
-  /// Match all queries regardless of active state
-  all,
-
-  /// Match only active queries (queries with enabled observers)
-  active,
-
-  /// Match only inactive queries (queries without enabled observers)
-  inactive,
-}
-
 class QueryCache {
   final Map<QueryKey, Query> _queries = {};
   QueryClient? _client;

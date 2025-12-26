@@ -9,7 +9,6 @@ import 'observable.dart';
 import 'options/gc_duration.dart';
 import 'options/retry.dart';
 import 'options/stale_duration.dart';
-import 'query_cache.dart';
 import 'query_client.dart';
 import 'query_function_context.dart';
 import 'query_key.dart';
@@ -264,6 +263,20 @@ class Query<TData, TError>
       _client.cache.remove(this);
     }
   }
+}
+
+/// Filter type for querying active, inactive, or all queries.
+///
+/// Aligned with TanStack Query's `QueryTypeFilter` type.
+enum QueryTypeFilter {
+  /// Match all queries regardless of active state
+  all,
+
+  /// Match only active queries (queries with enabled observers)
+  active,
+
+  /// Match only inactive queries (queries without enabled observers)
+  inactive,
 }
 
 /// Extension methods for matching queries against filters.
