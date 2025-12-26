@@ -23,9 +23,7 @@ class QueryObserver<TData, TError> with Observer<QueryState<TData, TError>> {
     QueryObserverOptions<TData, TError> options,
   )   : _client = client,
         _options = options.withDefaults(client.defaultQueryOptions),
-        _query = client.cache.build<TData, TError>(
-          options.withDefaults(client.defaultQueryOptions).toQueryOptions(),
-        ) {
+        _query = client.cache.build<TData, TError>(options) {
     _query.addObserver(this);
 
     // Capture initial state counters for isFetchedAfterMount calculation
