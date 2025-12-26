@@ -61,7 +61,7 @@ class Query<TData, TError>
   QueryOptions<TData, TError> get options {
     return observers.fold(
       _baseOptions.withDefaults(_client.defaultQueryOptions),
-      (acc, obs) => acc.overriddenBy(obs.options),
+      (acc, obs) => acc.merge(obs.options),
     );
   }
 

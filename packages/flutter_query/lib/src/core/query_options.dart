@@ -7,6 +7,7 @@ import 'options/refetch_on_mount.dart';
 import 'options/refetch_on_resume.dart';
 import 'options/retry.dart';
 import 'options/stale_duration.dart';
+import 'query_key.dart';
 import 'types.dart';
 
 /// Options for configuring a query.
@@ -112,26 +113,88 @@ extension QueryOptionsMergeWith<TData, TError> on QueryOptions<TData, TError> {
   }
 }
 
-extension QueryOptionsOverriddenBy<TData, TError>
-    on QueryOptions<TData, TError> {
-  QueryOptions<TData, TError> overriddenBy(
-    QueryOptions<TData, TError> options,
-  ) {
+extension QueryOptionsMerge<TData, TError> on QueryOptions<TData, TError> {
+  QueryOptions<TData, TError> merge(QueryOptions<TData, TError> options) {
+    assert(QueryKey(options.queryKey) == QueryKey(queryKey));
+
     return QueryOptions<TData, TError>(
       options.queryKey,
       options.queryFn,
-      enabled: options.enabled ?? enabled,
-      gcDuration: options.gcDuration ?? gcDuration,
-      initialData: options.initialData ?? initialData,
-      initialDataUpdatedAt:
-          options.initialDataUpdatedAt ?? initialDataUpdatedAt,
+      enabled: switch ((options.enabled, enabled)) {
+        (null, null) => null,
+        (final a, null) => a,
+        (null, final b) => b,
+        (true, _) => true,
+        (_, true) => true,
+        (false, false) => false,
+      },
+      gcDuration: switch ((options.gcDuration, gcDuration)) {
+        (null, null) => null,
+        (final a?, null) => a,
+        (null, final b?) => b,
+        (final a?, final b?) => a > b ? a : b,
+      },
+      initialData: switch ((options.initialData, initialData)) {
+        (null, null) => null,
+        (final TData a, null) => a,
+        (null, final TData b) => b,
+        (final TData a, final TData _) => a,
+      },
+      initialDataUpdatedAt: switch ((
+        options.initialDataUpdatedAt,
+        initialDataUpdatedAt
+      )) {
+        (null, null) => null,
+        (final a?, null) => a,
+        (null, final b?) => b,
+        (final a?, final b?) => a.isBefore(b) ? a : b,
+      },
       placeholderData: options.placeholderData ?? placeholderData,
-      refetchInterval: options.refetchInterval ?? refetchInterval,
-      refetchOnMount: options.refetchOnMount ?? refetchOnMount,
-      refetchOnResume: options.refetchOnResume ?? refetchOnResume,
+      refetchInterval: switch ((options.refetchInterval, refetchInterval)) {
+        (null, null) => null,
+        (final a?, null) => a,
+        (null, final b?) => b,
+        (final a?, final b?) => a < b ? a : b,
+      },
+      refetchOnMount: switch ((options.refetchOnMount, refetchOnMount)) {
+        (null, null) => null,
+        (final a?, null) => a,
+        (null, final b?) => b,
+        (RefetchOnMount.always, _) => RefetchOnMount.always,
+        (_, RefetchOnMount.always) => RefetchOnMount.always,
+        (RefetchOnMount.stale, _) => RefetchOnMount.stale,
+        (_, RefetchOnMount.stale) => RefetchOnMount.stale,
+        (RefetchOnMount.never, RefetchOnMount.never) => RefetchOnMount.never,
+      },
+      refetchOnResume: switch ((options.refetchOnResume, refetchOnResume)) {
+        (null, null) => null,
+        (final a?, null) => a,
+        (null, final b?) => b,
+        (RefetchOnResume.always, _) => RefetchOnResume.always,
+        (_, RefetchOnResume.always) => RefetchOnResume.always,
+        (RefetchOnResume.stale, _) => RefetchOnResume.stale,
+        (_, RefetchOnResume.stale) => RefetchOnResume.stale,
+        (RefetchOnResume.never, RefetchOnResume.never) => RefetchOnResume.never,
+      },
       retry: options.retry ?? retry,
-      retryOnMount: options.retryOnMount ?? retryOnMount,
-      staleDuration: options.staleDuration ?? staleDuration,
+      retryOnMount: switch ((options.retryOnMount, retryOnMount)) {
+        (null, null) => null,
+        (final a, null) => a,
+        (null, final b) => b,
+        (true, _) => true,
+        (_, true) => true,
+        (false, false) => false,
+      },
+      staleDuration: switch ((options.staleDuration, staleDuration)) {
+        (null, null) => null,
+        (final a?, null) => a,
+        (null, final b?) => b,
+        (StaleDurationStatic(), _) => StaleDuration.static,
+        (_, StaleDurationStatic()) => StaleDuration.static,
+        (StaleDurationInfinity(), _) => StaleDuration.infinity,
+        (_, StaleDurationInfinity()) => StaleDuration.infinity,
+        (StaleDurationDuration a, StaleDurationDuration b) => a < b ? a : b,
+      },
       staleDurationResolver:
           options.staleDurationResolver ?? staleDurationResolver,
     );
