@@ -316,7 +316,7 @@ class QueryObserver<TData, TError> with Observer<QueryState<TData, TError>> {
     // Compute isStale: disabled queries are never considered stale
     // This matches TanStack Query's behavior
     final isEnabled = options.enabled ?? true;
-    final isStale = isEnabled && _query.isStaleByTime(expiresIn);
+    final isStale = isEnabled && _query.shouldFetch(expiresIn);
 
     return QueryResult<TData, TError>(
       status: status,

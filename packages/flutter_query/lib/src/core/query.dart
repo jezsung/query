@@ -214,20 +214,12 @@ class Query<TData, TError>
     state = _initialState;
   }
 
-  bool isStaleByTime(Expiry expiresIn) {
-    if (state.data == null) {
-      return true;
-    }
+  bool shouldFetch(Expiry expiry) {
+    if (state.data == null || state.dataUpdatedAt == null) return true;
+    if (expiry is ExpiryNever) return false;
+    if (state.isInvalidated) return true;
 
-    if (expiresIn is ExpiryNever) {
-      return false;
-    }
-
-    if (state.isInvalidated) {
-      return true;
-    }
-
-    return switch (expiresIn) {
+    return switch (expiry) {
       ExpiryDuration duration =>
         clock.now().difference(state.dataUpdatedAt!) >= duration,
       ExpiryInfinity() => false,

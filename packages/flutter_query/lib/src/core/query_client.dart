@@ -138,7 +138,7 @@ class QueryClient {
         expiresIn ?? defaultQueryOptions.expiresIn ?? const Expiry();
 
     // Check if data is stale
-    if (query.isStaleByTime(expiresInValue)) {
+    if (query.shouldFetch(expiresInValue)) {
       // Pass options to fetch so query updates its stored options
       // This matches TanStack Query's behavior where fetch(options) calls setOptions
       return query.fetch();
