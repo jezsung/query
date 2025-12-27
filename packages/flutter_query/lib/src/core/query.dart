@@ -237,39 +237,25 @@ class Query<TData, TError>
 ///
 /// Aligned with TanStack Query's matchQuery utility function.
 extension QueryMatches on Query {
-  /// Returns true if this query matches the given filters.
+  /// Returns true if this query's key matches the given key.
   ///
+  /// - [queryKey]: the key to match against (required)
   /// - [exact]: when true, the query key must exactly equal the filter key;
   ///   when false (default), the query key only needs to start with the filter key
-  /// - [predicate]: custom filter function that receives the query and returns
+  bool matches(List<Object?> queryKey, {bool exact = false}) {
+    final filterKey = QueryKey(queryKey);
+    if (exact) {
+      return key == filterKey;
+    } else {
+      return key.startsWith(filterKey);
+    }
+  }
+
+  /// Returns true if this query matches the given predicate [test].
+  ///
+  /// - [test]: custom filter function that receives the query and returns
   ///   whether it should be included
-  /// - [queryKey]: the key to match against
-  bool matches({
-    List<Object?>? queryKey,
-    bool exact = false,
-    bool Function(Query)? predicate,
-  }) {
-    // Check predicate
-    if (predicate != null && !predicate(this)) {
-      return false;
-    }
-
-    // Check query key if provided
-    if (queryKey != null) {
-      final filterKey = QueryKey(queryKey);
-      if (exact) {
-        // Exact match
-        if (key != filterKey) {
-          return false;
-        }
-      } else {
-        // Prefix match
-        if (!key.startsWith(filterKey)) {
-          return false;
-        }
-      }
-    }
-
-    return true;
+  bool matchesWhere(bool Function(Query query) test) {
+    return test(this);
   }
 }

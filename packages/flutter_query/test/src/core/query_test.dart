@@ -147,20 +147,12 @@ void main() {
 
   group('QueryMatches.matches', () {
     test(
-        'SHOULD match '
-        'WHEN no filters provided', () {
-      final query = createQuery();
-
-      expect(query.matches(), isTrue);
-    });
-
-    test(
         'SHOULD match exact key '
         'WHEN exact == true AND key matches', () {
       final query = createQuery(queryKey: const ['users', '1']);
 
       expect(
-        query.matches(exact: true, queryKey: const ['users', '1']),
+        query.matches(const ['users', '1'], exact: true),
         isTrue,
       );
     });
@@ -171,7 +163,7 @@ void main() {
       final query = createQuery(queryKey: const ['users', '1']);
 
       expect(
-        query.matches(exact: true, queryKey: const ['users', '2']),
+        query.matches(const ['users', '2'], exact: true),
         isFalse,
       );
     });
@@ -180,7 +172,7 @@ void main() {
       final query = createQuery(queryKey: const ['users', '1', 'profile']);
 
       expect(
-        query.matches(queryKey: const ['users', '1']),
+        query.matches(const ['users', '1']),
         isTrue,
       );
     });
@@ -191,16 +183,18 @@ void main() {
       final query = createQuery(queryKey: const ['users']);
 
       expect(
-        query.matches(exact: false, queryKey: const ['users', '1']),
+        query.matches(const ['users', '1']),
         isFalse,
       );
     });
+  });
 
+  group('QueryMatches.matchesWhere', () {
     test('SHOULD match predicate', () {
       final query = createQuery(queryKey: const ['users']);
 
       expect(
-        query.matches(predicate: (q) => q.key[0] == 'users'),
+        query.matchesWhere((q) => q.key[0] == 'users'),
         isTrue,
       );
     });
@@ -209,47 +203,25 @@ void main() {
       final query = createQuery(queryKey: const ['posts']);
 
       expect(
-        query.matches(predicate: (q) => q.key[0] == 'users'),
+        query.matchesWhere((q) => q.key[0] == 'users'),
         isFalse,
       );
     });
+  });
 
-    test(
-        'SHOULD match active predicate '
-        'WHEN query has enabled observer', () {
-      final query = createQuery();
-      final observer = QueryObserver<String, Object>(
-        client,
-        QueryObserverOptions(const ['test'], (context) async => 'data'),
-      );
-      query.addObserver(observer);
-
-      expect(
-        query.matches(predicate: (q) => q.isActive),
-        isTrue,
-      );
-    });
-
+  group('QueryMatches combined', () {
     test('SHOULD require ALL filters to match (AND logic)', () {
       final query = createQuery(queryKey: const ['users', '1']);
 
       // All match
       expect(
-        query.matches(
-          queryKey: const ['users'],
-          exact: false,
-          predicate: (q) => true,
-        ),
+        query.matches(const ['users']) && query.matchesWhere((q) => true),
         isTrue,
       );
 
       // One doesn't match (predicate fails)
       expect(
-        query.matches(
-          queryKey: const ['users'],
-          exact: false,
-          predicate: (q) => false,
-        ),
+        query.matches(const ['users']) && query.matchesWhere((q) => false),
         isFalse,
       );
     });

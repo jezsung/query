@@ -93,11 +93,11 @@ class QueryCache {
     bool exact = true,
     bool Function(Query)? predicate,
   }) {
-    return _queries.values.firstWhereOrNull((q) => q.matches(
-          queryKey: queryKey,
-          exact: exact,
-          predicate: predicate,
-        )) as Query<TData, TError>?;
+    return _queries.values.firstWhereOrNull((q) {
+      if (!q.matches(queryKey, exact: exact)) return false;
+      if (predicate != null && !q.matchesWhere(predicate)) return false;
+      return true;
+    }) as Query<TData, TError>?;
   }
 
   /// Finds all queries matching the given filters
@@ -112,12 +112,14 @@ class QueryCache {
       return getAll();
     }
 
-    return _queries.values
-        .where((query) => query.matches(
-              queryKey: queryKey,
-              exact: exact,
-              predicate: predicate,
-            ))
-        .toList();
+    return _queries.values.where((query) {
+      if (queryKey != null && !query.matches(queryKey, exact: exact)) {
+        return false;
+      }
+      if (predicate != null && !query.matchesWhere(predicate)) {
+        return false;
+      }
+      return true;
+    }).toList();
   }
 }
