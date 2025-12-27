@@ -25,7 +25,7 @@ class Query<TData, TError>
     QueryClient client,
     QueryOptions<TData, TError> options,
   )   : _client = client,
-        _baseOptions = options {
+        _options = options.withDefaults(client.defaultQueryOptions) {
     _currentState = _initialState = switch (options.seed) {
       final seed? =>
         QueryState<TData, TError>.fromSeed(seed, options.seedUpdatedAt),
@@ -48,7 +48,7 @@ class Query<TData, TError>
   }
 
   final QueryClient _client;
-  QueryOptions<TData, TError> _baseOptions;
+  QueryOptions<TData, TError> _options;
   late QueryState<TData, TError> _currentState;
   late QueryState<TData, TError> _initialState;
 
@@ -56,11 +56,8 @@ class Query<TData, TError>
   AbortController? _abortController;
   QueryState<TData, TError>? _revertState;
 
-  QueryKey get key => options.queryKey;
+  QueryKey get key => _options.queryKey;
   QueryState<TData, TError> get state => _currentState;
-  QueryOptions<TData, TError> get options {
-    return _baseOptions.withDefaults(_client.defaultQueryOptions);
-  }
 
   bool get isActive {
     return observers.any((obs) => obs.options.enabled ?? true);
@@ -87,7 +84,7 @@ class Query<TData, TError>
   }
 
   Query<TData, TError> withOptions(QueryOptions<TData, TError> newOptions) {
-    _baseOptions = newOptions;
+    _options = newOptions;
     if (state.data == null && newOptions.seed != null) {
       state = _initialState = QueryState<TData, TError>.fromSeed(
         newOptions.seed!,
@@ -123,8 +120,8 @@ class Query<TData, TError>
     );
 
     _retryer = Retryer<TData, TError>(
-      fn: () => options.queryFn(context),
-      retry: options.retry ?? retryExponentialBackoff(),
+      fn: () => _options.queryFn(context),
+      retry: _options.retry ?? retryExponentialBackoff(),
       signal: _abortController!.signal,
       onFail: (failureCount, error) {
         state = state.copyWith(
@@ -245,7 +242,7 @@ class Query<TData, TError>
         .whereType<GcDuration>()
         .fold(
           // Defaults to 5 minutes
-          options.gcDuration ?? const GcDuration(minutes: 5),
+          _options.gcDuration ?? const GcDuration(minutes: 5),
           (longest, duration) => duration > longest ? duration : longest,
         );
   }
