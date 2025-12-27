@@ -8,7 +8,6 @@ import 'options/refetch_on_mount.dart';
 import 'options/refetch_on_resume.dart';
 import 'query.dart';
 import 'query_client.dart';
-import 'query_key.dart';
 import 'query_options.dart';
 import 'query_result.dart';
 import 'query_state.dart';
@@ -85,8 +84,7 @@ class QueryObserver<TData, TError> with Observer<QueryState<TData, TError>> {
     _options = newOptions;
 
     // Compare merged options to detect actual changes
-    final didKeyChange =
-        QueryKey(newOptions.queryKey) != QueryKey(oldOptions.queryKey);
+    final didKeyChange = newOptions.queryKey != oldOptions.queryKey;
     final didEnabledChange = newOptions.enabled != oldOptions.enabled;
     final didPlaceholderChange =
         newOptions.placeholder != oldOptions.placeholder;

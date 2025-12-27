@@ -123,7 +123,7 @@ class QueryClient {
 
     // fetchQuery defaults to no retry if not specified
     final effectiveOptions = QueryOptions<TData, TError>(
-      mergedOptions.queryKey,
+      mergedOptions.queryKey.parts,
       mergedOptions.queryFn,
       retry: mergedOptions.retry ?? (_, __) => null,
       gcDuration: mergedOptions.gcDuration,

@@ -1,26 +1,21 @@
 import 'package:collection/collection.dart';
 
-/// Internal class for efficient query key hashing and comparison.
-///
-/// QueryKey is used internally by QueryCache to efficiently hash and compare
-/// query keys. Users never interact with this directly - they use `List<Object?>`.
 class QueryKey {
-  const QueryKey(this._segments);
+  const QueryKey(this._parts);
 
-  final List<Object?> _segments;
+  final List<Object?> _parts;
 
-  static const _equality = DeepCollectionEquality();
+  List<Object?> get parts => List.unmodifiable(_parts);
 
-  /// Checks if this query key starts with another query key
-  /// Returns true if [prefix] is a prefix of this query key
-  /// Example: QueryKey(['users', '1']).startsWith(QueryKey(['users'])) => true
+  int get length => _parts.length;
+
   bool startsWith(QueryKey prefix) {
-    if (prefix._segments.length > _segments.length) {
+    if (prefix._parts.length > _parts.length) {
       return false;
     }
 
-    for (var i = 0; i < prefix._segments.length; i++) {
-      if (!_equality.equals(_segments[i], prefix._segments[i])) {
+    for (var i = 0; i < prefix._parts.length; i++) {
+      if (!_equality.equals(_parts[i], prefix._parts[i])) {
         return false;
       }
     }
@@ -28,14 +23,19 @@ class QueryKey {
     return true;
   }
 
-  @override
-  String toString() => '$_segments';
+  Object? operator [](int index) => _parts[index];
 
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      other is QueryKey && _equality.equals(_segments, other._segments);
+      (other is QueryKey && _equality.equals(_parts, other._parts)) ||
+      (other is List && _equality.equals(_parts, other));
 
   @override
-  int get hashCode => _equality.hash(_segments);
+  int get hashCode => _equality.hash(_parts);
+
+  @override
+  String toString() => '$_parts';
 }
+
+const _equality = DeepCollectionEquality();

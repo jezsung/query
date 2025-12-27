@@ -15,15 +15,15 @@ import 'types.dart';
 /// shared across all observers watching this query.
 class QueryOptions<TData, TError> {
   QueryOptions(
-    this.queryKey,
+    List<Object?> queryKey,
     this.queryFn, {
     this.gcDuration,
     this.retry,
     this.seed,
     this.seedUpdatedAt,
-  });
+  }) : queryKey = QueryKey(queryKey);
 
-  final List<Object?> queryKey;
+  final QueryKey queryKey;
   final QueryFn<TData> queryFn;
   final GcDuration? gcDuration;
   final RetryResolver<TError>? retry;
@@ -34,7 +34,7 @@ class QueryOptions<TData, TError> {
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
     return other is QueryOptions<TData, TError> &&
-        _equality.equals(queryKey, other.queryKey) &&
+        queryKey == other.queryKey &&
         identical(queryFn, other.queryFn) &&
         gcDuration == other.gcDuration &&
         identical(retry, other.retry) &&
@@ -44,7 +44,7 @@ class QueryOptions<TData, TError> {
 
   @override
   int get hashCode => Object.hash(
-        _equality.hash(queryKey),
+        queryKey,
         identityHashCode(queryFn),
         gcDuration,
         identityHashCode(retry),
@@ -85,7 +85,7 @@ class QueryObserverOptions<TData, TError> extends QueryOptions<TData, TError> {
   /// Extracts the base QueryOptions from observer options.
   QueryOptions<TData, TError> toQueryOptions() {
     return QueryOptions<TData, TError>(
-      queryKey,
+      queryKey.parts,
       queryFn,
       gcDuration: gcDuration,
       retry: retry,
@@ -98,7 +98,7 @@ class QueryObserverOptions<TData, TError> extends QueryOptions<TData, TError> {
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
     return other is QueryObserverOptions<TData, TError> &&
-        _equality.equals(queryKey, other.queryKey) &&
+        queryKey == other.queryKey &&
         identical(queryFn, other.queryFn) &&
         gcDuration == other.gcDuration &&
         identical(retry, other.retry) &&
@@ -115,7 +115,7 @@ class QueryObserverOptions<TData, TError> extends QueryOptions<TData, TError> {
 
   @override
   int get hashCode => Object.hash(
-        _equality.hash(queryKey),
+        queryKey,
         identityHashCode(queryFn),
         gcDuration,
         identityHashCode(retry),
@@ -140,7 +140,7 @@ extension QueryOptionsWithDefaults<TData, TError>
   /// Query-specific options take precedence over defaults.
   QueryOptions<TData, TError> withDefaults(DefaultQueryOptions defaults) {
     return QueryOptions<TData, TError>(
-      queryKey,
+      queryKey.parts,
       queryFn,
       gcDuration: gcDuration ?? defaults.gcDuration,
       retry: retry ?? defaults.retry as RetryResolver<TError>?,
@@ -156,9 +156,10 @@ extension QueryObserverOptionsWithDefaults<TData, TError>
   ///
   /// Observer-specific options take precedence over defaults.
   QueryObserverOptions<TData, TError> withDefaults(
-      DefaultQueryOptions defaults) {
+    DefaultQueryOptions defaults,
+  ) {
     return QueryObserverOptions<TData, TError>(
-      queryKey,
+      queryKey.parts,
       queryFn,
       gcDuration: gcDuration ?? defaults.gcDuration,
       retry: retry ?? defaults.retry as RetryResolver<TError>?,
@@ -177,10 +178,10 @@ extension QueryObserverOptionsWithDefaults<TData, TError>
 
 extension QueryOptionsMerge<TData, TError> on QueryOptions<TData, TError> {
   QueryOptions<TData, TError> merge(QueryOptions<TData, TError> options) {
-    assert(QueryKey(options.queryKey) == QueryKey(queryKey));
+    assert(options.queryKey == queryKey);
 
     return QueryOptions<TData, TError>(
-      options.queryKey,
+      options.queryKey.parts,
       options.queryFn,
       gcDuration: switch ((options.gcDuration, gcDuration)) {
         (null, null) => null,

@@ -23,7 +23,7 @@ void main() {
       ));
 
       expect(query, isA<Query>());
-      expect(query.queryKey, equals(const ['key1']));
+      expect(query.key.parts, equals(const ['key1']));
     });
 
     test('SHOULD return same query for same key', () {
@@ -67,7 +67,7 @@ void main() {
 
       final query = cache.get(const ['key1']);
       expect(query, isNotNull);
-      expect(query!.queryKey, equals(const ['key1']));
+      expect(query!.key.parts, equals(const ['key1']));
     });
   });
 
@@ -283,7 +283,7 @@ void main() {
       );
 
       expect(query, isNotNull);
-      expect(query!.queryKey, equals(const ['users', '1']));
+      expect(query!.key.parts, equals(const ['users', '1']));
     });
 
     test('SHOULD return null WHEN exact match not found', () {
@@ -302,7 +302,7 @@ void main() {
       );
 
       expect(query, isNotNull);
-      expect(query!.queryKey[0], equals('users'));
+      expect(query!.key[0], equals('users'));
     });
 
     test('SHOULD return null WHEN prefix match not found', () {
@@ -318,12 +318,12 @@ void main() {
       final query = cache.find(
         const ['posts'],
         exact: false,
-        predicate: (q) => q.queryKey.length == 2,
+        predicate: (q) => q.key.length == 2,
       );
 
       expect(query, isNotNull);
-      expect(query!.queryKey[0], equals('posts'));
-      expect(query.queryKey.length, equals(2));
+      expect(query!.key[0], equals('posts'));
+      expect(query.key.length, equals(2));
     });
 
     test('SHOULD return null WHEN predicate matches nothing', () {
@@ -339,19 +339,19 @@ void main() {
       final query = cache.find(
         const ['users'],
         exact: false,
-        predicate: (q) => q.queryKey.length == 2,
+        predicate: (q) => q.key.length == 2,
       );
 
       expect(query, isNotNull);
-      expect(query!.queryKey[0], equals('users'));
-      expect(query.queryKey.length, equals(2));
+      expect(query!.key[0], equals('users'));
+      expect(query.key.length, equals(2));
     });
 
     test('SHOULD return null WHEN combined filters match nothing', () {
       final query = cache.find(
         const ['users'],
         exact: false,
-        predicate: (q) => q.queryKey.length == 3,
+        predicate: (q) => q.key.length == 3,
       );
 
       expect(query, isNull);
@@ -399,7 +399,7 @@ void main() {
       );
 
       expect(queries, hasLength(1));
-      expect(queries[0].queryKey, equals(const ['users', '1']));
+      expect(queries[0].key.parts, equals(const ['users', '1']));
     });
 
     test('SHOULD return empty list WHEN exact match not found', () {
@@ -419,7 +419,7 @@ void main() {
 
       expect(queries, hasLength(3));
       for (final query in queries) {
-        expect(query.queryKey[0], equals('users'));
+        expect(query.key[0], equals('users'));
       }
     });
 
@@ -434,18 +434,18 @@ void main() {
 
     test('SHOULD find all queries using predicate', () {
       final queries = cache.findAll(
-        predicate: (q) => q.queryKey.length == 2,
+        predicate: (q) => q.key.length == 2,
       );
 
       expect(queries, hasLength(3));
       for (final query in queries) {
-        expect(query.queryKey.length, equals(2));
+        expect(query.key.length, equals(2));
       }
     });
 
     test('SHOULD return empty list WHEN predicate matches nothing', () {
       final queries = cache.findAll(
-        predicate: (q) => q.queryKey.length == 5,
+        predicate: (q) => q.key.length == 5,
       );
 
       expect(queries, isEmpty);
@@ -455,13 +455,13 @@ void main() {
       final queries = cache.findAll(
         queryKey: const ['users'],
         exact: false,
-        predicate: (q) => q.queryKey.length == 2,
+        predicate: (q) => q.key.length == 2,
       );
 
       expect(queries, hasLength(2));
       for (final query in queries) {
-        expect(query.queryKey[0], equals('users'));
-        expect(query.queryKey.length, equals(2));
+        expect(query.key[0], equals('users'));
+        expect(query.key.length, equals(2));
       }
     });
 
@@ -469,7 +469,7 @@ void main() {
       final queries = cache.findAll(
         queryKey: const ['users'],
         exact: false,
-        predicate: (q) => q.queryKey.length == 5,
+        predicate: (q) => q.key.length == 5,
       );
 
       expect(queries, isEmpty);
@@ -533,7 +533,7 @@ void main() {
       final queries = cache.findAll(type: QueryTypeFilter.active);
 
       expect(queries, hasLength(1));
-      expect(queries[0].queryKey, equals(const ['active']));
+      expect(queries[0].key.parts, equals(const ['active']));
 
       observer.dispose();
     });
@@ -558,7 +558,7 @@ void main() {
       final queries = cache.findAll(type: QueryTypeFilter.inactive);
 
       expect(queries, hasLength(1));
-      expect(queries[0].queryKey, equals(const ['inactive']));
+      expect(queries[0].key.parts, equals(const ['inactive']));
 
       observer.dispose();
     });
@@ -588,10 +588,10 @@ void main() {
       final inactiveQueries = cache.findAll(type: QueryTypeFilter.inactive);
 
       expect(activeQueries, hasLength(1));
-      expect(activeQueries[0].queryKey, equals(const ['enabled']));
+      expect(activeQueries[0].key.parts, equals(const ['enabled']));
 
       expect(inactiveQueries, hasLength(1));
-      expect(inactiveQueries[0].queryKey, equals(const ['disabled']));
+      expect(inactiveQueries[0].key.parts, equals(const ['disabled']));
 
       disabledObserver.dispose();
       enabledObserver.dispose();
@@ -630,7 +630,7 @@ void main() {
       );
 
       expect(queries, hasLength(1));
-      expect(queries[0].queryKey, equals(const ['users', 'active']));
+      expect(queries[0].key.parts, equals(const ['users', 'active']));
 
       usersObserver.dispose();
       postsObserver.dispose();

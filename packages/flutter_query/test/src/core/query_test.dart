@@ -200,7 +200,7 @@ void main() {
       final query = createQuery(queryKey: const ['users']);
 
       expect(
-        query.matches(predicate: (q) => q.queryKey.first == 'users'),
+        query.matches(predicate: (q) => q.key[0] == 'users'),
         isTrue,
       );
     });
@@ -209,7 +209,7 @@ void main() {
       final query = createQuery(queryKey: const ['posts']);
 
       expect(
-        query.matches(predicate: (q) => q.queryKey.first == 'users'),
+        query.matches(predicate: (q) => q.key[0] == 'users'),
         isFalse,
       );
     });

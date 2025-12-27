@@ -23,7 +23,7 @@ class QueryCache {
   Query<TData, TError> build<TData, TError>(
     QueryOptions<TData, TError> options,
   ) {
-    final key = QueryKey(options.queryKey);
+    final key = options.queryKey;
     final query = _queries[key]?.withOptions(options) as Query<TData, TError>?;
     if (query == null) {
       return _queries[key] = Query<TData, TError>(_client!, options);
@@ -45,8 +45,7 @@ class QueryCache {
 
   /// Adds a query to the cache
   void add(Query query) {
-    final key = QueryKey(query.queryKey);
-    _queries[key] = query;
+    _queries[query.key] = query;
   }
 
   /// Removes a query from the cache by Query object.
@@ -57,7 +56,7 @@ class QueryCache {
   /// Only removes if the query in the cache is the same instance to prevent
   /// race conditions where a query might have been replaced.
   void remove(Query query) {
-    final key = QueryKey(query.queryKey);
+    final key = query.key;
     final cachedQuery = _queries[key];
 
     // Only remove if the query in the cache is the same instance

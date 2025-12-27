@@ -55,7 +55,7 @@ class Query<TData, TError>
   AbortController? _abortController;
   QueryState<TData, TError>? _revertState;
 
-  List<Object?> get queryKey => options.queryKey;
+  QueryKey get key => options.queryKey;
   QueryState<TData, TError> get state => _currentState;
   QueryOptions<TData, TError> get options {
     return _baseOptions.withDefaults(_client.defaultQueryOptions);
@@ -120,7 +120,7 @@ class Query<TData, TError>
         .copyWithNull(failureReason: true);
 
     final context = QueryFunctionContext(
-      queryKey: queryKey,
+      queryKey: key.parts,
       client: _client,
       signal: _abortController!.signal,
     );
@@ -311,7 +311,6 @@ extension QueryMatches on Query {
 
     // Check query key if provided
     if (queryKey != null) {
-      final key = QueryKey(this.queryKey);
       final filterKey = QueryKey(queryKey);
       if (exact) {
         // Exact match

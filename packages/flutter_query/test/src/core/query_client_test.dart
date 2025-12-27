@@ -1071,7 +1071,7 @@ void main() {
       );
 
       // Cancel only query with key ending in 1
-      client.cancelQueries(predicate: (q) => q.queryKey.last == 1);
+      client.cancelQueries(predicate: (q) => q.key.parts.last == 1);
       async.flushMicrotasks();
 
       final query1 = cache.get(const ['query', 1])!;
