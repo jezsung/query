@@ -1,4 +1,5 @@
 import 'package:collection/collection.dart';
+import 'package:meta/meta.dart';
 
 import 'query.dart';
 import 'query_client.dart';
@@ -13,9 +14,8 @@ class QueryCache {
   ///
   /// This is called by QueryClient during construction to establish
   /// a back-reference needed for passing the client to Query instances.
-  void setClient(QueryClient client) {
-    _client = client;
-  }
+  @internal
+  set client(QueryClient client) => _client = client;
 
   /// Builds or retrieves an existing query from the cache.
   ///

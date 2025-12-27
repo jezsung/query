@@ -55,7 +55,7 @@ class QueryClient {
     this.defaultMutationOptions = const DefaultMutationOptions(),
   })  : _cache = cache ?? QueryCache(),
         _mutationCache = mutationCache ?? MutationCache() {
-    _cache.setClient(this);
+    _cache.client = this;
     _mutationCache.client = this;
   }
 
