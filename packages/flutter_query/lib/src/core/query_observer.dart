@@ -115,7 +115,7 @@ class QueryObserver<TData, TError> with Observer<QueryState<TData, TError>> {
     if (didKeyChange) {
       final oldQuery = _query;
 
-      _query = _client.cache.build<TData, TError>(newOptions.toQueryOptions());
+      _query = _client.cache.build<TData, TError>(newOptions);
       _query.addObserver(this);
 
       // Reset initial counters for the new query (for isFetchedAfterMount)

@@ -82,18 +82,6 @@ class QueryObserverOptions<TData, TError> extends QueryOptions<TData, TError> {
   final RefetchOnResume? refetchOnResume;
   final bool? retryOnMount;
 
-  /// Extracts the base QueryOptions from observer options.
-  QueryOptions<TData, TError> toQueryOptions() {
-    return QueryOptions<TData, TError>(
-      queryKey.parts,
-      queryFn,
-      gcDuration: gcDuration,
-      retry: retry,
-      seed: seed,
-      seedUpdatedAt: seedUpdatedAt,
-    );
-  }
-
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
