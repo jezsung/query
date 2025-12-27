@@ -26,10 +26,11 @@ class Query<TData, TError>
     QueryOptions<TData, TError> options,
   )   : _client = client,
         _baseOptions = options {
-    _currentState = _initialState = QueryState.fromSeed(
-      options.seed,
-      options.seedUpdatedAt,
-    );
+    _currentState = _initialState = switch (options.seed) {
+      final seed? =>
+        QueryState<TData, TError>.fromSeed(seed, options.seedUpdatedAt),
+      null => QueryState<TData, TError>(),
+    };
     onAddObserver = (_) {
       cancelGc();
     };
@@ -88,14 +89,10 @@ class Query<TData, TError>
   Query<TData, TError> withOptions(QueryOptions<TData, TError> newOptions) {
     _baseOptions = newOptions;
     if (state.data == null && newOptions.seed != null) {
-      final defaultState = QueryState<TData, TError>.fromSeed(
-        newOptions.seed,
+      state = _initialState = QueryState<TData, TError>.fromSeed(
+        newOptions.seed!,
         newOptions.seedUpdatedAt,
       );
-      if (defaultState.data != null) {
-        state = defaultState;
-        _initialState = defaultState;
-      }
     }
     return this;
   }

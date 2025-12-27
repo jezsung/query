@@ -20,11 +20,7 @@ class QueryState<TData, TError> {
     this.isInvalidated = false,
   });
 
-  factory QueryState.fromSeed(TData? seed, DateTime? seedUpdatedAt) {
-    if (seed == null) {
-      return QueryState();
-    }
-
+  factory QueryState.fromSeed(TData seed, DateTime? seedUpdatedAt) {
     return QueryState<TData, TError>(
       status: QueryStatus.success,
       fetchStatus: FetchStatus.idle,
