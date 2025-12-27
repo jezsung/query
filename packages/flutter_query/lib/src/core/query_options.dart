@@ -188,7 +188,7 @@ extension QueryOptionsMerge<TData, TError> on QueryOptions<TData, TError> {
         (null, null) => null,
         (final a?, null) => a,
         (null, final b?) => b,
-        (final a?, final b?) => a.isBefore(b) ? a : b,
+        (final a?, final b?) => a.isAfter(b) ? a : b,
       },
     );
   }
