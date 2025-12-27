@@ -291,17 +291,14 @@ class QueryClient {
           predicate: predicate,
           type: type,
         )
-        .where((query) => !query.isDisabled && !query.isStatic)
-        .where((query) => query.state.fetchStatus != FetchStatus.paused);
+        .where((q) =>
+            q.state.hasFetched &&
+            q.observers.every((ob) => ob.options.expiresIn != Expiry.never) &&
+            q.state.fetchStatus != FetchStatus.paused);
 
-    final futures = <Future<void>>[];
-
-    for (final query in queries) {
-      // Fetch and swallow errors
-      futures.add(query.fetch().then((_) {}).catchError((_) {}));
-    }
-
-    await Future.wait(futures);
+    await Future.wait(
+      queries.map((q) => q.fetch().then((_) {}).catchError((_) {})),
+    );
   }
 
   /// Cancels all in-progress fetches for queries matching the filters.

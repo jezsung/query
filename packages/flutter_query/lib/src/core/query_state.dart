@@ -46,6 +46,8 @@ class QueryState<TData, TError> {
   final TError? failureReason;
   final bool isInvalidated;
 
+  bool get hasFetched => dataUpdateCount > 0 || errorUpdateCount > 0;
+
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;

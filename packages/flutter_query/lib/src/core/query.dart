@@ -63,20 +63,6 @@ class Query<TData, TError>
     return observers.any((obs) => obs.options.enabled ?? true);
   }
 
-  bool get isDisabled {
-    if (observers.isNotEmpty) {
-      return !isActive;
-    }
-    return state.status == QueryStatus.pending &&
-        state.dataUpdatedAt == null &&
-        state.errorUpdatedAt == null;
-  }
-
-  bool get isStatic {
-    if (observers.isEmpty) return false;
-    return observers.any((obs) => obs.options.expiresIn == Expiry.never);
-  }
-
   @protected
   set state(QueryState<TData, TError> newState) {
     _currentState = newState;

@@ -9,7 +9,7 @@ mixin Observable<TValue, TObserver extends Observer<TValue>> {
   void Function(TObserver observer)? _onAdd;
   void Function(TObserver observer)? _onRemove;
 
-  @protected
+  @internal
   List<TObserver> get observers => List.unmodifiable(_observers);
 
   @protected
