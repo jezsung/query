@@ -908,47 +908,6 @@ void main() {
       async.elapse(const Duration(seconds: 1));
       expect(fetches, 1);
     }));
-
-    test(
-        'SHOULD ONLY refetch active queries '
-        'WHEN type == QueryTypeFilter.active', withFakeAsync((async) {
-      var fetchesActive = 0;
-      var fetchesInactive = 0;
-
-      // Create active observer
-      final observer = QueryObserver<String, Object>(
-        client,
-        QueryObserverOptions(
-          const ['active'],
-          (context) async {
-            fetchesActive++;
-            await Future.delayed(const Duration(seconds: 1));
-            return 'active data';
-          },
-          enabled: true,
-        ),
-      );
-      addTearDown(observer.dispose);
-      // Create inactive query (fetched but no observer)
-      client.fetchQuery<String, Object>(
-        queryKey: const ['inactive'],
-        queryFn: (context) async {
-          fetchesInactive++;
-          await Future.delayed(const Duration(seconds: 1));
-          return 'inactive data';
-        },
-      );
-
-      async.elapse(const Duration(seconds: 1));
-      expect(fetchesActive, 1);
-      expect(fetchesInactive, 1);
-
-      client.refetchQueries(type: QueryTypeFilter.active);
-
-      async.elapse(const Duration(seconds: 1));
-      expect(fetchesActive, 2);
-      expect(fetchesInactive, 1);
-    }));
   });
 
   group('cancelQueries', () {

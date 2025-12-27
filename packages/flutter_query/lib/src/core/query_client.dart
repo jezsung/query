@@ -238,19 +238,20 @@ class QueryClient {
     // Skip refetch if none
     if (refetchType == RefetchType.none) return;
 
-    // Refetch based on refetchType
-    final effectiveType = switch (refetchType) {
-      RefetchType.all => QueryTypeFilter.all,
-      RefetchType.active => QueryTypeFilter.active,
-      RefetchType.inactive => QueryTypeFilter.inactive,
-      RefetchType.none => throw UnimplementedError(),
-    };
+    // Combine user's predicate with refetchType filter
+    bool Function(Query)? refetchPredicate;
+    if (refetchType == RefetchType.active) {
+      refetchPredicate = (q) => (predicate?.call(q) ?? true) && q.isActive;
+    } else if (refetchType == RefetchType.inactive) {
+      refetchPredicate = (q) => (predicate?.call(q) ?? true) && !q.isActive;
+    } else {
+      refetchPredicate = predicate;
+    }
 
     await refetchQueries(
       queryKey: queryKey,
       exact: exact,
-      predicate: predicate,
-      type: effectiveType,
+      predicate: refetchPredicate,
     );
   }
 
@@ -273,8 +274,8 @@ class QueryClient {
   /// // Refetch queries with a specific key prefix
   /// await client.refetchQueries(queryKey: ['users']);
   ///
-  /// // Refetch only active queries
-  /// await client.refetchQueries(type: QueryTypeFilter.active);
+  /// // Refetch only active queries using predicate
+  /// await client.refetchQueries(predicate: (q) => q.isActive);
   /// ```
   ///
   /// Aligned with TanStack Query's `QueryClient.refetchQueries` method.
@@ -282,14 +283,12 @@ class QueryClient {
     List<Object?>? queryKey,
     bool exact = false,
     bool Function(Query)? predicate,
-    QueryTypeFilter type = QueryTypeFilter.all,
   }) async {
     final queries = _cache
         .findAll(
           queryKey: queryKey,
           exact: exact,
           predicate: predicate,
-          type: type,
         )
         .where((q) =>
             q.state.hasFetched &&

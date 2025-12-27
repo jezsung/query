@@ -233,20 +233,6 @@ class Query<TData, TError>
   }
 }
 
-/// Filter type for querying active, inactive, or all queries.
-///
-/// Aligned with TanStack Query's `QueryTypeFilter` type.
-enum QueryTypeFilter {
-  /// Match all queries regardless of active state
-  all,
-
-  /// Match only active queries (queries with enabled observers)
-  active,
-
-  /// Match only inactive queries (queries without enabled observers)
-  inactive,
-}
-
 /// Extension methods for matching queries against filters.
 ///
 /// Aligned with TanStack Query's matchQuery utility function.
@@ -258,24 +244,11 @@ extension QueryMatches on Query {
   /// - [predicate]: custom filter function that receives the query and returns
   ///   whether it should be included
   /// - [queryKey]: the key to match against
-  /// - [type]: filters queries by their active state (all, active, inactive)
   bool matches({
+    List<Object?>? queryKey,
     bool exact = false,
     bool Function(Query)? predicate,
-    List<Object?>? queryKey,
-    QueryTypeFilter type = QueryTypeFilter.all,
   }) {
-    // Check type filter first
-    if (type != QueryTypeFilter.all) {
-      final active = isActive;
-      if (type == QueryTypeFilter.active && !active) {
-        return false;
-      }
-      if (type == QueryTypeFilter.inactive && active) {
-        return false;
-      }
-    }
-
     // Check predicate
     if (predicate != null && !predicate(this)) {
       return false;

@@ -215,40 +215,7 @@ void main() {
     });
 
     test(
-        'SHOULD match type == all '
-        'WHEN query has no observers', () {
-      final query = createQuery();
-
-      expect(
-        query.matches(type: QueryTypeFilter.all),
-        isTrue,
-      );
-    });
-
-    test(
-        'SHOULD match type == inactive '
-        'WHEN query has no observers', () {
-      final query = createQuery();
-
-      expect(
-        query.matches(type: QueryTypeFilter.inactive),
-        isTrue,
-      );
-    });
-
-    test(
-        'SHOULD NOT match type == active '
-        'WHEN query has no observers', () {
-      final query = createQuery();
-
-      expect(
-        query.matches(type: QueryTypeFilter.active),
-        isFalse,
-      );
-    });
-
-    test(
-        'SHOULD match type == active '
+        'SHOULD match active predicate '
         'WHEN query has enabled observer', () {
       final query = createQuery();
       final observer = QueryObserver<String, Object>(
@@ -258,43 +225,7 @@ void main() {
       query.addObserver(observer);
 
       expect(
-        query.matches(type: QueryTypeFilter.active),
-        isTrue,
-      );
-    });
-
-    test(
-        'SHOULD NOT match type == inactive '
-        'WHEN query has enabled observer', () {
-      final query = createQuery();
-      final observer = QueryObserver<String, Object>(
-        client,
-        QueryObserverOptions(const ['test'], (context) async => 'data'),
-      );
-      query.addObserver(observer);
-
-      expect(
-        query.matches(type: QueryTypeFilter.inactive),
-        isFalse,
-      );
-    });
-
-    test(
-        'SHOULD match type == inactive '
-        'WHEN query has disabled observer', () {
-      final query = createQuery();
-      final observer = QueryObserver<String, Object>(
-        client,
-        QueryObserverOptions(
-          const ['test'],
-          (context) async => 'data',
-          enabled: false,
-        ),
-      );
-      query.addObserver(observer);
-
-      expect(
-        query.matches(type: QueryTypeFilter.inactive),
+        query.matches(predicate: (q) => q.isActive),
         isTrue,
       );
     });
@@ -307,7 +238,6 @@ void main() {
         query.matches(
           queryKey: const ['users'],
           exact: false,
-          type: QueryTypeFilter.all,
           predicate: (q) => true,
         ),
         isTrue,
@@ -318,7 +248,6 @@ void main() {
         query.matches(
           queryKey: const ['users'],
           exact: false,
-          type: QueryTypeFilter.all,
           predicate: (q) => false,
         ),
         isFalse,

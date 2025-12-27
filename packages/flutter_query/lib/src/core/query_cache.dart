@@ -92,31 +92,23 @@ class QueryCache {
     List<Object?> queryKey, {
     bool exact = true,
     bool Function(Query)? predicate,
-    QueryTypeFilter type = QueryTypeFilter.all,
   }) {
     return _queries.values.firstWhereOrNull((q) => q.matches(
           queryKey: queryKey,
           exact: exact,
           predicate: predicate,
-          type: type,
         )) as Query<TData, TError>?;
   }
 
   /// Finds all queries matching the given filters
   /// Returns all queries if no filters are provided
-  ///
-  /// [type] filters by active state:
-  /// - [QueryTypeFilter.all]: Return all matching queries
-  /// - [QueryTypeFilter.active]: Return only queries with enabled observers
-  /// - [QueryTypeFilter.inactive]: Return only queries without enabled observers
   List<Query> findAll({
     List<Object?>? queryKey,
     bool exact = false,
     bool Function(Query)? predicate,
-    QueryTypeFilter type = QueryTypeFilter.all,
   }) {
     // If no filters provided, return all
-    if (queryKey == null && predicate == null && type == QueryTypeFilter.all) {
+    if (queryKey == null && predicate == null) {
       return getAll();
     }
 
@@ -125,7 +117,6 @@ class QueryCache {
               queryKey: queryKey,
               exact: exact,
               predicate: predicate,
-              type: type,
             ))
         .toList();
   }
