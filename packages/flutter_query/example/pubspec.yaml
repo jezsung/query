@@ -1,0 +1,17 @@
+name: flutter_query_example
+description: A simple example demonstrating flutter_query usage.
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+  flutter: '>=3.32.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_hooks: ^0.21.2
+  flutter_query:
+    path: ../
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
