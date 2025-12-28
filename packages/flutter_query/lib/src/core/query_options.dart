@@ -8,6 +8,7 @@ import 'options/refetch_on_resume.dart';
 import 'options/retry.dart';
 import 'query_key.dart';
 import 'types.dart';
+import 'utils.dart';
 
 /// Base options for configuring a query at the cache level.
 ///
@@ -18,6 +19,7 @@ class QueryOptions<TData, TError> {
     List<Object?> queryKey,
     this.queryFn, {
     this.gcDuration,
+    this.meta,
     this.retry,
     this.seed,
     this.seedUpdatedAt,
@@ -26,6 +28,7 @@ class QueryOptions<TData, TError> {
   final QueryKey queryKey;
   final QueryFn<TData> queryFn;
   final GcDuration? gcDuration;
+  final Map<String, dynamic>? meta;
   final RetryResolver<TError>? retry;
   final TData? seed;
   final DateTime? seedUpdatedAt;
@@ -37,6 +40,7 @@ class QueryOptions<TData, TError> {
         queryKey == other.queryKey &&
         identical(queryFn, other.queryFn) &&
         gcDuration == other.gcDuration &&
+        _equality.equals(meta, other.meta) &&
         identical(retry, other.retry) &&
         _equality.equals(seed, other.seed) &&
         seedUpdatedAt == other.seedUpdatedAt;
@@ -47,6 +51,7 @@ class QueryOptions<TData, TError> {
         queryKey,
         identityHashCode(queryFn),
         gcDuration,
+        _equality.hash(meta),
         identityHashCode(retry),
         _equality.hash(seed),
         seedUpdatedAt,
@@ -62,6 +67,7 @@ class QueryObserverOptions<TData, TError> extends QueryOptions<TData, TError> {
     super.queryKey,
     super.queryFn, {
     super.gcDuration,
+    super.meta,
     super.retry,
     super.seed,
     super.seedUpdatedAt,
@@ -89,6 +95,7 @@ class QueryObserverOptions<TData, TError> extends QueryOptions<TData, TError> {
         queryKey == other.queryKey &&
         identical(queryFn, other.queryFn) &&
         gcDuration == other.gcDuration &&
+        _equality.equals(meta, other.meta) &&
         identical(retry, other.retry) &&
         _equality.equals(seed, other.seed) &&
         seedUpdatedAt == other.seedUpdatedAt &&
@@ -106,6 +113,7 @@ class QueryObserverOptions<TData, TError> extends QueryOptions<TData, TError> {
         queryKey,
         identityHashCode(queryFn),
         gcDuration,
+        _equality.hash(meta),
         identityHashCode(retry),
         _equality.hash(seed),
         seedUpdatedAt,
@@ -131,6 +139,7 @@ extension QueryOptionsWithDefaults<TData, TError>
       queryKey.parts,
       queryFn,
       gcDuration: gcDuration ?? defaults.gcDuration,
+      meta: meta,
       retry: retry ?? defaults.retry as RetryResolver<TError>?,
       seed: seed,
       seedUpdatedAt: seedUpdatedAt,
@@ -150,6 +159,7 @@ extension QueryObserverOptionsWithDefaults<TData, TError>
       queryKey.parts,
       queryFn,
       gcDuration: gcDuration ?? defaults.gcDuration,
+      meta: meta,
       retry: retry ?? defaults.retry as RetryResolver<TError>?,
       seed: seed,
       seedUpdatedAt: seedUpdatedAt,
@@ -177,6 +187,7 @@ extension QueryOptionsMerge<TData, TError> on QueryOptions<TData, TError> {
         (null, final b?) => b,
         (final a?, final b?) => a > b ? a : b,
       },
+      meta: deepMergeMap(meta, options.meta),
       retry: options.retry ?? retry,
       seed: switch ((options.seed, seed)) {
         (null, null) => null,

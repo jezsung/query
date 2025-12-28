@@ -27,11 +27,13 @@ void main() {
       queryKey: ['users', 123],
       client: client1,
       signal: controller1.signal,
+      meta: const {},
     );
     final context2 = QueryFunctionContext(
       queryKey: ['users', 456],
       client: client1,
       signal: controller1.signal,
+      meta: const {},
     );
 
     expect(context1, isNot(equals(context2)));
@@ -44,11 +46,13 @@ void main() {
       queryKey: ['users', 123],
       client: client1,
       signal: controller1.signal,
+      meta: const {},
     );
     final context2 = QueryFunctionContext(
       queryKey: ['users', 123],
       client: client2,
       signal: controller1.signal,
+      meta: const {},
     );
 
     expect(context1, isNot(equals(context2)));
@@ -64,11 +68,13 @@ void main() {
         queryKey: ['users', 123],
         client: client1,
         signal: controller1.signal,
+        meta: const {},
       );
       final context2 = QueryFunctionContext(
         queryKey: ['users', 123],
         client: client1,
         signal: controller1.signal,
+        meta: const {},
       );
 
       expect(context1, equals(context2));
@@ -79,11 +85,13 @@ void main() {
         queryKey: ['users', 123],
         client: client1,
         signal: controller1.signal,
+        meta: const {},
       );
       final context2 = QueryFunctionContext(
         queryKey: ['users', 123],
         client: client1,
         signal: controller2.signal,
+        meta: const {},
       );
 
       expect(context1, equals(context2));

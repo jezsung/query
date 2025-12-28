@@ -16,6 +16,7 @@ import 'query_observer.dart';
 import 'query_options.dart';
 import 'query_state.dart';
 import 'retryer.dart';
+import 'utils.dart';
 
 class Query<TData, TError>
     with
@@ -58,6 +59,12 @@ class Query<TData, TError>
 
   QueryKey get key => _options.queryKey;
   QueryState<TData, TError> get state => _currentState;
+  Map<String, dynamic> get meta {
+    return observers
+            .map((obs) => obs.options.meta)
+            .fold(_options.meta, deepMergeMap) ??
+        const {};
+  }
 
   bool get isActive {
     return observers.any((obs) => obs.options.enabled ?? true);
@@ -70,11 +77,11 @@ class Query<TData, TError>
   }
 
   Query<TData, TError> withOptions(QueryOptions<TData, TError> newOptions) {
-    _options = newOptions;
-    if (state.data == null && newOptions.seed != null) {
+    _options = _options.merge(newOptions);
+    if (state.data == null && _options.seed != null) {
       state = _initialState = QueryState<TData, TError>.fromSeed(
-        newOptions.seed!,
-        newOptions.seedUpdatedAt,
+        _options.seed!,
+        _options.seedUpdatedAt,
       );
     }
     return this;
@@ -103,6 +110,7 @@ class Query<TData, TError>
       queryKey: key.parts,
       client: _client,
       signal: _abortController!.signal,
+      meta: meta,
     );
 
     final retryer = _retryer = Retryer<TData, TError>(

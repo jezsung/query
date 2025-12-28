@@ -994,4 +994,221 @@ void main() {
       );
     });
   });
+
+  group('meta', () {
+    test(
+        'SHOULD return meta from options'
+        '', () {
+      final expectedMeta = {'source': 'test', 'priority': 1};
+      final query = Query<String, Object>(
+        client,
+        QueryOptions(
+          const ['key'],
+          (context) async => 'data',
+          meta: expectedMeta,
+        ),
+      );
+
+      expect(query.meta, expectedMeta);
+      expect(query.meta['source'], 'test');
+      expect(query.meta['priority'], 1);
+    });
+
+    test(
+        'SHOULD return empty map '
+        'WHEN meta is not provided', () {
+      final query = Query<String, Object>(
+        client,
+        QueryOptions(
+          const ['key'],
+          (context) async => 'data',
+        ),
+      );
+
+      expect(query.meta, isEmpty);
+    });
+
+    test(
+        'SHOULD pass meta to queryFn via QueryFunctionContext'
+        '', withFakeAsync((async) {
+      final expectedMeta = {'source': 'api', 'version': 2};
+      QueryFunctionContext? capturedContext;
+
+      final query = Query<String, Object>(
+        client,
+        QueryOptions(
+          const ['users', 123],
+          (context) async {
+            capturedContext = context;
+            return 'data';
+          },
+          meta: expectedMeta,
+        ),
+      );
+
+      query.fetch();
+      async.flushMicrotasks();
+
+      expect(capturedContext, isNotNull);
+      expect(capturedContext!.meta, expectedMeta);
+    }));
+
+    test(
+        'SHOULD pass empty meta to queryFn '
+        'WHEN meta is not provided', withFakeAsync((async) {
+      QueryFunctionContext? capturedContext;
+
+      final query = Query<String, Object>(
+        client,
+        QueryOptions(
+          const ['key'],
+          (context) async {
+            capturedContext = context;
+            return 'data';
+          },
+        ),
+      );
+
+      query.fetch();
+      async.flushMicrotasks();
+
+      expect(capturedContext, isNotNull);
+      expect(capturedContext!.meta, isEmpty);
+    }));
+
+    test(
+        'SHOULD dynamically merge meta from multiple observers'
+        '', () {
+      final query = Query<String, Object>(
+        client,
+        QueryOptions(
+          const ['key'],
+          (context) async => 'data',
+          meta: {'base': 'value'},
+        ),
+      );
+      addTearDown(query.dispose);
+      expect(query.meta, {'base': 'value'});
+
+      final observer1 = QueryObserver<String, Object>(
+        client,
+        QueryObserverOptions(
+          const ['key'],
+          (context) async => 'data',
+          meta: {'observer': '1', 'extra-1': 'value-1'},
+        ),
+      );
+      addTearDown(observer1.dispose);
+      query.addObserver(observer1);
+      expect(query.meta, {
+        'base': 'value',
+        'observer': '1',
+        'extra-1': 'value-1',
+      });
+
+      final observer2 = QueryObserver<String, Object>(
+        client,
+        QueryObserverOptions(
+          const ['key'],
+          (context) async => 'data',
+          meta: {'observer': '2', 'extra-2': 'value-2'},
+        ),
+      );
+      addTearDown(observer2.dispose);
+      query.addObserver(observer2);
+      expect(query.meta, {
+        'base': 'value',
+        'observer': '2',
+        'extra-1': 'value-1',
+        'extra-2': 'value-2',
+      });
+
+      query.removeObserver(observer2);
+      expect(query.meta, {
+        'base': 'value',
+        'observer': '1',
+        'extra-1': 'value-1',
+      });
+
+      query.removeObserver(observer1);
+      expect(query.meta, {'base': 'value'});
+    });
+
+    test(
+        'SHOULD deeply merge meta '
+        'WHEN withOptions is called', () {
+      final query = Query<String, Object>(
+        client,
+        QueryOptions(
+          const ['key'],
+          (context) async => 'data',
+          meta: {
+            'source': 'A',
+            'nested': {'a': 1, 'b': 2}
+          },
+        ),
+      );
+
+      query.withOptions(
+        QueryOptions(
+          const ['key'],
+          (context) async => 'data',
+          meta: {
+            'feature': 'B',
+            'nested': {'b': 3, 'c': 4}
+          },
+        ),
+      );
+
+      expect(query.meta, {
+        'source': 'A',
+        'feature': 'B',
+        'nested': {'a': 1, 'b': 3, 'c': 4},
+      });
+    });
+
+    test(
+        'SHOULD preserve existing meta '
+        'WHEN new options have null meta', () {
+      final query = Query<String, Object>(
+        client,
+        QueryOptions(
+          const ['key'],
+          (context) async => 'data',
+          meta: {'preserved': 'value'},
+        ),
+      );
+
+      query.withOptions(
+        QueryOptions(
+          const ['key'],
+          (context) async => 'data',
+        ),
+      );
+
+      expect(query.meta, {'preserved': 'value'});
+    });
+
+    test(
+        'SHOULD use new meta '
+        'WHEN existing meta is null', () {
+      final query = Query<String, Object>(
+        client,
+        QueryOptions(
+          const ['key'],
+          (context) async => 'data',
+        ),
+      );
+
+      query.withOptions(
+        QueryOptions(
+          const ['key'],
+          (context) async => 'data',
+          meta: {'new': 'value'},
+        ),
+      );
+
+      expect(query.meta, {'new': 'value'});
+    });
+  });
 }

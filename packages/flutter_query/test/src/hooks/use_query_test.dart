@@ -2982,4 +2982,53 @@ void main() {
       expect(hook.current.isFetchedAfterMount, true);
     }));
   });
+
+  group('meta', () {
+    testWidgets('SHOULD pass meta to query function via context',
+        withCleanup((tester) async {
+      final meta = {'feature': 'user-list', 'experiment': 'v2'};
+      Map<String, dynamic>? capturedMeta;
+
+      await buildHook(
+        () => useQuery(
+          queryKey: const ['users'],
+          queryFn: (context) async {
+            capturedMeta = context.meta;
+            return 'data';
+          },
+          meta: meta,
+          queryClient: client,
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      expect(capturedMeta, meta);
+      expect(capturedMeta!['feature'], 'user-list');
+      expect(capturedMeta!['experiment'], 'v2');
+    }));
+
+    testWidgets('SHOULD pass empty meta WHEN not provided',
+        withCleanup((tester) async {
+      Map<String, dynamic>? capturedMeta;
+      var wasCalled = false;
+
+      await buildHook(
+        () => useQuery(
+          queryKey: const ['users'],
+          queryFn: (context) async {
+            wasCalled = true;
+            capturedMeta = context.meta;
+            return 'data';
+          },
+          queryClient: client,
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      expect(wasCalled, isTrue);
+      expect(capturedMeta, isEmpty);
+    }));
+  });
 }

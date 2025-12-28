@@ -1,3 +1,5 @@
+import 'package:collection/collection.dart';
+
 import 'abort_signal.dart';
 import 'query_client.dart';
 import 'query_key.dart';
@@ -23,6 +25,7 @@ final class QueryFunctionContext {
     required this.queryKey,
     required this.client,
     required this.signal,
+    required this.meta,
   });
 
   /// The query key that uniquely identifies this query.
@@ -37,13 +40,26 @@ final class QueryFunctionContext {
   /// with HTTP clients that support cancellation.
   final AbortSignal signal;
 
+  /// Additional metadata stored on the query options.
+  ///
+  /// Use this to pass information through to query functions that can be
+  /// used for logging, analytics, or other custom logic.
+  final Map<String, dynamic> meta;
+
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       other is QueryFunctionContext &&
           QueryKey(queryKey) == QueryKey(other.queryKey) &&
-          client == other.client;
+          client == other.client &&
+          _equality.equals(meta, other.meta);
 
   @override
-  int get hashCode => Object.hash(QueryKey(queryKey), client);
+  int get hashCode => Object.hash(
+        QueryKey(queryKey),
+        client,
+        _equality.hash(meta),
+      );
 }
+
+const DeepCollectionEquality _equality = DeepCollectionEquality();
