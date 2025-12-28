@@ -5,7 +5,9 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:flutter_hooks_test/flutter_hooks_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:flutter_query/flutter_query.dart';
+import 'package:flutter_query/src/core/core.dart';
+import 'package:flutter_query/src/hooks/use_query.dart';
+import 'package:flutter_query/src/widgets/query_client_provider.dart';
 
 extension on WidgetTester {
   Future<void> pumpUntil(DateTime target) async {

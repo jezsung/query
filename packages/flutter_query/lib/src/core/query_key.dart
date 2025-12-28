@@ -1,5 +1,7 @@
 import 'package:collection/collection.dart';
+import 'package:meta/meta.dart';
 
+@internal
 class QueryKey {
   const QueryKey(this._parts);
 

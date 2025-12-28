@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:flutter_query/flutter_query.dart';
+import 'package:flutter_query/src/core/core.dart';
 
 void main() {
   late QueryClient client;

@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:flutter_query/flutter_query.dart';
+import 'package:flutter_query/src/core/core.dart';
 
 /// A test helper that wraps a test body in [fakeAsync] for time manipulation.
 ///
