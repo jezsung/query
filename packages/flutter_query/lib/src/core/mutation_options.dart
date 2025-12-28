@@ -11,14 +11,14 @@ import 'types.dart';
 class MutationOptions<TData, TError, TVariables, TOnMutateResult> {
   MutationOptions({
     required this.mutationFn,
-    this.mutationKey,
-    this.meta,
     this.onMutate,
     this.onSuccess,
     this.onError,
     this.onSettled,
+    this.mutationKey,
     this.retry,
     this.gcDuration,
+    this.meta,
   });
 
   /// The function that performs the mutation.
@@ -26,12 +26,6 @@ class MutationOptions<TData, TError, TVariables, TOnMutateResult> {
     TVariables variables,
     MutationFunctionContext context,
   ) mutationFn;
-
-  /// Optional key to identify this mutation.
-  final List<Object?>? mutationKey;
-
-  /// Optional metadata associated with the mutation.
-  final Map<String, dynamic>? meta;
 
   /// Called before the mutation function is fired.
   ///
@@ -49,6 +43,9 @@ class MutationOptions<TData, TError, TVariables, TOnMutateResult> {
   final MutationOnSettled<TData, TError, TVariables, TOnMutateResult>?
       onSettled;
 
+  /// Optional key to identify this mutation.
+  final List<Object?>? mutationKey;
+
   /// Retry configuration.
   ///
   /// Defaults to 0 (no retries) for mutations, unlike queries which default to 3.
@@ -57,17 +54,20 @@ class MutationOptions<TData, TError, TVariables, TOnMutateResult> {
   /// Duration after which the mutation can be garbage collected.
   final GcDuration? gcDuration;
 
+  /// Optional metadata associated with the mutation.
+  final Map<String, dynamic>? meta;
+
   @override
   String toString() {
     return 'MutationOptions('
-        'mutationKey: $mutationKey, '
-        'meta: $meta, '
         'onMutate: ${onMutate != null ? '<Function>' : 'null'}, '
         'onSuccess: ${onSuccess != null ? '<Function>' : 'null'}, '
         'onError: ${onError != null ? '<Function>' : 'null'}, '
         'onSettled: ${onSettled != null ? '<Function>' : 'null'}, '
+        'mutationKey: $mutationKey, '
         'retry: ${retry != null ? '<Function>' : 'null'}, '
-        'gcDuration: $gcDuration)';
+        'gcDuration: $gcDuration, '
+        'meta: $meta)';
   }
 }
 

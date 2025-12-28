@@ -14,14 +14,14 @@ void main() {
       expect(
         options.toString(),
         'MutationOptions('
-        'mutationKey: null, '
-        'meta: null, '
         'onMutate: null, '
         'onSuccess: null, '
         'onError: null, '
         'onSettled: null, '
+        'mutationKey: null, '
         'retry: null, '
-        'gcDuration: null)',
+        'gcDuration: null, '
+        'meta: null)',
       );
     });
 
@@ -45,14 +45,14 @@ void main() {
       expect(
         options.toString(),
         'MutationOptions('
-        'mutationKey: [users, update], '
-        'meta: {priority: high}, '
         'onMutate: <Function>, '
         'onSuccess: <Function>, '
         'onError: <Function>, '
         'onSettled: <Function>, '
+        'mutationKey: [users, update], '
         'retry: <Function>, '
-        'gcDuration: $gcDuration)',
+        'gcDuration: $gcDuration, '
+        'meta: {priority: high})',
       );
     });
   });

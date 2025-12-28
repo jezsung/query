@@ -18,20 +18,20 @@ class QueryOptions<TData, TError> {
   QueryOptions(
     List<Object?> queryKey,
     this.queryFn, {
-    this.gcDuration,
-    this.meta,
     this.retry,
+    this.gcDuration,
     this.seed,
     this.seedUpdatedAt,
+    this.meta,
   }) : queryKey = QueryKey(queryKey);
 
   final QueryKey queryKey;
   final QueryFn<TData> queryFn;
-  final GcDuration? gcDuration;
-  final Map<String, dynamic>? meta;
   final RetryResolver<TError>? retry;
+  final GcDuration? gcDuration;
   final TData? seed;
   final DateTime? seedUpdatedAt;
+  final Map<String, dynamic>? meta;
 
   @override
   bool operator ==(Object other) {
@@ -66,26 +66,26 @@ class QueryObserverOptions<TData, TError> extends QueryOptions<TData, TError> {
   QueryObserverOptions(
     super.queryKey,
     super.queryFn, {
-    super.gcDuration,
-    super.meta,
     super.retry,
+    super.gcDuration,
     super.seed,
     super.seedUpdatedAt,
+    super.meta,
     this.enabled,
     this.staleDuration,
     this.placeholder,
-    this.refetchInterval,
     this.refetchOnMount,
     this.refetchOnResume,
+    this.refetchInterval,
     this.retryOnMount,
   });
 
   final bool? enabled;
   final StaleDuration? staleDuration;
   final TData? placeholder;
-  final Duration? refetchInterval;
   final RefetchOnMount? refetchOnMount;
   final RefetchOnResume? refetchOnResume;
+  final Duration? refetchInterval;
   final bool? retryOnMount;
 
   @override

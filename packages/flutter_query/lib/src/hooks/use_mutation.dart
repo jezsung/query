@@ -39,14 +39,14 @@ MutationResult<TData, TError, TVariables, TOnMutateResult>
     TVariables variables,
     MutationFunctionContext context,
   ) mutationFn, {
-  List<Object?>? mutationKey,
-  Map<String, dynamic>? meta,
   MutationOnMutate<TVariables, TOnMutateResult>? onMutate,
   MutationOnSuccess<TData, TVariables, TOnMutateResult>? onSuccess,
   MutationOnError<TError, TVariables, TOnMutateResult>? onError,
   MutationOnSettled<TData, TError, TVariables, TOnMutateResult>? onSettled,
+  List<Object?>? mutationKey,
   RetryResolver<TError>? retry,
   GcDuration? gcDuration,
+  Map<String, dynamic>? meta,
   QueryClient? queryClient,
 }) {
   // Get QueryClient from context if not provided

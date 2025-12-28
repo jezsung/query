@@ -11,15 +11,15 @@ QueryResult<TData, TError> useQuery<TData, TError>(
   bool? enabled,
   StaleDuration? staleDuration,
   GcDuration? gcDuration,
-  Map<String, dynamic>? meta,
   TData? placeholder,
-  Duration? refetchInterval,
   RefetchOnMount? refetchOnMount,
   RefetchOnResume? refetchOnResume,
+  Duration? refetchInterval,
   RetryResolver<TError>? retry,
   bool? retryOnMount,
   TData? seed,
   DateTime? seedUpdatedAt,
+  Map<String, dynamic>? meta,
   QueryClient? queryClient,
 }) {
   // Get QueryClient from context if not provided
