@@ -18,7 +18,7 @@ import 'use_query_client.dart';
 /// Example:
 /// ```dart
 /// final mutation = useMutation<User, ApiError, CreateUserInput, PreviousUsers>(
-///   mutationFn: (input, context) => api.createUser(input),
+///   (input, context) => api.createUser(input),
 ///   onSuccess: (data, variables, context, fnContext) {
 ///     // Invalidate and refetch related queries
 ///     fnContext.client.invalidateQueries(queryKey: ['users']);
@@ -34,11 +34,11 @@ import 'use_query_client.dart';
 /// );
 /// ```
 MutationResult<TData, TError, TVariables, TOnMutateResult>
-    useMutation<TData, TError, TVariables, TOnMutateResult>({
-  required Future<TData> Function(
+    useMutation<TData, TError, TVariables, TOnMutateResult>(
+  Future<TData> Function(
     TVariables variables,
     MutationFunctionContext context,
-  ) mutationFn,
+  ) mutationFn, {
   List<Object?>? mutationKey,
   Map<String, dynamic>? meta,
   MutationOnMutate<TVariables, TOnMutateResult>? onMutate,

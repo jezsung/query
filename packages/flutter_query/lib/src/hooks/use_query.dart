@@ -5,9 +5,9 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import '../core/core.dart';
 import 'use_query_client.dart';
 
-QueryResult<TData, TError> useQuery<TData, TError>({
-  required List<Object?> queryKey,
-  required QueryFn<TData> queryFn,
+QueryResult<TData, TError> useQuery<TData, TError>(
+  List<Object?> queryKey,
+  QueryFn<TData> queryFn, {
   bool? enabled,
   StaleDuration? staleDuration,
   GcDuration? gcDuration,
