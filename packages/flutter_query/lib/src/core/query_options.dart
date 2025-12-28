@@ -1,11 +1,11 @@
 import 'package:collection/collection.dart';
 
 import 'default_query_options.dart';
-import 'options/expiry.dart';
 import 'options/gc_duration.dart';
 import 'options/refetch_on_mount.dart';
 import 'options/refetch_on_resume.dart';
 import 'options/retry.dart';
+import 'options/stale_duration.dart';
 import 'query_key.dart';
 import 'types.dart';
 import 'utils.dart';
@@ -72,7 +72,7 @@ class QueryObserverOptions<TData, TError> extends QueryOptions<TData, TError> {
     super.seed,
     super.seedUpdatedAt,
     this.enabled,
-    this.expiresIn,
+    this.staleDuration,
     this.placeholder,
     this.refetchInterval,
     this.refetchOnMount,
@@ -81,7 +81,7 @@ class QueryObserverOptions<TData, TError> extends QueryOptions<TData, TError> {
   });
 
   final bool? enabled;
-  final Expiry? expiresIn;
+  final StaleDuration? staleDuration;
   final TData? placeholder;
   final Duration? refetchInterval;
   final RefetchOnMount? refetchOnMount;
@@ -100,7 +100,7 @@ class QueryObserverOptions<TData, TError> extends QueryOptions<TData, TError> {
         _equality.equals(seed, other.seed) &&
         seedUpdatedAt == other.seedUpdatedAt &&
         enabled == other.enabled &&
-        expiresIn == other.expiresIn &&
+        staleDuration == other.staleDuration &&
         _equality.equals(placeholder, other.placeholder) &&
         refetchInterval == other.refetchInterval &&
         refetchOnMount == other.refetchOnMount &&
@@ -118,7 +118,7 @@ class QueryObserverOptions<TData, TError> extends QueryOptions<TData, TError> {
         _equality.hash(seed),
         seedUpdatedAt,
         enabled,
-        expiresIn,
+        staleDuration,
         _equality.hash(placeholder),
         refetchInterval,
         refetchOnMount,
@@ -164,7 +164,7 @@ extension QueryObserverOptionsWithDefaults<TData, TError>
       seed: seed,
       seedUpdatedAt: seedUpdatedAt,
       enabled: enabled ?? defaults.enabled,
-      expiresIn: expiresIn ?? defaults.expiresIn,
+      staleDuration: staleDuration ?? defaults.staleDuration,
       placeholder: placeholder,
       refetchInterval: refetchInterval ?? defaults.refetchInterval,
       refetchOnMount: refetchOnMount ?? defaults.refetchOnMount,

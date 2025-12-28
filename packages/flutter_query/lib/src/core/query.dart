@@ -6,9 +6,9 @@ import 'package:meta/meta.dart';
 import 'abort_signal.dart';
 import 'garbage_collectable.dart';
 import 'observable.dart';
-import 'options/expiry.dart';
 import 'options/gc_duration.dart';
 import 'options/retry.dart';
+import 'options/stale_duration.dart';
 import 'query_client.dart';
 import 'query_function_context.dart';
 import 'query_key.dart';
@@ -208,16 +208,16 @@ class Query<TData, TError>
     state = _initialState;
   }
 
-  bool shouldFetch(Expiry expiry) {
+  bool shouldFetch(StaleDuration staleDuration) {
     if (state.data == null || state.dataUpdatedAt == null) return true;
-    if (expiry is ExpiryNever) return false;
+    if (staleDuration is StaleDurationStatic) return false;
     if (state.isInvalidated) return true;
 
-    return switch (expiry) {
-      ExpiryDuration duration =>
+    return switch (staleDuration) {
+      StaleDurationValue duration =>
         clock.now().difference(state.dataUpdatedAt!) >= duration,
-      ExpiryInfinity() => false,
-      ExpiryNever() => false,
+      StaleDurationInfinity() => false,
+      StaleDurationStatic() => false,
     };
   }
 

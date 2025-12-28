@@ -1,9 +1,9 @@
 import 'default_mutation_options.dart';
 import 'default_query_options.dart';
 import 'mutation_cache.dart';
-import 'options/expiry.dart';
 import 'options/gc_duration.dart';
 import 'options/retry.dart';
+import 'options/stale_duration.dart';
 import 'query.dart';
 import 'query_cache.dart';
 import 'query_function_context.dart';
@@ -34,7 +34,7 @@ class QueryClient {
   /// ```dart
   /// final client = QueryClient(
   ///   defaultQueryOptions: DefaultQueryOptions(
-  ///     expiresIn: Expiry(minutes: 5),
+  ///     staleDuration: StaleDuration(minutes: 5),
   ///     retry: (retryCount, error) {
   ///       if (retryCount >= 3) return null;
   ///       return Duration(seconds: 1 << retryCount);
@@ -102,7 +102,7 @@ class QueryClient {
   Future<TData> fetchQuery<TData, TError>({
     required List<Object?> queryKey,
     required Future<TData> Function(QueryFunctionContext context) queryFn,
-    Expiry? expiresIn,
+    StaleDuration? staleDuration,
     RetryResolver<TError>? retry,
     GcDuration? gcDuration,
     TData? seed,
@@ -133,12 +133,13 @@ class QueryClient {
 
     final query = _cache.build<TData, TError>(effectiveOptions);
 
-    // Use expiresIn for staleness check (observer-level concept, but used here imperatively)
-    final expiresInValue =
-        expiresIn ?? defaultQueryOptions.expiresIn ?? const Expiry();
+    // Use staleDuration for staleness check (observer-level concept, but used here imperatively)
+    final staleDurationValue = staleDuration ??
+        defaultQueryOptions.staleDuration ??
+        const StaleDuration();
 
     // Check if data is stale
-    if (query.shouldFetch(expiresInValue)) {
+    if (query.shouldFetch(staleDurationValue)) {
       // Pass options to fetch so query updates its stored options
       // This matches TanStack Query's behavior where fetch(options) calls setOptions
       return query.fetch();
@@ -160,7 +161,7 @@ class QueryClient {
   Future<void> prefetchQuery<TData, TError>({
     required List<Object?> queryKey,
     required Future<TData> Function(QueryFunctionContext context) queryFn,
-    Expiry? expiresIn,
+    StaleDuration? staleDuration,
     RetryResolver<TError>? retry,
     GcDuration? gcDuration,
     TData? seed,
@@ -170,7 +171,7 @@ class QueryClient {
       await fetchQuery<TData, TError>(
         queryKey: queryKey,
         queryFn: queryFn,
-        expiresIn: expiresIn,
+        staleDuration: staleDuration,
         retry: retry,
         gcDuration: gcDuration,
         seed: seed,
@@ -263,7 +264,7 @@ class QueryClient {
   ///
   /// Skips:
   /// - Disabled queries (no enabled observers)
-  /// - Static queries (expiresIn = never)
+  /// - Static queries (staleDuration = static)
   /// - Paused queries (fetchStatus = paused)
   ///
   /// Example:
@@ -292,7 +293,8 @@ class QueryClient {
         )
         .where((q) =>
             q.state.hasFetched &&
-            q.observers.every((ob) => ob.options.expiresIn != Expiry.never) &&
+            q.observers.every(
+                (ob) => ob.options.staleDuration != StaleDuration.static) &&
             q.state.fetchStatus != FetchStatus.paused);
 
     await Future.wait(

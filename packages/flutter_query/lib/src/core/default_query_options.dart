@@ -1,8 +1,8 @@
-import 'options/expiry.dart';
 import 'options/gc_duration.dart';
 import 'options/refetch_on_mount.dart';
 import 'options/refetch_on_resume.dart';
 import 'options/retry.dart';
+import 'options/stale_duration.dart';
 
 /// Default options for queries that can be set at the QueryClient level.
 ///
@@ -19,7 +19,7 @@ import 'options/retry.dart';
 class DefaultQueryOptions {
   const DefaultQueryOptions({
     this.enabled = true,
-    this.expiresIn,
+    this.staleDuration,
     this.gcDuration,
     this.refetchInterval,
     this.refetchOnMount = RefetchOnMount.stale,
@@ -31,8 +31,8 @@ class DefaultQueryOptions {
   /// Whether queries are enabled by default.
   final bool enabled;
 
-  /// Default expiry duration (when data becomes stale).
-  final Expiry? expiresIn;
+  /// Default stale duration (when data becomes stale).
+  final StaleDuration? staleDuration;
 
   /// Default garbage collection duration.
   final GcDuration? gcDuration;
