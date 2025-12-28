@@ -1,64 +1,69 @@
-import 'abort_signal.dart';
+import 'dart:async';
+
 import 'options/retry.dart';
 
 class Retryer<TData, TError> {
-  Retryer({
-    required this.fn,
-    required this.retry,
+  Retryer(
+    this.fn,
+    this.retry, {
     this.onFail,
-    this.signal,
   });
 
   final Future<TData> Function() fn;
   final RetryResolver<TError> retry;
   final void Function(int failureCount, TError error)? onFail;
-  final AbortSignal? signal;
 
   int _retryCount = 0;
-  Future<TData>? _future;
-  Future<TData> get future => _future ?? start();
+  bool _isCancelled = false;
+  Completer<TData>? _completer;
 
-  Future<TData> start() {
-    return _future ??= _execute();
+  Future<TData> get future {
+    if (_completer == null) {
+      throw StateError('Retryer is not running');
+    }
+    return _completer!.future;
   }
 
-  Future<TData> _execute() async {
-    while (true) {
-      if (signal != null && signal!.isAborted) {
-        signal!.throwIfAborted();
-      }
+  Future<TData> run() {
+    if (_completer != null) return _completer!.future;
 
+    _completer = Completer<TData>();
+    unawaited(_execute());
+
+    return _completer!.future;
+  }
+
+  Future<void> _execute() async {
+    while (!_isCancelled) {
       try {
-        return await fn();
-      } on AbortedException {
-        rethrow;
-      } catch (error) {
-        if (signal != null && signal!.isAborted) {
-          signal!.throwIfAborted();
+        final result = await fn();
+        if (!_isCancelled) {
+          _completer!.complete(result);
+        }
+        return;
+        // ignore: nullable_type_in_catch_clause
+      } on TError catch (error) {
+        if (_isCancelled) return;
+
+        final delay = retry(_retryCount, error);
+        if (delay == null) {
+          if (!_isCancelled) {
+            _completer!.completeError(error as Object);
+          }
+          return;
         }
 
-        if (error is! TError) rethrow;
+        final failureCount = ++_retryCount;
+        onFail?.call(failureCount, error);
 
-        final typedError = error as TError;
-
-        final delay = retry(_retryCount, typedError);
-
-        if (delay == null) rethrow;
-
-        _retryCount++;
-
-        onFail?.call(_retryCount, typedError);
-
-        if (signal != null) {
-          await Future.any([
-            Future.delayed(delay),
-            signal!.whenAbort,
-          ]);
-          signal!.throwIfAborted();
-        } else {
-          await Future.delayed(delay);
-        }
+        await Future.delayed(delay);
       }
     }
+  }
+
+  void cancel({Object? error}) {
+    if (_isCancelled) return;
+    _isCancelled = true;
+    _completer?.completeError(error ?? Exception());
   }
 }

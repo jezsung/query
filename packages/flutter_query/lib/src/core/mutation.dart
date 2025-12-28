@@ -82,8 +82,8 @@ class Mutation<TData, TError, TVariables, TOnMutateResult>
     );
 
     _retryer = Retryer<TData, TError>(
-      fn: () => options.mutationFn(variables, fnContext),
-      retry: options.retry ?? retryNever,
+      () => options.mutationFn(variables, fnContext),
+      options.retry ?? retryNever,
       onFail: (failureCount, error) {
         state = _state.copyWith(
           failureCount: failureCount,
@@ -112,7 +112,7 @@ class Mutation<TData, TError, TVariables, TOnMutateResult>
       }
 
       // Execute the mutation
-      final data = await _retryer!.start();
+      final data = await _retryer!.run();
 
       // Call onSuccess callback
       if (options.onSuccess != null) {

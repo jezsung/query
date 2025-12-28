@@ -83,7 +83,7 @@ class Query<TData, TError>
   Future<TData> fetch({bool cancelRefetch = false}) async {
     if (state.fetchStatus == FetchStatus.fetching && _retryer != null) {
       if (cancelRefetch && state.data != null) {
-        cancel(silent: true);
+        unawaited(cancel(silent: true));
       } else {
         return _retryer!.future;
       }
@@ -105,10 +105,9 @@ class Query<TData, TError>
       signal: _abortController!.signal,
     );
 
-    _retryer = Retryer<TData, TError>(
-      fn: () => _options.queryFn(context),
-      retry: _options.retry ?? retryExponentialBackoff(),
-      signal: _abortController!.signal,
+    final retryer = _retryer = Retryer<TData, TError>(
+      () => _options.queryFn(context),
+      _options.retry ?? retryExponentialBackoff(),
       onFail: (failureCount, error) {
         state = state.copyWith(
           failureCount: failureCount,
@@ -117,10 +116,8 @@ class Query<TData, TError>
       },
     );
 
-    final currentRetryer = _retryer;
-
     try {
-      final data = await _retryer!.start();
+      final data = await retryer.run();
 
       state = QueryState<TData, TError>(
         status: QueryStatus.success,
@@ -138,31 +135,30 @@ class Query<TData, TError>
 
       return data;
     } on AbortedException catch (e) {
-      if (e.revert && _revertState != null) {
-        state = _revertState!.copyWith(fetchStatus: FetchStatus.idle);
-      } else {
-        state = state.copyWith(fetchStatus: FetchStatus.idle);
-      }
-
+      // Silent cancellation suppresses errors
       if (e.silent) {
-        if (_retryer != currentRetryer) {
+        // Check if a new fetch started (cancelRefetch case)
+        if (_retryer != retryer) {
           return _retryer!.future;
         }
-        if (state.data != null) {
-          return state.data as TData;
-        }
-        return Completer<TData>().future;
-      } else if (e.revert) {
-        if (state.data == null) {
-          rethrow;
-        }
-        return state.data as TData;
-      } else {
+        // External silent cancel - return existing data or never-completing future
+        state = state.copyWith(fetchStatus: FetchStatus.idle);
         if (state.data != null) {
           return state.data as TData;
         }
         return Completer<TData>().future;
       }
+
+      // Update state for non-silent cancellation
+      state = switch (e.revert && _revertState != null) {
+        true => _revertState!.copyWith(fetchStatus: FetchStatus.idle),
+        false => state.copyWith(fetchStatus: FetchStatus.idle),
+      };
+
+      if (state.data == null) {
+        rethrow;
+      }
+      return state.data as TData;
     } catch (error) {
       if (error is TError) {
         final typedError = error as TError;
@@ -189,10 +185,14 @@ class Query<TData, TError>
     }
   }
 
-  Future<void> cancel({bool revert = true, bool silent = false}) {
-    final retryer = _retryer;
+  Future<void> cancel({bool revert = true, bool silent = false}) async {
     _abortController?.abort(revert: revert, silent: silent);
-    return retryer?.future.then((_) {}).catchError((_) {}) ?? Future.value();
+
+    final retryer = _retryer;
+    if (retryer == null) return;
+
+    retryer.cancel(error: AbortedException(revert: revert, silent: silent));
+    await retryer.future.then((_) {}).catchError((_) {}) ?? Future.value();
   }
 
   void reset() {
