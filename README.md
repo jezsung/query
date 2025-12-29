@@ -1,59 +1,183 @@
-A Flutter package inspired by the [TanStack Query](https://tanstack.com/query/latest) library (formerly React Query) in the [React](https://react.dev/) ecosystem. The current API reflects the [TanStack Query version 3](https://tanstack.com/query/v3/docs/framework/react/overview) API.
+# flutter_query
 
-This package utilizes the power of Hooks in Flutter. As TanStack Query provides its APIs with Hooks, flutter_query does it with Hooks too.
+A Flutter package inspired by [TanStack Query](https://tanstack.com/query/latest) (formerly React Query). The API aligns with [TanStack Query v5](https://tanstack.com/query/v5/docs/framework/react/overview).
 
-> **Note:** Since version 0.3.0, the widget-based API has been dropped in favor of the hook-based API. This package now requires `flutter_hooks`.
+This package uses Flutter Hooks to provide a familiar API for developers coming from TanStack Query.
 
-## Motivation
+> **Note:** This package requires `flutter_hooks`.
 
-There are a variety of state management packages in Flutter, but those packages lack abstraction for common asynchronous operations.
+## Installation
 
-Asynchronous operations are mostly used when communicating with remote APIs such as sending HTTP requests to servers.
-
-These kind of operations lead to the repetitive state management pattern.
-
-This package helps reducing this common pattern by providing high level state management APIs.
-
-## Usage
-
-Wrap your app with the `QueryScope`. This provides the query client to the widget tree.
-
-```dart
-runApp(
-  QueryScope(
-    child: MyApp(),
-  ),
-);
+```yaml
+dependencies:
+  flutter_query: ^0.4.0
+  flutter_hooks: ^0.21.3
 ```
 
-Use the `useQuery` hook in your `HookWidget` to fetch data. Give a unique key and a `fetcher` function that runs asynchronous operations.
+## Quick Start
 
-The hook returns a `QueryResult` containing the `state`, which is of type `QueryState`. The `QueryState` has a `QueryStatus` that represents the current status of the operation.
+Wrap your app with `QueryClientProvider`:
 
 ```dart
-class TodoWidget extends HookWidget {
+void main() {
+  runApp(
+    QueryClientProvider(
+      child: MyApp(),
+    ),
+  );
+}
+```
+
+## useQuery
+
+Use `useQuery` to fetch and cache data. The hook automatically handles loading, error, and success states.
+
+```dart
+class TodosWidget extends HookWidget {
   @override
   Widget build(BuildContext context) {
-    final result = useQuery<String, String>(
-      'todo-1',
-      (key) async {
-        final todoId = key;
-        final todoTitle = await getTodoTitleById(todoId);
-        return todoTitle;
+    final result = useQuery<List<Todo>, Exception>(
+      ['todos'],
+      (context) async {
+        final response = await http.get(Uri.parse('/api/todos'));
+        return Todo.fromJsonList(response.body);
       },
     );
 
-    switch(result.state.status) {
-      case QueryStatus.fetching:
-        return Text('Loading...');
-      case QueryStatus.success:
-        final todoTitle = result.state.data!;
-        return Text(todoTitle);
-      case QueryStatus.failure:
-        return Text('Something went wrong...');
-      default:
-        return Text('Ready to load data');
+    if (result.isPending) {
+      return CircularProgressIndicator();
     }
+
+    if (result.isError) {
+      return Text('Error: ${result.error}');
+    }
+
+    return ListView.builder(
+      itemCount: result.data!.length,
+      itemBuilder: (context, index) => TodoItem(result.data![index]),
+    );
   }
 }
 ```
+
+### Query Keys
+
+Query keys uniquely identify your data. Use arrays for hierarchical keys:
+
+```dart
+useQuery(['todos'], fetchAllTodos);
+useQuery(['todos', todoId], (context) => fetchTodo(todoId));
+useQuery(['todos', todoId, 'comments'], (context) => fetchComments(todoId));
+```
+
+### Query Options
+
+```dart
+useQuery<String, Exception>(
+  ['user', userId],
+  (context) => fetchUser(userId),
+  enabled: isLoggedIn,           // Only fetch when true
+  staleDuration: StaleDuration(Duration(minutes: 5)),
+  refetchOnMount: RefetchOnMount.stale,
+  refetchInterval: Duration(seconds: 30),
+  placeholder: cachedUser,       // Show while loading
+);
+```
+
+### Refetching
+
+```dart
+final result = useQuery(['todos'], fetchTodos);
+
+// Manually refetch
+await result.refetch();
+```
+
+## useMutation
+
+Use `useMutation` for create, update, and delete operations.
+
+```dart
+class CreateTodoWidget extends HookWidget {
+  @override
+  Widget build(BuildContext context) {
+    final mutation = useMutation<Todo, Exception, CreateTodoInput, void>(
+      (input, context) async {
+        final response = await http.post(
+          Uri.parse('/api/todos'),
+          body: input.toJson(),
+        );
+        return Todo.fromJson(response.body);
+      },
+      onSuccess: (data, variables, onMutateResult, context) {
+        // Invalidate todos query to refetch
+        context.client.invalidateQueries(queryKey: ['todos']);
+      },
+    );
+
+    return Column(
+      children: [
+        ElevatedButton(
+          onPressed: mutation.isPending
+              ? null
+              : () => mutation.mutate(CreateTodoInput(title: 'New Todo')),
+          child: Text(mutation.isPending ? 'Creating...' : 'Create Todo'),
+        ),
+        if (mutation.isError) Text('Error: ${mutation.error}'),
+        if (mutation.isSuccess) Text('Created: ${mutation.data!.title}'),
+      ],
+    );
+  }
+}
+```
+
+### Mutation Callbacks
+
+```dart
+useMutation<Todo, Exception, CreateTodoInput, PreviousData>(
+  (input, context) => createTodo(input),
+  onMutate: (variables, context) async {
+    // Called before mutation, return value passed to other callbacks
+    return previousData;
+  },
+  onSuccess: (data, variables, onMutateResult, context) {
+    // Called on success
+  },
+  onError: (error, variables, onMutateResult, context) {
+    // Called on error
+  },
+  onSettled: (data, error, variables, onMutateResult, context) {
+    // Called on success or error
+  },
+);
+```
+
+## QueryResult Properties
+
+| Property       | Type          | Description                         |
+| -------------- | ------------- | ----------------------------------- |
+| `data`         | `TData?`      | The resolved data                   |
+| `error`        | `TError?`     | The error if one occurred           |
+| `status`       | `QueryStatus` | `pending`, `success`, or `error`    |
+| `fetchStatus`  | `FetchStatus` | `fetching`, `paused`, or `idle`     |
+| `isPending`    | `bool`        | Status is pending                   |
+| `isSuccess`    | `bool`        | Status is success                   |
+| `isError`      | `bool`        | Status is error                     |
+| `isFetching`   | `bool`        | Currently fetching                  |
+| `isLoading`    | `bool`        | Pending and fetching (initial load) |
+| `isRefetching` | `bool`        | Fetching but not pending            |
+| `refetch`      | `Function`    | Manually trigger a refetch          |
+
+## MutationResult Properties
+
+| Property    | Type             | Description                              |
+| ----------- | ---------------- | ---------------------------------------- |
+| `data`      | `TData?`         | The result data                          |
+| `error`     | `TError?`        | The error if one occurred                |
+| `status`    | `MutationStatus` | `idle`, `pending`, `success`, or `error` |
+| `isIdle`    | `bool`           | Not yet triggered                        |
+| `isPending` | `bool`           | Currently executing                      |
+| `isSuccess` | `bool`           | Completed successfully                   |
+| `isError`   | `bool`           | Resulted in error                        |
+| `mutate`    | `Function`       | Trigger the mutation                     |
+| `reset`     | `Function`       | Reset to idle state                      |
