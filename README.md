@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="https://raw.githubusercontent.com/jezsung/query/main/assets/logo.svg" alt="flutter_query logo" width="120">
+</p>
+
 # flutter_query
 
 [![Pub Version](https://img.shields.io/pub/v/flutter_query)](https://pub.dev/packages/flutter_query)
