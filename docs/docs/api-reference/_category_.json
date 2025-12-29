@@ -1,0 +1,8 @@
+{
+  "label": "API Reference",
+  "position": 8,
+  "link": {
+    "type": "generated-index",
+    "description": "Complete API reference for Flutter Query options, results, and types."
+  }
+}

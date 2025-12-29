@@ -1,0 +1,8 @@
+{
+  "label": "Core Concepts",
+  "position": 4,
+  "link": {
+    "type": "generated-index",
+    "description": "Learn the fundamental concepts behind Flutter Query: query keys, caching, staleness, and garbage collection."
+  }
+}
