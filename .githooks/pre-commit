@@ -2,13 +2,18 @@
 
 set -e
 
-echo "Running pre-commit checks..."
+# Check if there are any staged changes in packages/flutter_query
+if git diff --cached --name-only | grep -q "^packages/flutter_query/"; then
+  echo "Running pre-commit checks for flutter_query..."
 
-cd packages/flutter_query
+  cd packages/flutter_query
 
-flutter analyze
-flutter pub run import_sorter:main --exit-if-changed
-dart format --output none --set-exit-if-changed .
-flutter test
+  flutter analyze
+  flutter pub run import_sorter:main --exit-if-changed
+  dart format --output none --set-exit-if-changed .
+  flutter test
 
-echo "✓ All pre-commit checks passed!"
+  echo "✓ All pre-commit checks passed!"
+else
+  echo "No changes in flutter_query, skipping checks."
+fi
