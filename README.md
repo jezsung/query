@@ -1,5 +1,12 @@
 # flutter_query
 
+[![Pub Version](https://img.shields.io/pub/v/flutter_query)](https://pub.dev/packages/flutter_query)
+[![Pub Points](https://img.shields.io/pub/points/flutter_query)](https://pub.dev/packages/flutter_query)
+[![Pub Likes](https://img.shields.io/pub/likes/flutter_query)](https://pub.dev/packages/flutter_query)
+[![CI](https://github.com/jezsung/query/actions/workflows/ci.yaml/badge.svg)](https://github.com/jezsung/query/actions/workflows/ci.yaml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![GitHub Stars](https://img.shields.io/github/stars/jezsung/query)](https://github.com/jezsung/query/stargazers)
+
 A Flutter package inspired by [TanStack Query](https://tanstack.com/query/latest) (formerly React Query). The API aligns with [TanStack Query v5](https://tanstack.com/query/v5/docs/framework/react/overview).
 
 This package uses Flutter Hooks to provide a familiar API for developers coming from TanStack Query.
