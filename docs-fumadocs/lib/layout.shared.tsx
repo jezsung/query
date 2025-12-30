@@ -8,6 +8,7 @@ export function baseOptions(): BaseLayoutProps {
       url: '/docs/overview',
       transparentMode: 'always',
     },
+    githubUrl: 'https://github.com/jezsung/query',
   };
 }
 
