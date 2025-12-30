@@ -1,14 +1,30 @@
 import { createElement } from 'react';
-import { type InferPageType, loader } from 'fumadocs-core/source';
+import { type InferPageType, LoaderPlugin, loader } from 'fumadocs-core/source';
 import { lucideIconsPlugin } from 'fumadocs-core/source/lucide-icons';
 import { docs } from 'fumadocs-mdx:collections/server';
 import { icons } from 'lucide-react';
+
+// Plugin to use frontmatter slug if provided
+const slugFrontmatterPlugin: LoaderPlugin = {
+  transformStorage({ storage }) {
+    for (const path of storage.getFiles()) {
+      const file = storage.read(path);
+      if (!file || file.format !== 'page') continue;
+
+      // Check if frontmatter has custom slug
+      const slug = (file.data as { slug?: string }).slug;
+      if (slug) {
+        file.slugs = slug.split('/').filter((s) => s !== '');
+      }
+    }
+  },
+};
 
 // See https://fumadocs.dev/docs/headless/source-api for more info
 export const source = loader({
   baseUrl: '/docs',
   source: docs.toFumadocsSource(),
-  plugins: [lucideIconsPlugin()],
+  plugins: [lucideIconsPlugin(), slugFrontmatterPlugin],
   icon(icon) {
     if (!icon) return;
 
