@@ -2,6 +2,20 @@
 
 set -e
 
+# Check if there are any staged changes in docs-fumadocs
+if git diff --cached --name-only | grep -q "^docs-fumadocs/"; then
+  echo "Running pre-commit checks for docs-fumadocs..."
+
+  cd docs-fumadocs
+
+  pnpm run types:check
+  pnpm exec prettier . --check
+  pnpm exec eslint --max-warnings=0
+
+  echo "✓ Checks passed for docs-fumadocs"
+  cd ../
+fi
+
 # Check if there are any staged changes in packages/flutter_query
 if git diff --cached --name-only | grep -q "^packages/flutter_query/"; then
   echo "Running pre-commit checks for flutter_query..."
@@ -13,7 +27,6 @@ if git diff --cached --name-only | grep -q "^packages/flutter_query/"; then
   dart format --output none --set-exit-if-changed .
   flutter test
 
-  echo "✓ All pre-commit checks passed!"
-else
-  echo "No changes in flutter_query, skipping checks."
+  echo "✓ Checks passed for packages/flutter_query"
+  cd ../..
 fi
