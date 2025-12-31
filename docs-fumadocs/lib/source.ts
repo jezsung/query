@@ -4,17 +4,17 @@ import { lucideIconsPlugin } from 'fumadocs-core/source/lucide-icons';
 import { docs } from 'fumadocs-mdx:collections/server';
 import { icons } from 'lucide-react';
 
-// Plugin to use frontmatter slug if provided
-const slugFrontmatterPlugin: LoaderPlugin = {
+// Plugin to use frontmatter permalink if provided
+const permalinkPlugin: LoaderPlugin = {
   transformStorage({ storage }) {
     for (const path of storage.getFiles()) {
       const file = storage.read(path);
       if (!file || file.format !== 'page') continue;
 
-      // Check if frontmatter has custom slug
-      const slug = (file.data as { slug?: string }).slug;
-      if (slug) {
-        file.slugs = slug.split('/').filter((s) => s !== '');
+      // Check if frontmatter has custom permalink
+      const { permalink } = file.data as { permalink?: string };
+      if (permalink) {
+        file.slugs = permalink.split('/').filter((s) => s !== '');
       }
     }
   },
@@ -24,7 +24,7 @@ const slugFrontmatterPlugin: LoaderPlugin = {
 export const source = loader({
   baseUrl: '/docs',
   source: docs.toFumadocsSource(),
-  plugins: [lucideIconsPlugin(), slugFrontmatterPlugin],
+  plugins: [lucideIconsPlugin(), permalinkPlugin],
   icon(icon) {
     if (!icon) return;
 

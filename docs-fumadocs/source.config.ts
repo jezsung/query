@@ -12,7 +12,7 @@ export const docs = defineDocs({
   dir: 'content/docs',
   docs: {
     schema: frontmatterSchema.extend({
-      slug: z.string().optional(),
+      permalink: z.string().optional(),
     }),
     postprocess: {
       includeProcessedMarkdown: true,
