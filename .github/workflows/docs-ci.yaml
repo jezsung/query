@@ -1,0 +1,40 @@
+name: Docs CI
+
+on:
+  pull_request:
+    paths:
+      - 'docs/**'
+      - '!docs/README.md'
+  push:
+    paths:
+      - 'docs/**'
+      - '!docs/README.md'
+
+jobs:
+  check:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+
+      - uses: pnpm/action-setup@41ff72655975bd51cab0327fa583b6e92b6d3061 # v4.2.0
+
+      - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f # v6.1.0
+        with:
+          node-version: 24
+          cache: 'pnpm'
+          cache-dependency-path: docs/pnpm-lock.yaml
+
+      - run: pnpm install --frozen-lockfile
+        working-directory: docs
+
+      - run: pnpm run types:check
+        working-directory: docs
+
+      - run: pnpm exec prettier . --check
+        working-directory: docs
+
+      - run: pnpm exec eslint --max-warnings=0
+        working-directory: docs
+
+      - run: pnpm build
+        working-directory: docs
