@@ -1,8 +1,0 @@
-{
-  "label": "Guides",
-  "position": 7,
-  "link": {
-    "type": "generated-index",
-    "description": "In-depth guides for advanced Flutter Query patterns and techniques."
-  }
-}

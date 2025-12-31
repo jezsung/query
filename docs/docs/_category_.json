@@ -1,8 +1,0 @@
-{
-  "label": "Flutter Query",
-  "position": 3,
-  "link": {
-    "type": "generated-index",
-    "description": "A powerful data fetching and state management library for Flutter, inspired by TanStack Query."
-  }
-}
