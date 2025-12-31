@@ -1,3 +1,18 @@
 @import 'tailwindcss';
 @import 'fumadocs-ui/css/vitepress.css';
 @import 'fumadocs-ui/css/preset.css';
+
+:root {
+  --brand-dark: #0468d7;
+  --brand-light: #47b0f8;
+}
+
+@theme {
+  --color-fd-primary: var(--brand-dark);
+  --color-fd-accent-foreground: var(--brand-dark);
+}
+
+.dark {
+  --color-fd-primary: var(--brand-light);
+  --color-fd-accent-foreground: var(--brand-light);
+}

@@ -1,3 +1,6 @@
 {
-  "git.openRepositoryInParentFolders": "always"
+  "git.openRepositoryInParentFolders": "always",
+  "files.associations": {
+    "*.css": "tailwindcss"
+  }
 }
