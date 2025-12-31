@@ -1,0 +1,211 @@
+---
+title: Quick Start
+description: Build a Flutter app that fetches data in just a few minutes
+permalink: quick-start
+---
+
+In this guide, you will build a Flutter app that fetches data from a server and displays it on the screen. By the end, you will have a working example that shows loading, success, and error states automatically.
+
+## Prerequisites
+
+Before starting, make sure you have:
+
+- Flutter installed and working
+- A Flutter project set up
+
+## Install the package
+
+Add `flutter_query` and `flutter_hooks` to your project:
+
+```bash title='Terminal'
+flutter pub add flutter_query flutter_hooks
+```
+
+You will notice two packages added to your `pubspec.yaml`:
+
+```yaml title='pubspec.yaml'
+dependencies:
+  flutter_query: ^0.3.7
+  flutter_hooks: ^0.21.2
+```
+
+## Set up the QueryClientProvider
+
+Open your `main.dart` file and wrap your app with `QueryClientProvider`:
+
+```dart title='main.dart'
+import 'package:flutter/material.dart';
+import 'package:flutter_query/flutter_query.dart';
+
+void main() {
+  runApp(
+    QueryClientProvider(
+      client: QueryClient(),
+      child: const MyApp(),
+    ),
+  );
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const MaterialApp(
+      home: HomePage(),
+    );
+  }
+}
+```
+
+This makes the query client available to all widgets in your app.
+
+## Create a query function
+
+Create a function that fetches data. For this example, create a simple function that simulates a network request:
+
+```dart title='main.dart'
+Future<String> fetchGreeting(QueryFunctionContext context) async {
+  // Simulate a network delay
+  await Future.delayed(const Duration(seconds: 2));
+  return 'Hello Flutter Query!';
+}
+```
+
+The function receives a `QueryFunctionContext` and returns a `Future` with your data.
+
+## Use the query hook
+
+Create a widget that uses `useQuery` to fetch and display the data. The widget must extend `HookWidget`:
+
+```dart title='main.dart'
+import 'package:flutter_hooks/flutter_hooks.dart';
+
+class HomePage extends HookWidget {
+  const HomePage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final result = useQuery(
+      const ['greeting'],
+      fetchGreeting,
+    );
+
+    return Scaffold(
+      appBar: AppBar(title: const Text('Quick Start')),
+      body: Center(
+        child: Builder(
+          builder: (context) {
+            if (result.isLoading) {
+              return const CircularProgressIndicator();
+            }
+
+            if (result.isError) {
+              return Text('Error: ${result.error}');
+            }
+
+            return Text(result.data!);
+          },
+        ),
+      ),
+    );
+  }
+}
+```
+
+`useQuery` takes two required arguments:
+
+- A **query key** — a list of identifiers that uniquely identifies this query
+- A **query function** — an asynchronous function that fetches your data
+
+## Run the app
+
+Run your app:
+
+```bash title='Terminal'
+flutter run
+```
+
+You will see a loading spinner for 2 seconds, then the greeting message appears.
+
+<Callout>
+  The command will prompt you to select a platform. Choose any platform you have
+  set up. If you have Chrome installed, selecting web is a fast way to see your
+  app running quickly.
+</Callout>
+
+## Complete code
+
+Here is the full `main.dart` file:
+
+```dart title='main.dart'
+import 'package:flutter/material.dart';
+import 'package:flutter_hooks/flutter_hooks.dart';
+import 'package:flutter_query/flutter_query.dart';
+
+void main() {
+  runApp(
+    QueryClientProvider(
+      client: QueryClient(),
+      child: const MyApp(),
+    ),
+  );
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const MaterialApp(
+      home: HomePage(),
+    );
+  }
+}
+
+Future<String> fetchGreeting(QueryFunctionContext context) async {
+  await Future.delayed(const Duration(seconds: 2));
+  return 'Hello Flutter Query!';
+}
+
+class HomePage extends HookWidget {
+  const HomePage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final result = useQuery(
+      const ['greeting'],
+      fetchGreeting,
+    );
+
+    return Scaffold(
+      appBar: AppBar(title: const Text('Quick Start')),
+      body: Center(
+        child: Builder(
+          builder: (context) {
+            if (result.isLoading) {
+              return const CircularProgressIndicator();
+            }
+
+            if (result.isError) {
+              return Text('Error: ${result.error}');
+            }
+
+            return Text(result.data!);
+          },
+        ),
+      ),
+    );
+  }
+}
+```
+
+## Next steps
+
+You now have a working Flutter Query setup. The query result automatically handles loading and error states, and will cache the data for future use.
+
+To continue exploring, try:
+
+- Changing the query function to return different data types
+- Adding a button that calls `result.refetch()` to refresh the data
+- Using multiple `useQuery` calls in the same widget
