@@ -2,17 +2,17 @@
 
 set -e
 
-# Check if there are any staged changes in docs-fumadocs
-if git diff --cached --name-only | grep -q "^docs-fumadocs/"; then
-  echo "Running pre-commit checks for docs-fumadocs..."
+# Check if there are any staged changes in docs
+if git diff --cached --name-only | grep -q "^docs/"; then
+  echo "Running pre-commit checks for docs..."
 
-  cd docs-fumadocs
+  cd docs
 
   pnpm run types:check
   pnpm exec prettier . --check
   pnpm exec eslint --max-warnings=0
 
-  echo "✓ Checks passed for docs-fumadocs"
+  echo "✓ Checks passed for docs"
   cd ../
 fi
 
