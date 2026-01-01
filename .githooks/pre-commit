@@ -8,6 +8,7 @@ if git diff --cached --name-only | grep -q "^docs/"; then
 
   cd docs
 
+  pnpm install --lockfile-only --frozen-lockfile
   pnpm run types:check
   pnpm exec prettier . --check
   pnpm exec eslint --max-warnings=0
