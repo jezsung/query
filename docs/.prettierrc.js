@@ -9,6 +9,7 @@ const config = {
   singleQuote: true,
   tabWidth: 2,
   trailingComma: 'all',
+  proseWrap: 'always',
 
   plugins: ['@trivago/prettier-plugin-sort-imports'],
 

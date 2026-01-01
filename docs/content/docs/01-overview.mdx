@@ -1,0 +1,108 @@
+---
+title: Overview
+description: A powerful data-fetching and caching library for Flutter
+permalink: overview
+---
+
+Flutter Query is a data-fetching and caching library for Flutter that makes
+working with server data simple. Inspired by
+[TanStack Query](https://tanstack.com/query) from the JavaScript/TypeScript
+ecosystem, it brings the same powerful patterns to Flutter developers—automatic
+caching, background updates, and intelligent state management, all out of the
+box.
+
+## The Challenge: Server State
+
+Most Flutter applications work with two fundamentally different kinds of state:
+**client state** and **server state**.
+
+Client state is local to your app. Think of a theme toggle, a navigation
+drawer's open/closed status, or the contents of a form before submission. This
+state lives entirely within your application, and you have complete control over
+it.
+
+Server state is different. It's persisted remotely—in databases, APIs, or other
+backend services. It's asynchronous by nature, requiring network requests to
+read or update. And here's the tricky part: it can change without your
+knowledge. Another user might update a record, a background job might process
+data, or the database might be modified by an entirely different system.
+
+This creates a fundamental challenge: how do you keep your app's view of the
+data in sync with reality?
+
+## Why Server State is Hard
+
+When you work with server state, you quickly encounter a set of problems that
+client state management doesn't prepare you for:
+
+- **Caching**: Should you re-fetch data every time a screen loads, or remember
+  what you fetched before?
+- **Deduplication**: If three widgets need the same data, should you make three
+  API calls?
+- **Staleness**: How do you know when cached data is too old to trust?
+- **Background updates**: When should you refresh data the user isn't actively
+  looking at?
+- **Garbage collection**: When should you throw away cached data you're no
+  longer using?
+- **Optimistic updates**: Can you show the user their changes before the server
+  confirms them?
+
+Building all of this yourself is complex and error-prone. You end up writing
+significant boilerplate—loading states, error handling, retry logic, cache
+invalidation—and it's easy to get wrong.
+
+## What Flutter Query Provides
+
+Flutter Query handles all of these concerns for you:
+
+- **Automatic caching and cache invalidation** — Data is cached intelligently
+  and invalidated when it needs to be refreshed.
+- **Request deduplication** — Multiple widgets requesting the same data share a
+  single network request.
+- **Background updates and refetching** — Keep data fresh with configurable
+  refetch strategies.
+- **Stale-while-revalidate patterns** — Show cached data instantly while
+  fetching fresh data in the background.
+- **Garbage collection** — Unused cache entries are automatically cleaned up.
+- **Optimistic updates for mutations** — Update the UI immediately while the
+  server processes the change.
+- **Retry logic with exponential backoff** — Failed requests are retried
+  automatically with sensible defaults.
+
+All of this works out of the box with sensible defaults, yet remains fully
+configurable when you need it.
+
+## Flutter Query vs. Bloc, Riverpod, and others
+
+Does Flutter Query replace Bloc, Riverpod, or other state management packages?
+
+The short answer is: **yes, partially**. Flutter Query is a **server-state**
+library that manages asynchronous operations between your server and client. If
+your app primarily displays content fetched from APIs—which most apps do—Flutter
+Query will likely handle the majority of your state management needs. What's
+left is typically just local UI state: theme preferences, navigation, form
+inputs before submission.
+
+Think about what your state management code actually does today. Chances are,
+most of it is boilerplate for handling server data: loading flags, error states,
+retry logic, cache invalidation. Flutter Query handles all of that for you. What
+remains is genuinely local state—and there's usually less of it than you'd
+expect.
+
+For apps with significant purely-local state—design tools, music production
+software, or games—you can use both. Flutter Query for server data, your
+preferred package for client state. They work together seamlessly.
+
+## Inspired by TanStack Query
+
+Flutter Query is directly inspired by
+[TanStack Query](https://tanstack.com/query) (formerly React Query), one of the
+most popular data-fetching libraries in the web ecosystem. If you've used
+TanStack Query before, you'll feel right at home.
+
+The APIs follow similar patterns, adapted to Dart and Flutter idioms. There are
+some differences but the core ideas translate directly.
+
+If you're coming from TanStack Query, you already understand the mental model.
+If you're new to this approach, you're about to discover a better way to work
+with server data.

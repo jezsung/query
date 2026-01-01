@@ -4,7 +4,9 @@ description: Build a Flutter app that fetches data in just a few minutes
 permalink: quick-start
 ---
 
-In this guide, you will build a Flutter app that fetches data from a server and displays it on the screen. By the end, you will have a working example that shows loading, success, and error states automatically.
+In this guide, you will build a Flutter app that fetches data from a server and
+displays it on the screen. By the end, you will have a working example that
+shows loading, success, and error states automatically.
 
 ## Prerequisites
 
@@ -62,7 +64,8 @@ This makes the query client available to all widgets in your app.
 
 ## Create a query function
 
-Create a function that fetches data. For this example, create a simple function that simulates a network request:
+Create a function that fetches data. For this example, create a simple function
+that simulates a network request:
 
 ```dart title='main.dart'
 Future<String> fetchGreeting(QueryFunctionContext context) async {
@@ -72,11 +75,13 @@ Future<String> fetchGreeting(QueryFunctionContext context) async {
 }
 ```
 
-The function receives a `QueryFunctionContext` and returns a `Future` with your data.
+The function receives a `QueryFunctionContext` and returns a `Future` with your
+data.
 
 ## Use the query hook
 
-Create a widget that uses `useQuery` to fetch and display the data. The widget must extend `HookWidget`:
+Create a widget that uses `useQuery` to fetch and display the data. The widget
+must extend `HookWidget`:
 
 ```dart title='main.dart'
 import 'package:flutter_hooks/flutter_hooks.dart';
@@ -202,7 +207,8 @@ class HomePage extends HookWidget {
 
 ## Next steps
 
-You now have a working Flutter Query setup. The query result automatically handles loading and error states, and will cache the data for future use.
+You now have a working Flutter Query setup. The query result automatically
+handles loading and error states, and will cache the data for future use.
 
 To continue exploring, try:
 
