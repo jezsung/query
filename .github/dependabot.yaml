@@ -8,3 +8,7 @@ updates:
     directory: "/packages/flutter_query"
     schedule:
       interval: "weekly"
+  - package-ecosystem: "npm"
+    directory: "/docs"
+    schedule:
+      interval: "weekly"
