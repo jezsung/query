@@ -1,0 +1,270 @@
+---
+title: Query Keys
+description: How query keys identify and organize cached data
+permalink: query-keys
+---
+
+## What are Query Keys?
+
+A query key is the first argument you pass to `useQuery`:
+
+```dart
+final result = useQuery(
+  const ['todos'], // This is a Query Key
+  fetchTodos,
+);
+```
+
+Query keys are the foundation of Flutter Query's caching system. Every query
+needs a key, and that key determines how Flutter Query stores, retrieves, and
+invalidates your data. Specifically, query keys serve three purposes:
+
+1. **Cache identity** — Flutter Query uses the key to store and look up cached
+   data. Two queries with the same key share the same cache entry.
+2. **Deduplication** — If multiple widgets request data with the same key, only
+   one network request is made. All widgets receive the same result.
+3. **Invalidation target** — When you invalidate queries, you specify which keys
+   to invalidate. The key structure determines which queries get refreshed.
+
+## Structure of Query Keys
+
+A query key is a type of `List<Object?>`. It can contain strings, numbers, maps,
+lists, class instances, or any combination of these:
+
+```dart
+// Simple key
+['greeting']
+
+// Key with an ID
+['todo', 5]
+
+// Key with parameters
+['todos', {'status': 'done', 'page': 1}]
+
+// Key with a class instance
+['todos', TodoFilter(status: 'done', page: 1)]
+```
+
+The key must uniquely identify the data being fetched. If your query function
+depends on a variable, that variable should be part of the key.
+
+### Why Lists?
+
+Query keys are lists rather than single values because most data naturally fits
+into hierarchies. Consider a todo application:
+
+- All todos: `['todos']`
+- Completed todos: `['todos', {'status': 'done'}]`
+- A specific todo: `['todos', 5]`
+- Comments on a todo: `['todos', 5, 'comments']`
+
+This structure mirrors how you think about your data. It also enables powerful
+invalidation patterns—you can invalidate `['todos']` to refresh all todo-related
+queries, or `['todos', 5]` to refresh just one todo and its comments.
+
+## How Query Keys are compared
+
+Flutter Query uses deep equality when comparing keys. Two keys are equal if they
+contain the same elements in the same order.
+
+### Primitives
+
+Strings, numbers, and other primitives are compared by value:
+
+```dart
+// These are the same key
+const ['users', 123]
+const ['users', 123]
+
+// These are different keys
+const ['users', 123]
+const ['users', 456]
+```
+
+### Maps
+
+For maps within keys, element order doesn't matter—only the key-value pairs:
+
+```dart
+// These are the same key
+const [{'id': 123, 'name': 'test'}]
+const [{'name': 'test', 'id': 123}]
+```
+
+Maps typically represent unordered configuration or filters, so Flutter Query
+ignores the order in which entries were defined.
+
+### Lists
+
+For lists within keys, order does matter:
+
+```dart
+// These are different keys
+const ['users', [1, 2, 3]]
+const ['users', [3, 2, 1]]
+```
+
+Lists often represent ordered data where sequence matters, so Flutter Query
+preserves order sensitivity.
+
+### Class instances
+
+For class instances, Flutter Query uses the object's `==` operator. By default,
+two instances are only equal if they are the same object in memory. To make
+instances with the same values compare as equal, override `==` and `hashCode`:
+
+```dart
+class TodoFilter {
+  const TodoFilter({required this.status, required this.page});
+
+  final String status;
+  final int page;
+
+  @override
+  bool operator ==(Object other) =>
+      other is TodoFilter && other.status == status && other.page == page;
+
+  @override
+  int get hashCode => Object.hash(status, page);
+}
+```
+
+With this implementation, these keys are treated as equal:
+
+```dart
+['todos', TodoFilter(status: 'done', page: 1)]
+['todos', TodoFilter(status: 'done', page: 1)]
+```
+
+Without the overrides, each `TodoFilter` instance would be unique, causing
+Flutter Query to treat them as different queries and miss the cache.
+
+<Callout>
+  Packages like [equatable](https://pub.dev/packages/equatable) and
+  [freezed](https://pub.dev/packages/freezed) can generate `==` and `hashCode`
+  automatically, saving you from writing boilerplate.
+</Callout>
+
+## Variables in Query Keys
+
+When your query function uses a variable, include it in the key. This ensures
+each unique combination of variables gets its own cache entry:
+
+```dart
+class TodoPage extends HookWidget {
+  final int todoId;
+
+  const TodoPage({required this.todoId, super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final result = useQuery(
+      ['todo', todoId],
+      (context) => fetchTodo(todoId),
+    );
+
+    // ...
+  }
+}
+```
+
+When `todoId` changes, Flutter Query treats this as a different query. It will
+check the cache for the new key, fetch if needed, and update the widget with the
+correct data.
+
+This happens automatically—you don't need to manage subscriptions or manually
+trigger refetches.
+
+## Accessing Key from Query Function
+
+The query key is available inside your query function through the context:
+
+```dart
+final result = useQuery(
+  ['todo', todoId],
+  (QueryFunctionContext context) async {
+    final todoId = context.queryKey[1] as int;
+    // ...
+  },
+);
+```
+
+This pattern keeps your query function decoupled from specific variables. The
+function reads what it needs from the key, making it reusable across different
+call sites.
+
+## Prefix matching and Invalidation
+
+Query keys support prefix matching, which is essential for invalidation. When
+you invalidate with a partial key, all queries that start with that prefix are
+affected:
+
+```dart
+// Invalidate all queries starting with ['todos']
+await client.invalidateQueries(queryKey: ['todos']);
+
+// This invalidates:
+// - ['todos']
+// - ['todos', 5]
+// - ['todos', {'status': 'done'}]
+// - ['todos', 5, 'comments']
+```
+
+This prefix behavior only applies to invalidation and similar operations. When
+fetching data, keys must match exactly.
+
+To require an exact match during invalidation, use the `exact` parameter:
+
+```dart
+// Only invalidate ['todos'], not ['todos', 5]
+await client.invalidateQueries(queryKey: ['todos'], exact: true);
+```
+
+## Best practices
+
+A well-designed key structure makes your caching and invalidation logic cleaner.
+Some principles that help:
+
+**Start with the resource type.** Put the most general identifier first:
+
+```dart
+['users', userId] // Good
+[userId, 'users'] // Bad
+```
+
+**Include all dependencies.** If your query function uses a value, the key
+should contain it:
+
+```dart
+// The filter affects the result, so include it
+['todos', {'status': filter}]
+```
+
+**Keep keys serializable.** Stick to primitives, maps, and lists. Custom objects
+work if they have proper equality, but simple types are easier to reason about.
+
+**Be consistent.** Establish naming conventions and follow them throughout your
+app. Whether you use `['user', id]` or `['users', id]`, pick one and stick with
+it.
+
+**Use `const` when possible.** For static keys without variables, use `const` to
+let Dart reuse the same list instance:
+
+```dart
+const ['todos'] // Good
+['todos']       // Bad
+```
+
+## Comparison to TanStack Query
+
+If you're familiar with TanStack Query (React Query), Flutter Query's key system
+follows similar patterns—keys are arrays, prefix matching powers invalidation,
+and the mental model is the same.
+
+The key difference is how equality is determined. TanStack Query serializes keys
+to JSON and compares the resulting strings. Flutter Query uses Dart's native
+`==` operator and `hashCode` instead.
+
+This means TanStack Query keys must be JSON-serializable, while Flutter Query
+keys can contain any Dart object—as long as it implements proper equality. Class
+instances, enums, and other Dart types work naturally without serialization.

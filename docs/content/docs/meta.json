@@ -1,3 +1,9 @@
 {
-  "pages": ["---Introduction---", "01-overview", "02-quick-start"]
+  "pages": [
+    "---Introduction---",
+    "01-overview",
+    "02-quick-start",
+    "---Concepts---",
+    "concepts/01-query-keys"
+  ]
 }
