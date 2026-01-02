@@ -114,6 +114,7 @@ mason-lock.json
 !/dev/ci/**/Gemfile.lock
 
 # AI Agents
+.claude
 AGENTS.md
 CLAUDE.md
 GEMINI.md
