@@ -1,0 +1,113 @@
+---
+title: Data Staleness
+description: How cached data becomes stale and triggers a refetch
+permalink: staleness
+---
+
+## What is data staleness?
+
+Data staleness is how Flutter Query decides whether cached data is fresh enough
+to use as-is, or whether it should refetch updated data from the server.
+
+When you fetch data, Flutter Query caches it and records when the fetch
+happened. As time passes, that cached data becomes increasingly likely to be out
+of sync with the server. At some point, the data is considered "stale", meaning
+it is old enough that it requires a check for updates.
+
+The distinction matters because it controls automatic refetching behavior. Fresh
+data is trusted and used directly. Stale data is still used, but the query will
+refetch in the background. When fresh data arrives, the widget rebuilds
+automatically with the fresh data.
+
+## Why data staleness matters
+
+Without staleness, you'd face an uncomfortable choice. Either refetch every time
+a widget mounts (wasteful and slow), or never refetch automatically (data
+becomes outdated). Staleness gives you a middle ground.
+
+Consider a user browsing a todo list. They navigate to a detail screen, then
+back to the list. Without staleness tracking, you'd either:
+
+- Refetch the entire list again (unnecessary if they were gone only for 2
+  seconds)
+- Show potentially stale data forever (problematic if they were gone for an
+  hour)
+
+With staleness, you can say "trust the cache for 5 minutes, then start checking
+for updates." The user gets instant navigation for quick back-and-forth, but
+still sees fresh data when they return after a longer absence.
+
+## Configuring stale duration
+
+Data becomes stale after a configurable duration. By default, data is
+immediately stale, so a query will refetch whenever a widget mounts. You can
+change this with the `staleDuration` parameter:
+
+```dart
+final result = useQuery(
+  const ['todos'],
+  (context) async => await fetchTodos(),
+  staleDuration: const StaleDuration(minutes: 5), // [!code highlight]
+);
+```
+
+With this configuration, data becomes stale 5 minutes after a successful fetch.
+Until then, mounting widgets receive cached data without triggering a refetch.
+
+The `StaleDuration` constructor accepts the following named parameters:
+
+```dart
+const StaleDuration(minutes: 5)
+const StaleDuration(seconds: 30)
+const StaleDuration(hours: 1)
+const StaleDuration(days: 1, hours: 12)
+```
+
+For special cases, Flutter Query provides these values:
+
+```dart
+StaleDuration.zero      // Data is immediately stale (default behavior)
+StaleDuration.infinity  // Data never becomes stale through time
+StaleDuration.static    // Data is truly immutable, ignores invalidation
+```
+
+## Preventing staleness
+
+For data that doesn't need automatic refetching, Flutter Query provides two
+special stale duration values:
+
+**`StaleDuration.infinity`**: Data never becomes stale through time alone. The
+query won't trigger automatic refetches on mount or resume. However, you can
+still manually invalidate the query to force a refetch when needed.
+
+```dart
+staleDuration: StaleDuration.infinity,
+```
+
+**`StaleDuration.static`**: Data is truly immutable and will never refetch, even
+when manually invalidated. Use this for data that genuinely never changes, like
+configuration loaded at app startup or static reference data.
+
+```dart
+staleDuration: StaleDuration.static,
+```
+
+The key difference is that `infinity` respects manual invalidation, while
+`static` ignores it entirely. Use `infinity` when data rarely changes but might
+eventually need refreshing. Use `static` when data should never be refetched for
+the lifetime of the app.
+
+## Refetch triggers
+
+Stale data triggers refetches in certain situations:
+
+- When a widget mounts (configurable via `refetchOnMount`)
+- When the app returns from the background (configurable via `refetchOnResume`)
+- When you manually invalidate the query
+
+Fresh data won't refetch in these situations. This prevents unnecessary network
+requests while ensuring data stays reasonably current.
+
+The default behavior is to refetch stale data on mount. This means if you
+navigate away and return after the stale duration has passed, Flutter Query
+shows the cached data immediately and refetches in the background.

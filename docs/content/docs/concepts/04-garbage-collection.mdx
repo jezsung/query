@@ -1,0 +1,141 @@
+---
+title: Garbage Collection
+description: How Flutter Query removes unused cache entries to free memory
+permalink: garbage-collection
+---
+
+import { Step, Steps } from 'fumadocs-ui/components/steps';
+
+## What is garbage collection?
+
+Garbage collection removes cached data that is no longer being used. When all
+widgets observing a query unmount, that cached data becomes "inactive." After a
+period of inactivity, the cache entry is removed to free memory.
+
+The garbage collection duration (`gcDuration`) controls how long inactive cache
+entries remain in memory before being removed. By default, this is 5 minutes.
+
+## Why garbage collection matters
+
+Without garbage collection, your app's memory usage would grow indefinitely.
+Every query your user visits would remain cached forever, even for screens
+they'll never return to.
+
+But removing cache entries immediately would defeat the purpose of caching. If a
+user navigates away from a screen and back within seconds, they'd have to wait
+for a fresh network request instead of seeing cached data instantly.
+
+Garbage collection provides a balance: keep data around long enough to benefit
+from caching, but not so long that memory becomes a problem.
+
+## The lifecycle of a cache entry
+
+Consider what happens when you use a query:
+
+<Steps>
+<Step>
+### Widget mounts
+
+A widget subscribes to a query with key `['todos']`.
+
+</Step>
+<Step>
+### Data fetched and cached
+
+The query fetches data from the server and stores it in the cache.
+
+</Step>
+<Step>
+### Widget unmounts
+
+The user navigates away. No other widgets are observing the query.
+
+</Step>
+<Step>
+### GC timer starts
+
+The garbage collection timer begins counting down (5 minutes by default).
+
+</Step>
+<Step>
+### Cache entry removed
+
+The cache entry is removed after the set garbage collection duration.
+
+</Step>
+</Steps>
+
+If another widget subscribes to `['todos']` before the timer expires, the cached
+data is immediately available. The timer is cancelled, and the cycle restarts
+when that widget unmounts.
+
+## Configuring garbage collection duration
+
+The `gcDuration` parameter controls how long inactive cache entries persist. By
+default, this is 5 minutes:
+
+```dart
+final result = useQuery(
+  const ['todos'],
+  (context) async => await fetchTodos(),
+  gcDuration: const GcDuration(minutes: 30), // [!code highlight]
+);
+```
+
+The `GcDuration` constructor accepts the same named parameters as Dart's
+`Duration`:
+
+```dart
+const GcDuration(minutes: 5)
+const GcDuration(seconds: 30)
+const GcDuration(hours: 1)
+const GcDuration(days: 1, hours: 12)
+```
+
+`GcDuration` also provides two predefined constants:
+
+- `GcDuration.infinity`: The cache entry is never garbage collected. Use this
+  for data that should persist for the entire app session, like user profile
+  information or app configuration.
+- `GcDuration.zero`: The cache entry is removed immediately when the last
+  observer unmounts. Use this for sensitive data that shouldn't linger in
+  memory, or for large data structures you want to discard quickly.
+
+## When garbage collection runs
+
+The garbage collection timer starts when the last widget observing a query
+unmounts and the query is idle (not fetching). By default, the timer is set to 5
+minutes. If a fetch is in progress, the timer waits until it completes. This
+avoids removing a query mid-fetch and wasting the in-flight network request.
+
+When a new widget subscribes before the garbage collection timer expires, the
+timer is cancelled. The cached data remains available, and the cycle restarts
+when that widget unmounts.
+
+## Multiple observers with different durations
+
+When multiple widgets observe the same query with different `gcDuration` values,
+the query uses the longest duration. This ensures no widget's cache preferences
+are overridden by a more aggressive setting elsewhere.
+
+For example, if Widget A specifies 5 minutes and Widget B specifies 30 minutes,
+the cache entry will persist for 30 minutes after both widgets unmount.
+
+## Garbage collection vs staleness
+
+Garbage collection and staleness are related but distinct concepts:
+
+| Aspect                | Staleness (`staleDuration`) | Garbage Collection (`gcDuration`) |
+| --------------------- | --------------------------- | --------------------------------- |
+| Question answered     | Should I refetch?           | Should I keep this in memory?     |
+| When checked          | On mount, on resume         | When last observer unmounts       |
+| Effect when triggered | Background refetch starts   | Cache entry removed               |
+| Data availability     | Data still available        | Data gone                         |
+
+A query can be stale but still cached. A stale query returns its cached data
+immediately while refetching in the background. A garbage-collected query has no
+cached data at all—the next mount starts fresh with a loading state.
+
+The common configuration is a short `staleDuration` (or the default of zero)
+with a longer `gcDuration`. This means data is refetched frequently to stay
+current, but remains cached for quick access during navigation.

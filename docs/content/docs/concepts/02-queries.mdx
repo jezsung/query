@@ -1,0 +1,208 @@
+---
+title: Queries
+description: How queries fetch, cache, and synchronize server data
+permalink: queries
+---
+
+A query is a declarative subscription to asynchronous data. When you create a
+query, you declare: "I need this data, identified by this key, fetched by this
+function." The query handles everything else: caching, deduplication, background
+updates, error handling, and retry logic.
+
+## What makes a query
+
+A query has two essential parts:
+
+1. **A query key**: A unique identifier used to cache and look up the data. If
+   two widgets request data with the same key, they share the same cache entry.
+
+2. **A query function**: An asynchronous function that fetches the data. This
+   could call a REST API, query a database, read from local storage, or any
+   other async operation that returns data.
+
+```dart
+final result = useQuery(
+  const ['todos'],                        // Query key
+  (context) async => await fetchTodos(),  // Query function
+);
+```
+
+The query key and function together define what data to fetch and how to fetch
+it. The query decides when to fetch, how to cache, and when to update.
+
+## Query status
+
+Every query exists in one of three statuses:
+
+- **Pending**: The query has no data yet. This is the initial state before any
+  data has been fetched.
+- **Success**: The query has data. The fetch completed successfully at some
+  point, and cached data is available.
+- **Error**: The query encountered an error. The most recent fetch failed, and
+  the error is available.
+
+These statuses answer a simple question: _do we have data?_ Pending means no.
+Success means yes. Error means something went wrong.
+
+```dart
+final result = useQuery(...);
+
+switch (result.status) {
+  case QueryStatus.pending:
+    // No data yet
+  case QueryStatus.success:
+    // Data is available in result.data
+  case QueryStatus.error:
+    // Error is available in result.error
+}
+```
+
+Boolean helpers provide the same information:
+
+```dart
+result.isPending  // status == QueryStatus.pending
+result.isSuccess  // status == QueryStatus.success
+result.isError    // status == QueryStatus.error
+```
+
+When a fetch fails, the query moves to error query status, but any previously
+cached data remains available in `result.data`. This means a query can be in
+error query status while still having usable data to display.
+
+## Fetch status
+
+Independently from the query status, every query has a fetch status:
+
+- **Fetching**: A network request is currently in progress.
+- **Paused**: The query wants to fetch but is paused (for example, due to
+  network conditions).
+- **Idle**: No fetch is happening right now.
+
+The fetch status answers a different question: _is the query function running?_
+
+## Why two statuses?
+
+The separation between query status and fetch status enables powerful patterns.
+
+Consider a query that has successfully fetched data. The user navigates away and
+comes back. The data is cached, so the query returns it immediately, but the
+data might be stale, so it refetches in the background. During this time:
+
+- **Query status**: `success` (we have data to show)
+- **Fetch status**: `fetching` (we're updating it in the background)
+
+Or consider a fresh query when the device is offline:
+
+- **Query status**: `pending` (no data yet)
+- **Fetch status**: `paused` (can't fetch right now)
+
+These combinations create the full picture. A few derived properties combine
+them for common patterns:
+
+```dart
+// Initial load: no data, actively fetching
+result.isLoading  // isPending && isFetching
+
+// Background update: has data, actively fetching
+result.isRefetching  // isFetching && !isPending
+
+// Failed initial load: error query status, no cached data
+result.isLoadingError  // isError && data == null
+
+// Failed background update: error query status, but has cached data
+result.isRefetchError  // isError && data != null
+```
+
+## Query lifecycle
+
+Understanding how a query flows through states helps you reason about what your
+UI should display at any moment.
+
+### Successful first load
+
+When a widget mounts and requests data for the first time:
+
+| Step          | Query Status | Fetch Status | Data     |
+| ------------- | ------------ | ------------ | -------- |
+| Widget mounts | `pending`    | `idle`       | `null`   |
+| Fetch begins  | `pending`    | `fetching`   | `null`   |
+| Data arrives  | `success`    | `idle`       | `<data>` |
+
+The middle state (`pending` with `fetching`) is the loading state. This is when
+`isLoading` returns true.
+
+```dart
+if (result.isLoading) {
+  return CircularProgressIndicator();
+}
+return TodoList(todos: result.data!);
+```
+
+### Successful background refetch
+
+When cached data exists but is stale, the query shows cached data immediately
+while refreshing in the background:
+
+| Step                  | Query Status | Fetch Status | Data       |
+| --------------------- | ------------ | ------------ | ---------- |
+| Widget mounts (stale) | `success`    | `idle`       | `<cached>` |
+| Background fetch      | `success`    | `fetching`   | `<cached>` |
+| Fresh data arrives    | `success`    | `idle`       | `<fresh>`  |
+
+The user sees content instantly. When fresh data arrives, the widget rebuilds
+automatically. This is the stale-while-revalidate pattern.
+
+### Failed first load
+
+When the initial fetch fails after exhausting retries:
+
+| Step              | Query Status | Fetch Status | Data   | Failure Count |
+| ----------------- | ------------ | ------------ | ------ | ------------- |
+| Widget mounts     | `pending`    | `idle`       | `null` | 0             |
+| Fetch begins      | `pending`    | `fetching`   | `null` | 0             |
+| 1st attempt fails | `pending`    | `fetching`   | `null` | 1             |
+| 2nd attempt fails | `pending`    | `fetching`   | `null` | 2             |
+| 3rd attempt fails | `pending`    | `fetching`   | `null` | 3             |
+| Retries exhausted | `error`      | `idle`       | `null` | 4             |
+
+By default, failed fetches retry 3 times with exponential backoff (1s, 2s, 4s
+delays). During retries, `failureCount` and `failureReason` track progress. The
+query only moves to `error` status after all retries are exhausted.
+
+```dart
+if (result.isLoading) {
+  if (result.failureCount > 0) {
+    return Text('Retrying... (attempt ${result.failureCount + 1})');
+  }
+  return CircularProgressIndicator();
+}
+
+if (result.isLoadingError) {
+  return ErrorMessage(error: result.error!);
+}
+```
+
+### Failed background refetch
+
+When a background refresh fails, the query moves to error status but keeps the
+cached data:
+
+| Step                  | Query Status | Fetch Status | Data       |
+| --------------------- | ------------ | ------------ | ---------- |
+| Widget mounts (stale) | `success`    | `idle`       | `<cached>` |
+| Background fetch      | `success`    | `fetching`   | `<cached>` |
+| Retries exhausted     | `error`      | `idle`       | `<cached>` |
+
+The cached data survives the failed refresh. This lets you show the stale
+content with an error indicator rather than replacing working UI with an error
+screen:
+
+```dart
+return Column(
+  children: [
+    if (result.isRefetchError)
+      ErrorBanner(message: 'Failed to refresh'),
+    TodoList(todos: result.data!),
+  ],
+);
+```

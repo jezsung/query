@@ -1,0 +1,286 @@
+---
+title: Query Lifecycle
+description:
+  How a query flows through states from initial request to final result
+permalink: query-lifecycle
+---
+
+Understanding the query lifecycle helps you reason about what your UI should
+display at any given moment. This page traces the complete journey of a query,
+from the moment a widget mounts to the final settled state.
+
+## The two state dimensions
+
+Before tracing the lifecycle, recall that every query has two independent state
+dimensions:
+
+- **Query status** answers: _do we have data?_ (pending, success, or error)
+- **Fetch status** answers: _is a request in progress?_ (fetching, paused, or
+  idle)
+
+These combine to describe the full picture. A query in `success` status with
+`fetching` fetch status has cached data and is updating it in the background. A
+query in `pending` status with `idle` fetch status has no data and isn't
+currently trying to fetch any.
+
+## Success case: first load
+
+When a widget mounts and requests data for the first time, the query progresses
+through these states:
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  Widget mounts                                                              │
+│  ─────────────                                                              │
+│  status: pending     fetchStatus: idle                                      │
+│  data: null          error: null                                            │
+│                                                                             │
+│  The query exists but hasn't started fetching yet.                          │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  Fetch begins                                                               │
+│  ────────────                                                               │
+│  status: pending     fetchStatus: fetching                                  │
+│  data: null          error: null                                            │
+│                                                                             │
+│  The network request starts. This is the "loading" state where              │
+│  isLoading is true (isPending && isFetching).                               │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  Fetch succeeds                                                             │
+│  ──────────────                                                             │
+│  status: success     fetchStatus: idle                                      │
+│  data: <result>      error: null                                            │
+│                                                                             │
+│  The data arrives and is cached. The query is now settled. The              │
+│  dataUpdatedAt timestamp records when this fetch completed.                 │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+In your widget, this typically looks like:
+
+```dart
+final result = useQuery(
+  const ['todos'],
+  (context) async => await fetchTodos(),
+);
+
+if (result.isLoading) {
+  return CircularProgressIndicator(); // pending + fetching
+}
+
+return TodoList(todos: result.data!); // success + idle
+```
+
+## Success case: background refetch
+
+When a widget mounts and cached data already exists but is stale, the query
+shows the cached data immediately while refetching in the background:
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  Widget mounts (stale data in cache)                                        │
+│  ───────────────────────────────────                                        │
+│  status: success     fetchStatus: idle                                      │
+│  data: <cached>      error: null                                            │
+│                                                                             │
+│  Cached data is returned immediately. The widget can render right away.     │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  Background fetch begins                                                    │
+│  ───────────────────────                                                    │
+│  status: success     fetchStatus: fetching                                  │
+│  data: <cached>      error: null                                            │
+│                                                                             │
+│  A background request starts. isRefetching is true (isFetching &&           │
+│  !isPending). The cached data remains available throughout.                 │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  Fresh data arrives                                                         │
+│  ──────────────────                                                         │
+│  status: success     fetchStatus: idle                                      │
+│  data: <fresh>       error: null                                            │
+│                                                                             │
+│  The cache updates with fresh data. dataUpdatedAt is updated. The           │
+│  widget rebuilds automatically with the new data.                           │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+This is the stale-while-revalidate pattern: users see content instantly, and it
+updates seamlessly when fresh data arrives.
+
+## Error case: first load fails
+
+When the initial fetch fails after exhausting all retry attempts, the query
+moves to error status:
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  Widget mounts                                                              │
+│  ─────────────                                                              │
+│  status: pending     fetchStatus: idle                                      │
+│  data: null          error: null                                            │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  Fetch begins                                                               │
+│  ────────────                                                               │
+│  status: pending     fetchStatus: fetching                                  │
+│  data: null          error: null          failureCount: 0                   │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  First attempt fails                                                        │
+│  ───────────────────                                                        │
+│  status: pending     fetchStatus: fetching                                  │
+│  data: null          error: null          failureCount: 1                   │
+│  failureReason: <error>                                                     │
+│                                                                             │
+│  The request failed, but retries are configured. The failureCount           │
+│  increments and failureReason captures the error. The query waits           │
+│  before retrying (1 second by default).                                     │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  Retry attempts (2nd, 3rd...)                                               │
+│  ────────────────────────────                                               │
+│  status: pending     fetchStatus: fetching                                  │
+│  data: null          failureCount: 2, 3...                                  │
+│                                                                             │
+│  Each retry waits longer (exponential backoff: 1s, 2s, 4s by default).      │
+│  The query remains in pending status with fetching fetch status.            │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  All retries exhausted                                                      │
+│  ─────────────────────                                                      │
+│  status: error       fetchStatus: idle                                      │
+│  data: null          error: <error>                                         │
+│  failureCount: 4     failureReason: <error>                                 │
+│                                                                             │
+│  After 3 retries (4 total attempts), the query gives up. It moves to        │
+│  error status. isLoadingError is true (isError && data == null).            │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+In your widget:
+
+```dart
+if (result.isLoading) {
+  return CircularProgressIndicator();
+}
+
+if (result.isLoadingError) {
+  return ErrorMessage(
+    error: result.error!,
+    onRetry: () => result.refetch(),
+  );
+}
+
+return TodoList(todos: result.data!);
+```
+
+## Error case: background refetch fails
+
+When a background refetch fails, the query moves to error status but retains the
+cached data:
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  Widget mounts (stale data in cache)                                        │
+│  ───────────────────────────────────                                        │
+│  status: success     fetchStatus: idle                                      │
+│  data: <cached>      error: null                                            │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  Background fetch begins                                                    │
+│  ───────────────────────                                                    │
+│  status: success     fetchStatus: fetching                                  │
+│  data: <cached>      error: null                                            │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  All retries exhausted                                                      │
+│  ─────────────────────                                                      │
+│  status: error       fetchStatus: idle                                      │
+│  data: <cached>      error: <error>                                         │
+│                                                                             │
+│  The refetch failed, but cached data is still available. isRefetchError     │
+│  is true (isError && data != null). You can show the cached data with       │
+│  an error indicator.                                                        │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+This is a key design decision: a failed background refresh doesn't throw away
+good cached data. Your UI can continue showing the cached content while
+indicating that a refresh failed:
+
+```dart
+return Column(
+  children: [
+    if (result.isRefetchError)
+      ErrorBanner(
+        message: 'Failed to refresh',
+        onRetry: () => result.refetch(),
+      ),
+    TodoList(todos: result.data!), // Cached data still available
+  ],
+);
+```
+
+## Retry behavior
+
+By default, failed fetches retry up to 3 times with exponential backoff:
+
+| Attempt | Delay before retry |
+| ------- | ------------------ |
+| 1st     | (immediate)        |
+| 2nd     | 1 second           |
+| 3rd     | 2 seconds          |
+| 4th     | 4 seconds          |
+
+After the 4th attempt fails, the query moves to error status. The delays are
+capped at 30 seconds for very long retry chains.
+
+During retries, the `failureCount` and `failureReason` properties let you show
+retry progress if desired:
+
+```dart
+if (result.isFetching && result.failureCount > 0) {
+  return Text('Retrying... (attempt ${result.failureCount + 1})');
+}
+```
+
+## State transitions summary
+
+The query status transitions follow a simple pattern:
+
+- **pending → success**: First successful fetch
+- **pending → error**: First fetch fails after all retries
+- **success → error**: Background refetch fails (data retained)
+- **error → success**: Subsequent fetch succeeds
+
+The fetch status is simpler:
+
+- **idle → fetching**: A fetch begins
+- **fetching → idle**: A fetch completes (success or error)
+- **idle → paused**: Query wants to fetch but can't (e.g., offline)
+- **paused → fetching**: Conditions allow fetching again
+
+These transitions happen automatically. Flutter Query manages the complexity so
+your widgets can focus on what to display for each state combination.

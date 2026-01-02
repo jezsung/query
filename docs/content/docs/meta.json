@@ -4,6 +4,9 @@
     "01-overview",
     "02-quick-start",
     "---Concepts---",
-    "concepts/01-query-keys"
+    "concepts/01-query-keys",
+    "concepts/02-queries",
+    "concepts/03-staleness",
+    "concepts/04-garbage-collection"
   ]
 }
