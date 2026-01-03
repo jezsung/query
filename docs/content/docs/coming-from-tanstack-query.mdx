@@ -1,0 +1,147 @@
+---
+title: Coming from TanStack Query
+description: Differences and the reasoning behind its design decisions
+permalink: coming-from-tanstack-query
+---
+
+<Callout type='warning'>
+  If you haven't used TanStack Query, feel free to skip this page. Everything
+  you need to know is covered in the rest of the documentation.
+</Callout>
+
+Flutter Query is directly inspired by
+[TanStack Query](https://tanstack.com/query), one of the most popular
+data-fetching libraries in the JavaScript/TypeScript ecosystem. If you've used
+TanStack Query before, you'll find Flutter Query familiar. The core concepts
+translate directly: query keys, stale-while-revalidate patterns, automatic
+caching, and background refetching all work the same way conceptually.
+
+However, there are some intentional differences. These stem from two sources:
+adapting to Dart and Flutter idioms, and design decisions about naming
+conventions. This page explains what's different and why.
+
+## Query key comparison
+
+**TanStack Query** serializes keys to JSON and compares the resulting strings.
+Two keys are equal if their JSON representations match.
+
+**Flutter Query** uses Dart's native `==` operator with deep equality
+comparison. Two keys are equal if every element compares equal using `==`.
+
+This means TanStack Query keys must be JSON-serializable (primitives, arrays,
+plain objects), while Flutter Query keys can contain any Dart object that
+implements proper equality. Class instances, enums, and other Dart types work
+naturally without serialization.
+
+```dart
+// This works in Flutter Query but not TanStack Query
+['todos', TodoFilter(status: 'done', page: 1)]
+```
+
+For class instances, override `==` and `hashCode` to enable value equality. See
+[Query Keys](/docs/query-keys#class-instances) for details.
+
+## Duration-based options
+
+**TanStack Query** uses integers in milliseconds for time-based options like
+`staleTime` and `gcTime`. JavaScript and TypeScript have no standard way to
+represent a period of time, so milliseconds is the convention.
+
+**Flutter Query** uses Dart's `Duration` type through dedicated wrapper classes.
+Dart's core library provides `Duration` to represent time differences, and it's
+widely adopted throughout the Flutter ecosystem. Using `Duration` aligns with
+how time is handled elsewhere in Flutter.
+
+The option names are also suffixed with "Duration" instead of "Time" to
+explicitly indicate the type:
+
+| TanStack Query | Flutter Query   |
+| -------------- | --------------- |
+| `staleTime`    | `staleDuration` |
+| `gcTime`       | `gcDuration`    |
+
+Flutter Query provides dedicated types for these durations:
+
+```dart
+// Stale duration examples
+staleDuration: const StaleDuration(minutes: 5)
+staleDuration: StaleDuration.infinity  // Never becomes stale
+staleDuration: StaleDuration.static    // Immutable, ignores invalidation
+
+// Garbage collection duration examples
+gcDuration: const GcDuration(minutes: 10)
+gcDuration: GcDuration.infinity  // Never garbage collected
+```
+
+These wrapper types offer semantic clarity and provide special values like
+`infinity` and `static` that wouldn't be possible with raw `Duration`.
+
+## Renamed options
+
+Some options are renamed to reduce verbosity:
+
+| TanStack Query         | Flutter Query   |
+| ---------------------- | --------------- |
+| `placeholderData`      | `placeholder`   |
+| `initialData`          | `seed`          |
+| `initialDataUpdatedAt` | `seedUpdatedAt` |
+
+The reasoning behind shorter names is that libraries forming the core of your
+codebase benefit from concise naming. Flutter Query is designed to handle most
+of your data-fetching needs. These options appear frequently throughout an
+application, and their purpose becomes well-understood by the team over time. At
+that point, longer descriptive names add visual noise without improving clarity.
+
+The `seed` terminology also better conveys the concept: you're providing
+starting data that the query can grow from, not just initial data that gets
+replaced.
+
+## No Callback Form Options
+
+TanStack Query allows certain options to accept either a value or a callback
+function. For example, `placeholderData` can be a static value or a function
+that receives the previous query data:
+
+```tsx
+// TanStack Query - static value
+placeholderData: sampleData;
+
+// TanStack Query - callback form
+placeholderData: (previousData, previousQuery) => previousData;
+```
+
+The callback form is particularly useful for paginated queries, where you can
+display data from a previous page while fetching the next one, avoiding a
+loading spinner during transitions.
+
+Flutter Query intentionally does not implement callback form options.
+
+TypeScript supports union types, so TanStack Query can define an option as
+`TData | ((previousData, previousQuery) => TData)` with no friction. Dart has no
+union type support. To accept both forms, Flutter Query would need to either
+provide a sealed wrapper class or add separate parameters for the callback
+variant. Both approaches feel unergonomic and could confuse users unfamiliar
+with TanStack Query or new to the library.
+
+While supporting callback forms would increase compatibility with TanStack Query
+and ease onboarding for experienced users, I decided to keep the API surface
+simple and Flutter-like. That said, callback support for `placeholder` is under
+consideration since the use case for dynamic placeholder data is compelling.
+
+## Summary
+
+| Aspect            | TanStack Query                        | Flutter Query                 |
+| ----------------- | ------------------------------------- | ----------------------------- |
+| Key comparison    | JSON serialization                    | Dart `==` with deep equality  |
+| Time options      | Integers (milliseconds)               | `Duration` via wrapper types  |
+| Time option names | `staleTime`, `gcTime`                 | `staleDuration`, `gcDuration` |
+| Placeholder data  | `placeholderData`                     | `placeholder`                 |
+| Initial data      | `initialData`, `initialDataUpdatedAt` | `seed`, `seedUpdatedAt`       |
+| Callback forms    | Supported via union types             | Not supported                 |
+
+If you're migrating from TanStack Query, these differences are straightforward
+to adapt to. The mental model remains the same. You're just writing more
+idiomatic Dart.
+
+If you have thoughts on any of these design decisions, feel free to share your
+opinion in the [GitHub issues](https://github.com/jezsung/query/issues).

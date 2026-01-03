@@ -1,5 +1,6 @@
 {
   "pages": [
+    "coming-from-tanstack-query",
     "---Introduction---",
     "01-overview",
     "02-quick-start",
