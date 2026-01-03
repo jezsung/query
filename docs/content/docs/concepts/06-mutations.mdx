@@ -1,0 +1,161 @@
+---
+title: Mutations
+description: How mutations modify server data and update your UI
+permalink: mutations
+---
+
+Queries fetch data. Mutations change it.
+
+Where a query declares "I need this data," a mutation declares "I want to change
+something." Creating a new todo, updating a user's profile, deleting a record.
+These are all mutations. They represent actions that modify server state rather
+than read it.
+
+## How mutations differ from queries
+
+Queries and mutations solve fundamentally different problems. Understanding this
+distinction shapes how you use them.
+
+A query runs automatically. When a widget mounts and requests data, the query
+springs into action. It fetches, caches, and updates as needed. The widget
+declares what it needs, and the query handles when and how to get it.
+
+A mutation waits. It doesn't execute until you explicitly tell it to. This makes
+sense because you don't want to accidentally delete a user's account every time
+a component renders. You call `mutate()` when the user clicks a button, submits
+a form, or takes some deliberate action.
+
+This difference extends to caching. Queries cache their results, sharing data
+across widgets and persisting it for reuse. Mutations don't work this way. You
+might use a mutation's result to update the query cache, but mutations
+themselves are fire-and-forget operations.
+
+## When to use mutations
+
+Use a mutation when you need to:
+
+- Create new data on the server
+- Update existing data
+- Delete data
+- Trigger server-side effects (sending emails, processing jobs)
+- Perform any operation that changes state in database
+
+In terms of HTTP methods, mutations typically wrap POST, PUT, PATCH, or DELETE
+requests. If you're making a GET request, that's usually a query.
+
+If you're fetching data to display, that's a query. If you're changing data in
+response to user action, that's a mutation.
+
+## Mutation status
+
+Every mutation exists in one of four states:
+
+- **Idle**: The mutation hasn't been triggered yet, or has been reset. This is
+  the starting state.
+- **Pending**: The mutation is currently executing. The network request is in
+  flight.
+- **Success**: The mutation completed successfully. The result data is
+  available.
+- **Error**: The mutation failed. The error is available.
+
+Unlike queries, which start in `pending` and immediately begin fetching,
+mutations start in `idle` and stay there until you call `mutate()`.
+
+```dart
+final mutation = useMutation(...);
+
+if (mutation.isIdle) {
+  // Ready to mutate, hasn't been triggered yet
+}
+if (mutation.isPending) {
+  // Currently executing
+}
+if (mutation.isSuccess) {
+  // Completed successfully, mutation.data is available
+}
+if (mutation.isError) {
+  // Failed, mutation.error is available
+}
+```
+
+After a mutation completes (success or error), it stays in that state until you
+call `reset()` to return it to idle, or trigger another mutation.
+
+## Mutation callbacks
+
+The `useMutation` hook accepts four optional callbacks that run at different
+points during the mutation:
+
+**onMutate** runs before the mutation function executes. This is where you can
+perform optimistic updates. Whatever value you return from `onMutate` gets
+passed to the other callbacks. You can type this return value using the fourth
+generic parameter of `useMutation`.
+
+**onSuccess** runs after the mutation completes successfully. You receive the
+data returned by the mutation function, the variables you passed to `mutate()`,
+and the value from `onMutate`. This is the natural place to invalidate related
+queries or update the cache with the server's response.
+
+**onError** runs if the mutation fails. You receive the error, the variables,
+and the value from `onMutate`. If you performed an optimistic update, this is
+where you roll it back using the previous state you stored.
+
+**onSettled** runs after the mutation completes, regardless of whether it
+succeeded or failed. You receive the data (if successful), the error (if
+failed), the variables, and the value from `onMutate`. Use this for cleanup
+logic that should happen either way.
+
+```dart
+final mutation = useMutation<Todo, Exception, CreateTodoInput, String>(
+  (input, context) => api.createTodo(input),
+  onMutate: (variables, context) {
+    return 'Hello from onMutate';
+  },
+  onSuccess: (data, variables, onMutateResult, context) {
+    print(onMutateResult); // 'Hello from onMutate'
+    print('Created todo: $data');
+  },
+  onError: (error, variables, onMutateResult, context) {
+    print(onMutateResult); // 'Hello from onMutate'
+    print('Failed: $error');
+  },
+  onSettled: (data, error, variables, onMutateResult, context) {
+    print(onMutateResult); // 'Hello from onMutate'
+    print('Mutation finished');
+  },
+);
+```
+
+## Why mutations don't retry by default
+
+Queries retry failed requests three times with exponential backoff. Mutations
+don't retry at all by default. This asymmetry is deliberate.
+
+A query is idempotent, so fetching the same data twice produces the same result.
+Retrying a failed query is safe. But mutations often aren't idempotent. If a
+"create user" request times out, did it succeed or fail? Retrying might create
+duplicate users. If a "transfer money" request fails ambiguously, retrying might
+transfer the money twice.
+
+You can enable retry explicitly for mutations that are safe to repeat, like
+updating a status or setting a preference. The default is conservative because
+blindly retrying a mutation could produce an unexpected result.
+
+## Optimistic updates
+
+Sometimes waiting for the server feels slow. When a user toggles a checkbox,
+they expect immediate feedback, not a spinner followed by the checkbox changing.
+
+Optimistic updates show the expected result before the server confirms it. The
+`onMutate` callback runs _before_ the mutation function, letting you update the
+UI immediately. If the mutation succeeds, the optimistic update was correct. If
+it fails, you roll back to the previous state.
+
+The value you return from `onMutate` is passed to `onError` and `onSettled`,
+making rollback straightforward. Store the previous state in `onMutate`, and use
+it to restore the cache if things go wrong.
+
+This pattern trades correctness guarantees for perceived performance. The UI
+shows something that might not be true yet. For many interactions like liking a
+post or marking a task complete, this tradeoff makes the app feel dramatically
+more responsive.
