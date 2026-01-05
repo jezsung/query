@@ -62,21 +62,22 @@ class MyApp extends StatelessWidget {
 
 This makes the query client available to all widgets in your app.
 
-## Create a query function
+## Create a data fetching function
 
 Create a function that fetches data. For this example, create a simple function
 that simulates a network request:
 
 ```dart title='main.dart'
-Future<String> fetchGreeting(QueryFunctionContext context) async {
+Future<String> fetchGreeting() async {
   // Simulate a network delay
   await Future.delayed(const Duration(seconds: 2));
   return 'Hello Flutter Query!';
 }
 ```
 
-The function receives a `QueryFunctionContext` and returns a `Future` with your
-data.
+This function is completely independent of Flutter Query. It just fetches data
+and returns a `Future`. Keeping your data fetching logic separate makes it
+easier to test and reuse across your app.
 
 ## Use the query hook
 
@@ -93,7 +94,7 @@ class HomePage extends HookWidget {
   Widget build(BuildContext context) {
     final result = useQuery(
       const ['greeting'],
-      fetchGreeting,
+      (context) => fetchGreeting(),
     );
 
     return Scaffold(
@@ -168,7 +169,7 @@ class MyApp extends StatelessWidget {
   }
 }
 
-Future<String> fetchGreeting(QueryFunctionContext context) async {
+Future<String> fetchGreeting() async {
   await Future.delayed(const Duration(seconds: 2));
   return 'Hello Flutter Query!';
 }
@@ -180,7 +181,7 @@ class HomePage extends HookWidget {
   Widget build(BuildContext context) {
     final result = useQuery(
       const ['greeting'],
-      fetchGreeting,
+      (context) => fetchGreeting(),
     );
 
     return Scaffold(
