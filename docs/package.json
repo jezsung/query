@@ -6,12 +6,14 @@
     "build": "next build",
     "dev": "next dev",
     "start": "next start",
+    "serve": "next build && serve out",
     "types:check": "fumadocs-mdx && next typegen && tsc --noEmit",
     "postinstall": "fumadocs-mdx",
     "lint": "eslint",
     "format": "prettier --write ."
   },
   "dependencies": {
+    "@orama/orama": "^3.1.18",
     "fumadocs-core": "16.4.2",
     "fumadocs-mdx": "14.2.4",
     "fumadocs-ui": "16.4.2",
@@ -32,6 +34,7 @@
     "eslint-config-prettier": "^10.1.8",
     "postcss": "^8.5.6",
     "prettier": "^3.7.4",
+    "serve": "^14.2.5",
     "tailwindcss": "^4.1.18",
     "typescript": "^5.9.3",
     "zod": "^4.3.4"

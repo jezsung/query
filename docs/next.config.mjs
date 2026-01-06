@@ -4,14 +4,8 @@ const withMDX = createMDX();
 
 /** @type {import('next').NextConfig} */
 const config = {
+  output: 'export',
   reactStrictMode: true,
-  redirects: async () => [
-    {
-      source: '/docs',
-      destination: '/docs/overview',
-      permanent: true,
-    },
-  ],
 };
 
 export default withMDX(config);
