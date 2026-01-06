@@ -1,0 +1,377 @@
+---
+title: Basic Query with HTTP
+description:
+  Learn how to fetch data from an API using Flutter Query and the http package
+permalink: tutorials/basic-query-with-http
+---
+
+In this tutorial, we will build a Flutter app that fetches repository data from
+the GitHub API and displays it on screen. By the end, you will have a working
+app that shows repository details including stars, forks, and watchers.
+
+## What we will build
+
+We will create an app that:
+
+- Fetches data from the GitHub API
+- Parses the JSON response into a Dart model
+- Displays the data with proper loading and error states
+
+## Prerequisites
+
+Before starting, make sure you have:
+
+- Flutter installed and working
+- Familiarity with the [Quick Start](/docs/quick-start) guide
+
+## Create the project
+
+First, let's create a new Flutter project:
+
+```bash title='Terminal'
+flutter create basic_query_with_http --empty
+```
+
+<Callout type='info'>
+  The `--empty` flag creates a minimal Flutter project without the default
+  counter app boilerplate. This gives us a clean starting point with just the
+  essential files.
+</Callout>
+
+Navigate into the project directory:
+
+```bash title='Terminal'
+cd basic_query_with_http
+```
+
+## Install dependencies
+
+Add the `http` package to your project:
+
+```bash title='Terminal'
+flutter pub add http
+```
+
+Your `pubspec.yaml` should now include:
+
+```yaml title='pubspec.yaml'
+dependencies:
+  http: ^1.6.0
+  flutter_hooks: ^0.21.3+1
+  flutter_query: ^0.3.7
+```
+
+## Create the data model
+
+First, let's create a model class to represent a GitHub repository. Add this to
+your `main.dart` file:
+
+```dart title='main.dart'
+class Repo {
+  const Repo({
+    required this.fullName,
+    required this.description,
+    required this.watchers,
+    required this.forks,
+    required this.stars,
+  });
+
+  final String fullName;
+  final String description;
+  final int watchers;
+  final int forks;
+  final int stars;
+
+  factory Repo.fromJson(Map<String, dynamic> json) {
+    return Repo(
+      fullName: json['full_name'] as String,
+      description: json['description'] as String? ?? '',
+      watchers: json['subscribers_count'] as int,
+      forks: json['forks_count'] as int,
+      stars: json['stargazers_count'] as int,
+    );
+  }
+}
+```
+
+The `fromJson` factory constructor parses the GitHub API response into our Dart
+model. Notice how we handle the nullable `description` field by providing a
+default empty string.
+
+## Set up the QueryClientProvider
+
+Open your `main.dart` file and set up the query client:
+
+```dart title='main.dart'
+import 'dart:convert';
+
+import 'package:flutter/material.dart';
+import 'package:flutter_hooks/flutter_hooks.dart';
+import 'package:flutter_query/flutter_query.dart';
+import 'package:http/http.dart' as http;
+
+void main() {
+  final queryClient = QueryClient();
+  runApp(
+    QueryClientProvider(
+      client: queryClient,
+      child: const MainApp(),
+    ),
+  );
+  queryClient.dispose();
+}
+
+class MainApp extends StatelessWidget {
+  const MainApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const MaterialApp(home: Home());
+  }
+}
+```
+
+The `QueryClientProvider` makes the query client available to all widgets in
+your app.
+
+## Fetch data with useQuery
+
+Now let's create a `Home` widget that fetches and displays the repository data.
+The widget must extend `HookWidget` to use the `useQuery` hook:
+
+```dart title='main.dart'
+class Home extends HookWidget {
+  const Home({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final result = useQuery<Repo, Exception>(
+      const ['repo'],
+      (context) async {
+        final response = await http.get(
+          Uri.parse('https://api.github.com/repos/jezsung/query'),
+        );
+
+        if (response.statusCode != 200) {
+          throw Exception('Failed to fetch repository data');
+        }
+
+        return Repo.fromJson(jsonDecode(response.body));
+      },
+    );
+
+    // UI code goes here
+  }
+}
+```
+
+Let's break down what's happening:
+
+1. We call `useQuery<Repo, Exception>` with type parameters for the data and
+   error types
+2. The first argument `const ['repo']` is the query key that uniquely identifies
+   this query
+3. The second argument is the query function that fetches the data
+
+The query function uses the `http` package to make a GET request to the GitHub
+API. If the response status code isn't 200, we throw an exception. Otherwise, we
+parse the JSON response into our `Repo` model.
+
+## Display the query result
+
+Now let's add the UI that displays different states based on the query result.
+We will use Dart's switch expression with pattern matching:
+
+```dart title='main.dart'
+@override
+Widget build(BuildContext context) {
+  final result = useQuery<Repo, Exception>(
+    const ['repo'],
+    (context) async {
+      final response = await http.get(
+        Uri.parse('https://api.github.com/repos/jezsung/query'),
+      );
+
+      if (response.statusCode != 200) {
+        throw Exception('Failed to fetch repository data');
+      }
+
+      return Repo.fromJson(jsonDecode(response.body));
+    },
+  );
+
+  return Scaffold(
+    body: Center(
+      child: switch (result) {
+        QueryResult(isPending: true) => const Text('Loading...'),
+        QueryResult(:final error?) => Text('An error has occurred: $error'),
+        QueryResult(:final data?) => Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            if (result.isFetching) const Text('Fetching in background...'),
+            Text(data.fullName),
+            Text(data.description),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text('👀 ${data.watchers}'),
+                Text('🍴 ${data.forks}'),
+                Text('✨ ${data.stars}'),
+              ],
+            ),
+          ],
+        ),
+        _ => const SizedBox.shrink(),
+      },
+    ),
+  );
+}
+```
+
+The switch expression handles four cases:
+
+1. **Pending state** shows "Loading..." while the initial fetch is in progress
+2. **Error state** displays the error message if the fetch failed
+3. **Success state** shows the repository data when available
+4. **Default case** returns an empty widget for any other state
+
+Notice the `result.isFetching` check inside the success case. This shows a
+message when the data is being refreshed in the background while still
+displaying the cached data.
+
+## Run the app
+
+Run your app:
+
+```bash title='Terminal'
+flutter run
+```
+
+You will see "Loading..." briefly, then the repository details will appear with
+the name, description, and stats.
+
+## Complete code
+
+Here is the full `main.dart` file:
+
+```dart title='main.dart'
+import 'dart:convert';
+
+import 'package:flutter/material.dart';
+import 'package:flutter_hooks/flutter_hooks.dart';
+import 'package:flutter_query/flutter_query.dart';
+import 'package:http/http.dart' as http;
+
+void main() {
+  final queryClient = QueryClient();
+  runApp(
+    QueryClientProvider(
+      client: queryClient,
+      child: const MainApp(),
+    ),
+  );
+  queryClient.dispose();
+}
+
+class MainApp extends StatelessWidget {
+  const MainApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const MaterialApp(home: Home());
+  }
+}
+
+class Home extends HookWidget {
+  const Home({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final result = useQuery<Repo, Exception>(
+      const ['repo'],
+      (context) async {
+        final response = await http.get(
+          Uri.parse('https://api.github.com/repos/jezsung/query'),
+        );
+
+        if (response.statusCode != 200) {
+          throw Exception('Failed to fetch repository data');
+        }
+
+        return Repo.fromJson(jsonDecode(response.body));
+      },
+    );
+
+    return Scaffold(
+      body: Center(
+        child: switch (result) {
+          QueryResult(isPending: true) => const Text('Loading...'),
+          QueryResult(:final error?) => Text('An error has occurred: $error'),
+          QueryResult(:final data?) => Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              if (result.isFetching) const Text('Fetching in background...'),
+              Text(data.fullName),
+              Text(data.description),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text('👀 ${data.watchers}'),
+                  Text('🍴 ${data.forks}'),
+                  Text('✨ ${data.stars}'),
+                ],
+              ),
+            ],
+          ),
+          _ => const SizedBox.shrink(),
+        },
+      ),
+    );
+  }
+}
+
+class Repo {
+  const Repo({
+    required this.fullName,
+    required this.description,
+    required this.watchers,
+    required this.forks,
+    required this.stars,
+  });
+
+  final String fullName;
+  final String description;
+  final int watchers;
+  final int forks;
+  final int stars;
+
+  factory Repo.fromJson(Map<String, dynamic> json) {
+    return Repo(
+      fullName: json['full_name'] as String,
+      description: json['description'] as String? ?? '',
+      watchers: json['subscribers_count'] as int,
+      forks: json['forks_count'] as int,
+      stars: json['stargazers_count'] as int,
+    );
+  }
+}
+```
+
+## What you learned
+
+In this tutorial, you learned how to:
+
+- Use the `http` package to fetch data from a REST API
+- Parse JSON responses into Dart models
+- Handle loading, error, and success states with pattern matching
+- Display background fetch status while showing cached data
+
+## Next steps
+
+Now that you understand basic queries with HTTP, explore these topics:
+
+- [Query Keys](/docs/query-keys) to learn how to structure query keys for
+  different use cases
+- [Queries](/docs/queries) to understand how queries work under the hood
+- [Data Staleness](/docs/staleness) to configure when data should be considered
+  stale

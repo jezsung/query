@@ -4,6 +4,8 @@
     "---Introduction---",
     "01-overview",
     "02-quick-start",
+    "---Tutorials---",
+    "tutorials/basic-query-with-http",
     "---Concepts---",
     "concepts/01-query-keys",
     "concepts/02-queries",
