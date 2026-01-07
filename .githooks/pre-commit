@@ -12,6 +12,7 @@ if git diff --cached --name-only | grep -q "^docs/"; then
   pnpm run types:check
   pnpm exec prettier . --check
   pnpm exec eslint --max-warnings=0
+  pnpm build
 
   echo "✓ Checks passed for docs"
   cd ../
