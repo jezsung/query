@@ -4,16 +4,10 @@ on:
   pull_request:
     paths:
       - 'docs/**'
-      - '!docs/.prettierignore'
-      - '!docs/.prettierrc.js'
-      - '!docs/eslint.config.mjs'
       - '!docs/README.md'
   push:
     paths:
       - 'docs/**'
-      - '!docs/.prettierignore'
-      - '!docs/.prettierrc.js'
-      - '!docs/eslint.config.mjs'
       - '!docs/README.md'
   workflow_dispatch:
 
