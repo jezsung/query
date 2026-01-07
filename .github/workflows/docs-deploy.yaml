@@ -5,10 +5,10 @@ on:
     branches:
       - main
     paths:
-      - '!.prettierignore'
-      - '!.prettierrc.js'
-      - '!eslint.config.mjs'
       - 'docs/**'
+      - '!docs/.prettierignore'
+      - '!docs/.prettierrc.js'
+      - '!docs/eslint.config.mjs'
       - '!docs/README.md'
   workflow_dispatch:
 
