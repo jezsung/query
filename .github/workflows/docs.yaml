@@ -52,8 +52,8 @@ jobs:
         run: |
           pnpm dlx concurrently --names "typecheck,format,lint" \
             "pnpm run typecheck" \
-            "pnpm exec prettier . --check" \
-            "pnpm exec eslint --max-warnings=0"
+            "pnpm run format:check" \
+            "pnpm run lint:check"
 
   build:
     if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref_name == 'main'

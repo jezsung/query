@@ -10,8 +10,8 @@ if git diff --cached --name-only | grep -q "^docs/"; then
 
   pnpm install --lockfile-only --frozen-lockfile
   pnpm run typecheck
-  pnpm exec prettier . --check
-  pnpm exec eslint --max-warnings=0
+  pnpm run format:check
+  pnpm run lint:check
   pnpm build
 
   echo "✓ Checks passed for docs"
