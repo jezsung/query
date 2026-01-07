@@ -28,3 +28,9 @@ Working with server data is hard. You need caching, deduplication, background re
 ## Documentation
 
 Visit [flutterquery.com](https://flutterquery.com) for the full documentation, tutorials, and guides.
+
+## Support
+
+If you find Flutter Query useful, consider giving it a ⭐ to help others discover it!
+
+[![Star History Chart](https://api.star-history.com/svg?repos=jezsung/query&type=Date)](https://star-history.com/#jezsung/query&Date)
