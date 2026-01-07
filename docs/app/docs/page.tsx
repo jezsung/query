@@ -1,5 +1,5 @@
 import { permanentRedirect } from 'next/navigation';
 
-export default function HomePage() {
+export default function DocsIndexPage() {
   permanentRedirect('/docs/overview');
 }
