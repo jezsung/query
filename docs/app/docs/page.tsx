@@ -1,5 +1,14 @@
-import { permanentRedirect } from 'next/navigation';
+'use client';
 
-export default function DocsIndexPage() {
-  permanentRedirect('/docs/overview');
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+
+export default function DocsIndex() {
+  const router = useRouter();
+
+  useEffect(() => {
+    router.replace('/docs/overview');
+  }, [router]);
+
+  return null;
 }
