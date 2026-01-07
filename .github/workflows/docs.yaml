@@ -51,7 +51,7 @@ jobs:
         working-directory: docs
         run: |
           pnpm dlx concurrently --names "typecheck,format,lint" \
-            "pnpm run types:check" \
+            "pnpm run typecheck" \
             "pnpm exec prettier . --check" \
             "pnpm exec eslint --max-warnings=0"
 

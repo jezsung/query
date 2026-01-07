@@ -7,10 +7,10 @@
     "dev": "next dev",
     "start": "next start",
     "serve": "next build && serve out",
-    "types:check": "fumadocs-mdx && next typegen && tsc --noEmit",
-    "postinstall": "fumadocs-mdx",
+    "typecheck": "fumadocs-mdx && next typegen && tsc --noEmit",
     "lint": "eslint",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "postinstall": "fumadocs-mdx"
   },
   "dependencies": {
     "@orama/orama": "^3.1.18",
