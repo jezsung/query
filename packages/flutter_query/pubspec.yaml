@@ -1,5 +1,5 @@
 name: flutter_query
-description: Widgets that help state management of asynchronous operations such as sending HTTP requests, getting the response, and caching the result.
+description: An async state management package that simplifies data fetching, caching, and updates.
 version: 0.3.7
 repository: https://github.com/jezsung/query/tree/main/packages/flutter_query
 
