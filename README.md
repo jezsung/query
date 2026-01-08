@@ -29,6 +29,16 @@ Working with server data is hard. You need caching, deduplication, background re
 
 Visit [flutterquery.com](https://flutterquery.com) for the full documentation, tutorials, and guides.
 
+## Versioning
+
+This project strictly follows [Semantic Versioning](https://semver.org/). Given a version number `MAJOR.MINOR.PATCH`:
+
+- **MAJOR** version increments indicate breaking changes
+- **MINOR** version increments add functionality in a backward-compatible manner
+- **PATCH** version increments include backward-compatible bug fixes
+
+Before version 1.0.0, MINOR version increments may include breaking changes.
+
 ## Support
 
 If you find Flutter Query useful, consider giving it a ⭐ to help others discover it!
