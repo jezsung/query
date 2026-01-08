@@ -14,6 +14,10 @@ on:
       - '!**/*.md'
       - '!**/LICENSE'
 
+defaults:
+  run:
+    working-directory: packages/flutter_query
+
 jobs:
   check:
     runs-on: ubuntu-24.04
@@ -27,7 +31,7 @@ jobs:
           - 3.38.0
       fail-fast: false
     steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+      - uses: actions/checkout@v6
 
       - uses: subosito/flutter-action@fd55f4c5af5b953cc57a2be44cb082c8f6635e8e # v2.21.0
         with:
@@ -36,16 +40,11 @@ jobs:
           cache: true
 
       - run: flutter pub get
-        working-directory: packages/flutter_query
 
       - run: flutter analyze --no-fatal-infos --no-fatal-warnings
-        working-directory: packages/flutter_query
 
       - run: flutter pub run import_sorter:main --exit-if-changed
-        working-directory: packages/flutter_query
 
       - run: dart format --output none --set-exit-if-changed .
-        working-directory: packages/flutter_query
 
       - run: flutter test
-        working-directory: packages/flutter_query

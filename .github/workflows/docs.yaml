@@ -16,6 +16,10 @@ permissions:
   pages: write
   id-token: write
 
+defaults:
+  run:
+    working-directory: docs
+
 concurrency:
   group: pages
   cancel-in-progress: false
@@ -39,10 +43,8 @@ jobs:
           cache-dependency-path: docs/pnpm-lock.yaml
 
       - run: pnpm install --frozen-lockfile
-        working-directory: docs
 
       - name: Check types, formatting, and linting
-        working-directory: docs
         run: |
           pnpm dlx concurrently --names "typecheck,format,lint" \
             "pnpm run typecheck" \
@@ -69,10 +71,8 @@ jobs:
           cache-dependency-path: docs/pnpm-lock.yaml
 
       - run: pnpm install --frozen-lockfile
-        working-directory: docs
 
       - run: pnpm build
-        working-directory: docs
 
       - uses: actions/configure-pages@v5
 
