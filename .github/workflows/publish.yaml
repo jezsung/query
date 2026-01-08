@@ -13,3 +13,11 @@ jobs:
     with:
       environment: pub.dev
       working-directory: packages/flutter_query
+  release:
+    permissions:
+      contents: write
+    needs: publish
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: softprops/action-gh-release@a06a81a03ee405af7f2048a818ed3f03bbf83c7b # v2.5.0
