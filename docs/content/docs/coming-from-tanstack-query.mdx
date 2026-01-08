@@ -96,6 +96,32 @@ The `seed` terminology also better conveys the concept: you're providing
 starting data that the query can grow from, not just initial data that gets
 replaced.
 
+## Retry options
+
+**TanStack Query** uses two separate options to control retry behavior: `retry`
+for the retry count, and `retryDelay` for the delay between attempts.
+
+```tsx
+// TanStack Query
+retry: 3,
+retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000)
+```
+
+**Flutter Query** combines these into a single `retry` callback function. The
+function receives the retry count and error, then returns the delay before the
+next attempt. Returning `null` stops retrying.
+
+```dart
+// Flutter Query
+retry: (retryCount, error) {
+  if (retryCount >= 3) return null;  // Stop after 3 retries
+  return Duration(seconds: 1 << retryCount);  // Exponential backoff
+}
+```
+
+This combined approach keeps all retry logic in one place. You can base both the
+retry count and delay on the error type within a single function.
+
 ## No callback argument for options
 
 TanStack Query allows certain options to accept either a value or a callback
@@ -137,6 +163,7 @@ consideration since the use case for dynamic placeholder data is compelling.
 | Time option names | `staleTime`, `gcTime`                 | `staleDuration`, `gcDuration` |
 | Placeholder data  | `placeholderData`                     | `placeholder`                 |
 | Initial data      | `initialData`, `initialDataUpdatedAt` | `seed`, `seedUpdatedAt`       |
+| Retry options     | `retry`, `retryDelay` (separate)      | `retry` (combined callback)   |
 | Callback forms    | Supported via union types             | Not supported                 |
 
 If you're migrating from TanStack Query, these differences are straightforward
