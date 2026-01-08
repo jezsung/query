@@ -2,7 +2,3 @@ include: package:lints/recommended.yaml
 
 linter:
   rules:
-    null_check_on_nullable_type_parameter: false
-# analyzer:
-#   exclude:
-#     - path/to/excluded/files/**

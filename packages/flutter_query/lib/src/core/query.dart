@@ -80,7 +80,7 @@ class Query<TData, TError>
     _options = _options.merge(newOptions);
     if (state.data == null && _options.seed != null) {
       state = _initialState = QueryState<TData, TError>.fromSeed(
-        _options.seed!,
+        _options.seed as TData,
         _options.seedUpdatedAt,
       );
     }
