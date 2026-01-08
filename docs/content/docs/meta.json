@@ -13,6 +13,7 @@
     "concepts/04-garbage-collection",
     "concepts/06-mutations",
     "---Reference---",
-    "reference/use-query"
+    "reference/use-query",
+    "reference/use-mutation"
   ]
 }
