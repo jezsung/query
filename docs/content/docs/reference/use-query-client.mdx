@@ -1,0 +1,33 @@
+---
+title: useQueryClient
+description: Hook for accessing the QueryClient instance
+permalink: usequeryclient
+---
+
+```dart
+final QueryClient queryClient = useQueryClient();
+```
+
+The `useQueryClient` hook returns the current `QueryClient` instance from the
+nearest `QueryClientProvider` ancestor in the widget tree.
+
+## Parameters
+
+This hook takes no parameters.
+
+## Returns
+
+### QueryClient
+
+```dart
+QueryClient queryClient
+```
+
+The `QueryClient` instance from the widget tree. Use this to perform imperative
+operations like:
+
+- Prefetching data with `fetchQuery` or `prefetchQuery`
+- Reading cached data with `getQueryData`
+- Invalidating queries with `invalidateQueries`
+- Refetching queries with `refetchQueries`
+- Cancelling queries with `cancelQueries`

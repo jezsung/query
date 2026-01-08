@@ -14,6 +14,7 @@
     "concepts/06-mutations",
     "---Reference---",
     "reference/use-query",
-    "reference/use-mutation"
+    "reference/use-mutation",
+    "reference/use-query-client"
   ]
 }
