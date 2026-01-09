@@ -1,0 +1,375 @@
+---
+title: QueryClient
+description: Reference for the QueryClient class and its methods
+permalink: queryclient
+---
+
+```dart
+final queryClient = QueryClient(
+  cache: cache,
+  mutationCache: mutationCache,
+  defaultQueryOptions: defaultQueryOptions,
+  defaultMutationOptions: defaultMutationOptions,
+);
+```
+
+The `QueryClient` manages the query and mutation caches. It provides methods for
+imperatively fetching, prefetching, invalidating, and refetching queries.
+
+## Constructor Parameters
+
+### cache
+
+```dart
+QueryCache? cache
+```
+
+The query cache this client uses. If not provided, a new `QueryCache` is
+created.
+
+### mutationCache
+
+```dart
+MutationCache? mutationCache
+```
+
+The mutation cache this client uses. If not provided, a new `MutationCache` is
+created.
+
+### defaultQueryOptions
+
+```dart
+DefaultQueryOptions defaultQueryOptions
+```
+
+**Default:** `DefaultQueryOptions()`
+
+Default options applied to all queries. Individual query options override these
+defaults.
+
+| Option            | Default                 | Description                            |
+| ----------------- | ----------------------- | -------------------------------------- |
+| `enabled`         | `true`                  | Whether queries are enabled by default |
+| `staleDuration`   | `null`                  | Default stale duration                 |
+| `gcDuration`      | `null`                  | Default garbage collection duration    |
+| `refetchInterval` | `null`                  | Default refetch interval               |
+| `refetchOnMount`  | `RefetchOnMount.stale`  | Default refetch behavior on mount      |
+| `refetchOnResume` | `RefetchOnResume.stale` | Default refetch behavior on app resume |
+| `retry`           | `null`                  | Default retry callback                 |
+| `retryOnMount`    | `true`                  | Default retry on mount behavior        |
+
+### defaultMutationOptions
+
+```dart
+DefaultMutationOptions defaultMutationOptions
+```
+
+**Default:** `DefaultMutationOptions()`
+
+Default options applied to all mutations. Individual mutation options override
+these defaults.
+
+| Option       | Default                  | Description                         |
+| ------------ | ------------------------ | ----------------------------------- |
+| `retry`      | `retryNever`             | Default retry callback (no retries) |
+| `gcDuration` | `GcDuration(minutes: 5)` | Default garbage collection duration |
+
+---
+
+## Properties
+
+### cache
+
+```dart
+QueryCache get cache
+```
+
+The query cache this client manages.
+
+### mutationCache
+
+```dart
+MutationCache get mutationCache
+```
+
+The mutation cache this client manages.
+
+---
+
+## Methods
+
+### fetchQuery
+
+```dart
+Future<TData> fetchQuery<TData, TError>({
+  required List<Object?> queryKey,
+  required Future<TData> Function(QueryFunctionContext context) queryFn,
+  StaleDuration? staleDuration,
+  RetryResolver<TError>? retry,
+  GcDuration? gcDuration,
+  TData? seed,
+  DateTime? seedUpdatedAt,
+})
+```
+
+Fetches a query, returning cached data if fresh or fetching new data if stale.
+Throws if the fetch fails.
+
+This is an imperative alternative to `useQuery`, useful for:
+
+- Prefetching data before navigation
+- Fetching data in callbacks or event handlers
+- Server-side data fetching
+
+Unlike `useQuery`, `fetchQuery` defaults to no retries when `retry` is not
+specified at either the query level or client default level.
+
+```dart
+try {
+  final data = await queryClient.fetchQuery(
+    queryKey: ['user', userId],
+    queryFn: (context) => fetchUser(userId),
+  );
+  print('User: $data');
+} catch (error) {
+  print('Fetch failed: $error');
+}
+```
+
+To only fetch if data is older than a certain duration:
+
+```dart
+final data = await queryClient.fetchQuery(
+  queryKey: ['user', userId],
+  queryFn: (context) => fetchUser(userId),
+  staleDuration: StaleDuration(minutes: 5),
+);
+```
+
+**Returns**
+
+`Future<TData>` that resolves with the data or throws on error.
+
+---
+
+### prefetchQuery
+
+```dart
+Future<void> prefetchQuery<TData, TError>({
+  required List<Object?> queryKey,
+  required Future<TData> Function(QueryFunctionContext context) queryFn,
+  StaleDuration? staleDuration,
+  RetryResolver<TError>? retry,
+  GcDuration? gcDuration,
+  TData? seed,
+  DateTime? seedUpdatedAt,
+})
+```
+
+Prefetches a query and populates the cache. Unlike `fetchQuery`, this method:
+
+- Returns `Future<void>` instead of the data
+- Silently ignores any errors (fire-and-forget pattern)
+
+Use this for preloading data before navigation or warming up the cache.
+
+```dart
+// Prefetch before navigating to user profile
+await queryClient.prefetchQuery(
+  queryKey: ['user', userId],
+  queryFn: (context) => fetchUser(userId),
+);
+
+Navigator.push(context, UserProfileRoute(userId));
+```
+
+**Returns**
+
+`Future<void>` that resolves when the prefetch completes (or immediately if data
+is fresh).
+
+---
+
+### getQueryData
+
+```dart
+TData? getQueryData<TData, TError>(List<Object?> queryKey)
+```
+
+Returns the cached data for a query if it exists.
+
+This is an imperative way to retrieve cached data by exact query key. Returns
+`null` if the query doesn't exist or has no data yet.
+
+Use this for reading cached data in callbacks or for optimistic updates. Do not
+use inside widgets because it won't trigger rebuilds when data changes. Use
+`useQuery` instead for reactive updates.
+
+```dart
+final user = queryClient.getQueryData<User, Exception>(['user', userId]);
+
+if (user != null) {
+  print('Cached user: ${user.name}');
+}
+```
+
+**Returns**
+
+`TData?` containing the cached data, or `null` if not found.
+
+---
+
+### invalidateQueries
+
+```dart
+Future<void> invalidateQueries({
+  List<Object?>? queryKey,
+  bool exact = false,
+  bool Function(Query)? predicate,
+  RefetchType refetchType = RefetchType.active,
+})
+```
+
+Invalidates queries matching the filters and optionally refetches them.
+
+Invalidation marks queries as stale, causing them to refetch when:
+
+- An observer mounts that subscribes to the query
+- The query is already mounted and `refetchType` is not `RefetchType.none`
+
+By default, only active queries are refetched after invalidation.
+
+```dart
+// Invalidate all queries
+await queryClient.invalidateQueries();
+
+// Invalidate queries with a specific key prefix
+await queryClient.invalidateQueries(queryKey: ['users']);
+
+// Invalidate but don't refetch
+await queryClient.invalidateQueries(
+  queryKey: ['users'],
+  refetchType: RefetchType.none,
+);
+
+// Invalidate with exact key match
+await queryClient.invalidateQueries(
+  queryKey: ['users', userId],
+  exact: true,
+);
+
+// Invalidate using a predicate
+await queryClient.invalidateQueries(
+  predicate: (query) => query.state.data == null,
+);
+```
+
+| Parameter     | Type                    | Default              | Description                                                                |
+| ------------- | ----------------------- | -------------------- | -------------------------------------------------------------------------- |
+| `queryKey`    | `List<Object?>?`        |                      | Query key prefix to match. Use `exact: true` for exact matching.           |
+| `exact`       | `bool`                  | `false`              | When `true`, only queries with exactly matching keys are invalidated.      |
+| `predicate`   | `bool Function(Query)?` |                      | Filter function that receives each query and returns `true` to include it. |
+| `refetchType` | `RefetchType`           | `RefetchType.active` | Controls which queries refetch after invalidation (see below).             |
+
+**RefetchType values**
+
+| Value                  | Description                                          |
+| ---------------------- | ---------------------------------------------------- |
+| `RefetchType.active`   | Refetch only active queries (with enabled observers) |
+| `RefetchType.inactive` | Refetch only inactive queries                        |
+| `RefetchType.all`      | Refetch all matching queries                         |
+| `RefetchType.none`     | Don't refetch, just mark as invalidated              |
+
+**Returns:** `Future<void>` that resolves when all refetches complete.
+
+---
+
+### refetchQueries
+
+```dart
+Future<void> refetchQueries({
+  List<Object?>? queryKey,
+  bool exact = false,
+  bool Function(Query)? predicate,
+})
+```
+
+Refetches queries matching the filters.
+
+Unlike invalidation, this doesn't mark queries as stale. It immediately fetches
+fresh data.
+
+This method skips:
+
+- Disabled queries (no enabled observers)
+- Static queries (`staleDuration = StaleDuration.static`)
+- Paused queries (`fetchStatus = FetchStatus.paused`)
+
+```dart
+// Refetch all queries
+await queryClient.refetchQueries();
+
+// Refetch queries with a specific key prefix
+await queryClient.refetchQueries(queryKey: ['users']);
+
+// Refetch only active queries using a predicate
+await queryClient.refetchQueries(
+  predicate: (query) => query.isActive,
+);
+```
+
+| Parameter   | Type                    | Default | Description                                                                |
+| ----------- | ----------------------- | ------- | -------------------------------------------------------------------------- |
+| `queryKey`  | `List<Object?>?`        |         | Query key prefix to match.                                                 |
+| `exact`     | `bool`                  | `false` | When `true`, only queries with exactly matching keys are refetched.        |
+| `predicate` | `bool Function(Query)?` |         | Filter function that receives each query and returns `true` to include it. |
+
+**Returns:** `Future<void>` that resolves when all refetches complete.
+
+---
+
+### cancelQueries
+
+```dart
+Future<void> cancelQueries({
+  List<Object?>? queryKey,
+  bool exact = false,
+  bool Function(Query)? predicate,
+  bool revert = true,
+  bool silent = false,
+})
+```
+
+Cancels all in-progress fetches for queries matching the filters.
+
+This is useful when performing optimistic updates since you need to cancel any
+outgoing query refetches so they don't overwrite your optimistic update when
+they resolve.
+
+```dart
+// Cancel all queries
+await queryClient.cancelQueries();
+
+// Cancel queries with a specific key prefix
+await queryClient.cancelQueries(queryKey: ['users']);
+
+// Cancel silently without reverting
+await queryClient.cancelQueries(
+  queryKey: ['users'],
+  revert: false,
+  silent: true,
+);
+```
+
+| Parameter   | Type                    | Default | Description                                                                    |
+| ----------- | ----------------------- | ------- | ------------------------------------------------------------------------------ |
+| `queryKey`  | `List<Object?>?`        |         | Query key prefix to match.                                                     |
+| `exact`     | `bool`                  | `false` | When `true`, only queries with exactly matching keys are cancelled.            |
+| `predicate` | `bool Function(Query)?` |         | Filter function that receives each query and returns `true` to include it.     |
+| `revert`    | `bool`                  | `true`  | When `true`, cancelled queries restore their state from before the fetch.      |
+| `silent`    | `bool`                  | `false` | When `true`, cancellation won't trigger error callbacks or update error state. |
+
+**Returns:** `Future<void>` that resolves when all matching queries have been
+cancelled.
+
+---
