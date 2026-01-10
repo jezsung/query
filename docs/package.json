@@ -39,7 +39,7 @@
     "serve": "^14.2.5",
     "tailwindcss": "^4.1.18",
     "typescript": "^5.9.3",
-    "zod": "^4.3.4"
+    "zod": "^4.3.5"
   },
   "engines": {
     "node": "24.12.0",
