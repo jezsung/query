@@ -8,7 +8,24 @@ updates:
     directory: "/packages/flutter_query"
     schedule:
       interval: "weekly"
+    groups:
+      all:
+        applies-to: version-updates
+        patterns:
+          - "*"
   - package-ecosystem: "npm"
     directory: "/docs"
     schedule:
       interval: "weekly"
+    groups:
+      fumadocs:
+        applies-to: version-updates
+        patterns:
+          - "fumadocs*"
+      minor-and-patch:
+        applies-to: version-updates
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
