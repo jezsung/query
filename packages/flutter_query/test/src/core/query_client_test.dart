@@ -1255,4 +1255,517 @@ void main() {
       expect(caughtError, isA<AbortedException>());
     }));
   });
+
+  group('fetchInfiniteQuery', () {
+    test(
+        'SHOULD fetch and return data'
+        '', withFakeAsync((async) {
+      final future = client.fetchInfiniteQuery<String, Object, int>(
+        queryKey: const ['test'],
+        queryFn: (context) async {
+          await Future.delayed(const Duration(seconds: 1));
+          return 'page-${context.pageParam}';
+        },
+        initialPageParam: 0,
+        nextPageParamBuilder: (data) => data.pageParams.last + 1,
+      );
+
+      expectLater(
+        future,
+        completion(InfiniteData(['page-0'], [0])),
+      );
+
+      async.elapse(const Duration(seconds: 1));
+    }));
+
+    test(
+        'SHOULD NOT fetch and return cached data '
+        'WHEN data is not stale', withFakeAsync((async) {
+      // First fetch
+      final future1 = client.fetchInfiniteQuery<String, Object, int>(
+        queryKey: const ['test'],
+        queryFn: (context) async {
+          await Future.delayed(const Duration(seconds: 1));
+          return 'first-${context.pageParam}';
+        },
+        initialPageParam: 0,
+        nextPageParamBuilder: (data) => data.pageParams.last + 1,
+        staleDuration: StaleDuration.infinity,
+      );
+
+      expectLater(
+        future1,
+        completion(InfiniteData(['first-0'], [0])),
+      );
+
+      async.elapse(const Duration(seconds: 1));
+
+      // Second fetch with different queryFn - should return cached
+      final future2 = client.fetchInfiniteQuery<String, Object, int>(
+        queryKey: const ['test'],
+        queryFn: (context) async {
+          await Future.delayed(const Duration(seconds: 1));
+          return 'second-${context.pageParam}';
+        },
+        initialPageParam: 0,
+        nextPageParamBuilder: (data) => data.pageParams.last + 1,
+        staleDuration: StaleDuration.infinity,
+      );
+
+      // Should return cached data without waiting for fetch
+      expectLater(
+        future2,
+        completion(InfiniteData(['first-0'], [0])),
+      );
+
+      async.flushMicrotasks();
+    }));
+
+    test(
+        'SHOULD refetch and return new data '
+        'WHEN data is stale', withFakeAsync((async) {
+      final future1 = client.fetchInfiniteQuery<String, Object, int>(
+        queryKey: const ['test'],
+        queryFn: (context) async {
+          await Future.delayed(const Duration(seconds: 1));
+          return 'first-${context.pageParam}';
+        },
+        initialPageParam: 0,
+        nextPageParamBuilder: (data) => data.pageParams.last + 1,
+        staleDuration: StaleDuration.zero,
+      );
+
+      expectLater(
+        future1,
+        completion(InfiniteData(['first-0'], [0])),
+      );
+
+      async.elapse(const Duration(seconds: 1));
+
+      final future2 = client.fetchInfiniteQuery<String, Object, int>(
+        queryKey: const ['test'],
+        queryFn: (context) async {
+          await Future.delayed(const Duration(seconds: 1));
+          return 'second-${context.pageParam}';
+        },
+        initialPageParam: 0,
+        nextPageParamBuilder: (data) => data.pageParams.last + 1,
+        staleDuration: StaleDuration.zero,
+      );
+
+      expectLater(
+        future2,
+        completion(InfiniteData(['second-0'], [0])),
+      );
+
+      async.elapse(const Duration(seconds: 1));
+    }));
+
+    test(
+        'SHOULD throw'
+        '', withFakeAsync((async) {
+      final expectedError = Exception();
+
+      final future = client.fetchInfiniteQuery<String, Exception, int>(
+        queryKey: const ['test'],
+        queryFn: (context) async {
+          await Future.delayed(const Duration(seconds: 1));
+          throw expectedError;
+        },
+        initialPageParam: 0,
+        nextPageParamBuilder: (data) => data.pageParams.last + 1,
+      );
+
+      expectLater(future, throwsA(same(expectedError)));
+
+      async.elapse(const Duration(seconds: 1));
+    }));
+
+    test(
+        'SHOULD NOT retry by default'
+        '', withFakeAsync((async) {
+      var attempts = 0;
+
+      final future = client.fetchInfiniteQuery<String, Exception, int>(
+        queryKey: const ['test'],
+        queryFn: (context) async {
+          await Future.delayed(const Duration(seconds: 1));
+          attempts++;
+          throw Exception();
+        },
+        initialPageParam: 0,
+        nextPageParamBuilder: (data) => data.pageParams.last + 1,
+      );
+
+      expectLater(future, throwsA(isA<Exception>()));
+
+      async.elapse(const Duration(seconds: 1));
+
+      expect(attempts, 1);
+
+      // Wait long enough for retries if they were happening
+      async.elapse(const Duration(hours: 24));
+      // Should NOT have retried
+      expect(attempts, 1);
+    }));
+
+    test(
+        'SHOULD fetch multiple pages '
+        'WHEN pages parameter is set', withFakeAsync((async) {
+      final future = client.fetchInfiniteQuery<String, Object, int>(
+        queryKey: const ['test'],
+        queryFn: (context) async {
+          await Future.delayed(const Duration(seconds: 1));
+          return 'page-${context.pageParam}';
+        },
+        initialPageParam: 0,
+        nextPageParamBuilder: (data) => data.pageParams.last + 1,
+        pages: 3,
+      );
+
+      expectLater(
+        future,
+        completion(InfiniteData(
+          ['page-0', 'page-1', 'page-2'],
+          [0, 1, 2],
+        )),
+      );
+
+      // 1 second per page
+      async.elapse(const Duration(seconds: 3));
+    }));
+
+    test(
+        'SHOULD stop fetching pages '
+        'WHEN nextPageParamBuilder returns null', withFakeAsync((async) {
+      final future = client.fetchInfiniteQuery<String, Object, int>(
+        queryKey: const ['test'],
+        queryFn: (context) async {
+          await Future.delayed(const Duration(seconds: 1));
+          return 'page-${context.pageParam}';
+        },
+        initialPageParam: 0,
+        // Only allow 2 pages
+        nextPageParamBuilder: (data) =>
+            data.pages.length < 2 ? data.pageParams.last + 1 : null,
+        // Request 5 pages but only 2 available
+        pages: 5,
+      );
+
+      // Should stop at 2 pages
+      expectLater(
+        future,
+        completion(InfiniteData(
+          ['page-0', 'page-1'],
+          [0, 1],
+        )),
+      );
+
+      async.elapse(const Duration(seconds: 2));
+    }));
+
+    test(
+        'SHOULD respect maxPages limit'
+        '', withFakeAsync((async) {
+      final future = client.fetchInfiniteQuery<String, Object, int>(
+        queryKey: const ['test'],
+        queryFn: (context) async {
+          await Future.delayed(const Duration(seconds: 1));
+          return 'page-${context.pageParam}';
+        },
+        initialPageParam: 0,
+        nextPageParamBuilder: (data) => data.pageParams.last + 1,
+        pages: 5,
+        maxPages: 3,
+      );
+
+      expectLater(
+        future,
+        completion(InfiniteData(
+          ['page-2', 'page-3', 'page-4'],
+          [2, 3, 4],
+        )),
+      );
+
+      async.elapse(const Duration(seconds: 5));
+    }));
+
+    test(
+        'SHOULD refetch all existing pages'
+        '', withFakeAsync((async) {
+      // First fetch 3 pages
+      final future1 = client.fetchInfiniteQuery<String, Object, int>(
+        queryKey: const ['test'],
+        queryFn: (context) async {
+          await Future.delayed(const Duration(seconds: 1));
+          return 'first-${context.pageParam}';
+        },
+        initialPageParam: 0,
+        nextPageParamBuilder: (data) => data.pageParams.last + 1,
+        pages: 3,
+        staleDuration: StaleDuration.zero,
+      );
+
+      expectLater(
+        future1,
+        completion(InfiniteData(
+          ['first-0', 'first-1', 'first-2'],
+          [0, 1, 2],
+        )),
+      );
+
+      async.elapse(const Duration(seconds: 3));
+
+      // Refetch - should maintain 3 pages
+      final future2 = client.fetchInfiniteQuery<String, Object, int>(
+        queryKey: const ['test'],
+        queryFn: (context) async {
+          await Future.delayed(const Duration(seconds: 1));
+          return 'second-${context.pageParam}';
+        },
+        initialPageParam: 0,
+        nextPageParamBuilder: (data) => data.pageParams.last + 1,
+        // Even though pages=1, should refetch all 3 existing pages
+        pages: 1,
+        staleDuration: StaleDuration.zero,
+      );
+
+      expectLater(
+        future2,
+        completion(InfiniteData(
+          ['second-0', 'second-1', 'second-2'],
+          [0, 1, 2],
+        )),
+      );
+
+      async.elapse(const Duration(seconds: 3));
+    }));
+
+    test(
+        'SHOULD persist data to cache'
+        '', withFakeAsync((async) {
+      client.fetchInfiniteQuery<String, Object, int>(
+        queryKey: const ['test'],
+        queryFn: (context) async {
+          await Future.delayed(const Duration(seconds: 1));
+          return 'page-${context.pageParam}';
+        },
+        initialPageParam: 0,
+        nextPageParamBuilder: (data) => data.pageParams.last + 1,
+      );
+
+      async.elapse(const Duration(seconds: 1));
+
+      expect(
+        client.cache.get(const ['test'])!.state.data,
+        InfiniteData(['page-0'], [0]),
+      );
+    }));
+
+    test(
+        'SHOULD return same future '
+        'WHEN another fetch already in progress', withFakeAsync((async) {
+      final future1 = client.fetchInfiniteQuery<String, Object, int>(
+        queryKey: const ['test'],
+        queryFn: (context) async {
+          await Future.delayed(const Duration(seconds: 1));
+          return 'first-${context.pageParam}';
+        },
+        initialPageParam: 0,
+        nextPageParamBuilder: (data) => data.pageParams.last + 1,
+      );
+      final future2 = client.fetchInfiniteQuery<String, Object, int>(
+        queryKey: const ['test'],
+        queryFn: (context) async {
+          await Future.delayed(const Duration(seconds: 1));
+          return 'second-${context.pageParam}';
+        },
+        initialPageParam: 0,
+        nextPageParamBuilder: (data) => data.pageParams.last + 1,
+      );
+
+      expectLater(
+        future1,
+        completion(InfiniteData(['first-0'], [0])),
+      );
+      expectLater(
+        future2,
+        completion(InfiniteData(['first-0'], [0])),
+      );
+
+      async.elapse(const Duration(seconds: 1));
+    }));
+
+    group('seed', () {
+      test(
+          'SHOULD NOT fetch and return seed '
+          'WHEN data is fresh', withFakeAsync((async) {
+        var attempts = 0;
+
+        final future = client.fetchInfiniteQuery<String, Object, int>(
+          queryKey: const ['test'],
+          queryFn: (context) async {
+            attempts++;
+            return 'page-${context.pageParam}';
+          },
+          initialPageParam: 0,
+          nextPageParamBuilder: (data) => data.pageParams.last + 1,
+          seed: InfiniteData(['page-seed'], [0]),
+          staleDuration: StaleDuration.infinity,
+        );
+
+        expectLater(
+          future,
+          completion(InfiniteData(['page-seed'], [0])),
+        );
+
+        async.flushMicrotasks();
+
+        expect(attempts, 0);
+      }));
+
+      test(
+          'SHOULD fetch and return fetched data '
+          'WHEN seed is stale', withFakeAsync((async) {
+        var attempts = 0;
+
+        final future = client.fetchInfiniteQuery<String, Object, int>(
+          queryKey: const ['test'],
+          queryFn: (context) async {
+            attempts++;
+            await Future.delayed(const Duration(seconds: 1));
+            return 'page-${context.pageParam}';
+          },
+          initialPageParam: 0,
+          nextPageParamBuilder: (data) => data.pageParams.last + 1,
+          seed: InfiniteData(['page-seed'], [0]),
+          staleDuration: StaleDuration.zero,
+        );
+
+        expectLater(
+          future,
+          completion(InfiniteData(['page-0'], [0])),
+        );
+
+        async.elapse(const Duration(seconds: 1));
+
+        expect(attempts, 1);
+      }));
+    });
+  });
+
+  group('prefetchInfiniteQuery', () {
+    test(
+        'SHOULD NOT throw'
+        '', withFakeAsync((async) {
+      final future = client.prefetchInfiniteQuery<String, Exception, int>(
+        queryKey: const ['test'],
+        queryFn: (context) async {
+          await Future.delayed(const Duration(seconds: 1));
+          throw Exception();
+        },
+        initialPageParam: 0,
+        nextPageParamBuilder: (data) => data.pageParams.last + 1,
+      );
+
+      expectLater(future, completes);
+
+      async.elapse(const Duration(seconds: 1));
+    }));
+
+    test(
+        'SHOULD persist data to cache'
+        '', withFakeAsync((async) {
+      client.prefetchInfiniteQuery<String, Object, int>(
+        queryKey: const ['test'],
+        queryFn: (context) async {
+          await Future.delayed(const Duration(seconds: 1));
+          return 'page-${context.pageParam}';
+        },
+        initialPageParam: 0,
+        nextPageParamBuilder: (data) => data.pageParams.last + 1,
+        pages: 2,
+      );
+
+      async.elapse(const Duration(seconds: 2));
+
+      expect(
+        client.cache.get(const ['test'])!.state.data,
+        InfiniteData(['page-0', 'page-1'], [0, 1]),
+      );
+    }));
+  });
+
+  group('getInfiniteQueryData', () {
+    test(
+        'SHOULD return data '
+        'WHEN query exists with data', withFakeAsync((async) {
+      client.fetchInfiniteQuery<String, Object, int>(
+        queryKey: const ['test'],
+        queryFn: (context) async {
+          await Future.delayed(const Duration(seconds: 1));
+          return 'page-${context.pageParam}';
+        },
+        initialPageParam: 0,
+        nextPageParamBuilder: (data) => data.pageParams.last + 1,
+        pages: 2,
+      );
+
+      async.elapse(const Duration(seconds: 2));
+
+      expect(
+        client.getInfiniteQueryData(const ['test']),
+        InfiniteData(['page-0', 'page-1'], [0, 1]),
+      );
+    }));
+
+    test(
+        'SHOULD return null '
+        'WHEN query does not exist', withFakeAsync((async) {
+      final data = client.getInfiniteQueryData(const ['test']);
+
+      expect(data, isNull);
+    }));
+
+    test(
+        'SHOULD return null '
+        'WHEN query exists without data', withFakeAsync((async) {
+      // Build a query without fetching (query exists but in pending state)
+      client.cache.build<InfiniteData<String, int>, Object>(QueryOptions(
+        const ['test'],
+        (context) async {
+          await Future.delayed(const Duration(seconds: 1));
+          return InfiniteData(['data'], [0]);
+        },
+      ));
+
+      final data = client.getInfiniteQueryData(const ['test']);
+
+      expect(data, isNull);
+    }));
+
+    test(
+        'SHOULD use exact key matching'
+        '', withFakeAsync((async) {
+      client.fetchInfiniteQuery<String, Object, int>(
+        queryKey: const ['test', '1'],
+        queryFn: (context) async {
+          await Future.delayed(const Duration(seconds: 1));
+          return 'page-${context.pageParam}';
+        },
+        initialPageParam: 0,
+        nextPageParamBuilder: (data) => data.pageParams.last + 1,
+      );
+
+      async.elapse(const Duration(seconds: 1));
+
+      // Prefix key should not match
+      var data = client.getInfiniteQueryData(const ['test']);
+      expect(data, isNull);
+
+      // Exact key should match
+      data = client.getInfiniteQueryData(const ['test', '1']);
+      expect(data, InfiniteData(['page-0'], [0]));
+    }));
+  });
 }

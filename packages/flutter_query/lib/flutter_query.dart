@@ -17,7 +17,18 @@ export 'src/core/options/stale_duration.dart' show StaleDuration;
 export 'src/core/options/refetch_on_resume.dart' show RefetchOnResume;
 export 'src/core/options/refetch_on_mount.dart' show RefetchOnMount;
 export 'src/core/options/gc_duration.dart' show GcDuration;
+export 'src/core/infinite_data.dart' show InfiniteData, FetchDirection;
+export 'src/core/infinite_query_function_context.dart'
+    show InfiniteQueryFunctionContext;
+export 'src/core/infinite_query_options.dart'
+    show
+        InfiniteQueryOptions,
+        InfiniteQueryFn,
+        NextPageParamBuilder,
+        PrevPageParamBuilder;
+export 'src/core/infinite_query_result.dart' show InfiniteQueryResult;
 
+export 'src/hooks/use_infinite_query.dart' show useInfiniteQuery;
 export 'src/hooks/use_mutation.dart' show useMutation;
 export 'src/hooks/use_query.dart' show useQuery;
 export 'src/hooks/use_query_client.dart' show useQueryClient;

@@ -1,5 +1,8 @@
 import 'default_mutation_options.dart';
 import 'default_query_options.dart';
+import 'infinite_data.dart';
+import 'infinite_query_function_context.dart';
+import 'infinite_query_options.dart';
 import 'mutation_cache.dart';
 import 'options/gc_duration.dart';
 import 'options/retry.dart';
@@ -300,6 +303,202 @@ class QueryClient {
     await Future.wait(
       queries.map((q) => q.fetch().then((_) {}).catchError((_) {})),
     );
+  }
+
+  // ============================================================================
+  // Infinite Query Methods
+  // ============================================================================
+
+  /// Fetches an infinite query, returning cached data if fresh or fetching new data if stale.
+  ///
+  /// This is an imperative alternative to the useInfiniteQuery hook, useful for:
+  /// - Prefetching paginated data before navigation
+  /// - Fetching paginated data in callbacks or event handlers
+  ///
+  /// The [pages] parameter controls how many pages to fetch initially. Defaults to 1.
+  ///
+  /// Unlike useInfiniteQuery, [retry] defaults to no retries when not specified.
+  ///
+  /// Throws if the fetch fails.
+  ///
+  /// Aligned with TanStack Query's `fetchInfiniteQuery` method.
+  Future<InfiniteData<TData, TPageParam>>
+      fetchInfiniteQuery<TData, TError, TPageParam>({
+    required List<Object?> queryKey,
+    required InfiniteQueryFn<TData, TPageParam> queryFn,
+    required TPageParam initialPageParam,
+    required NextPageParamBuilder<TData, TPageParam> nextPageParamBuilder,
+    PrevPageParamBuilder<TData, TPageParam>? prevPageParamBuilder,
+    int? maxPages,
+    int pages = 1,
+    StaleDuration? staleDuration,
+    RetryResolver<TError>? retry,
+    GcDuration? gcDuration,
+    InfiniteData<TData, TPageParam>? seed,
+    DateTime? seedUpdatedAt,
+    Map<String, dynamic>? meta,
+  }) async {
+    // Create wrapped queryFn that handles page accumulation
+    Future<InfiniteData<TData, TPageParam>> wrappedQueryFn(
+      QueryFunctionContext context,
+    ) async {
+      // Get existing query to check current data
+      final existingQuery =
+          _cache.get<InfiniteData<TData, TPageParam>, TError>(queryKey);
+      final currentData = existingQuery?.state.data;
+      final oldPages = currentData?.pages ?? <TData>[];
+      final oldPageParams = currentData?.pageParams ?? <TPageParam>[];
+
+      // Determine how many pages to fetch
+      final remainingPages = oldPages.isNotEmpty ? oldPages.length : pages;
+
+      var result = InfiniteData<TData, TPageParam>(
+        <TData>[],
+        <TPageParam>[],
+      );
+      var currentPage = 0;
+
+      while (currentPage < remainingPages) {
+        TPageParam param;
+        if (currentPage == 0) {
+          param =
+              oldPageParams.isNotEmpty ? oldPageParams[0] : initialPageParam;
+        } else {
+          final nextParam =
+              result.pages.isNotEmpty ? nextPageParamBuilder(result) : null;
+          if (nextParam == null) break;
+          param = nextParam;
+        }
+
+        final infiniteContext = InfiniteQueryFunctionContext<TPageParam>(
+          queryKey: context.queryKey,
+          client: context.client,
+          signal: context.signal,
+          meta: context.meta,
+          pageParam: param,
+          direction: FetchDirection.forward,
+        );
+
+        final page = await queryFn(infiniteContext);
+
+        var newPages = [...result.pages, page];
+        var newPageParams = [...result.pageParams, param];
+
+        // Respect maxPages limit
+        if (maxPages != null && newPages.length > maxPages) {
+          newPages = newPages.sublist(1);
+          newPageParams = newPageParams.sublist(1);
+        }
+
+        result = InfiniteData(newPages, newPageParams);
+        currentPage++;
+      }
+
+      return result;
+    }
+
+    // Create options with wrapped queryFn
+    final options = QueryOptions<InfiniteData<TData, TPageParam>, TError>(
+      queryKey,
+      wrappedQueryFn,
+      retry: retry,
+      gcDuration: gcDuration,
+      seed: seed,
+      seedUpdatedAt: seedUpdatedAt,
+      meta: meta,
+    );
+
+    // Merge with client defaults
+    final mergedOptions = options.withDefaults(defaultQueryOptions);
+
+    // fetchInfiniteQuery defaults to no retry if not specified
+    final effectiveOptions =
+        QueryOptions<InfiniteData<TData, TPageParam>, TError>(
+      mergedOptions.queryKey.parts,
+      mergedOptions.queryFn,
+      retry: mergedOptions.retry ?? (_, __) => null,
+      gcDuration: mergedOptions.gcDuration,
+      seed: mergedOptions.seed,
+      seedUpdatedAt: mergedOptions.seedUpdatedAt,
+      meta: mergedOptions.meta,
+    );
+
+    final query =
+        _cache.build<InfiniteData<TData, TPageParam>, TError>(effectiveOptions);
+
+    // Use staleDuration for staleness check
+    final staleDurationValue = staleDuration ??
+        defaultQueryOptions.staleDuration ??
+        const StaleDuration();
+
+    // Check if data is stale
+    if (query.shouldFetch(staleDurationValue)) {
+      return query.fetch();
+    }
+
+    // Data is fresh, return cached data
+    return query.state.data!;
+  }
+
+  /// Prefetches an infinite query and populates the cache.
+  ///
+  /// Unlike [fetchInfiniteQuery], this method:
+  /// - Returns `Future<void>` instead of the data
+  /// - Silently ignores any errors (fire-and-forget pattern)
+  ///
+  /// Use this for preloading paginated data before navigation.
+  ///
+  /// Aligned with TanStack Query's `prefetchInfiniteQuery` method.
+  Future<void> prefetchInfiniteQuery<TData, TError, TPageParam>({
+    required List<Object?> queryKey,
+    required InfiniteQueryFn<TData, TPageParam> queryFn,
+    required TPageParam initialPageParam,
+    required NextPageParamBuilder<TData, TPageParam> nextPageParamBuilder,
+    PrevPageParamBuilder<TData, TPageParam>? prevPageParamBuilder,
+    int? maxPages,
+    int pages = 1,
+    StaleDuration? staleDuration,
+    RetryResolver<TError>? retry,
+    GcDuration? gcDuration,
+    InfiniteData<TData, TPageParam>? seed,
+    DateTime? seedUpdatedAt,
+    Map<String, dynamic>? meta,
+  }) async {
+    try {
+      await fetchInfiniteQuery<TData, TError, TPageParam>(
+        queryKey: queryKey,
+        queryFn: queryFn,
+        initialPageParam: initialPageParam,
+        nextPageParamBuilder: nextPageParamBuilder,
+        prevPageParamBuilder: prevPageParamBuilder,
+        maxPages: maxPages,
+        pages: pages,
+        staleDuration: staleDuration,
+        retry: retry,
+        gcDuration: gcDuration,
+        seed: seed,
+        seedUpdatedAt: seedUpdatedAt,
+        meta: meta,
+      );
+    } catch (_) {
+      // Silently ignore errors - prefetch is fire-and-forget
+    }
+  }
+
+  /// Returns the data for an infinite query if it exists in the cache.
+  ///
+  /// Returns `null` if the query doesn't exist or has no data yet.
+  ///
+  /// Use this for reading cached paginated data in callbacks or for optimistic updates.
+  /// Do not use inside widgets - use `useInfiniteQuery` instead for reactive updates.
+  ///
+  /// Aligned with TanStack Query's `getQueryData` method for infinite queries.
+  InfiniteData<TData, TPageParam>?
+      getInfiniteQueryData<TData, TError, TPageParam>(List<Object?> queryKey) {
+    return _cache
+        .get<InfiniteData<TData, TPageParam>, TError>(queryKey)
+        ?.state
+        .data;
   }
 
   /// Cancels all in-progress fetches for queries matching the filters.

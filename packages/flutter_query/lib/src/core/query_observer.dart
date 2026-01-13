@@ -1,16 +1,24 @@
 import 'dart:async';
+import 'dart:math';
 
 import 'package:clock/clock.dart';
 
+import 'infinite_data.dart';
+import 'infinite_query_function_context.dart';
+import 'infinite_query_options.dart';
+import 'infinite_query_result.dart';
 import 'observable.dart';
 import 'options/refetch_on_mount.dart';
 import 'options/refetch_on_resume.dart';
 import 'options/stale_duration.dart';
 import 'query.dart';
 import 'query_client.dart';
+import 'query_function_context.dart';
 import 'query_options.dart';
 import 'query_result.dart';
 import 'query_state.dart';
+
+part 'infinite_query_observer.dart';
 
 /// Callback type for result change listeners
 typedef ResultChangeListener<TData, TError> = void Function(
