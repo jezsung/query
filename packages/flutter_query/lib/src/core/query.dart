@@ -35,9 +35,10 @@ class Query<TData, TError>
     onAddObserver = (_) {
       cancelGc();
     };
-    onRemoveObserver = (_) {
+    onRemoveObserver = (observer) {
       if (observers.isEmpty) {
-        scheduleGc();
+        // Use the removed observer's gcDuration since it was the last one
+        scheduleGc(observer.options.gcDuration);
         if (state.fetchStatus == FetchStatus.fetching &&
             _abortController != null &&
             _abortController!.wasConsumed) {
