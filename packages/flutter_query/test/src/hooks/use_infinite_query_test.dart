@@ -2013,6 +2013,134 @@ void main() {
       await tester.pump(const Duration(seconds: 1));
       expect(hook.current.data, InfiniteData(['page-1', 'page-2'], [1, 2]));
     }));
+
+    testWidgets(
+        'SHOULD cancel in-progress fetch and start new one '
+        'WHEN cancelRefetch == true', withCleanup((tester) async {
+      var fetches = 0;
+      final fetchNextPageResults = <InfiniteQueryResult<String, Object, int>>[];
+
+      final hook = await buildHook(
+        () => useInfiniteQuery<String, Object, int>(
+          const ['test'],
+          (context) async {
+            await Future.delayed(const Duration(seconds: 1));
+            fetches++;
+            return 'page-${context.pageParam}-fetch-$fetches';
+          },
+          initialPageParam: 0,
+          nextPageParamBuilder: (data) => data.pageParams.last + 1,
+          queryClient: client,
+        ),
+      );
+
+      // Wait for initial fetch to complete
+      await tester.pump(const Duration(seconds: 1));
+      expect(hook.current.pages, ['page-0-fetch-1']);
+
+      // Call fetchNextPage multiple times rapidly (before previous completes)
+      hook.current
+          .fetchNextPage()
+          .then((result) => fetchNextPageResults.add(result));
+      hook.current
+          .fetchNextPage(cancelRefetch: true)
+          .then((result) => fetchNextPageResults.add(result));
+      hook.current
+          .fetchNextPage(cancelRefetch: true)
+          .then((result) => fetchNextPageResults.add(result));
+
+      // Should have started multiple fetches (cancelling previous ones)
+      // but only the last one completes
+      await tester.pump(const Duration(seconds: 1));
+      expect(hook.current.pages, ['page-0-fetch-1', 'page-1-fetch-4']);
+      expect(fetchNextPageResults, hasLength(3));
+      expect(
+        fetchNextPageResults.map((result) => result.pages),
+        everyElement(['page-0-fetch-1', 'page-1-fetch-4']),
+      );
+    }));
+
+    testWidgets(
+        'SHOULD return existing promise '
+        'WHEN cancelRefetch == false ', withCleanup((tester) async {
+      var fetches = 0;
+      final fetchNextPageResults = <InfiniteQueryResult<String, Object, int>>[];
+
+      final hook = await buildHook(
+        () => useInfiniteQuery<String, Object, int>(
+          const ['test'],
+          (context) async {
+            fetches++;
+            await Future.delayed(const Duration(seconds: 1));
+            return 'page-${context.pageParam}-fetch-$fetches';
+          },
+          initialPageParam: 0,
+          nextPageParamBuilder: (data) => data.pageParams.last + 1,
+          queryClient: client,
+        ),
+      );
+
+      // Wait for initial fetch to complete
+      await tester.pump(const Duration(seconds: 1));
+      expect(hook.current.pages, ['page-0-fetch-1']);
+
+      // Call fetchNextPage with cancelRefetch: false multiple times
+      hook.current
+          .fetchNextPage()
+          .then((result) => fetchNextPageResults.add(result));
+      hook.current
+          .fetchNextPage(cancelRefetch: false)
+          .then((result) => fetchNextPageResults.add(result));
+      hook.current
+          .fetchNextPage(cancelRefetch: false)
+          .then((result) => fetchNextPageResults.add(result));
+
+      await tester.pump(const Duration(seconds: 1));
+
+      // Should have fetched only once (deduplication)
+      expect(hook.current.pages, ['page-0-fetch-1', 'page-1-fetch-2']);
+      expect(fetchNextPageResults, hasLength(3));
+      expect(
+        fetchNextPageResults.map((result) => result.pages),
+        everyElement(['page-0-fetch-1', 'page-1-fetch-2']),
+      );
+    }));
+
+    testWidgets(
+        'SHOULD dedupe multiple calls on initial mount'
+        '', withCleanup((tester) async {
+      var fetches = 0;
+
+      final hook = await buildHook(
+        () => useInfiniteQuery<String, Object, int>(
+          const ['test'],
+          (context) async {
+            fetches++;
+            await Future.delayed(const Duration(seconds: 1));
+            return 'page-${context.pageParam}-fetch-$fetches';
+          },
+          initialPageParam: 0,
+          nextPageParamBuilder: (data) => data.pageParams.last + 1,
+          queryClient: client,
+        ),
+      );
+
+      // Initial fetch is in progress (no data yet)
+      expect(hook.current.data, isNull);
+      expect(hook.current.isFetching, isTrue);
+
+      // Try to fetch next page while initial fetch is in progress
+      // This should be deduplicated since there's no data yet
+      hook.current.fetchNextPage();
+      hook.current.fetchNextPage();
+
+      // Wait for initial fetch to complete
+      await tester.pump(const Duration(seconds: 1));
+
+      // Should only have one fetch (deduplication because no data existed)
+      expect(fetches, 1);
+      expect(hook.current.pages, ['page-0-fetch-1']);
+    }));
   });
 
   group('Returns: fetchPreviousPage', () {
@@ -2144,6 +2272,139 @@ void main() {
       await act(hook.current.fetchPreviousPage);
       await tester.pump(const Duration(seconds: 1));
       expect(hook.current.data, InfiniteData(['page-3', 'page-4'], [3, 4]));
+    }));
+
+    testWidgets(
+        'SHOULD cancel in-progress fetch and start new one '
+        'WHEN cancelRefetch == true', withCleanup((tester) async {
+      var fetches = 0;
+      final fetchPreviousPageResults =
+          <InfiniteQueryResult<String, Object, int>>[];
+
+      final hook = await buildHook(
+        () => useInfiniteQuery<String, Object, int>(
+          const ['test'],
+          (context) async {
+            await Future.delayed(const Duration(seconds: 1));
+            fetches++;
+            return 'page-${context.pageParam}-fetch-$fetches';
+          },
+          initialPageParam: 5,
+          nextPageParamBuilder: (data) => data.pageParams.last + 1,
+          prevPageParamBuilder: (data) => data.pageParams.first - 1,
+          queryClient: client,
+        ),
+      );
+
+      // Wait for initial fetch to complete
+      await tester.pump(const Duration(seconds: 1));
+      expect(hook.current.pages, ['page-5-fetch-1']);
+
+      // Call fetchNextPage multiple times rapidly (before previous completes)
+      hook.current
+          .fetchPreviousPage()
+          .then((result) => fetchPreviousPageResults.add(result));
+      hook.current
+          .fetchPreviousPage(cancelRefetch: true)
+          .then((result) => fetchPreviousPageResults.add(result));
+      hook.current
+          .fetchPreviousPage(cancelRefetch: true)
+          .then((result) => fetchPreviousPageResults.add(result));
+
+      // Should have started multiple fetches (cancelling previous ones)
+      // but only the last one completes
+      await tester.pump(const Duration(seconds: 1));
+      expect(hook.current.pages, ['page-4-fetch-4', 'page-5-fetch-1']);
+      expect(fetchPreviousPageResults, hasLength(3));
+      expect(
+        fetchPreviousPageResults.map((result) => result.pages),
+        everyElement(['page-4-fetch-4', 'page-5-fetch-1']),
+      );
+    }));
+
+    testWidgets(
+        'SHOULD return existing promise '
+        'WHEN cancelRefetch == false ', withCleanup((tester) async {
+      var fetches = 0;
+      final fetchPreviousPageResults =
+          <InfiniteQueryResult<String, Object, int>>[];
+
+      final hook = await buildHook(
+        () => useInfiniteQuery<String, Object, int>(
+          const ['test'],
+          (context) async {
+            fetches++;
+            await Future.delayed(const Duration(seconds: 1));
+            return 'page-${context.pageParam}-fetch-$fetches';
+          },
+          initialPageParam: 5,
+          nextPageParamBuilder: (data) => data.pageParams.last + 1,
+          prevPageParamBuilder: (data) => data.pageParams.first - 1,
+          queryClient: client,
+        ),
+      );
+
+      // Wait for initial fetch to complete
+      await tester.pump(const Duration(seconds: 1));
+      expect(hook.current.pages, ['page-5-fetch-1']);
+
+      // Call fetchNextPage with cancelRefetch: false multiple times
+      hook.current
+          .fetchPreviousPage()
+          .then((result) => fetchPreviousPageResults.add(result));
+      hook.current
+          .fetchPreviousPage(cancelRefetch: false)
+          .then((result) => fetchPreviousPageResults.add(result));
+      hook.current
+          .fetchPreviousPage(cancelRefetch: false)
+          .then((result) => fetchPreviousPageResults.add(result));
+
+      await tester.pump(const Duration(seconds: 1));
+
+      // Should have fetched only once (deduplication)
+      expect(hook.current.pages, ['page-4-fetch-2', 'page-5-fetch-1']);
+      expect(fetchPreviousPageResults, hasLength(3));
+      expect(
+        fetchPreviousPageResults.map((result) => result.pages),
+        everyElement(['page-4-fetch-2', 'page-5-fetch-1']),
+      );
+    }));
+
+    testWidgets(
+        'SHOULD dedupe multiple calls on initial mount'
+        '', withCleanup((tester) async {
+      var fetches = 0;
+
+      final hook = await buildHook(
+        () => useInfiniteQuery<String, Object, int>(
+          const ['test'],
+          (context) async {
+            fetches++;
+            await Future.delayed(const Duration(seconds: 1));
+            return 'page-${context.pageParam}-fetch-$fetches';
+          },
+          initialPageParam: 5,
+          nextPageParamBuilder: (data) => data.pageParams.last + 1,
+          prevPageParamBuilder: (data) => data.pageParams.first - 1,
+          queryClient: client,
+        ),
+      );
+
+      // Initial fetch is in progress (no data yet)
+      expect(hook.current.data, isNull);
+      expect(hook.current.isFetching, isTrue);
+
+      // Try to fetch next page while initial fetch is in progress
+      // This should be deduplicated since there's no data yet
+      hook.current.fetchPreviousPage();
+      hook.current.fetchPreviousPage();
+
+      // Wait for initial fetch to complete
+      await tester.pump(const Duration(seconds: 1));
+
+      // Should only have one fetch (deduplication because no data existed)
+      expect(fetches, 1);
+      expect(hook.current.pages, ['page-5-fetch-1']);
     }));
   });
 
