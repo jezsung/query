@@ -1,0 +1,615 @@
+---
+title: useInfiniteQuery
+description:
+  Hook for fetching and caching paginated data with automatic page accumulation
+permalink: useinfinitequery
+---
+
+```dart
+final InfiniteQueryResult<TData, TError, TPageParam> result =
+    useInfiniteQuery<TData, TError, TPageParam>(
+  queryKey,
+  queryFn,
+  initialPageParam: initialPageParam,
+  nextPageParamBuilder: nextPageParamBuilder,
+  prevPageParamBuilder: prevPageParamBuilder,
+  maxPages: maxPages,
+  enabled: enabled,
+  staleDuration: staleDuration,
+  gcDuration: gcDuration,
+  placeholder: placeholder,
+  refetchOnMount: refetchOnMount,
+  refetchOnResume: refetchOnResume,
+  refetchInterval: refetchInterval,
+  retry: retry,
+  retryOnMount: retryOnMount,
+  seed: seed,
+  seedUpdatedAt: seedUpdatedAt,
+  meta: meta,
+  queryClient: queryClient,
+);
+```
+
+## Parameters
+
+The options for `useInfiniteQuery` are identical to [`useQuery`](/docs/usequery)
+with the addition of pagination-specific options.
+
+### queryKey
+
+```dart
+List<Object?> queryKey
+```
+
+**Required**
+
+The query key to use for this query. The key uniquely identifies the query in
+the cache. If two widgets use the same key, they share the same cache entry.
+
+The query will automatically refetch when the key changes (unless `enabled` is
+`false`).
+
+`useInfiniteQuery` shares the same query key namespace as `useQuery`. You cannot
+use the same query key for both a regular query and an infinite query.
+
+See [Query Keys](/docs/query-keys) for more information.
+
+### queryFn
+
+```dart
+Future<TData> Function(InfiniteQueryFunctionContext<TPageParam> context) queryFn
+```
+
+**Required**
+
+The function that fetches a single page of data. Receives an
+`InfiniteQueryFunctionContext` containing:
+
+- `queryKey` - The query key for this query
+- `client` - The `QueryClient` instance
+- `signal` - An `AbortSignal` for cancellation support
+- `meta` - Additional metadata from the query options
+- `pageParam` - The page parameter for the current page being fetched
+- `direction` - The direction of the fetch (`FetchDirection.forward` or
+  `FetchDirection.backward`)
+
+Must return a `Future` that resolves with data or throws an error.
+
+```dart
+useInfiniteQuery<List<Post>, Exception, int>(
+  ['posts'],
+  (context) async {
+    final posts = await fetchPostsByPage(context.pageParam);
+    return posts;
+  },
+  initialPageParam: 1,
+  nextPageParamBuilder: (data) => data.pageParams.last + 1,
+);
+```
+
+### initialPageParam
+
+```dart
+TPageParam initialPageParam
+```
+
+**Required**
+
+The page parameter to use when fetching the first page. This value is passed to
+`queryFn` via `context.pageParam` for the initial fetch.
+
+### nextPageParamBuilder
+
+```dart
+TPageParam? Function(InfiniteData<TData, TPageParam> data) nextPageParamBuilder
+```
+
+**Required**
+
+A function that extracts the next page parameter from the current data. Called
+after each successful fetch to determine if there is a next page.
+
+The `InfiniteData` argument provides:
+
+- `data.pages` - All fetched pages
+- `data.pageParams` - All page parameters
+
+Use the `last` getter on `List` to access the most recent page and its
+parameter.
+
+Return `null` to indicate there is no next page available.
+
+```dart
+nextPageParamBuilder: (data) {
+  final lastPage = data.pages.last;
+  return lastPage.hasMore ? lastPage.nextCursor : null;
+}
+```
+
+### prevPageParamBuilder
+
+```dart
+TPageParam? Function(InfiniteData<TData, TPageParam> data)? prevPageParamBuilder
+```
+
+A function that extracts the previous page parameter from the current data.
+Called to determine if there is a previous page.
+
+The `InfiniteData` argument provides:
+
+- `data.pages` - All fetched pages
+- `data.pageParams` - All page parameters
+
+Use the `first` getter on `List` to access the earliest page and its parameter.
+
+Return `null` to indicate there is no previous page available.
+
+If not provided, backward pagination is not supported.
+
+### maxPages
+
+```dart
+int? maxPages
+```
+
+The maximum number of pages to store in the cache. When fetching a new page
+would exceed this limit, the first page is removed.
+
+If `null`, the number of pages is unlimited.
+
+### enabled
+
+```dart
+bool? enabled
+```
+
+**Default:** `true`
+
+Set to `false` to disable this query from automatically running. Use this for
+dependent queries where you need to wait for other data before fetching.
+
+### staleDuration
+
+```dart
+StaleDuration? staleDuration
+```
+
+**Default:** `StaleDuration.zero`
+
+How long until data is considered stale. Stale data is eligible for background
+refetching.
+
+| Value                       | Description                                 |
+| --------------------------- | ------------------------------------------- |
+| `StaleDuration(minutes: 5)` | Stale after 5 minutes                       |
+| `StaleDuration.zero`        | Immediately stale (default)                 |
+| `StaleDuration.infinity`    | Never stale unless manually invalidated     |
+| `StaleDuration.static`      | Never stale and ignores manual invalidation |
+
+See [Data Staleness](/docs/staleness) for more information.
+
+### gcDuration
+
+```dart
+GcDuration? gcDuration
+```
+
+**Default:** `GcDuration(minutes: 5)`
+
+How long unused cache data remains in memory before garbage collection. When a
+query has no active observers, its data will be garbage collected after this
+duration.
+
+| Value                    | Description                                 |
+| ------------------------ | ------------------------------------------- |
+| `GcDuration(minutes: 5)` | Garbage collected after 5 minutes (default) |
+| `GcDuration.zero`        | Immediately garbage collected when unused   |
+| `GcDuration.infinity`    | Never garbage collected                     |
+
+When multiple observers specify different gc durations for the same query, the
+longest duration is used.
+
+See [Garbage Collection](/docs/garbage-collection) for more information.
+
+### placeholder
+
+```dart
+InfiniteData<TData, TPageParam>? placeholder
+```
+
+Placeholder data to display while the query is pending. Unlike `seed`,
+placeholder data is not persisted to the cache.
+
+`result.isPlaceholderData` is `true` when `data` contains placeholder data.
+
+### refetchOnMount
+
+```dart
+RefetchOnMount? refetchOnMount
+```
+
+**Default:** `RefetchOnMount.stale`
+
+Controls whether the query refetches when a widget mounts.
+
+| Value                   | Description                        |
+| ----------------------- | ---------------------------------- |
+| `RefetchOnMount.stale`  | Refetch if data is stale (default) |
+| `RefetchOnMount.always` | Always refetch on mount            |
+| `RefetchOnMount.never`  | Never refetch on mount             |
+
+### refetchOnResume
+
+```dart
+RefetchOnResume? refetchOnResume
+```
+
+**Default:** `RefetchOnResume.stale`
+
+Controls whether the query refetches when the app resumes from the background.
+
+| Value                    | Description                        |
+| ------------------------ | ---------------------------------- |
+| `RefetchOnResume.stale`  | Refetch if data is stale (default) |
+| `RefetchOnResume.always` | Always refetch on resume           |
+| `RefetchOnResume.never`  | Never refetch on resume            |
+
+### refetchInterval
+
+```dart
+Duration? refetchInterval
+```
+
+If set, the query will continuously refetch at this interval.
+
+### retry
+
+```dart
+Duration? Function(int retryCount, TError error)? retry
+```
+
+**Default:** 3 retries with exponential backoff (1s, 2s, 4s delays)
+
+A callback that determines whether to retry a failed fetch and how long to wait.
+
+The `retryCount` starts at 0 after the first failure and increments with each
+retry attempt.
+
+- Return `null` to stop retrying
+- Return a `Duration` to retry after that delay
+
+### retryOnMount
+
+```dart
+bool? retryOnMount
+```
+
+**Default:** `true`
+
+If `false`, a query that previously failed will not retry when it mounts.
+
+### seed
+
+```dart
+InfiniteData<TData, TPageParam>? seed
+```
+
+Initial data to populate the cache. Unlike `placeholder`, seed data is persisted
+to the cache and affects the query status.
+
+A query with seed data starts in `QueryStatus.success` rather than
+`QueryStatus.pending`.
+
+### seedUpdatedAt
+
+```dart
+DateTime? seedUpdatedAt
+```
+
+The timestamp when the `seed` data was last updated. Used to determine staleness
+of seed data. Defaults to the current time if not specified.
+
+When `seedUpdatedAt` is not provided and `staleDuration` is `StaleDuration.zero`
+(the default), the seed data will be immediately stale and a fetch will be
+attempted on mount.
+
+### meta
+
+```dart
+Map<String, dynamic>? meta
+```
+
+Additional metadata stored on the query. Accessible in the
+`InfiniteQueryFunctionContext` passed to `queryFn`.
+
+When multiple hooks provide `meta` for the same query, values are deep merged.
+
+### queryClient
+
+```dart
+QueryClient? queryClient
+```
+
+A custom `QueryClient` to use. If not provided, uses the client from the nearest
+`QueryClientProvider`.
+
+---
+
+## Returns
+
+The hook returns an `InfiniteQueryResult<TData, TError, TPageParam>` containing
+the status, data, error, helper methods, and pagination state.
+
+### data
+
+```dart
+InfiniteData<TData, TPageParam>? data
+```
+
+The infinite query data containing all fetched pages:
+
+- `data.pages` - Array containing all pages
+- `data.pageParams` - Array containing all page parameters
+
+### pages
+
+```dart
+List<TData> pages
+```
+
+Convenience getter for `data?.pages ?? []`. Returns all fetched pages or an
+empty list if no data.
+
+### pageParams
+
+```dart
+List<TPageParam> pageParams
+```
+
+Convenience getter for `data?.pageParams ?? []`. Returns all page parameters or
+an empty list if no data.
+
+### fetchNextPage
+
+```dart
+Future<InfiniteQueryResult<TData, TError, TPageParam>> Function({
+  bool cancelRefetch,
+  bool throwOnError,
+}) fetchNextPage
+```
+
+Fetch the next page of data. Uses `nextPageParamBuilder` to determine the page
+parameter. Does nothing if `hasNextPage` is `false`.
+
+- `cancelRefetch` - If `true` (default), cancels any in-progress fetch before
+  starting a new one
+- `throwOnError` - If `true`, throws the error instead of returning it in the
+  result
+
+### fetchPreviousPage
+
+```dart
+Future<InfiniteQueryResult<TData, TError, TPageParam>> Function({
+  bool cancelRefetch,
+  bool throwOnError,
+}) fetchPreviousPage
+```
+
+Fetch the previous page of data. Uses `prevPageParamBuilder` to determine the
+page parameter. No-op if `hasPreviousPage` is `false`.
+
+- `cancelRefetch` - If `true` (default), cancels any in-progress fetch before
+  starting a new one
+- `throwOnError` - If `true`, throws the error instead of returning it in the
+  result
+
+### hasNextPage
+
+```dart
+bool hasNextPage
+```
+
+Whether there is a next page to be fetched. Determined by calling
+`nextPageParamBuilder` on the current data and checking if the result is
+non-null.
+
+### hasPreviousPage
+
+```dart
+bool hasPreviousPage
+```
+
+Whether there is a previous page to be fetched. Determined by calling
+`prevPageParamBuilder` on the current data and checking if the result is
+non-null. Always `false` if `prevPageParamBuilder` is not provided.
+
+### isFetchingNextPage
+
+```dart
+bool isFetchingNextPage
+```
+
+Will be `true` only while `fetchNextPage` is in progress. Returns `false` during
+initial page fetch, refetch, or when fetching previous page.
+
+### isFetchingPreviousPage
+
+```dart
+bool isFetchingPreviousPage
+```
+
+Will be `true` only while `fetchPreviousPage` is in progress. Returns `false`
+during initial page fetch, refetch, or when fetching next page.
+
+### isFetchNextPageError
+
+```dart
+bool isFetchNextPageError
+```
+
+Will be `true` if the query failed while fetching the next page.
+
+### isFetchPreviousPageError
+
+```dart
+bool isFetchPreviousPageError
+```
+
+Will be `true` if the query failed while fetching the previous page.
+
+### status
+
+```dart
+QueryStatus status
+```
+
+The overall status of the query.
+
+| Value                 | Description                               |
+| --------------------- | ----------------------------------------- |
+| `QueryStatus.pending` | No cached data and no fetch has completed |
+| `QueryStatus.success` | Data is available                         |
+| `QueryStatus.error`   | The most recent fetch failed              |
+
+### fetchStatus
+
+```dart
+FetchStatus fetchStatus
+```
+
+The current network status of the query.
+
+| Value                  | Description                            |
+| ---------------------- | -------------------------------------- |
+| `FetchStatus.fetching` | The query function is executing        |
+| `FetchStatus.paused`   | The query wants to fetch but is paused |
+| `FetchStatus.idle`     | No fetch is in progress                |
+
+### dataUpdatedAt
+
+```dart
+DateTime? dataUpdatedAt
+```
+
+The timestamp when `data` was last updated.
+
+### dataUpdateCount
+
+```dart
+int dataUpdateCount
+```
+
+The number of times data has been successfully fetched.
+
+### error
+
+```dart
+TError? error
+```
+
+The error from the most recent failed fetch, if any.
+
+### errorUpdatedAt
+
+```dart
+DateTime? errorUpdatedAt
+```
+
+The timestamp when `error` was last updated.
+
+### errorUpdateCount
+
+```dart
+int errorUpdateCount
+```
+
+The total number of times the query has entered the error state. Only increments
+after all retries are exhausted, not on each failed retry attempt.
+
+### failureCount
+
+```dart
+int failureCount
+```
+
+The number of consecutive failures. Increments on each failure, resets to 0 on
+every new fetch attempt.
+
+### failureReason
+
+```dart
+TError? failureReason
+```
+
+The error from the most recent failure. Resets to `null` on every new fetch
+attempt.
+
+### isEnabled
+
+```dart
+bool isEnabled
+```
+
+Whether the query is enabled. Equals to the `enabled` option passed to the hook.
+
+### isStale
+
+```dart
+bool isStale
+```
+
+Whether the data is considered stale based on `staleDuration`.
+
+### isFetchedAfterMount
+
+```dart
+bool isFetchedAfterMount
+```
+
+Whether the query has fetched since the widget mounted. Useful for avoiding
+display of previously cached data.
+
+### isPlaceholderData
+
+```dart
+bool isPlaceholderData
+```
+
+Whether the current data is placeholder data.
+
+### refetch
+
+```dart
+Future<InfiniteQueryResult<TData, TError, TPageParam>> Function({
+  bool cancelRefetch,
+  bool throwOnError,
+}) refetch
+```
+
+Manually trigger a refetch. All existing pages are refetched one by one
+sequentially.
+
+- `cancelRefetch` - If `true` (default), cancels any in-flight fetch before
+  starting a new one
+- `throwOnError` - If `true`, throws the error instead of returning it in the
+  result
+
+### Derived Getters
+
+These properties derive from `status` and `fetchStatus` for convenience.
+
+| Property         | Equivalent                                                                   |
+| ---------------- | ---------------------------------------------------------------------------- |
+| `isPending`      | `status == QueryStatus.pending`                                              |
+| `isSuccess`      | `status == QueryStatus.success`                                              |
+| `isError`        | `status == QueryStatus.error`                                                |
+| `isFetching`     | `fetchStatus == FetchStatus.fetching`                                        |
+| `isPaused`       | `fetchStatus == FetchStatus.paused`                                          |
+| `isFetched`      | `dataUpdateCount > 0 \|\| errorUpdateCount > 0`                              |
+| `isLoading`      | `isPending && isFetching`                                                    |
+| `isRefetching`   | `isFetching && !isPending && !isFetchingNextPage && !isFetchingPreviousPage` |
+| `isLoadingError` | `isError && data == null`                                                    |
+| `isRefetchError` | `isError && data != null`                                                    |
+
+Note that `isRefetching` excludes next/previous page fetches, unlike
+[`useQuery`](/docs/usequery) where it simply means `isFetching && !isPending`.

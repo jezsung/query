@@ -15,6 +15,7 @@
     "---Reference---",
     "reference/use-query",
     "reference/use-mutation",
+    "reference/use-infinite-query",
     "reference/use-query-client",
     "reference/query-client"
   ]
