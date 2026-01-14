@@ -31,12 +31,8 @@ Working with server data is hard. You need caching, request deduplication, backg
 
 Visit **[flutterquery.com](https://flutterquery.com)** for comprehensive documentation:
 
+- [Overview](https://flutterquery.com/docs/overview)
 - [Quick Start](https://flutterquery.com/docs/quick-start)
-- [Queries](https://flutterquery.com/docs/concepts/queries)
-- [Mutations](https://flutterquery.com/docs/concepts/mutations)
-- [Infinite Queries](https://flutterquery.com/docs/reference/use-infinite-query)
-- [Staleness](https://flutterquery.com/docs/concepts/staleness)
-- [Query Lifecycle](https://flutterquery.com/docs/concepts/query-lifecycle)
 
 ## Versioning
 

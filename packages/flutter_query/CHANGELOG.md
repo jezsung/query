@@ -1,4 +1,4 @@
-## 0.5.0 (2025-01-14)
+## 0.5.1 (2025-01-14)
 
 This release adds support for infinite/paginated queries.
 
