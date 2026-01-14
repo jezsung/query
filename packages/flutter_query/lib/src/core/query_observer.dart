@@ -5,7 +5,7 @@ import 'package:clock/clock.dart';
 
 import 'infinite_data.dart';
 import 'infinite_query_function_context.dart';
-import 'infinite_query_options.dart';
+import 'infinite_query_observer_options.dart';
 import 'infinite_query_result.dart';
 import 'observable.dart';
 import 'options/refetch_on_mount.dart';

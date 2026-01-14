@@ -67,7 +67,7 @@ InfiniteQueryResult<TData, TError, TPageParam>
   final observer = useMemoized(
     () => InfiniteQueryObserver<TData, TError, TPageParam>(
       client,
-      InfiniteQueryOptions(
+      InfiniteQueryObserverOptions(
         queryKey,
         queryFn,
         initialPageParam: initialPageParam,
@@ -94,7 +94,7 @@ InfiniteQueryResult<TData, TError, TPageParam>
   // Update options during render (before subscribing)
   // This ensures we get the optimistic result immediately when options change
   observer.updateOptions(
-    InfiniteQueryOptions(
+    InfiniteQueryObserverOptions(
       queryKey,
       queryFn,
       initialPageParam: initialPageParam,

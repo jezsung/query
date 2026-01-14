@@ -20,9 +20,9 @@ export 'src/core/options/gc_duration.dart' show GcDuration;
 export 'src/core/infinite_data.dart' show InfiniteData, FetchDirection;
 export 'src/core/infinite_query_function_context.dart'
     show InfiniteQueryFunctionContext;
-export 'src/core/infinite_query_options.dart'
+export 'src/core/infinite_query_observer_options.dart'
     show
-        InfiniteQueryOptions,
+        InfiniteQueryObserverOptions,
         InfiniteQueryFn,
         NextPageParamBuilder,
         PrevPageParamBuilder;

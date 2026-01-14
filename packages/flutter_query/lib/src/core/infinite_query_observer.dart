@@ -15,7 +15,7 @@ typedef InfiniteResultChangeListener<TData, TError, TPageParam> = void Function(
 class InfiniteQueryObserver<TData, TError, TPageParam> {
   InfiniteQueryObserver(
     QueryClient client,
-    InfiniteQueryOptions<TData, TError, TPageParam> options,
+    InfiniteQueryObserverOptions<TData, TError, TPageParam> options,
   )   : _client = client,
         _options = options.withDefaults(client.defaultQueryOptions) {
     _query = _client.cache.build<InfiniteData<TData, TPageParam>, TError>(
@@ -37,7 +37,7 @@ class InfiniteQueryObserver<TData, TError, TPageParam> {
   }
 
   final QueryClient _client;
-  InfiniteQueryOptions<TData, TError, TPageParam> _options;
+  InfiniteQueryObserverOptions<TData, TError, TPageParam> _options;
   late Query<InfiniteData<TData, TPageParam>, TError> _query;
   late InfiniteQueryResult<TData, TError, TPageParam> _result;
   FetchDirection? _fetchDirection;
@@ -47,7 +47,8 @@ class InfiniteQueryObserver<TData, TError, TPageParam> {
 
   late final _QueryObserverAdapter<TData, TError, TPageParam> _adapter;
 
-  InfiniteQueryOptions<TData, TError, TPageParam> get options => _options;
+  InfiniteQueryObserverOptions<TData, TError, TPageParam> get options =>
+      _options;
   InfiniteQueryResult<TData, TError, TPageParam> get result => _result;
 
   /// Fetch the next page of data.
@@ -103,7 +104,8 @@ class InfiniteQueryObserver<TData, TError, TPageParam> {
   }
 
   /// Update options. Called during re-render.
-  void updateOptions(InfiniteQueryOptions<TData, TError, TPageParam> options) {
+  void updateOptions(
+      InfiniteQueryObserverOptions<TData, TError, TPageParam> options) {
     final oldOptions = _options;
     final newOptions = options.withDefaults(_client.defaultQueryOptions);
     _options = newOptions;
@@ -459,7 +461,7 @@ class InfiniteQueryObserver<TData, TError, TPageParam> {
   }
 
   bool _shouldFetchOnMount(
-    InfiniteQueryOptions<TData, TError, TPageParam> options,
+    InfiniteQueryObserverOptions<TData, TError, TPageParam> options,
     QueryState<InfiniteData<TData, TPageParam>, TError> state,
   ) {
     final enabled = options.enabled ?? true;
@@ -491,7 +493,7 @@ class InfiniteQueryObserver<TData, TError, TPageParam> {
   }
 
   bool _shouldFetchOnResume(
-    InfiniteQueryOptions<TData, TError, TPageParam> options,
+    InfiniteQueryObserverOptions<TData, TError, TPageParam> options,
     QueryState<InfiniteData<TData, TPageParam>, TError> state,
   ) {
     final enabled = options.enabled ?? true;

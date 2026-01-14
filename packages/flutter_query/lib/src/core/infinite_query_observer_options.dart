@@ -53,8 +53,8 @@ typedef PrevPageParamBuilder<TData, TPageParam> = TPageParam? Function(
 /// options like staleDuration, retry, etc.
 ///
 /// Matches TanStack Query v5's InfiniteQueryObserverOptions.
-class InfiniteQueryOptions<TData, TError, TPageParam> {
-  InfiniteQueryOptions(
+class InfiniteQueryObserverOptions<TData, TError, TPageParam> {
+  InfiniteQueryObserverOptions(
     List<Object?> queryKey,
     this.queryFn, {
     required this.initialPageParam,
@@ -154,7 +154,7 @@ class InfiniteQueryOptions<TData, TError, TPageParam> {
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
-    return other is InfiniteQueryOptions<TData, TError, TPageParam> &&
+    return other is InfiniteQueryObserverOptions<TData, TError, TPageParam> &&
         queryKey == other.queryKey &&
         identical(queryFn, other.queryFn) &&
         _equality.equals(initialPageParam, other.initialPageParam) &&
@@ -200,16 +200,16 @@ class InfiniteQueryOptions<TData, TError, TPageParam> {
 
 const DeepCollectionEquality _equality = DeepCollectionEquality();
 
-/// Extension methods for [InfiniteQueryOptions].
-extension InfiniteQueryOptionsWithDefaults<TData, TError, TPageParam>
-    on InfiniteQueryOptions<TData, TError, TPageParam> {
-  /// Merges this InfiniteQueryOptions with default options.
+/// Extension methods for [InfiniteQueryObserverOptions].
+extension InfiniteQueryObserverOptionsWithDefaults<TData, TError, TPageParam>
+    on InfiniteQueryObserverOptions<TData, TError, TPageParam> {
+  /// Merges this InfiniteQueryObserverOptions with default options.
   ///
   /// Query-specific options take precedence over defaults.
-  InfiniteQueryOptions<TData, TError, TPageParam> withDefaults(
+  InfiniteQueryObserverOptions<TData, TError, TPageParam> withDefaults(
     DefaultQueryOptions defaults,
   ) {
-    return InfiniteQueryOptions<TData, TError, TPageParam>(
+    return InfiniteQueryObserverOptions<TData, TError, TPageParam>(
       queryKey.parts,
       queryFn,
       initialPageParam: initialPageParam,
@@ -232,8 +232,8 @@ extension InfiniteQueryOptionsWithDefaults<TData, TError, TPageParam>
   }
 }
 
-extension InfiniteQueryOptionsBuildNextPageParam<TData, TError, TPageParam>
-    on InfiniteQueryOptions<TData, TError, TPageParam> {
+extension InfiniteQueryObserverOptionsBuildNextPageParam<TData, TError,
+    TPageParam> on InfiniteQueryObserverOptions<TData, TError, TPageParam> {
   TPageParam? buildNextPageParam(InfiniteData<TData, TPageParam> data) {
     if (data.pages.isEmpty || data.pageParams.isEmpty) return null;
 

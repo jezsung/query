@@ -2,7 +2,7 @@ import 'default_mutation_options.dart';
 import 'default_query_options.dart';
 import 'infinite_data.dart';
 import 'infinite_query_function_context.dart';
-import 'infinite_query_options.dart';
+import 'infinite_query_observer_options.dart';
 import 'mutation_cache.dart';
 import 'options/gc_duration.dart';
 import 'options/retry.dart';

@@ -42,7 +42,7 @@ final class InfiniteQueryFunctionContext<TPageParam> {
 
   /// The page parameter for the current page being fetched.
   ///
-  /// For the initial fetch, this is [InfiniteQueryOptions.initialPageParam].
+  /// For the initial fetch, this is [InfiniteQueryObserverOptions.initialPageParam].
   /// For subsequent fetches, this is the value returned by [getNextPageParam]
   /// or [getPreviousPageParam].
   final TPageParam pageParam;
