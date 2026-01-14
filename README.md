@@ -3,12 +3,17 @@
 </p>
 <h1 align="center"><samp>Flutter Query</samp></h1>
 
-[![Pub Version](https://img.shields.io/pub/v/flutter_query)](https://pub.dev/packages/flutter_query)
-[![Pub Points](https://img.shields.io/pub/points/flutter_query)](https://pub.dev/packages/flutter_query)
-[![Pub Likes](https://img.shields.io/pub/likes/flutter_query)](https://pub.dev/packages/flutter_query)
-[![CI](https://github.com/jezsung/query/actions/workflows/ci.yaml/badge.svg)](https://github.com/jezsung/query/actions/workflows/ci.yaml)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![GitHub Stars](https://img.shields.io/github/stars/jezsung/query)](https://github.com/jezsung/query/stargazers)
+<p align="center">
+  <a href="https://github.com/jezsung/query/actions/workflows/ci.yaml"><img src="https://img.shields.io/github/actions/workflow/status/jezsung/query/ci.yaml?label=CI" alt="CI Status"></a>
+  <a href="https://github.com/jezsung/query/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-MIT-purple.svg" alt="MIT License"></a>
+  <a href="https://github.com/jezsung/query"><img src="https://img.shields.io/github/stars/jezsung/query?style=flat&logo=github&colorB=F6F8FA&label=Github Stars" alt="GitHub Stars"></a>
+</p>
+
+<p align="center">
+  <a href="https://pub.dev/packages/flutter_query"><img src="https://img.shields.io/pub/v/flutter_query?label=Pub&color=027DFD" alt="Pub Version"></a>
+  <a href="https://pub.dev/packages/flutter_query"><img src="https://img.shields.io/pub/points/flutter_query?label=Points&color=027DFD" alt="Pub Points"></a>
+  <a href="https://pub.dev/packages/flutter_query"><img src="https://img.shields.io/pub/likes/flutter_query?label=Likes&color=027DFD" alt="Pub Likes"></a>
+</p>
 
 A Flutter package inspired by [TanStack Query](https://tanstack.com/query/latest) for powerful asynchronous state management. Built with [Flutter Hooks](https://pub.dev/packages/flutter_hooks).
 
