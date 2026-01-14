@@ -1,5 +1,5 @@
 name: infinite_scrolling
-description: "A new Flutter project."
+description: 'A new Flutter project.'
 publish_to: 'none'
 version: 0.1.0
 
@@ -10,8 +10,7 @@ dependencies:
   flutter:
     sdk: flutter
   flutter_hooks: ^0.21.3+1
-  flutter_query:
-    path: ../../packages/flutter_query
+  flutter_query: 0.5.1
   http: ^1.4.0
   infinite_scroll_pagination: ^5.1.1
 
