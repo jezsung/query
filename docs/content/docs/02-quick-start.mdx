@@ -4,7 +4,7 @@ description: Build a Flutter app that fetches data in just a few minutes
 permalink: quick-start
 ---
 
-import versions from '@/lib/versions';
+import { fromRoot, getPubspec } from '@/lib/pubspec';
 
 In this guide, you will build a Flutter app that fetches data from a server and
 displays it on the screen. By the end, you will have a working example that
@@ -27,7 +27,14 @@ flutter pub add flutter_query flutter_hooks
 
 You will notice two packages added to your `pubspec.yaml`:
 
-<Pubspec dependencies={versions.installation} />
+export const pubspec = getPubspec(fromRoot('../packages/flutter_query'));
+
+<Pubspec
+  dependencies={{
+    flutter_query: `^${pubspec.version}`,
+    flutter_hooks: pubspec.dependencies.flutter_hooks,
+  }}
+/>
 
 ## Set up the QueryClientProvider
 

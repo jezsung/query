@@ -5,7 +5,7 @@ description:
 permalink: tutorials/basic-query-with-http
 ---
 
-import versions from '@/lib/versions';
+import { fromRoot, getPubspec } from '@/lib/pubspec';
 
 In this tutorial, we will build a Flutter app that fetches repository data from
 the GitHub API and displays it on screen. By the end, you will have a working
@@ -56,7 +56,17 @@ flutter pub add flutter_query flutter_hooks http
 
 Your `pubspec.yaml` should now include:
 
-<Pubspec dependencies={versions.basic_query_with_http} />
+export const pubspec = getPubspec(
+  fromRoot('../examples/basic_query_with_http'),
+);
+
+<Pubspec
+  dependencies={{
+    ...pubspec.dependencies,
+    flutter_query: `^${pubspec.dependencies.flutter_query}`,
+    flutter: undefined,
+  }}
+/>
 
 ## Create the data model
 
