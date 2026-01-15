@@ -6,6 +6,7 @@
 
 <p align="center">
   <a href="https://github.com/jezsung/query/actions/workflows/ci.yaml"><img src="https://img.shields.io/github/actions/workflow/status/jezsung/query/ci.yaml?label=CI" alt="CI"></a>
+  <a href="https://codecov.io/github/jezsung/query" ><img src="https://codecov.io/github/jezsung/query/graph/badge.svg?token=8ZS2VDHJ71&flag=flutter_query"/></a>
   <a href="https://github.com/jezsung/query/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-MIT-purple.svg" alt="License"></a>
   <a href="https://github.com/jezsung/query"><img src="https://img.shields.io/github/stars/jezsung/query?style=flat&logo=github&colorB=F6F8FA&label=Github%20Stars" alt="GitHub Stars"></a>
 </p>
