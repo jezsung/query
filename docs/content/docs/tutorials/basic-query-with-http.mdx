@@ -5,6 +5,8 @@ description:
 permalink: tutorials/basic-query-with-http
 ---
 
+import versions from '@/lib/versions';
+
 In this tutorial, we will build a Flutter app that fetches repository data from
 the GitHub API and displays it on screen. By the end, you will have a working
 app that shows repository details including stars, forks, and watchers.
@@ -46,20 +48,15 @@ cd basic_query_with_http
 
 ## Install dependencies
 
-Add the `http` package to your project:
+Add the required packages to your project:
 
 ```bash title='Terminal'
-flutter pub add http
+flutter pub add flutter_query flutter_hooks http
 ```
 
 Your `pubspec.yaml` should now include:
 
-```yaml title='pubspec.yaml'
-dependencies:
-  http: ^1.6.0
-  flutter_hooks: ^0.21.3+1
-  flutter_query: ^0.3.7
-```
+<Pubspec dependencies={versions.basic_query_with_http} />
 
 ## Create the data model
 

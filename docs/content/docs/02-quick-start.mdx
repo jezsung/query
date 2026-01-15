@@ -4,6 +4,8 @@ description: Build a Flutter app that fetches data in just a few minutes
 permalink: quick-start
 ---
 
+import versions from '@/lib/versions';
+
 In this guide, you will build a Flutter app that fetches data from a server and
 displays it on the screen. By the end, you will have a working example that
 shows loading, success, and error states automatically.
@@ -25,11 +27,7 @@ flutter pub add flutter_query flutter_hooks
 
 You will notice two packages added to your `pubspec.yaml`:
 
-```yaml title='pubspec.yaml'
-dependencies:
-  flutter_query: ^0.3.7
-  flutter_hooks: ^0.21.2
-```
+<Pubspec dependencies={versions.installation} />
 
 ## Set up the QueryClientProvider
 
