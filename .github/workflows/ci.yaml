@@ -47,4 +47,13 @@ jobs:
 
       - run: dart format --output none --set-exit-if-changed .
 
-      - run: flutter test
+      - run: flutter test --coverage
+
+      - name: Upload coverage to Codecov
+        if: matrix.flutter-version == '3.38.0'
+        uses: codecov/codecov-action@671740ac38dd9b0130fbe1cec585b89eea48d3de #v5.5.2
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: packages/flutter_query/coverage/lcov.info
+          flags: flutter_query
+          fail_ci_if_error: false
