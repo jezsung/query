@@ -16,13 +16,16 @@
   <a href="https://pub.dev/packages/flutter_query"><img src="https://img.shields.io/pub/likes/flutter_query?label=Likes&color=027DFD" alt="Pub Likes"></a>
 </p>
 
-A Flutter package inspired by [TanStack Query](https://tanstack.com/query/latest) for powerful asynchronous state management. Built with [Flutter Hooks](https://pub.dev/packages/flutter_hooks).
+A Flutter package inspired by [TanStack Query](https://tanstack.com/query/latest) for powerful
+asynchronous state management. Built with [Flutter Hooks](https://pub.dev/packages/flutter_hooks).
 
-> **Coming from TanStack Query?** Check out the [differences](https://flutterquery.com/docs/coming-from-tanstack-query) to get started quickly.
+> **Coming from TanStack Query?** Check out the
+> [differences](https://flutterquery.com/docs/coming-from-tanstack-query) to get started quickly.
 
 ## Why Flutter Query?
 
-Working with server data is hard. You need caching, deduplication, background refetching, stale data handling, and more. Flutter Query handles all of this out of the box:
+Working with server data is hard. You need caching, deduplication, background refetching, stale data
+handling, and more. Flutter Query handles all of this out of the box:
 
 - **Automatic caching** with intelligent invalidation
 - **Request deduplication** so multiple widgets share a single network request
@@ -33,11 +36,13 @@ Working with server data is hard. You need caching, deduplication, background re
 
 ## Documentation
 
-Visit [flutterquery.com](https://flutterquery.com) for the full documentation, tutorials, and guides.
+Visit [flutterquery.com](https://flutterquery.com) for the full documentation, tutorials, and
+guides.
 
 ## Versioning
 
-This project strictly follows [Semantic Versioning](https://semver.org/). Given a version number `MAJOR.MINOR.PATCH`:
+This project strictly follows [Semantic Versioning](https://semver.org/). Given a version number
+`MAJOR.MINOR.PATCH`:
 
 - **MAJOR** version increments indicate breaking changes
 - **MINOR** version increments add functionality in a backward-compatible manner

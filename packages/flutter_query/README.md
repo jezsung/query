@@ -11,13 +11,17 @@
   <a href="https://github.com/jezsung/query"><img src="https://img.shields.io/github/stars/jezsung/query?style=flat&logo=github&colorB=F6F8FA&label=Github%20Stars" alt="GitHub Stars"></a>
 </p>
 
-Powerful asynchronous state management for Flutter, inspired by [TanStack Query](https://tanstack.com/query/latest). Simplifies data fetching, caching, and updates with minimal boilerplate.
+Powerful asynchronous state management for Flutter, inspired by
+[TanStack Query](https://tanstack.com/query/latest). Simplifies data fetching, caching, and updates
+with minimal boilerplate.
 
-> **Coming from TanStack Query?** Check out the [differences](https://flutterquery.com/docs/coming-from-tanstack-query) to get started quickly.
+> **Coming from TanStack Query?** Check out the
+> [differences](https://flutterquery.com/docs/coming-from-tanstack-query) to get started quickly.
 
 ## Why Flutter Query?
 
-Working with server data is hard. You need caching, request deduplication, background refetching, stale data handling, and more. Flutter Query handles all of this out of the box:
+Working with server data is hard. You need caching, request deduplication, background refetching,
+stale data handling, and more. Flutter Query handles all of this out of the box:
 
 - **Automatic Caching:** Cache management with configurable stale times
 - **Request Deduplication:** Multiple widgets share a single network request
@@ -37,7 +41,8 @@ Visit **[flutterquery.com](https://flutterquery.com)** for comprehensive documen
 
 ## Versioning
 
-This project strictly follows [Semantic Versioning](https://semver.org/). Given a version number `MAJOR.MINOR.PATCH`:
+This project strictly follows [Semantic Versioning](https://semver.org/). Given a version number
+`MAJOR.MINOR.PATCH`:
 
 - **MAJOR** version increments indicate breaking changes
 - **MINOR** version increments add functionality in a backward-compatible manner
