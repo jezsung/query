@@ -10,7 +10,7 @@ void main() {
   });
 
   tearDown(() {
-    client.dispose();
+    client.clear();
   });
 
   group('toString', () {

@@ -16,8 +16,8 @@ void main() {
   });
 
   tearDown(() {
-    client1.dispose();
-    client2.dispose();
+    client1.clear();
+    client2.clear();
   });
 
   test(

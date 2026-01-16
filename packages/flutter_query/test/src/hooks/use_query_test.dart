@@ -29,7 +29,7 @@ void main() {
   });
 
   tearDown(() {
-    client.dispose();
+    client.clear();
   });
 
   /// Helper function to run a test with automatic cache cleanup.
@@ -54,8 +54,8 @@ void main() {
       // Unmount widget tree first (disposes QueryObservers)
       await tester.pumpWidget(Container());
 
-      // Then dispose cache to prevent new GC timers
-      client.dispose();
+      // Then clear cache to prevent new GC timers
+      client.clear();
 
       // Wait until all pending timers finish
       await tester.binding.delayed(const Duration(days: 365));
@@ -1451,8 +1451,8 @@ void main() {
           const ['key'],
           (context) async => 'data',
         ),
-        wrapper: (child) => QueryClientProvider(
-          client: client,
+        wrapper: (child) => QueryClientProvider.value(
+          client,
           child: child,
         ),
       );
@@ -1472,8 +1472,8 @@ void main() {
           (context) async => 'data',
           queryClient: prioritizedQueryClient,
         ),
-        wrapper: (child) => QueryClientProvider(
-          client: client,
+        wrapper: (child) => QueryClientProvider.value(
+          client,
           child: child,
         ),
       );
@@ -1484,7 +1484,7 @@ void main() {
       expect(client.cache.get(const ['key']), isNull);
 
       await hookResult.unmount();
-      prioritizedQueryClient.dispose();
+      prioritizedQueryClient.clear();
     }));
 
     testWidgets('SHOULD throw WHEN QueryClient is not provided',

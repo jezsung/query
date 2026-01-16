@@ -16,7 +16,7 @@ void main() {
   });
 
   tearDown(() {
-    client.dispose();
+    client.clear();
   });
 
   MutationOptions<String, Object, String, String> createOptions({
@@ -477,7 +477,7 @@ void main() {
           gcDuration: const GcDuration(minutes: 10),
         ),
       );
-      addTearDown(clientWithDefaults.dispose);
+      addTearDown(clientWithDefaults.clear);
       final observer = MutationObserver(
         clientWithDefaults,
         MutationOptions<String, Object, String, void>(
@@ -496,7 +496,7 @@ void main() {
           gcDuration: const GcDuration(minutes: 10),
         ),
       );
-      addTearDown(clientWithDefaults.dispose);
+      addTearDown(clientWithDefaults.clear);
       final observer = MutationObserver(
         clientWithDefaults,
         MutationOptions<String, Object, String, void>(
@@ -517,7 +517,7 @@ void main() {
           gcDuration: const GcDuration(minutes: 10),
         ),
       );
-      addTearDown(clientWithDefaults.dispose);
+      addTearDown(clientWithDefaults.clear);
       final observer = MutationObserver(
         clientWithDefaults,
         MutationOptions<String, Object, String, void>(

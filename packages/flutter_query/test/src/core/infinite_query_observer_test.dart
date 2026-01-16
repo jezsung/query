@@ -17,7 +17,7 @@ void main() {
   });
 
   tearDown(() {
-    client.dispose();
+    client.clear();
   });
 
   void Function() withFakeAsync(void Function(FakeAsync fakeTime) testBody) {

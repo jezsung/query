@@ -12,7 +12,7 @@ void main() {
   });
 
   tearDown(() {
-    client.dispose();
+    client.clear();
   });
 
   MutationOptions<String, Object, String, void> createOptions({
