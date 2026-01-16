@@ -2,7 +2,8 @@ import 'package:flutter/widgets.dart';
 
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:flutter_query/flutter_query.dart';
+import 'package:flutter_query/src/core/core.dart';
+import 'package:flutter_query/src/widgets/widgets.dart';
 
 void main() {
   group('Constructor: new', () {

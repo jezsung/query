@@ -1,3 +1,5 @@
+import 'package:meta/meta.dart';
+
 /// Deeply merges two maps.
 ///
 /// Values from [incoming] override values in [existing] for the same keys.
@@ -5,6 +7,7 @@
 ///
 /// Returns [incoming] if [existing] is null.
 /// Returns [existing] if [incoming] is null.
+@internal
 Map<K, V>? deepMergeMap<K, V>(
   Map<K, V>? existing,
   Map<K, V>? incoming,

@@ -233,6 +233,7 @@ class Query<TData, TError>
 /// Extension methods for matching queries against filters.
 ///
 /// Aligned with TanStack Query's matchQuery utility function.
+@internal
 extension QueryMatches on Query {
   /// Returns true if this query's key matches the given key.
   ///

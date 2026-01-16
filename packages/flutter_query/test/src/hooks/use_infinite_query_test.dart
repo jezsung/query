@@ -5,7 +5,7 @@ import 'package:flutter_hooks_test/flutter_hooks_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:flutter_query/src/core/core.dart';
-import 'package:flutter_query/src/hooks/use_infinite_query.dart';
+import 'package:flutter_query/src/hooks/hooks.dart';
 import '../../utils.dart';
 
 void main() {

@@ -1,7 +1,10 @@
 import 'dart:async';
 
+import 'package:meta/meta.dart';
+
 import 'retry.dart';
 
+@internal
 class Retryer<TData, TError> {
   Retryer(
     this.fn,

@@ -1,6 +1,7 @@
 part of 'query_observer.dart';
 
 /// Callback type for infinite query result change listeners.
+@internal
 typedef InfiniteResultChangeListener<TData, TError, TPageParam> = void Function(
   InfiniteQueryResult<TData, TError, TPageParam> result,
 );
@@ -12,6 +13,7 @@ typedef InfiniteResultChangeListener<TData, TError, TPageParam> = void Function(
 /// queryFn that handles page accumulation.
 ///
 /// Matches TanStack Query v5's InfiniteQueryObserver behavior.
+@internal
 class InfiniteQueryObserver<TData, TError, TPageParam> {
   InfiniteQueryObserver(
     QueryClient client,

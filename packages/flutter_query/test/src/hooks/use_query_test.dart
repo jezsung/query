@@ -5,8 +5,8 @@ import 'package:flutter_hooks_test/flutter_hooks_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:flutter_query/src/core/core.dart';
-import 'package:flutter_query/src/hooks/use_query.dart';
-import 'package:flutter_query/src/widgets/query_client_provider.dart';
+import 'package:flutter_query/src/hooks/hooks.dart';
+import 'package:flutter_query/src/widgets/widgets.dart';
 import '../../utils.dart';
 
 void main() {

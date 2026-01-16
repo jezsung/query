@@ -2,7 +2,7 @@ import 'package:flutter/widgets.dart';
 
 import 'package:flutter_hooks/flutter_hooks.dart';
 
-import '../core/query_client.dart';
+import '../core/core.dart';
 import '../widgets/query_client_provider.dart';
 
 /// A hook that retrieves the [QueryClient] from the widget tree.
