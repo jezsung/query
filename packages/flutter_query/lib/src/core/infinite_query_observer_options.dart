@@ -1,5 +1,3 @@
-import 'package:collection/collection.dart';
-
 import 'default_query_options.dart';
 import 'gc_duration.dart';
 import 'infinite_data.dart';
@@ -9,6 +7,7 @@ import 'refetch_on_mount.dart';
 import 'refetch_on_resume.dart';
 import 'retry.dart';
 import 'stale_duration.dart';
+import 'utils.dart';
 
 /// Function type for infinite query functions.
 ///
@@ -157,48 +156,46 @@ class InfiniteQueryObserverOptions<TData, TError, TPageParam> {
     return other is InfiniteQueryObserverOptions<TData, TError, TPageParam> &&
         queryKey == other.queryKey &&
         identical(queryFn, other.queryFn) &&
-        _equality.equals(initialPageParam, other.initialPageParam) &&
+        deepEq.equals(initialPageParam, other.initialPageParam) &&
         identical(nextPageParamBuilder, other.nextPageParamBuilder) &&
         identical(prevPageParamBuilder, other.prevPageParamBuilder) &&
         maxPages == other.maxPages &&
         enabled == other.enabled &&
         staleDuration == other.staleDuration &&
         gcDuration == other.gcDuration &&
-        _equality.equals(placeholder, other.placeholder) &&
+        deepEq.equals(placeholder, other.placeholder) &&
         refetchOnMount == other.refetchOnMount &&
         refetchOnResume == other.refetchOnResume &&
         refetchInterval == other.refetchInterval &&
         identical(retry, other.retry) &&
         retryOnMount == other.retryOnMount &&
-        _equality.equals(seed, other.seed) &&
+        deepEq.equals(seed, other.seed) &&
         seedUpdatedAt == other.seedUpdatedAt &&
-        _equality.equals(meta, other.meta);
+        deepEq.equals(meta, other.meta);
   }
 
   @override
   int get hashCode => Object.hash(
         queryKey,
         identityHashCode(queryFn),
-        _equality.hash(initialPageParam),
+        deepEq.hash(initialPageParam),
         identityHashCode(nextPageParamBuilder),
         identityHashCode(prevPageParamBuilder),
         maxPages,
         enabled,
         staleDuration,
         gcDuration,
-        _equality.hash(placeholder),
+        deepEq.hash(placeholder),
         refetchOnMount,
         refetchOnResume,
         refetchInterval,
         identityHashCode(retry),
         retryOnMount,
-        _equality.hash(seed),
+        deepEq.hash(seed),
         seedUpdatedAt,
-        _equality.hash(meta),
+        deepEq.hash(meta),
       );
 }
-
-const DeepCollectionEquality _equality = DeepCollectionEquality();
 
 /// Extension methods for [InfiniteQueryObserverOptions].
 extension InfiniteQueryObserverOptionsWithDefaults<TData, TError, TPageParam>

@@ -1,4 +1,4 @@
-import 'package:collection/collection.dart';
+import 'utils.dart';
 
 /// Data structure for infinite queries containing pages and their params.
 class InfiniteData<TData, TPageParam> {
@@ -23,13 +23,14 @@ class InfiniteData<TData, TPageParam> {
   bool operator ==(Object other) =>
       identical(this, other) ||
       other is InfiniteData<TData, TPageParam> &&
-          const DeepCollectionEquality().equals(pages, other.pages) &&
-          const DeepCollectionEquality().equals(pageParams, other.pageParams);
+          deepEq.equals(pages, other.pages) &&
+          deepEq.equals(pageParams, other.pageParams);
 
   @override
-  int get hashCode =>
-      const DeepCollectionEquality().hash(pages) ^
-      const DeepCollectionEquality().hash(pageParams);
+  int get hashCode => Object.hash(
+        deepEq.hash(pages),
+        deepEq.hash(pageParams),
+      );
 
   @override
   String toString() => 'InfiniteData(pages: $pages, pageParams: $pageParams)';

@@ -1,5 +1,6 @@
-import 'package:collection/collection.dart';
 import 'package:meta/meta.dart';
+
+import 'utils.dart';
 
 @internal
 class QueryKey {
@@ -17,7 +18,7 @@ class QueryKey {
     }
 
     for (var i = 0; i < prefix._parts.length; i++) {
-      if (!_equality.equals(_parts[i], prefix._parts[i])) {
+      if (!deepEq.equals(_parts[i], prefix._parts[i])) {
         return false;
       }
     }
@@ -30,14 +31,12 @@ class QueryKey {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      (other is QueryKey && _equality.equals(_parts, other._parts)) ||
-      (other is List && _equality.equals(_parts, other));
+      (other is QueryKey && deepEq.equals(_parts, other._parts)) ||
+      (other is List && deepEq.equals(_parts, other));
 
   @override
-  int get hashCode => _equality.hash(_parts);
+  int get hashCode => deepEq.hash(_parts);
 
   @override
   String toString() => '$_parts';
 }
-
-const _equality = DeepCollectionEquality();

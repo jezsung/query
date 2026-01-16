@@ -1,5 +1,4 @@
 import 'package:clock/clock.dart';
-import 'package:collection/collection.dart';
 import 'package:meta/meta.dart';
 
 import 'garbage_collectable.dart';
@@ -13,6 +12,7 @@ import 'observable.dart';
 import 'query_client.dart';
 import 'retry.dart';
 import 'retryer.dart';
+import 'utils.dart';
 
 /// A mutation instance that manages the execution and state of a single mutation.
 ///
@@ -192,8 +192,6 @@ class Mutation<TData, TError, TVariables, TOnMutateResult>
   }
 }
 
-const _equality = DeepCollectionEquality();
-
 /// Extension methods for matching mutations against filters.
 ///
 /// Aligned with TanStack Query's matchMutation utility function.
@@ -220,7 +218,7 @@ extension MutationMatches on Mutation {
       }
 
       if (exact) {
-        if (!_equality.equals(key, mutationKey)) {
+        if (!deepEq.equals(key, mutationKey)) {
           return false;
         }
       } else if (!_partialMatchKey(key, mutationKey)) {
@@ -247,7 +245,7 @@ extension MutationMatches on Mutation {
       return false;
     }
     for (var i = 0; i < prefix.length; i++) {
-      if (!_equality.equals(key[i], prefix[i])) {
+      if (!deepEq.equals(key[i], prefix[i])) {
         return false;
       }
     }

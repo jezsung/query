@@ -1,5 +1,3 @@
-import 'package:collection/collection.dart';
-
 import 'default_query_options.dart';
 import 'gc_duration.dart';
 import 'query_key.dart';
@@ -40,9 +38,9 @@ class QueryOptions<TData, TError> {
         queryKey == other.queryKey &&
         identical(queryFn, other.queryFn) &&
         gcDuration == other.gcDuration &&
-        _equality.equals(meta, other.meta) &&
+        deepEq.equals(meta, other.meta) &&
         identical(retry, other.retry) &&
-        _equality.equals(seed, other.seed) &&
+        deepEq.equals(seed, other.seed) &&
         seedUpdatedAt == other.seedUpdatedAt;
   }
 
@@ -51,9 +49,9 @@ class QueryOptions<TData, TError> {
         queryKey,
         identityHashCode(queryFn),
         gcDuration,
-        _equality.hash(meta),
+        deepEq.hash(meta),
         identityHashCode(retry),
-        _equality.hash(seed),
+        deepEq.hash(seed),
         seedUpdatedAt,
       );
 }
@@ -95,13 +93,13 @@ class QueryObserverOptions<TData, TError> extends QueryOptions<TData, TError> {
         queryKey == other.queryKey &&
         identical(queryFn, other.queryFn) &&
         gcDuration == other.gcDuration &&
-        _equality.equals(meta, other.meta) &&
+        deepEq.equals(meta, other.meta) &&
         identical(retry, other.retry) &&
-        _equality.equals(seed, other.seed) &&
+        deepEq.equals(seed, other.seed) &&
         seedUpdatedAt == other.seedUpdatedAt &&
         enabled == other.enabled &&
         staleDuration == other.staleDuration &&
-        _equality.equals(placeholder, other.placeholder) &&
+        deepEq.equals(placeholder, other.placeholder) &&
         refetchInterval == other.refetchInterval &&
         refetchOnMount == other.refetchOnMount &&
         refetchOnResume == other.refetchOnResume &&
@@ -113,21 +111,19 @@ class QueryObserverOptions<TData, TError> extends QueryOptions<TData, TError> {
         queryKey,
         identityHashCode(queryFn),
         gcDuration,
-        _equality.hash(meta),
+        deepEq.hash(meta),
         identityHashCode(retry),
-        _equality.hash(seed),
+        deepEq.hash(seed),
         seedUpdatedAt,
         enabled,
         staleDuration,
-        _equality.hash(placeholder),
+        deepEq.hash(placeholder),
         refetchInterval,
         refetchOnMount,
         refetchOnResume,
         retryOnMount,
       );
 }
-
-const DeepCollectionEquality _equality = DeepCollectionEquality();
 
 extension QueryOptionsWithDefaults<TData, TError>
     on QueryOptions<TData, TError> {

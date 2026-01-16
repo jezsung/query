@@ -1,8 +1,7 @@
-import 'package:collection/collection.dart';
-
 import 'abort_signal.dart';
 import 'query_client.dart';
 import 'query_key.dart';
+import 'utils.dart';
 
 /// Context passed to query functions containing the query key, client, and signal.
 ///
@@ -52,14 +51,12 @@ final class QueryFunctionContext {
       other is QueryFunctionContext &&
           QueryKey(queryKey) == QueryKey(other.queryKey) &&
           client == other.client &&
-          _equality.equals(meta, other.meta);
+          deepEq.equals(meta, other.meta);
 
   @override
   int get hashCode => Object.hash(
         QueryKey(queryKey),
         client,
-        _equality.hash(meta),
+        deepEq.hash(meta),
       );
 }
-
-const DeepCollectionEquality _equality = DeepCollectionEquality();

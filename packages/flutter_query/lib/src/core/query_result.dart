@@ -1,6 +1,5 @@
-import 'package:collection/collection.dart';
-
 import 'query_state.dart';
+import 'utils.dart';
 
 typedef Refetch<TData, TError> = Future<QueryResult<TData, TError>> Function({
   bool cancelRefetch,
@@ -59,14 +58,14 @@ class QueryResult<TData, TError> {
     return other is QueryResult<TData, TError> &&
         status == other.status &&
         fetchStatus == other.fetchStatus &&
-        _equality.equals(data, other.data) &&
+        deepEq.equals(data, other.data) &&
         dataUpdatedAt == other.dataUpdatedAt &&
         dataUpdateCount == other.dataUpdateCount &&
-        _equality.equals(error, other.error) &&
+        deepEq.equals(error, other.error) &&
         errorUpdatedAt == other.errorUpdatedAt &&
         errorUpdateCount == other.errorUpdateCount &&
         failureCount == other.failureCount &&
-        _equality.equals(failureReason, other.failureReason) &&
+        deepEq.equals(failureReason, other.failureReason) &&
         isEnabled == other.isEnabled &&
         isStale == other.isStale &&
         isFetchedAfterMount == other.isFetchedAfterMount &&
@@ -77,19 +76,17 @@ class QueryResult<TData, TError> {
   int get hashCode => Object.hash(
         status,
         fetchStatus,
-        _equality.hash(data),
+        deepEq.hash(data),
         dataUpdatedAt,
         dataUpdateCount,
-        _equality.hash(error),
+        deepEq.hash(error),
         errorUpdatedAt,
         errorUpdateCount,
         failureCount,
-        _equality.hash(failureReason),
+        deepEq.hash(failureReason),
         isEnabled,
         isStale,
         isFetchedAfterMount,
         isPlaceholderData,
       );
 }
-
-const DeepCollectionEquality _equality = DeepCollectionEquality();

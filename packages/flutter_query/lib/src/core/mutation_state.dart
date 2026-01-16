@@ -1,6 +1,4 @@
-import 'package:collection/collection.dart';
-
-const _equality = DeepCollectionEquality();
+import 'utils.dart';
 
 enum MutationStatus { idle, pending, success, error }
 
@@ -32,26 +30,26 @@ final class MutationState<TData, TError, TVariables, TOnMutateResult> {
     if (identical(this, other)) return true;
     return other is MutationState<TData, TError, TVariables, TOnMutateResult> &&
         status == other.status &&
-        _equality.equals(data, other.data) &&
-        _equality.equals(error, other.error) &&
-        _equality.equals(variables, other.variables) &&
-        _equality.equals(onMutateResult, other.onMutateResult) &&
+        deepEq.equals(data, other.data) &&
+        deepEq.equals(error, other.error) &&
+        deepEq.equals(variables, other.variables) &&
+        deepEq.equals(onMutateResult, other.onMutateResult) &&
         submittedAt == other.submittedAt &&
         failureCount == other.failureCount &&
-        _equality.equals(failureReason, other.failureReason) &&
+        deepEq.equals(failureReason, other.failureReason) &&
         isPaused == other.isPaused;
   }
 
   @override
   int get hashCode => Object.hash(
         status,
-        _equality.hash(data),
-        _equality.hash(error),
-        _equality.hash(variables),
-        _equality.hash(onMutateResult),
+        deepEq.hash(data),
+        deepEq.hash(error),
+        deepEq.hash(variables),
+        deepEq.hash(onMutateResult),
         submittedAt,
         failureCount,
-        _equality.hash(failureReason),
+        deepEq.hash(failureReason),
         isPaused,
       );
 

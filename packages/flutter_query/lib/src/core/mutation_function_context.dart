@@ -1,8 +1,5 @@
-import 'package:collection/collection.dart';
-
 import 'query_client.dart';
-
-const _equality = DeepCollectionEquality();
+import 'utils.dart';
 
 /// Context passed to mutation function and callbacks.
 ///
@@ -31,15 +28,15 @@ class MutationFunctionContext {
     if (identical(this, other)) return true;
     return other is MutationFunctionContext &&
         identical(client, other.client) &&
-        _equality.equals(meta, other.meta) &&
-        _equality.equals(mutationKey, other.mutationKey);
+        deepEq.equals(meta, other.meta) &&
+        deepEq.equals(mutationKey, other.mutationKey);
   }
 
   @override
   int get hashCode => Object.hash(
         identityHashCode(client),
-        _equality.hash(meta),
-        _equality.hash(mutationKey),
+        deepEq.hash(meta),
+        deepEq.hash(mutationKey),
       );
 
   @override
