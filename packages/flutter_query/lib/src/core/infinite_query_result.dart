@@ -1,7 +1,6 @@
-import 'package:collection/collection.dart';
-
 import 'infinite_data.dart';
 import 'query_state.dart';
+import 'utils.dart';
 
 /// Typedef for the refetch function on infinite query results.
 typedef InfiniteRefetch<TData, TError, TPageParam>
@@ -171,14 +170,14 @@ class InfiniteQueryResult<TData, TError, TPageParam> {
     return other is InfiniteQueryResult<TData, TError, TPageParam> &&
         status == other.status &&
         fetchStatus == other.fetchStatus &&
-        _equality.equals(data, other.data) &&
+        deepEq.equals(data, other.data) &&
         dataUpdatedAt == other.dataUpdatedAt &&
         dataUpdateCount == other.dataUpdateCount &&
-        _equality.equals(error, other.error) &&
+        deepEq.equals(error, other.error) &&
         errorUpdatedAt == other.errorUpdatedAt &&
         errorUpdateCount == other.errorUpdateCount &&
         failureCount == other.failureCount &&
-        _equality.equals(failureReason, other.failureReason) &&
+        deepEq.equals(failureReason, other.failureReason) &&
         isEnabled == other.isEnabled &&
         isStale == other.isStale &&
         isFetchedAfterMount == other.isFetchedAfterMount &&
@@ -195,14 +194,14 @@ class InfiniteQueryResult<TData, TError, TPageParam> {
   int get hashCode => Object.hash(
         status,
         fetchStatus,
-        _equality.hash(data),
+        deepEq.hash(data),
         dataUpdatedAt,
         dataUpdateCount,
-        _equality.hash(error),
+        deepEq.hash(error),
         errorUpdatedAt,
         errorUpdateCount,
         failureCount,
-        _equality.hash(failureReason),
+        deepEq.hash(failureReason),
         isEnabled,
         isStale,
         isFetchedAfterMount,
@@ -215,5 +214,3 @@ class InfiniteQueryResult<TData, TError, TPageParam> {
         isFetchPreviousPageError,
       );
 }
-
-const DeepCollectionEquality _equality = DeepCollectionEquality();

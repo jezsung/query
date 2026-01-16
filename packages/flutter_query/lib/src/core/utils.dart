@@ -1,4 +1,9 @@
+import 'package:collection/collection.dart';
 import 'package:meta/meta.dart';
+
+/// Shared instance for deep collection equality checks.
+@internal
+const deepEq = DeepCollectionEquality();
 
 /// Deeply merges two maps.
 ///

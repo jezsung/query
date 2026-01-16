@@ -1,9 +1,8 @@
-import 'package:collection/collection.dart';
-
 import 'abort_signal.dart';
 import 'infinite_data.dart';
 import 'query_client.dart';
 import 'query_key.dart';
+import 'utils.dart';
 
 /// Context passed to infinite query functions.
 ///
@@ -59,18 +58,16 @@ final class InfiniteQueryFunctionContext<TPageParam> {
       other is InfiniteQueryFunctionContext<TPageParam> &&
           QueryKey(queryKey) == QueryKey(other.queryKey) &&
           client == other.client &&
-          _equality.equals(meta, other.meta) &&
-          _equality.equals(pageParam, other.pageParam) &&
+          deepEq.equals(meta, other.meta) &&
+          deepEq.equals(pageParam, other.pageParam) &&
           direction == other.direction;
 
   @override
   int get hashCode => Object.hash(
         QueryKey(queryKey),
         client,
-        _equality.hash(meta),
-        _equality.hash(pageParam),
+        deepEq.hash(meta),
+        deepEq.hash(pageParam),
         direction,
       );
 }
-
-const DeepCollectionEquality _equality = DeepCollectionEquality();

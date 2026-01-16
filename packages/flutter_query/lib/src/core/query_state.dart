@@ -1,5 +1,6 @@
 import 'package:clock/clock.dart';
-import 'package:collection/collection.dart';
+
+import 'utils.dart';
 
 enum QueryStatus { pending, error, success }
 
@@ -54,14 +55,14 @@ class QueryState<TData, TError> {
     return other is QueryState<TData, TError> &&
         status == other.status &&
         fetchStatus == other.fetchStatus &&
-        _equality.equals(data, other.data) &&
+        deepEq.equals(data, other.data) &&
         dataUpdatedAt == other.dataUpdatedAt &&
         dataUpdateCount == other.dataUpdateCount &&
-        _equality.equals(error, other.error) &&
+        deepEq.equals(error, other.error) &&
         errorUpdatedAt == other.errorUpdatedAt &&
         errorUpdateCount == other.errorUpdateCount &&
         failureCount == other.failureCount &&
-        _equality.equals(failureReason, other.failureReason) &&
+        deepEq.equals(failureReason, other.failureReason) &&
         isInvalidated == other.isInvalidated;
   }
 
@@ -69,14 +70,14 @@ class QueryState<TData, TError> {
   int get hashCode => Object.hash(
         status,
         fetchStatus,
-        _equality.hash(data),
+        deepEq.hash(data),
         dataUpdatedAt,
         dataUpdateCount,
-        _equality.hash(error),
+        deepEq.hash(error),
         errorUpdatedAt,
         errorUpdateCount,
         failureCount,
-        _equality.hash(failureReason),
+        deepEq.hash(failureReason),
         isInvalidated,
       );
 }
@@ -132,5 +133,3 @@ extension QueryStateCopyWith<TData, TError> on QueryState<TData, TError> {
     );
   }
 }
-
-const DeepCollectionEquality _equality = DeepCollectionEquality();

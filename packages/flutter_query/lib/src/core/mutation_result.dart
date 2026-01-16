@@ -1,8 +1,5 @@
-import 'package:collection/collection.dart';
-
 import 'mutation_state.dart';
-
-const _equality = DeepCollectionEquality();
+import 'utils.dart';
 
 /// The result of a mutation, containing state and control methods.
 ///
@@ -53,23 +50,23 @@ class MutationResult<TData, TError, TVariables, TOnMutateResult> {
       identical(this, other) ||
       other is MutationResult<TData, TError, TVariables, TOnMutateResult> &&
           status == other.status &&
-          _equality.equals(data, other.data) &&
-          _equality.equals(error, other.error) &&
-          _equality.equals(variables, other.variables) &&
+          deepEq.equals(data, other.data) &&
+          deepEq.equals(error, other.error) &&
+          deepEq.equals(variables, other.variables) &&
           submittedAt == other.submittedAt &&
           failureCount == other.failureCount &&
-          _equality.equals(failureReason, other.failureReason) &&
+          deepEq.equals(failureReason, other.failureReason) &&
           isPaused == other.isPaused;
 
   @override
   int get hashCode => Object.hash(
         status,
-        _equality.hash(data),
-        _equality.hash(error),
-        _equality.hash(variables),
+        deepEq.hash(data),
+        deepEq.hash(error),
+        deepEq.hash(variables),
         submittedAt,
         failureCount,
-        _equality.hash(failureReason),
+        deepEq.hash(failureReason),
         isPaused,
       );
 
