@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 
-import 'package:clock/clock.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:flutter_hooks_test/flutter_hooks_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:flutter_query/src/core/core.dart';
 import 'package:flutter_query/src/hooks/use_infinite_query.dart';
+import '../../utils.dart';
 
 void main() {
   late QueryClient client;
@@ -23,24 +23,6 @@ void main() {
   tearDown(() {
     client.clear();
   });
-
-  /// Helper function to run a test with automatic cache cleanup.
-  WidgetTesterCallback withCleanup(
-    Future<void> Function(WidgetTester) testBody,
-  ) {
-    return (WidgetTester tester) async {
-      await testBody(tester);
-
-      // Unmount widget tree first (disposes QueryObservers)
-      await tester.pumpWidget(Container());
-
-      // Then clear cache to prevent new GC timers
-      client.clear();
-
-      // Wait until all pending timers finish
-      await tester.binding.delayed(const Duration(days: 365));
-    };
-  }
 
   testWidgets(
       'SHOULD succeed fetching on mount'

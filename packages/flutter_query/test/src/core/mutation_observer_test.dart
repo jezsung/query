@@ -1,10 +1,9 @@
 import 'dart:async';
 
-import 'package:clock/clock.dart';
-import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:flutter_query/src/core/core.dart';
+import '../../utils.dart';
 
 void main() {
   late QueryClient client;
@@ -46,10 +45,6 @@ void main() {
       retry: retry,
       gcDuration: gcDuration,
     );
-  }
-
-  void Function() withFakeAsync(void Function(FakeAsync async) testBody) {
-    return () => fakeAsync(testBody);
   }
 
   group('subscribe', () {

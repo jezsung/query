@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import 'package:clock/clock.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:flutter_hooks_test/flutter_hooks_test.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -8,18 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_query/src/core/core.dart';
 import 'package:flutter_query/src/hooks/use_query.dart';
 import 'package:flutter_query/src/widgets/query_client_provider.dart';
-
-extension on WidgetTester {
-  Future<void> pumpUntil(DateTime target) async {
-    final duration = target.difference(clock.now());
-
-    if (duration.isNegative) {
-      throw Exception('Cannot pump to a time in the past');
-    }
-
-    await pump(duration);
-  }
-}
+import '../../utils.dart';
 
 void main() {
   late QueryClient client;
@@ -31,36 +19,6 @@ void main() {
   tearDown(() {
     client.clear();
   });
-
-  /// Helper function to run a test with automatic cache cleanup.
-  ///
-  /// This ensures proper cleanup order:
-  /// 1. Test body completes
-  /// 2. Widget tree is unmounted (disposes QueryObservers)
-  /// 3. Cache is cleared (prevents GC timers from being scheduled)
-  ///
-  /// Usage:
-  /// ```dart
-  /// testWidgets('my test', withCleanup((tester) async {
-  ///   // test body
-  /// }));
-  /// ```
-  WidgetTesterCallback withCleanup(
-    Future<void> Function(WidgetTester) testBody,
-  ) {
-    return (WidgetTester tester) async {
-      await testBody(tester);
-
-      // Unmount widget tree first (disposes QueryObservers)
-      await tester.pumpWidget(Container());
-
-      // Then clear cache to prevent new GC timers
-      client.clear();
-
-      // Wait until all pending timers finish
-      await tester.binding.delayed(const Duration(days: 365));
-    };
-  }
 
   testWidgets('SHOULD fetch and succeed', withCleanup((tester) async {
     final startedAt = clock.now();
