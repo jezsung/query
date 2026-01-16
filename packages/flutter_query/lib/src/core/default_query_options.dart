@@ -1,8 +1,8 @@
-import 'options/gc_duration.dart';
-import 'options/refetch_on_mount.dart';
-import 'options/refetch_on_resume.dart';
-import 'options/retry.dart';
-import 'options/stale_duration.dart';
+import 'gc_duration.dart';
+import 'refetch_on_mount.dart';
+import 'refetch_on_resume.dart';
+import 'retry.dart';
+import 'stale_duration.dart';
 
 /// Default options for queries that can be set at the QueryClient level.
 ///

@@ -13,10 +13,10 @@ export 'src/core/query_options.dart' show QueryOptions, QueryObserverOptions;
 export 'src/core/query_result.dart' show QueryResult;
 export 'src/core/query_state.dart' show QueryState, QueryStatus, FetchStatus;
 export 'src/core/types.dart';
-export 'src/core/options/stale_duration.dart' show StaleDuration;
-export 'src/core/options/refetch_on_resume.dart' show RefetchOnResume;
-export 'src/core/options/refetch_on_mount.dart' show RefetchOnMount;
-export 'src/core/options/gc_duration.dart' show GcDuration;
+export 'src/core/stale_duration.dart' show StaleDuration;
+export 'src/core/refetch_on_resume.dart' show RefetchOnResume;
+export 'src/core/refetch_on_mount.dart' show RefetchOnMount;
+export 'src/core/gc_duration.dart' show GcDuration;
 export 'src/core/infinite_data.dart' show InfiniteData, FetchDirection;
 export 'src/core/infinite_query_function_context.dart'
     show InfiniteQueryFunctionContext;
