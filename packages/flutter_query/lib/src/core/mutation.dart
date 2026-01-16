@@ -197,6 +197,7 @@ const _equality = DeepCollectionEquality();
 /// Extension methods for matching mutations against filters.
 ///
 /// Aligned with TanStack Query's matchMutation utility function.
+@internal
 extension MutationMatches on Mutation {
   /// Returns true if this mutation matches the given filters.
   ///

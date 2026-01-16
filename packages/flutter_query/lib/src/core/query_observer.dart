@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math';
 
 import 'package:clock/clock.dart';
+import 'package:meta/meta.dart';
 
 import 'infinite_data.dart';
 import 'infinite_query_function_context.dart';
@@ -21,6 +22,7 @@ import 'stale_duration.dart';
 part 'infinite_query_observer.dart';
 
 /// Callback type for result change listeners
+@internal
 typedef ResultChangeListener<TData, TError> = void Function(
     QueryResult<TData, TError> result);
 

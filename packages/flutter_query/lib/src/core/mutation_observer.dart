@@ -1,3 +1,5 @@
+import 'package:meta/meta.dart';
+
 import 'mutation.dart';
 import 'mutation_options.dart';
 import 'mutation_result.dart';
@@ -6,6 +8,7 @@ import 'observable.dart';
 import 'query_client.dart';
 
 /// Callback type for mutation result change listeners.
+@internal
 typedef MutationResultListener<TData, TError, TVariables, TOnMutateResult>
     = void Function(
         MutationResult<TData, TError, TVariables, TOnMutateResult> result);

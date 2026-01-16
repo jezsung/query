@@ -1,6 +1,6 @@
 import 'package:flutter/widgets.dart';
 
-import '../core/query_client.dart';
+import '../core/core.dart';
 
 /// Provides a [QueryClient] to the widget tree.
 ///

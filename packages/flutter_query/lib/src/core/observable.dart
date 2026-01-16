@@ -1,9 +1,11 @@
 import 'package:meta/meta.dart';
 
+@internal
 mixin Observer<TValue> {
   void onNotified(TValue value);
 }
 
+@internal
 mixin Observable<TValue, TObserver extends Observer<TValue>> {
   final List<TObserver> _observers = <TObserver>[];
   void Function(TObserver observer)? _onAdd;

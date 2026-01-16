@@ -8,6 +8,7 @@ import 'gc_duration.dart';
 ///
 /// Classes that use this mixin must:
 /// - Implement [tryRemove] to define removal logic
+@internal
 mixin GarbageCollectable {
   Timer? _gcTimer;
 
