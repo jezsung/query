@@ -80,7 +80,7 @@ class Query<TData, TError>
     notifyObservers(newState);
   }
 
-  Query<TData, TError> withOptions(QueryOptions<TData, TError> newOptions) {
+  set options(QueryOptions<TData, TError> newOptions) {
     _options = _options.merge(newOptions);
     if (state.data == null && _options.seed != null) {
       state = _initialState = QueryState<TData, TError>.fromSeed(
@@ -88,7 +88,6 @@ class Query<TData, TError>
         _options.seedUpdatedAt,
       );
     }
-    return this;
   }
 
   Future<TData> fetch({bool cancelRefetch = false}) async {

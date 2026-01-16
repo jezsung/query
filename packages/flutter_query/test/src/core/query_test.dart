@@ -1141,7 +1141,7 @@ void main() {
 
     test(
         'SHOULD deeply merge meta '
-        'WHEN withOptions is called', () {
+        'WHEN options setter is called', () {
       final query = Query<String, Object>(
         client,
         QueryOptions(
@@ -1154,15 +1154,13 @@ void main() {
         ),
       );
 
-      query.withOptions(
-        QueryOptions(
-          const ['key'],
-          (context) async => 'data',
-          meta: {
-            'feature': 'B',
-            'nested': {'b': 3, 'c': 4}
-          },
-        ),
+      query.options = QueryOptions(
+        const ['key'],
+        (context) async => 'data',
+        meta: {
+          'feature': 'B',
+          'nested': {'b': 3, 'c': 4}
+        },
       );
 
       expect(query.meta, {
@@ -1174,7 +1172,7 @@ void main() {
 
     test(
         'SHOULD preserve existing meta '
-        'WHEN new options have null meta', () {
+        'WHEN options setter has null meta', () {
       final query = Query<String, Object>(
         client,
         QueryOptions(
@@ -1184,11 +1182,9 @@ void main() {
         ),
       );
 
-      query.withOptions(
-        QueryOptions(
-          const ['key'],
-          (context) async => 'data',
-        ),
+      query.options = QueryOptions(
+        const ['key'],
+        (context) async => 'data',
       );
 
       expect(query.meta, {'preserved': 'value'});
@@ -1205,12 +1201,10 @@ void main() {
         ),
       );
 
-      query.withOptions(
-        QueryOptions(
-          const ['key'],
-          (context) async => 'data',
-          meta: {'new': 'value'},
-        ),
+      query.options = QueryOptions(
+        const ['key'],
+        (context) async => 'data',
+        meta: {'new': 'value'},
       );
 
       expect(query.meta, {'new': 'value'});

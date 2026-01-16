@@ -152,7 +152,7 @@ class InfiniteQueryObserver<TData, TError, TPageParam> {
       _query = _client.cache.build<InfiniteData<TData, TPageParam>, TError>(
         wrappedOptions,
       );
-      _query.withOptions(wrappedOptions);
+      _query.options = wrappedOptions;
       _query.addObserver(_adapter);
 
       // Reset initial counters for the new query
