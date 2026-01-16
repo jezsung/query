@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'options/retry.dart';
+import 'retry.dart';
 
 class Retryer<TData, TError> {
   Retryer(

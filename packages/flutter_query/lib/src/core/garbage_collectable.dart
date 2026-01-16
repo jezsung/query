@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:meta/meta.dart';
 
-import 'options/gc_duration.dart';
+import 'gc_duration.dart';
 
 /// Mixin that provides garbage collection functionality for queries and mutations.
 ///

@@ -1,12 +1,12 @@
 import 'package:flutter_hooks/flutter_hooks.dart';
 
+import '../core/gc_duration.dart';
 import '../core/mutation_function_context.dart';
 import '../core/mutation_observer.dart';
 import '../core/mutation_options.dart';
 import '../core/mutation_result.dart';
-import '../core/options/gc_duration.dart';
-import '../core/options/retry.dart';
 import '../core/query_client.dart';
+import '../core/retry.dart';
 import '../core/types.dart';
 import 'use_query_client.dart';
 

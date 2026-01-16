@@ -1,7 +1,7 @@
 import 'default_mutation_options.dart';
+import 'gc_duration.dart';
 import 'mutation_function_context.dart';
-import 'options/gc_duration.dart';
-import 'options/retry.dart';
+import 'retry.dart';
 import 'types.dart';
 
 /// Options for configuring a mutation.

@@ -3,15 +3,15 @@ import 'package:collection/collection.dart';
 import 'package:meta/meta.dart';
 
 import 'garbage_collectable.dart';
+import 'gc_duration.dart';
 import 'mutation_cache.dart';
 import 'mutation_function_context.dart';
 import 'mutation_observer.dart';
 import 'mutation_options.dart';
 import 'mutation_state.dart';
 import 'observable.dart';
-import 'options/gc_duration.dart';
-import 'options/retry.dart';
 import 'query_client.dart';
+import 'retry.dart';
 import 'retryer.dart';
 
 /// A mutation instance that manages the execution and state of a single mutation.

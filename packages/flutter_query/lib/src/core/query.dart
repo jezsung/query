@@ -5,17 +5,17 @@ import 'package:meta/meta.dart';
 
 import 'abort_signal.dart';
 import 'garbage_collectable.dart';
+import 'gc_duration.dart';
 import 'observable.dart';
-import 'options/gc_duration.dart';
-import 'options/retry.dart';
-import 'options/stale_duration.dart';
 import 'query_client.dart';
 import 'query_function_context.dart';
 import 'query_key.dart';
 import 'query_observer.dart';
 import 'query_options.dart';
 import 'query_state.dart';
+import 'retry.dart';
 import 'retryer.dart';
+import 'stale_duration.dart';
 import 'utils.dart';
 
 class Query<TData, TError>
