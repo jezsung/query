@@ -83,8 +83,8 @@ class QueryClient {
   /// Gets the mutation cache
   MutationCache get mutationCache => _mutationCache;
 
-  /// Disposes the query client and clears all queries and mutations from the cache
-  void dispose() {
+  /// Clears all queries and mutations from the cache.
+  void clear() {
     _cache.clear();
     _mutationCache.clear();
   }

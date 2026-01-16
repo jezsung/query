@@ -40,7 +40,7 @@ void main() {
   });
 
   tearDown(() {
-    client.dispose();
+    client.clear();
   });
 
   group('defaultQueryOptions', () {
@@ -60,7 +60,7 @@ void main() {
     });
 
     tearDown(() {
-      client.dispose();
+      client.clear();
     });
 
     test(

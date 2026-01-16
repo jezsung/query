@@ -16,13 +16,13 @@ void main() {
   });
 
   tearDown(() {
-    client.dispose();
+    client.clear();
   });
 
   testWidgets('SHOULD succeed with data after 3 seconds', (tester) async {
     await tester.pumpWidget(
-      QueryClientProvider(
-        client: client,
+      QueryClientProvider.value(
+        client,
         child: MaterialApp(home: Example()),
       ),
     );

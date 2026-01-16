@@ -21,7 +21,7 @@ void main() {
   });
 
   tearDown(() {
-    client.dispose();
+    client.clear();
   });
 
   /// Helper function to run a test with automatic cache cleanup.
@@ -34,8 +34,8 @@ void main() {
       // Unmount widget tree first (disposes QueryObservers)
       await tester.pumpWidget(Container());
 
-      // Then dispose cache to prevent new GC timers
-      client.dispose();
+      // Then clear cache to prevent new GC timers
+      client.clear();
 
       // Wait until all pending timers finish
       await tester.binding.delayed(const Duration(days: 365));

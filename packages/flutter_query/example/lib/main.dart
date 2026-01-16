@@ -3,16 +3,12 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:flutter_query/flutter_query.dart';
 
 void main() {
-  final queryClient = QueryClient();
-
   runApp(
     QueryClientProvider(
-      client: queryClient,
+      create: (context) => QueryClient(),
       child: MaterialApp(home: Example()),
     ),
   );
-
-  queryClient.dispose();
 }
 
 class Example extends HookWidget {

@@ -17,7 +17,7 @@ void main() {
   });
 
   tearDown(() {
-    client.dispose();
+    client.clear();
   });
 
   void Function() withFakeAsync(void Function(FakeAsync fakeTime) testBody) {
@@ -45,7 +45,7 @@ void main() {
           gcDuration: GcDuration(minutes: 10),
         ),
       );
-      addTearDown(testClient.dispose);
+      addTearDown(testClient.clear);
 
       final query = Query<String, Object>(
         testClient,
@@ -66,7 +66,7 @@ void main() {
           gcDuration: GcDuration(minutes: 10),
         ),
       );
-      addTearDown(testClient.dispose);
+      addTearDown(testClient.clear);
 
       final query = Query<String, Object>(
         testClient,
@@ -89,7 +89,7 @@ void main() {
               count < 2 ? const Duration(milliseconds: 100) : null,
         ),
       );
-      addTearDown(testClient.dispose);
+      addTearDown(testClient.clear);
 
       var attempts = 0;
 
@@ -123,7 +123,7 @@ void main() {
               count < 5 ? const Duration(milliseconds: 100) : null,
         ),
       );
-      addTearDown(testClient.dispose);
+      addTearDown(testClient.clear);
 
       var attempts = 0;
 
