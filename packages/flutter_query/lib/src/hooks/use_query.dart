@@ -52,24 +52,22 @@ QueryResult<TData, TError> useQuery<TData, TError>(
 
   // Update options during render (before subscribing)
   // This ensures we get the optimistic result immediately when options change
-  // Client defaults are applied inside QueryObserver.updateOptions()
-  observer.updateOptions(
-    QueryObserverOptions(
-      queryKey,
-      queryFn,
-      enabled: enabled,
-      staleDuration: staleDuration,
-      gcDuration: gcDuration,
-      meta: meta,
-      placeholder: placeholder,
-      refetchInterval: refetchInterval,
-      refetchOnMount: refetchOnMount,
-      refetchOnResume: refetchOnResume,
-      retry: retry,
-      retryOnMount: retryOnMount,
-      seed: seed,
-      seedUpdatedAt: seedUpdatedAt,
-    ),
+  // Client defaults are applied inside QueryObserver.options setter
+  observer.options = QueryObserverOptions(
+    queryKey,
+    queryFn,
+    enabled: enabled,
+    staleDuration: staleDuration,
+    gcDuration: gcDuration,
+    meta: meta,
+    placeholder: placeholder,
+    refetchInterval: refetchInterval,
+    refetchOnMount: refetchOnMount,
+    refetchOnResume: refetchOnResume,
+    retry: retry,
+    retryOnMount: retryOnMount,
+    seed: seed,
+    seedUpdatedAt: seedUpdatedAt,
   );
 
   // Subscribe to observer and trigger rebuilds when result changes

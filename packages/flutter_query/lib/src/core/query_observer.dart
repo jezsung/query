@@ -57,6 +57,89 @@ class QueryObserver<TData, TError> with Observer<QueryState<TData, TError>> {
   QueryObserverOptions<TData, TError> get options => _options;
   QueryResult<TData, TError> get result => _result;
 
+  set options(QueryObserverOptions<TData, TError> value) {
+    final oldOptions = _options;
+    final newOptions = value.withDefaults(_client.defaultQueryOptions);
+    _options = newOptions;
+
+    // Handle query key change separately - requires switching queries
+    if (newOptions.queryKey != oldOptions.queryKey) {
+      _query.removeObserver(this);
+
+      _query = _client.cache.build<TData, TError>(newOptions);
+      _query.addObserver(this);
+
+      _initialDataUpdateCount = _query.state.dataUpdateCount;
+      _initialErrorUpdateCount = _query.state.errorUpdateCount;
+
+      final result = _getResult(optimistic: true);
+      _setResult(result);
+
+      if (_shouldFetchOnMount(newOptions, _query.state)) {
+        _query.fetch().ignore();
+      }
+
+      _startRefetchInterval();
+
+      return;
+    }
+
+    final didEnabledChange = newOptions.enabled != oldOptions.enabled;
+    final didStaleDurationChange =
+        newOptions.staleDuration != oldOptions.staleDuration;
+    final didPlaceholderChange =
+        newOptions.placeholder != oldOptions.placeholder;
+    final didRefetchOnMountChange =
+        newOptions.refetchOnMount != oldOptions.refetchOnMount;
+    final didRefetchOnResumeChange =
+        newOptions.refetchOnResume != oldOptions.refetchOnResume;
+    final didRefetchIntervalChange =
+        newOptions.refetchInterval != oldOptions.refetchInterval;
+    final didRetryChange = !identical(newOptions.retry, oldOptions.retry);
+    final didRetryOnMountChange =
+        newOptions.retryOnMount != oldOptions.retryOnMount;
+
+    // If nothing changed, return early
+    if (!didEnabledChange &&
+        !didStaleDurationChange &&
+        !didPlaceholderChange &&
+        !didRefetchOnMountChange &&
+        !didRefetchOnResumeChange &&
+        !didRefetchIntervalChange &&
+        !didRetryChange &&
+        !didRetryOnMountChange) {
+      return;
+    }
+
+    final maySetResult = didEnabledChange ||
+        didStaleDurationChange ||
+        didPlaceholderChange ||
+        didRefetchOnMountChange ||
+        didRefetchOnResumeChange ||
+        didRetryOnMountChange;
+
+    final mayFetch = didEnabledChange ||
+        didStaleDurationChange ||
+        didRefetchOnMountChange ||
+        didRetryOnMountChange;
+
+    final mayStartRefetchInterval =
+        didEnabledChange || didRefetchIntervalChange;
+
+    if (maySetResult) {
+      final result = _getResult(optimistic: true);
+      _setResult(result);
+    }
+
+    if (mayFetch && _shouldFetchOnMount(newOptions, _query.state)) {
+      _query.fetch().ignore();
+    }
+
+    if (mayStartRefetchInterval) {
+      _startRefetchInterval();
+    }
+  }
+
   void onMount() {
     if (_shouldFetchOnMount(_options, _query.state)) {
       _query.fetch().ignore();
@@ -81,140 +164,6 @@ class QueryObserver<TData, TError> with Observer<QueryState<TData, TError>> {
   void onNotified(QueryState<TData, TError> newState) {
     final result = _getResult();
     _setResult(result);
-  }
-
-  void updateOptions(QueryObserverOptions<TData, TError> options) {
-    final oldOptions = _options;
-    final newOptions = options.withDefaults(_client.defaultQueryOptions);
-    _options = newOptions;
-
-    // Compare merged options to detect actual changes
-    final didKeyChange = newOptions.queryKey != oldOptions.queryKey;
-    final didEnabledChange = newOptions.enabled != oldOptions.enabled;
-    final didPlaceholderChange =
-        newOptions.placeholder != oldOptions.placeholder;
-    final didRefetchIntervalChange =
-        newOptions.refetchInterval != oldOptions.refetchInterval;
-    final didRefetchOnMountChange =
-        newOptions.refetchOnMount != oldOptions.refetchOnMount;
-    final didRefetchOnResumeChange =
-        newOptions.refetchOnResume != oldOptions.refetchOnResume;
-    final didRetryChange = !identical(newOptions.retry, oldOptions.retry);
-    final didRetryOnMountChange =
-        newOptions.retryOnMount != oldOptions.retryOnMount;
-    final didStaleDurationChange =
-        newOptions.staleDuration != oldOptions.staleDuration;
-
-    // If nothing changed, return early
-    if (!didKeyChange &&
-        !didEnabledChange &&
-        !didStaleDurationChange &&
-        !didPlaceholderChange &&
-        !didRefetchIntervalChange &&
-        !didRefetchOnMountChange &&
-        !didRefetchOnResumeChange &&
-        !didRetryChange &&
-        !didRetryOnMountChange) {
-      return;
-    }
-
-    if (didKeyChange) {
-      final oldQuery = _query;
-
-      _query = _client.cache.build<TData, TError>(newOptions);
-      _query.addObserver(this);
-
-      // Reset initial counters for the new query (for isFetchedAfterMount)
-      _initialDataUpdateCount = _query.state.dataUpdateCount;
-      _initialErrorUpdateCount = _query.state.errorUpdateCount;
-
-      // Get optimistic result
-      final result = _getResult(optimistic: true);
-      _setResult(result);
-
-      // Trigger initial fetch if enabled and (no data or data is stale)
-      if (_shouldFetchOnMount(newOptions, _query.state)) {
-        // Ignore result and errors - they're handled via query state
-        _query.fetch().ignore();
-      }
-
-      // Update refetch interval for new query
-      _startRefetchInterval();
-
-      // Remove this observer from the old query
-      // This will schedule GC if it was the last observer
-      oldQuery.removeObserver(this);
-
-      return;
-    }
-
-    if (didEnabledChange) {
-      // Update enabled state - get optimistic result and notify
-      final result = _getResult(optimistic: true);
-      _setResult(result);
-
-      if (_shouldFetchOnMount(newOptions, _query.state)) {
-        // Ignore result and errors - they're handled via query state
-        _query.fetch().ignore();
-      }
-    }
-
-    if (didPlaceholderChange) {
-      // Recalculate optimistic result to reflect new placeholder
-      final result = _getResult(optimistic: true);
-      _setResult(result);
-    }
-
-    if (didRefetchOnMountChange) {
-      // Refetch behavior on mount changed - recompute result and maybe refetch
-      final result = _getResult(optimistic: true);
-      _setResult(result);
-
-      if (_shouldFetchOnMount(newOptions, _query.state)) {
-        // Ignore result and errors - they're handled via query state
-        _query.fetch().ignore();
-      }
-    }
-
-    if (didRefetchOnResumeChange) {
-      // Update optimistic result for refetchOnResume changes
-      final result = _getResult(optimistic: true);
-      _setResult(result);
-    }
-
-    if (didStaleDurationChange) {
-      // Update staleDuration - recalculate result to update isStale getter
-      final result = _getResult(optimistic: true);
-      _setResult(result);
-
-      // If data becomes stale with the new staleDuration, trigger refetch
-      if (_shouldFetchOnMount(newOptions, _query.state)) {
-        // Ignore errors - they're handled via query state
-        _query.fetch().ignore();
-      }
-    }
-
-    // // Handle retry option changes
-    // if (didRetryChange) {
-    //   // Update query options (affects future fetches)
-    //   _query.options = newOptions;
-    // }
-
-    if (didRetryOnMountChange) {
-      // Recalculate result and maybe refetch
-      final result = _getResult(optimistic: true);
-      _setResult(result);
-
-      if (_shouldFetchOnMount(newOptions, _query.state)) {
-        // Ignore errors - they're handled via query state
-        _query.fetch().ignore();
-      }
-    }
-
-    // Update refetch interval if it changed or if enabled changed
-    if (didRefetchIntervalChange || didEnabledChange) {
-      _startRefetchInterval();
-    }
   }
 
   /// Manually refetch the query.
