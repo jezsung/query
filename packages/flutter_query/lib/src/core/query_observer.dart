@@ -21,11 +21,6 @@ import 'stale_duration.dart';
 
 part 'infinite_query_observer.dart';
 
-/// Callback type for result change listeners
-@internal
-typedef ResultChangeListener<TData, TError> = void Function(
-    QueryResult<TData, TError> result);
-
 class QueryObserver<TData, TError> with Observer<QueryState<TData, TError>> {
   QueryObserver(
     QueryClient client,
@@ -72,8 +67,7 @@ class QueryObserver<TData, TError> with Observer<QueryState<TData, TError>> {
       _initialDataUpdateCount = _query.state.dataUpdateCount;
       _initialErrorUpdateCount = _query.state.errorUpdateCount;
 
-      final result = _getResult(optimistic: true);
-      _setResult(result);
+      result = _getResult(optimistic: true);
 
       if (_shouldFetchOnMount(newOptions, _query.state)) {
         _query.fetch().ignore();
@@ -127,8 +121,7 @@ class QueryObserver<TData, TError> with Observer<QueryState<TData, TError>> {
         didEnabledChange || didRefetchIntervalChange;
 
     if (maySetResult) {
-      final result = _getResult(optimistic: true);
-      _setResult(result);
+      result = _getResult(optimistic: true);
     }
 
     if (mayFetch && _shouldFetchOnMount(newOptions, _query.state)) {
@@ -137,6 +130,15 @@ class QueryObserver<TData, TError> with Observer<QueryState<TData, TError>> {
 
     if (mayStartRefetchInterval) {
       _startRefetchInterval();
+    }
+  }
+
+  set result(QueryResult<TData, TError> newResult) {
+    if (newResult != _result) {
+      _result = newResult;
+      for (final listener in _listeners) {
+        listener(newResult);
+      }
     }
   }
 
@@ -162,8 +164,7 @@ class QueryObserver<TData, TError> with Observer<QueryState<TData, TError>> {
 
   @override
   void onNotified(QueryState<TData, TError> newState) {
-    final result = _getResult();
-    _setResult(result);
+    result = _getResult();
   }
 
   /// Manually refetch the query.
@@ -211,17 +212,6 @@ class QueryObserver<TData, TError> with Observer<QueryState<TData, TError>> {
   void _cancelRefetchInterval() {
     _refetchIntervalTimer?.cancel();
     _refetchIntervalTimer = null;
-  }
-
-  void _setResult(QueryResult<TData, TError> newResult) {
-    // Only notify if the result actually changed, preventing infinite loops
-    if (newResult != _result) {
-      _result = newResult;
-      // Notify all listeners synchronously
-      for (final listener in _listeners) {
-        listener(_result);
-      }
-    }
   }
 
   QueryResult<TData, TError> _getResult({bool optimistic = false}) {
@@ -364,3 +354,8 @@ class QueryObserver<TData, TError> with Observer<QueryState<TData, TError>> {
     };
   }
 }
+
+@internal
+typedef ResultChangeListener<TData, TError> = void Function(
+  QueryResult<TData, TError> result,
+);
