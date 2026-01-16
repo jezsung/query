@@ -552,7 +552,9 @@ void main() {
           },
           enabled: true,
         ),
-      );
+      )..onMount();
+      addTearDown(activeObserver.onUnmount);
+
       await client.fetchQuery(
         queryKey: const ['inactive'],
         queryFn: (context) async {
@@ -577,8 +579,6 @@ void main() {
       // Should NOT have refetched any queries
       expect(activeQueryFetches, 1);
       expect(inactiveQueryFetches, 1);
-
-      activeObserver.dispose();
     });
 
     test(
@@ -599,8 +599,8 @@ void main() {
           },
           enabled: true,
         ),
-      );
-      addTearDown(activeObserver.dispose);
+      )..onMount();
+      addTearDown(activeObserver.onUnmount);
       // Inactive query
       client.fetchQuery(
         queryKey: const ['inactive'],
@@ -642,7 +642,9 @@ void main() {
           },
           enabled: true,
         ),
-      );
+      )..onMount();
+      addTearDown(activeObserver.onUnmount);
+
       await client.fetchQuery(
         queryKey: const ['inactive'],
         queryFn: (context) async {
@@ -662,8 +664,6 @@ void main() {
       expect(activeQueryFetches, 1);
       // Should have refetched inactive query
       expect(inactiveQueryFetches, 2);
-
-      activeObserver.dispose();
     });
 
     test(
@@ -682,7 +682,9 @@ void main() {
           },
           enabled: true,
         ),
-      );
+      )..onMount();
+      addTearDown(activeObserver.onUnmount);
+
       await client.fetchQuery(
         queryKey: const ['inactive'],
         queryFn: (context) async {
@@ -701,8 +703,6 @@ void main() {
       // Should have refetched all queries
       expect(activeQueryFetches, 2);
       expect(inactiveQueryFetches, 2);
-
-      activeObserver.dispose();
     });
 
     test(
@@ -718,7 +718,8 @@ void main() {
           },
           enabled: true,
         ),
-      );
+      )..onMount();
+      addTearDown(observer.onUnmount);
 
       // Wait for initial fetch
       async.elapse(const Duration(seconds: 1));
@@ -735,8 +736,6 @@ void main() {
       // Should have reset isInvalidated
       query = cache.get(const ['key']);
       expect(query!.state.isInvalidated, isFalse);
-
-      observer.dispose();
     }));
 
     test(
@@ -789,9 +788,9 @@ void main() {
       expect(query4!.state.isInvalidated, isTrue);
       expect(query5!.state.isInvalidated, isTrue);
 
-      activeObserver1.dispose();
-      activeObserver2.dispose();
-      disabledObserver.dispose();
+      activeObserver1.onUnmount();
+      activeObserver2.onUnmount();
+      disabledObserver.onUnmount();
     });
   });
 
@@ -839,7 +838,7 @@ void main() {
           enabled: false,
         ),
       );
-      addTearDown(observer.dispose);
+      addTearDown(observer.onUnmount);
 
       // No initial fetch because disabled
       async.elapse(const Duration(seconds: 1));
@@ -871,7 +870,8 @@ void main() {
           staleDuration: StaleDuration.static,
         ),
       );
-      addTearDown(observer.dispose);
+      observer.onMount();
+      addTearDown(observer.onUnmount);
 
       // Wait for initial fetch
       async.elapse(const Duration(seconds: 1));

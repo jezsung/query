@@ -81,20 +81,17 @@ QueryResult<TData, TError> useQuery<TData, TError>(
       result.value = newResult;
     });
     return unsubscribe;
-  }, []);
+  }, [observer]);
 
-  // Refetch on app resume based on refetchOnResume option
+  useEffect(() {
+    observer.onMount();
+    return observer.onUnmount;
+  }, [observer]);
+
   useEffect(() {
     final listener = AppLifecycleListener(onResume: observer.onResume);
     return listener.dispose;
   }, [observer]);
-
-  // Cleanup on unmount
-  useEffect(() {
-    return () {
-      observer.dispose();
-    };
-  }, []);
 
   // Return observer.result directly to ensure synchronous updates are visible immediately.
   // The useState + subscription pattern ensures widget rebuilds when the result changes,

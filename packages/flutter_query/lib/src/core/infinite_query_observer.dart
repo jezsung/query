@@ -27,7 +27,7 @@ class InfiniteQueryObserver<TData, TError, TPageParam> {
       _client,
       this,
       _createWrappedQueryObserverOptions(),
-    );
+    )..onMount();
 
     // Get initial optimistic result
     _result = _getResult(optimistic: true);
@@ -236,7 +236,7 @@ class InfiniteQueryObserver<TData, TError, TPageParam> {
 
   void dispose() {
     _listeners.clear();
-    _adapter.dispose();
+    _adapter.onUnmount();
   }
 
   void _onQueryUpdate() {

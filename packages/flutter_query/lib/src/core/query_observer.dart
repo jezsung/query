@@ -41,15 +41,6 @@ class QueryObserver<TData, TError> with Observer<QueryState<TData, TError>> {
 
     // Get initial optimistic result
     _result = _getResult(optimistic: true);
-
-    // Trigger initial fetch if enabled and (no data or data is stale)
-    if (_shouldFetchOnMount(_options, _query.state)) {
-      // Ignore result and errors - they're handled via query state
-      _query.fetch().ignore();
-    }
-
-    // Start refetch interval if configured
-    _updateRefetchInterval();
   }
 
   final QueryClient _client;
@@ -57,31 +48,35 @@ class QueryObserver<TData, TError> with Observer<QueryState<TData, TError>> {
   Query<TData, TError> _query;
   late QueryResult<TData, TError> _result;
 
-  /// Tracks the initial dataUpdateCount when observer was created.
-  /// Used to compute isFetchedAfterMount.
   late int _initialDataUpdateCount;
-
-  /// Tracks the initial errorUpdateCount when observer was created.
-  /// Used to compute isFetchedAfterMount.
   late int _initialErrorUpdateCount;
-
-  /// Listeners that are notified when the result changes.
-  /// Uses direct callback pattern instead of streams for synchronous updates.
-  final Set<ResultChangeListener<TData, TError>> _listeners = {};
-
-  /// Timer for refetchInterval. Continuously refetches at the specified interval.
   Timer? _refetchIntervalTimer;
+
+  final Set<ResultChangeListener<TData, TError>> _listeners = {};
 
   QueryObserverOptions<TData, TError> get options => _options;
   QueryResult<TData, TError> get result => _result;
 
-  /// Subscribe to result changes. Returns an unsubscribe function.
-  void Function() subscribe(ResultChangeListener<TData, TError> listener) {
-    _listeners.add(listener);
-    return () => _listeners.remove(listener);
+  void onMount() {
+    if (_shouldFetchOnMount(_options, _query.state)) {
+      _query.fetch().ignore();
+    }
+
+    _startRefetchInterval();
   }
 
-  /// Called by Query when its state changes.
+  void onResume() {
+    if (_shouldFetchOnResume(_options, _query.state)) {
+      _query.fetch().ignore();
+    }
+  }
+
+  void onUnmount() {
+    _listeners.clear();
+    _cancelRefetchInterval();
+    _query.removeObserver(this);
+  }
+
   @override
   void onNotified(QueryState<TData, TError> newState) {
     final result = _getResult();
@@ -144,7 +139,7 @@ class QueryObserver<TData, TError> with Observer<QueryState<TData, TError>> {
       }
 
       // Update refetch interval for new query
-      _updateRefetchInterval();
+      _startRefetchInterval();
 
       // Remove this observer from the old query
       // This will schedule GC if it was the last observer
@@ -218,15 +213,7 @@ class QueryObserver<TData, TError> with Observer<QueryState<TData, TError>> {
 
     // Update refetch interval if it changed or if enabled changed
     if (didRefetchIntervalChange || didEnabledChange) {
-      _updateRefetchInterval();
-    }
-  }
-
-  /// Called when the app lifecycle returns to resumed state.
-  void onResume() {
-    if (_shouldFetchOnResume(options, _query.state)) {
-      // Ignore errors - they're handled via query state
-      _query.fetch().ignore();
+      _startRefetchInterval();
     }
   }
 
@@ -250,34 +237,25 @@ class QueryObserver<TData, TError> with Observer<QueryState<TData, TError>> {
     return _getResult();
   }
 
-  void dispose() {
-    _listeners.clear();
-    _cancelRefetchInterval();
-
-    // Remove this observer from the query
-    // This will schedule GC if it was the last observer
-    _query.removeObserver(this);
+  void Function() subscribe(ResultChangeListener<TData, TError> listener) {
+    _listeners.add(listener);
+    return () => _listeners.remove(listener);
   }
 
-  void _updateRefetchInterval() {
+  void _startRefetchInterval() {
     _cancelRefetchInterval();
 
-    // Don't set up interval if:
-    // - Query is disabled
-    // - No refetchInterval is configured
-    // - refetchInterval is zero/negative
-    if (!(options.enabled ?? true) ||
-        options.refetchInterval == null ||
-        options.refetchInterval!.inMilliseconds <= 0) {
+    // Use getter to support subclass overrides (e.g. _QueryObserverAdapter)
+    final enabled = options.enabled ?? true;
+    final interval = options.refetchInterval;
+
+    if (!enabled || interval == null || interval <= Duration.zero) {
       return;
     }
 
     _refetchIntervalTimer = Timer.periodic(
-      options.refetchInterval!,
-      (_) {
-        // Ignore errors - they're handled via query state
-        _query.fetch().ignore();
-      },
+      interval,
+      (_) => _query.fetch().ignore(),
     );
   }
 
@@ -308,25 +286,25 @@ class QueryObserver<TData, TError> with Observer<QueryState<TData, TError>> {
 
     // Check if we should fetch on mount (enabled and (no data or stale))
     if (optimistic) {
-      fetchStatus = _shouldFetchOnMount(options, state)
+      fetchStatus = _shouldFetchOnMount(_options, state)
           ? FetchStatus.fetching
           : state.fetchStatus;
     }
 
     // Use placeholder if needed (when query is pending and has no data)
-    if (options.placeholder != null &&
+    if (_options.placeholder != null &&
         data == null &&
         status == QueryStatus.pending) {
       status = QueryStatus.success;
-      data = options.placeholder;
+      data = _options.placeholder;
       isPlaceholderData = true;
     }
 
-    final staleDuration = options.staleDuration ?? const StaleDuration();
+    final staleDuration = _options.staleDuration ?? const StaleDuration();
 
     // Compute isStale: disabled queries are never considered stale
     // This matches TanStack Query's behavior
-    final isEnabled = options.enabled ?? true;
+    final isEnabled = _options.enabled ?? true;
     final isStale = isEnabled && _query.shouldFetch(staleDuration);
 
     return QueryResult<TData, TError>(

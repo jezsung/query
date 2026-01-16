@@ -1103,7 +1103,7 @@ void main() {
           meta: {'observer': '1', 'extra-1': 'value-1'},
         ),
       );
-      addTearDown(observer1.dispose);
+      addTearDown(observer1.onUnmount);
       query.addObserver(observer1);
       expect(query.meta, {
         'base': 'value',
@@ -1119,7 +1119,7 @@ void main() {
           meta: {'observer': '2', 'extra-2': 'value-2'},
         ),
       );
-      addTearDown(observer2.dispose);
+      addTearDown(observer2.onUnmount);
       query.addObserver(observer2);
       expect(query.meta, {
         'base': 'value',
