@@ -38,7 +38,7 @@ class Query<TData, TError>
     onRemoveObserver = (observer) {
       if (observers.isEmpty) {
         // Use the removed observer's gcDuration since it was the last one
-        scheduleGc(observer.options.gcDuration);
+        scheduleGc(observer.options.gcDuration ?? GcDuration(minutes: 5));
         if (state.fetchStatus == FetchStatus.fetching &&
             _abortController != null &&
             _abortController!.wasConsumed) {
@@ -46,7 +46,7 @@ class Query<TData, TError>
         }
       }
     };
-    scheduleGc();
+    scheduleGc(_options.gcDuration ?? GcDuration(minutes: 5));
   }
 
   final QueryClient _client;
@@ -220,18 +220,6 @@ class Query<TData, TError>
       StaleDurationInfinity() => false,
       StaleDurationStatic() => false,
     };
-  }
-
-  @override
-  GcDuration get gcDuration {
-    return observers
-        .map((obs) => obs.options.gcDuration)
-        .whereType<GcDuration>()
-        .fold(
-          // Defaults to 5 minutes
-          _options.gcDuration ?? const GcDuration(minutes: 5),
-          (longest, duration) => duration > longest ? duration : longest,
-        );
   }
 
   @override

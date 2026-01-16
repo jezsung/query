@@ -36,13 +36,13 @@ class Mutation<TData, TError, TVariables, TOnMutateResult>
         _mutationId = mutationId,
         _state = state ??
             MutationState<TData, TError, TVariables, TOnMutateResult>() {
-    scheduleGc();
     onAddObserver = (_) {
       cancelGc();
     };
-    onRemoveObserver = (_) {
-      scheduleGc();
+    onRemoveObserver = (observer) {
+      scheduleGc(observer.options.gcDuration ?? GcDuration(minutes: 5));
     };
+    scheduleGc(options.gcDuration ?? GcDuration(minutes: 5));
   }
 
   final QueryClient _client;
@@ -180,23 +180,11 @@ class Mutation<TData, TError, TVariables, TOnMutateResult>
   }
 
   @override
-  GcDuration get gcDuration {
-    return observers
-        .map((obs) => obs.options.gcDuration)
-        .whereType<GcDuration>()
-        .fold(
-          // Defaults to 5 minutes
-          options.gcDuration ?? const GcDuration(minutes: 5),
-          (longest, duration) => duration > longest ? duration : longest,
-        );
-  }
-
-  @override
   void tryRemove() {
     if (!hasObservers) {
       if (_state.status == MutationStatus.pending) {
         // Don't remove pending mutations, reschedule GC
-        scheduleGc();
+        scheduleGc(options.gcDuration ?? GcDuration(minutes: 5));
       } else {
         _cache.remove(this);
       }

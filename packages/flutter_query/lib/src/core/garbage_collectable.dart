@@ -7,18 +7,14 @@ import 'gc_duration.dart';
 /// Mixin that provides garbage collection functionality for queries and mutations.
 ///
 /// Classes that use this mixin must:
-/// - Implement [gcDuration] to specify how long to wait before garbage collection
-/// - Implement [tryRemove] to define removal logic (including checks for observers, fetching state, etc.)
+/// - Implement [tryRemove] to define removal logic
 mixin GarbageCollectable {
   Timer? _gcTimer;
 
-  @visibleForOverriding
-  GcDuration get gcDuration;
-
   @protected
-  void scheduleGc([GcDuration? duration]) {
+  void scheduleGc(GcDuration duration) {
     cancelGc();
-    switch (duration ?? gcDuration) {
+    switch (duration) {
       case final GcDurationDuration duration:
         _gcTimer = Timer(duration, tryRemove);
       case GcDurationInfinity():

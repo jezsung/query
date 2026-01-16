@@ -39,7 +39,7 @@ void main() {
   group('defaultQueryOptions', () {
     test(
         'SHOULD use gcDuration from defaultQueryOptions '
-        'WHEN query does not specify', () {
+        'WHEN query does not specify', withFakeAsync((async) {
       final testClient = QueryClient(
         defaultQueryOptions: const DefaultQueryOptions(
           gcDuration: GcDuration(minutes: 10),
@@ -54,13 +54,20 @@ void main() {
           (context) async => 'data',
         ),
       );
+      testClient.cache.add(query);
 
-      expect(query.gcDuration, const GcDuration(minutes: 10));
-    });
+      async.elapse(const Duration(minutes: 5));
+
+      expect(testClient.cache.get(const ['key']), isNotNull);
+
+      async.elapse(const Duration(minutes: 5));
+
+      expect(testClient.cache.get(const ['key']), isNull);
+    }));
 
     test(
         'SHOULD prefer query gcDuration over defaultQueryOptions'
-        '', () {
+        '', withFakeAsync((async) {
       final testClient = QueryClient(
         defaultQueryOptions: const DefaultQueryOptions(
           gcDuration: GcDuration(minutes: 10),
@@ -76,9 +83,12 @@ void main() {
           gcDuration: const GcDuration(minutes: 2),
         ),
       );
+      testClient.cache.add(query);
 
-      expect(query.gcDuration, const GcDuration(minutes: 2));
-    });
+      async.elapse(const Duration(minutes: 2));
+
+      expect(testClient.cache.get(const ['key']), isNull);
+    }));
 
     test(
         'SHOULD use retry from defaultQueryOptions '
