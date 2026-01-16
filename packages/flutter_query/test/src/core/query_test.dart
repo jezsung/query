@@ -1,8 +1,7 @@
-import 'package:clock/clock.dart';
-import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:flutter_query/src/core/core.dart';
+import '../../utils.dart';
 
 void main() {
   late QueryClient client;
@@ -19,10 +18,6 @@ void main() {
   tearDown(() {
     client.clear();
   });
-
-  void Function() withFakeAsync(void Function(FakeAsync fakeTime) testBody) {
-    return () => fakeAsync(testBody);
-  }
 
   Query<String, Object> createQuery({
     List<Object?> queryKey = const ['test'],

@@ -1,34 +1,9 @@
 import 'dart:async';
 
-import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:flutter_query/src/core/core.dart';
-
-/// A test helper that wraps a test body in [fakeAsync] for time manipulation.
-///
-/// This allows you to control time in tests using [FakeAsync.elapse] and
-/// [FakeAsync.flushMicrotasks].
-///
-/// Usage:
-/// ```dart
-/// test('my test', withFakeAsync((fakeTime) {
-///   // Start an async operation
-///   myFuture.then((_) {}, onError: (e) { ... });
-///
-///   // Advance time
-///   fakeTime.elapse(const Duration(seconds: 5));
-///
-///   // Assert
-///   expect(...);
-/// }));
-/// ```
-///
-/// Note: The test body must be synchronous. Use `.then()` and `.catchError()`
-/// to handle async results within the fakeAsync zone.
-void Function() withFakeAsync(void Function(FakeAsync fakeTime) testBody) {
-  return () => fakeAsync(testBody);
-}
+import '../../utils.dart';
 
 void main() {
   late QueryCache cache;
