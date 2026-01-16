@@ -27,11 +27,6 @@ class Query<TData, TError>
     QueryOptions<TData, TError> options,
   )   : _client = client,
         _options = options.withDefaults(client.defaultQueryOptions) {
-    _currentState = _initialState = switch (options.seed) {
-      final seed? =>
-        QueryState<TData, TError>.fromSeed(seed, options.seedUpdatedAt),
-      null => QueryState<TData, TError>(),
-    };
     onAddObserver = (_) {
       cancelGc();
     };
@@ -46,13 +41,21 @@ class Query<TData, TError>
         }
       }
     };
+
+    _initialState = switch (_options.seed) {
+      final seed? =>
+        QueryState<TData, TError>.fromSeed(seed, _options.seedUpdatedAt),
+      null => QueryState<TData, TError>(),
+    };
+    _currentState = _initialState;
+
     scheduleGc(_options.gcDuration ?? GcDuration(minutes: 5));
   }
 
   final QueryClient _client;
   QueryOptions<TData, TError> _options;
-  late QueryState<TData, TError> _currentState;
   late QueryState<TData, TError> _initialState;
+  late QueryState<TData, TError> _currentState;
 
   Retryer<TData, TError>? _retryer;
   AbortController? _abortController;
