@@ -52,6 +52,33 @@ class QueryResult<TData, TError> {
   bool get isRefetchError => isError && data != null;
   bool get isRefetching => isFetching && !isPending;
 
+  QueryResult<TData, TError> copyWithPlaceholder(TData? placeholder) {
+    if (placeholder == null) {
+      return this;
+    }
+    if (data != null || status != QueryStatus.pending) {
+      return this;
+    }
+
+    return QueryResult<TData, TError>(
+      status: QueryStatus.success,
+      fetchStatus: fetchStatus,
+      data: placeholder,
+      dataUpdatedAt: dataUpdatedAt,
+      dataUpdateCount: dataUpdateCount,
+      error: error,
+      errorUpdatedAt: errorUpdatedAt,
+      errorUpdateCount: errorUpdateCount,
+      failureCount: failureCount,
+      failureReason: failureReason,
+      isEnabled: isEnabled,
+      isStale: isStale,
+      isFetchedAfterMount: isFetchedAfterMount,
+      isPlaceholderData: true,
+      refetch: refetch,
+    );
+  }
+
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
