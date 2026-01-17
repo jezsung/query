@@ -2,9 +2,37 @@ import 'package:clock/clock.dart';
 
 import 'utils.dart';
 
-enum QueryStatus { pending, error, success }
+/// The status of a query's data.
+///
+/// This represents whether the query has successfully fetched data,
+/// encountered an error, or is still waiting for its first fetch.
+enum QueryStatus {
+  /// The query has no data yet.
+  ///
+  /// This is the initial status before any fetch completes.
+  pending,
 
-enum FetchStatus { fetching, paused, idle }
+  /// The query encountered an error.
+  error,
+
+  /// The query has successfully fetched data.
+  success,
+}
+
+/// The status of the query's fetch operation.
+///
+/// This represents the current network activity state, independent of
+/// whether the query has data or not.
+enum FetchStatus {
+  /// A fetch is currently in progress.
+  fetching,
+
+  /// The fetch is paused, typically due to network unavailability.
+  paused,
+
+  /// No fetch is in progress.
+  idle,
+}
 
 class QueryState<TData, TError> {
   const QueryState({
@@ -82,7 +110,7 @@ class QueryState<TData, TError> {
       );
 }
 
-extension QueryStateCopyWith<TData, TError> on QueryState<TData, TError> {
+extension QueryStateExt<TData, TError> on QueryState<TData, TError> {
   QueryState<TData, TError> copyWith({
     QueryStatus? status,
     FetchStatus? fetchStatus,
