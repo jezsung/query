@@ -7,8 +7,8 @@ import 'query_key.dart';
 import 'query_options.dart';
 
 class QueryCache {
+  late final QueryClient? _client;
   final Map<QueryKey, Query> _queries = {};
-  QueryClient? _client;
 
   /// Sets the QueryClient that owns this cache.
   ///

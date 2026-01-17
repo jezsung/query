@@ -13,9 +13,9 @@ import 'query_client.dart';
 ///
 /// Aligned with TanStack Query's MutationCache.
 class MutationCache {
+  late final QueryClient? _client;
   final Set<Mutation> _mutations = {};
   int _mutationIdCounter = 0;
-  QueryClient? _client;
 
   /// Sets the client reference for this cache.
   ///
