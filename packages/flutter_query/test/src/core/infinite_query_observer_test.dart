@@ -33,8 +33,8 @@ void main() {
         initialPageParam: 0,
         nextPageParamBuilder: (data) => data.pageParams.last + 1,
       ),
-    );
-    addTearDown(observer.dispose);
+    )..onMount();
+    addTearDown(observer.onUnmount);
 
     expect(observer.result.status, QueryStatus.pending);
     expect(observer.result.fetchStatus, FetchStatus.fetching);
@@ -70,8 +70,8 @@ void main() {
         initialPageParam: 0,
         nextPageParamBuilder: (data) => data.pageParams.last + 1,
       ),
-    );
-    addTearDown(observer.dispose);
+    )..onMount();
+    addTearDown(observer.onUnmount);
 
     expect(observer.result.status, QueryStatus.pending);
     expect(observer.result.fetchStatus, FetchStatus.fetching);
@@ -103,8 +103,8 @@ void main() {
           initialPageParam: 0,
           nextPageParamBuilder: (data) => data.pageParams.last + 1,
         ),
-      );
-      addTearDown(observer.dispose);
+      )..onMount();
+      addTearDown(observer.onUnmount);
 
       async.elapse(const Duration(seconds: 1));
 
@@ -151,8 +151,8 @@ void main() {
           initialPageParam: 0,
           nextPageParamBuilder: (data) => data.pageParams.last + 1,
         ),
-      );
-      addTearDown(observer.dispose);
+      )..onMount();
+      addTearDown(observer.onUnmount);
 
       async.elapse(const Duration(seconds: 1));
 
@@ -202,8 +202,8 @@ void main() {
           initialPageParam: 0,
           nextPageParamBuilder: (data) => null, // No more pages
         ),
-      );
-      addTearDown(observer.dispose);
+      )..onMount();
+      addTearDown(observer.onUnmount);
       async.elapse(const Duration(seconds: 1));
 
       expect(fetches, 1);
@@ -232,8 +232,8 @@ void main() {
           nextPageParamBuilder: (data) => data.pageParams.last + 1,
           maxPages: 2,
         ),
-      );
-      addTearDown(observer.dispose);
+      )..onMount();
+      addTearDown(observer.onUnmount);
 
       async.elapse(const Duration(seconds: 1));
       expect(
@@ -277,8 +277,8 @@ void main() {
           initialPageParam: 0,
           nextPageParamBuilder: (data) => data.pageParams.last + 1,
         ),
-      );
-      addTearDown(observer.dispose);
+      )..onMount();
+      addTearDown(observer.onUnmount);
 
       async.elapse(const Duration(seconds: 1));
 
@@ -308,8 +308,8 @@ void main() {
           initialPageParam: 0,
           nextPageParamBuilder: (data) => data.pageParams.last + 1,
         ),
-      );
-      addTearDown(observer.dispose);
+      )..onMount();
+      addTearDown(observer.onUnmount);
 
       async.elapse(const Duration(seconds: 1));
 
@@ -338,8 +338,8 @@ void main() {
           nextPageParamBuilder: (data) => data.pageParams.last + 1,
           prevPageParamBuilder: (data) => data.pageParams.first - 1,
         ),
-      );
-      addTearDown(observer.dispose);
+      )..onMount();
+      addTearDown(observer.onUnmount);
 
       async.elapse(const Duration(seconds: 1));
 
@@ -387,8 +387,8 @@ void main() {
           nextPageParamBuilder: (data) => data.pageParams.last + 1,
           prevPageParamBuilder: (data) => data.pageParams.first - 1,
         ),
-      );
-      addTearDown(observer.dispose);
+      )..onMount();
+      addTearDown(observer.onUnmount);
 
       async.elapse(const Duration(seconds: 1));
 
@@ -439,8 +439,8 @@ void main() {
           nextPageParamBuilder: (data) => data.pageParams.last + 1,
           prevPageParamBuilder: (data) => null, // No previous pages
         ),
-      );
-      addTearDown(observer.dispose);
+      )..onMount();
+      addTearDown(observer.onUnmount);
       async.elapse(const Duration(seconds: 1));
 
       expect(fetches, 1);
@@ -470,8 +470,8 @@ void main() {
           prevPageParamBuilder: (data) => data.pageParams.first - 1,
           maxPages: 2,
         ),
-      );
-      addTearDown(observer.dispose);
+      )..onMount();
+      addTearDown(observer.onUnmount);
 
       async.elapse(const Duration(seconds: 1));
       expect(
@@ -516,8 +516,8 @@ void main() {
           nextPageParamBuilder: (data) => data.pageParams.last + 1,
           prevPageParamBuilder: (data) => data.pageParams.first - 1,
         ),
-      );
-      addTearDown(observer.dispose);
+      )..onMount();
+      addTearDown(observer.onUnmount);
 
       async.elapse(const Duration(seconds: 1));
 
@@ -548,8 +548,8 @@ void main() {
           nextPageParamBuilder: (data) => data.pageParams.last + 1,
           prevPageParamBuilder: (data) => data.pageParams.first - 1,
         ),
-      );
-      addTearDown(observer.dispose);
+      )..onMount();
+      addTearDown(observer.onUnmount);
 
       async.elapse(const Duration(seconds: 1));
 
@@ -580,8 +580,8 @@ void main() {
           initialPageParam: 0,
           nextPageParamBuilder: (data) => data.pageParams.last + 1,
         ),
-      );
-      addTearDown(observer.dispose);
+      )..onMount();
+      addTearDown(observer.onUnmount);
 
       async.elapse(const Duration(seconds: 1));
       expect(fetches, 1);
@@ -646,8 +646,8 @@ void main() {
           nextPageParamBuilder: (data) => data.pageParams.last + 1,
           retry: (_, __) => null,
         ),
-      );
-      addTearDown(observer.dispose);
+      )..onMount();
+      addTearDown(observer.onUnmount);
 
       async.elapse(const Duration(seconds: 1));
 
@@ -680,8 +680,8 @@ void main() {
           nextPageParamBuilder: (data) => data.pageParams.last + 1,
           retry: (_, __) => null,
         ),
-      );
-      addTearDown(observer.dispose);
+      )..onMount();
+      addTearDown(observer.onUnmount);
 
       async.elapse(const Duration(seconds: 1));
 
@@ -694,7 +694,7 @@ void main() {
     }));
   });
 
-  group('updateOptions', () {
+  group('options setter', () {
     test(
         'SHOULD switch to new query '
         'WHEN queryKey changes', withFakeAsync((async) {
@@ -714,15 +714,15 @@ void main() {
           initialPageParam: 0,
           nextPageParamBuilder: (_) => null,
         ),
-      );
-      addTearDown(observer.dispose);
+      )..onMount();
+      addTearDown(observer.onUnmount);
 
       async.elapse(const Duration(seconds: 1));
       expect(fetches, 1);
       expect(fetchedKeys.last, ['key1']);
 
       // Update to new key
-      observer.updateOptions(InfiniteQueryObserverOptions(
+      observer.options = InfiniteQueryObserverOptions(
         const ['key2'],
         (context) async {
           await Future.delayed(const Duration(seconds: 1));
@@ -732,7 +732,7 @@ void main() {
         },
         initialPageParam: 0,
         nextPageParamBuilder: (_) => null,
-      ));
+      );
 
       async.elapse(const Duration(seconds: 1));
 
@@ -758,14 +758,14 @@ void main() {
           nextPageParamBuilder: (_) => null,
           enabled: false,
         ),
-      );
-      addTearDown(observer.dispose);
+      )..onMount();
+      addTearDown(observer.onUnmount);
 
       async.elapse(const Duration(seconds: 1));
       expect(fetches, 0);
 
       // Enable the query
-      observer.updateOptions(InfiniteQueryObserverOptions(
+      observer.options = InfiniteQueryObserverOptions(
         const ['key'],
         (context) async {
           await Future.delayed(const Duration(seconds: 1));
@@ -775,7 +775,7 @@ void main() {
         initialPageParam: 0,
         nextPageParamBuilder: (_) => null,
         enabled: true,
-      ));
+      );
 
       async.elapse(const Duration(seconds: 1));
       expect(fetches, 1);
@@ -802,19 +802,19 @@ void main() {
           initialPageParam: 0,
           nextPageParamBuilder: nextPageParamBuilder,
         ),
-      );
-      addTearDown(observer.dispose);
+      )..onMount();
+      addTearDown(observer.onUnmount);
 
       async.elapse(const Duration(seconds: 1));
       expect(fetches, 1);
 
       // Update with same options
-      observer.updateOptions(InfiniteQueryObserverOptions(
+      observer.options = InfiniteQueryObserverOptions(
         const ['key'],
         queryFn,
         initialPageParam: 0,
         nextPageParamBuilder: nextPageParamBuilder,
-      ));
+      );
 
       async.elapse(const Duration(seconds: 1));
       expect(fetches, 1); // Should not have refetched
@@ -838,8 +838,8 @@ void main() {
           initialPageParam: 0,
           nextPageParamBuilder: (data) => data.pageParams.last + 1,
         ),
-      );
-      addTearDown(observer.dispose);
+      )..onMount();
+      addTearDown(observer.onUnmount);
 
       // Wait for initial fetch to complete
       async.elapse(const Duration(seconds: 1));
@@ -869,8 +869,8 @@ void main() {
             return data.pageParams.last < 5 ? data.pageParams.last + 1 : null;
           },
         ),
-      );
-      addTearDown(observer.dispose);
+      )..onMount();
+      addTearDown(observer.onUnmount);
 
       observer.subscribe((result) => capturedResults.add(result));
 
@@ -903,8 +903,8 @@ void main() {
           initialPageParam: 0,
           nextPageParamBuilder: (data) => data.pageParams.last + 1,
         ),
-      );
-      addTearDown(observer.dispose);
+      )..onMount();
+      addTearDown(observer.onUnmount);
 
       final unsubscribe = observer.subscribe((_) => calls++);
 
@@ -942,7 +942,7 @@ void main() {
       );
 
       observer.subscribe((_) => calls++);
-      observer.dispose();
+      observer.onUnmount();
 
       async.elapse(const Duration(seconds: 1));
 
@@ -967,12 +967,12 @@ void main() {
           nextPageParamBuilder: (data) => data.pageParams.last + 1,
           refetchInterval: const Duration(seconds: 5),
         ),
-      );
+      )..onMount();
 
       async.elapse(const Duration(seconds: 1));
       expect(fetches, 1);
 
-      observer.dispose();
+      observer.onUnmount();
 
       async.elapse(const Duration(seconds: 100));
 
@@ -999,8 +999,8 @@ void main() {
           nextPageParamBuilder: (data) => data.pageParams.last + 10,
           meta: {'key': 'value'},
         ),
-      );
-      addTearDown(observer.dispose);
+      )..onMount();
+      addTearDown(observer.onUnmount);
 
       // Initial fetch
       async.elapse(const Duration(seconds: 1));
@@ -1051,8 +1051,8 @@ void main() {
           prevPageParamBuilder: (data) => data.pageParams.first - 10,
           meta: {'key': 'value'},
         ),
-      );
-      addTearDown(observer.dispose);
+      )..onMount();
+      addTearDown(observer.onUnmount);
 
       // Initial fetch (forward)
       async.elapse(const Duration(seconds: 1));
@@ -1104,8 +1104,8 @@ void main() {
           nextPageParamBuilder: (data) => data.pageParams.last + 1,
           enabled: true,
         ),
-      );
-      addTearDown(observer.dispose);
+      )..onMount();
+      addTearDown(observer.onUnmount);
 
       async.elapse(const Duration(seconds: 1));
 
@@ -1130,8 +1130,8 @@ void main() {
           nextPageParamBuilder: (data) => data.pageParams.last + 1,
           enabled: false,
         ),
-      );
-      addTearDown(observer.dispose);
+      )..onMount();
+      addTearDown(observer.onUnmount);
 
       async.elapse(const Duration(seconds: 1));
 
@@ -1156,15 +1156,15 @@ void main() {
           nextPageParamBuilder: (data) => data.pageParams.last + 1,
           enabled: false,
         ),
-      );
-      addTearDown(observer.dispose);
+      )..onMount();
+      addTearDown(observer.onUnmount);
 
       async.elapse(const Duration(seconds: 1));
 
       expect(fetches, 0);
 
       // Enable the query
-      observer.updateOptions(InfiniteQueryObserverOptions(
+      observer.options = InfiniteQueryObserverOptions(
         const ['test'],
         (context) async {
           await Future.delayed(const Duration(seconds: 1));
@@ -1174,7 +1174,7 @@ void main() {
         initialPageParam: 0,
         nextPageParamBuilder: (data) => data.pageParams.last + 1,
         enabled: true,
-      ));
+      );
 
       async.elapse(const Duration(seconds: 1));
 
@@ -1200,15 +1200,15 @@ void main() {
           staleDuration: StaleDuration.zero,
           enabled: true,
         ),
-      );
-      addTearDown(observer.dispose);
+      )..onMount();
+      addTearDown(observer.onUnmount);
 
       async.elapse(const Duration(seconds: 1));
 
       expect(fetches, 1);
 
       // Disable the query - data is stale but should not refetch
-      observer.updateOptions(InfiniteQueryObserverOptions(
+      observer.options = InfiniteQueryObserverOptions(
         const ['test'],
         (context) async {
           await Future.delayed(const Duration(seconds: 1));
@@ -1219,7 +1219,7 @@ void main() {
         nextPageParamBuilder: (data) => data.pageParams.last + 1,
         staleDuration: StaleDuration.zero,
         enabled: false,
-      ));
+      );
 
       async.elapse(const Duration(seconds: 1));
 
@@ -1244,14 +1244,14 @@ void main() {
           nextPageParamBuilder: (data) => data.pageParams.last + 1,
           enabled: true,
         ),
-      );
-      addTearDown(observer.dispose);
+      )..onMount();
+      addTearDown(observer.onUnmount);
 
       async.elapse(const Duration(seconds: 1));
       expect(fetches, 1);
 
       // Disable the query
-      observer.updateOptions(InfiniteQueryObserverOptions(
+      observer.options = InfiniteQueryObserverOptions(
         const ['test'],
         (context) async {
           await Future.delayed(const Duration(seconds: 1));
@@ -1261,7 +1261,7 @@ void main() {
         initialPageParam: 0,
         nextPageParamBuilder: (data) => data.pageParams.last + 1,
         enabled: false,
-      ));
+      );
 
       // Manual fetchNextPage should still work
       observer.fetchNextPage();
@@ -1289,14 +1289,14 @@ void main() {
           prevPageParamBuilder: (data) => data.pageParams.first - 1,
           enabled: true,
         ),
-      );
-      addTearDown(observer.dispose);
+      )..onMount();
+      addTearDown(observer.onUnmount);
 
       async.elapse(const Duration(seconds: 1));
       expect(fetches, 1);
 
       // Disable the query
-      observer.updateOptions(InfiniteQueryObserverOptions(
+      observer.options = InfiniteQueryObserverOptions(
         const ['test'],
         (context) async {
           await Future.delayed(const Duration(seconds: 1));
@@ -1307,7 +1307,7 @@ void main() {
         nextPageParamBuilder: (data) => data.pageParams.last + 1,
         prevPageParamBuilder: (data) => data.pageParams.first - 1,
         enabled: false,
-      ));
+      );
 
       // Manual fetchPreviousPage should still work
       observer.fetchPreviousPage();
@@ -1334,14 +1334,14 @@ void main() {
           nextPageParamBuilder: (data) => data.pageParams.last + 1,
           enabled: true,
         ),
-      );
-      addTearDown(observer.dispose);
+      )..onMount();
+      addTearDown(observer.onUnmount);
 
       async.elapse(const Duration(seconds: 1));
       expect(fetches, 1);
 
       // Disable the query
-      observer.updateOptions(InfiniteQueryObserverOptions(
+      observer.options = InfiniteQueryObserverOptions(
         const ['test'],
         (context) async {
           await Future.delayed(const Duration(seconds: 1));
@@ -1351,7 +1351,7 @@ void main() {
         initialPageParam: 0,
         nextPageParamBuilder: (data) => data.pageParams.last + 1,
         enabled: false,
-      ));
+      );
 
       // Manual refetch should still work
       observer.refetch();
@@ -1377,8 +1377,8 @@ void main() {
           nextPageParamBuilder: (data) => data.pageParams.last + 1,
           staleDuration: StaleDuration.zero,
         ),
-      );
-      addTearDown(observer.dispose);
+      )..onMount();
+      addTearDown(observer.onUnmount);
 
       async.elapse(const Duration(seconds: 1));
 
@@ -1400,8 +1400,8 @@ void main() {
           nextPageParamBuilder: (data) => data.pageParams.last + 1,
           staleDuration: const StaleDuration(minutes: 5),
         ),
-      );
-      addTearDown(observer.dispose);
+      )..onMount();
+      addTearDown(observer.onUnmount);
 
       async.elapse(const Duration(seconds: 1));
 
@@ -1426,8 +1426,8 @@ void main() {
         staleDuration: const StaleDuration(minutes: 5),
       );
 
-      final observer1 = InfiniteQueryObserver(client, options);
-      addTearDown(observer1.dispose);
+      final observer1 = InfiniteQueryObserver(client, options)..onMount();
+      addTearDown(observer1.onUnmount);
 
       async.elapse(const Duration(seconds: 1));
 
@@ -1436,8 +1436,8 @@ void main() {
       // Stale after 5 minutes - check with new observer
       async.elapse(const Duration(minutes: 5));
 
-      final observer2 = InfiniteQueryObserver(client, options);
-      addTearDown(observer2.dispose);
+      final observer2 = InfiniteQueryObserver(client, options)..onMount();
+      addTearDown(observer2.onUnmount);
 
       expect(observer2.result.isStale, isTrue);
     }));
@@ -1457,8 +1457,8 @@ void main() {
         staleDuration: StaleDuration.infinity,
       );
 
-      final observer1 = InfiniteQueryObserver(client, options);
-      addTearDown(observer1.dispose);
+      final observer1 = InfiniteQueryObserver(client, options)..onMount();
+      addTearDown(observer1.onUnmount);
 
       async.elapse(const Duration(seconds: 1));
 
@@ -1467,8 +1467,8 @@ void main() {
       // Still fresh after a very long time
       async.elapse(const Duration(days: 365));
 
-      final observer2 = InfiniteQueryObserver(client, options);
-      addTearDown(observer2.dispose);
+      final observer2 = InfiniteQueryObserver(client, options)..onMount();
+      addTearDown(observer2.onUnmount);
 
       expect(observer2.result.isStale, isFalse);
     }));
@@ -1488,8 +1488,8 @@ void main() {
         staleDuration: StaleDuration.static,
       );
 
-      final observer1 = InfiniteQueryObserver(client, options);
-      addTearDown(observer1.dispose);
+      final observer1 = InfiniteQueryObserver(client, options)..onMount();
+      addTearDown(observer1.onUnmount);
 
       async.elapse(const Duration(seconds: 1));
 
@@ -1498,8 +1498,8 @@ void main() {
       // Still fresh after a very long time
       async.elapse(const Duration(days: 365));
 
-      final observer2 = InfiniteQueryObserver(client, options);
-      addTearDown(observer2.dispose);
+      final observer2 = InfiniteQueryObserver(client, options)..onMount();
+      addTearDown(observer2.onUnmount);
 
       expect(observer2.result.isStale, isFalse);
     }));
@@ -1519,8 +1519,8 @@ void main() {
         staleDuration: StaleDuration.infinity,
       );
 
-      final observer1 = InfiniteQueryObserver(client, options);
-      addTearDown(observer1.dispose);
+      final observer1 = InfiniteQueryObserver(client, options)..onMount();
+      addTearDown(observer1.onUnmount);
 
       async.elapse(const Duration(seconds: 1));
 
@@ -1530,8 +1530,8 @@ void main() {
       client.invalidateQueries(queryKey: const ['test']);
 
       // New observer should see stale data after invalidation
-      final observer2 = InfiniteQueryObserver(client, options);
-      addTearDown(observer2.dispose);
+      final observer2 = InfiniteQueryObserver(client, options)..onMount();
+      addTearDown(observer2.onUnmount);
 
       expect(observer2.result.isStale, isTrue);
     }));
@@ -1551,8 +1551,8 @@ void main() {
         staleDuration: StaleDuration.static,
       );
 
-      final observer1 = InfiniteQueryObserver(client, options);
-      addTearDown(observer1.dispose);
+      final observer1 = InfiniteQueryObserver(client, options)..onMount();
+      addTearDown(observer1.onUnmount);
 
       async.elapse(const Duration(seconds: 1));
 
@@ -1562,8 +1562,8 @@ void main() {
       client.invalidateQueries(queryKey: const ['test']);
 
       // Static data should still NOT be stale even after invalidation
-      final observer2 = InfiniteQueryObserver(client, options);
-      addTearDown(observer2.dispose);
+      final observer2 = InfiniteQueryObserver(client, options)..onMount();
+      addTearDown(observer2.onUnmount);
 
       expect(observer2.result.isStale, isFalse);
     }));
@@ -1594,7 +1594,7 @@ void main() {
       expect(client.cache.findAll(queryKey: const ['test']), hasLength(1));
 
       // Dispose the observer (removes the observer)
-      observer.dispose();
+      observer.onUnmount();
 
       // Query should still exist before gc duration
       expect(client.cache.findAll(queryKey: const ['test']), hasLength(1));
@@ -1620,17 +1620,17 @@ void main() {
         gcDuration: const GcDuration(minutes: 5),
       );
 
-      final observer1 = InfiniteQueryObserver(client, options);
-      addTearDown(observer1.dispose);
+      final observer1 = InfiniteQueryObserver(client, options)..onMount();
+      addTearDown(observer1.onUnmount);
 
       async.elapse(const Duration(seconds: 1));
 
       // Create second observer
-      final observer2 = InfiniteQueryObserver(client, options);
-      addTearDown(observer2.dispose);
+      final observer2 = InfiniteQueryObserver(client, options)..onMount();
+      addTearDown(observer2.onUnmount);
 
       // Dispose first observer
-      observer1.dispose();
+      observer1.onUnmount();
 
       // After gc duration, query should still exist because observer2 is still active
       async.elapse(const Duration(minutes: 5));
@@ -1661,7 +1661,7 @@ void main() {
       expect(client.cache.findAll(queryKey: const ['test']), hasLength(1));
 
       // Dispose the observer
-      observer.dispose();
+      observer.onUnmount();
 
       // Query should be removed immediately (after zero-duration timer fires)
       async.elapse(Duration.zero);
@@ -1690,7 +1690,7 @@ void main() {
       async.elapse(const Duration(seconds: 1));
 
       // Dispose the observer
-      observer.dispose();
+      observer.onUnmount();
 
       // Query should still exist even after a very long time
       async.elapse(const Duration(days: 365));
@@ -1715,8 +1715,8 @@ void main() {
           nextPageParamBuilder: (data) => data.pageParams.last + 1,
           placeholder: const InfiniteData(['page-ph'], [0]),
         ),
-      );
-      addTearDown(observer.dispose);
+      )..onMount();
+      addTearDown(observer.onUnmount);
 
       expect(observer.result.pages, ['page-ph']);
       expect(observer.result.isPlaceholderData, isTrue);
@@ -1738,8 +1738,8 @@ void main() {
           nextPageParamBuilder: (data) => data.pageParams.last + 1,
           placeholder: const InfiniteData(['page-ph'], [0]),
         ),
-      );
-      addTearDown(observer.dispose);
+      )..onMount();
+      addTearDown(observer.onUnmount);
 
       expect(client.cache.get(const ['test'])!.state.data, isNull);
     }));
@@ -1759,8 +1759,8 @@ void main() {
           nextPageParamBuilder: (data) => data.pageParams.last + 1,
           placeholder: const InfiniteData(['page-ph'], [0]),
         ),
-      );
-      addTearDown(observer.dispose);
+      )..onMount();
+      addTearDown(observer.onUnmount);
 
       expect(observer.result.pages, ['page-ph']);
       expect(observer.result.isPlaceholderData, isTrue);
@@ -1786,14 +1786,14 @@ void main() {
       );
 
       // First observer fetches real data
-      final observer1 = InfiniteQueryObserver(client, options);
-      addTearDown(observer1.dispose);
+      final observer1 = InfiniteQueryObserver(client, options)..onMount();
+      addTearDown(observer1.onUnmount);
 
       async.elapse(const Duration(seconds: 1));
 
       // Second observer should use cached real data, not placeholder
-      final observer2 = InfiniteQueryObserver(client, options);
-      addTearDown(observer2.dispose);
+      final observer2 = InfiniteQueryObserver(client, options)..onMount();
+      addTearDown(observer2.onUnmount);
 
       expect(observer2.result.pages, ['page-0']);
       expect(observer2.result.isPlaceholderData, isFalse);
@@ -1815,7 +1815,7 @@ void main() {
           placeholder: const InfiniteData(['page-ph'], [0]),
         ),
       );
-      addTearDown(observer1.dispose);
+      addTearDown(observer1.onUnmount);
 
       final observer2 = InfiniteQueryObserver(
         client,
@@ -1829,7 +1829,7 @@ void main() {
           nextPageParamBuilder: (data) => data.pageParams.last + 1,
         ),
       );
-      addTearDown(observer2.dispose);
+      addTearDown(observer2.onUnmount);
 
       expect(observer1.result.pages, ['page-ph']);
       expect(observer1.result.isPlaceholderData, isTrue);
@@ -1857,8 +1857,8 @@ void main() {
         refetchOnMount: RefetchOnMount.stale,
       );
 
-      final observer1 = InfiniteQueryObserver(client, options);
-      addTearDown(observer1.dispose);
+      final observer1 = InfiniteQueryObserver(client, options)..onMount();
+      addTearDown(observer1.onUnmount);
 
       async.elapse(const Duration(seconds: 1));
       expect(fetches, 1);
@@ -1867,8 +1867,8 @@ void main() {
       async.elapse(const Duration(minutes: 5));
 
       // New observer should refetch stale data
-      final observer2 = InfiniteQueryObserver(client, options);
-      addTearDown(observer2.dispose);
+      final observer2 = InfiniteQueryObserver(client, options)..onMount();
+      addTearDown(observer2.onUnmount);
 
       async.elapse(const Duration(seconds: 1));
       expect(fetches, 2);
@@ -1892,15 +1892,15 @@ void main() {
         refetchOnMount: RefetchOnMount.stale,
       );
 
-      final observer1 = InfiniteQueryObserver(client, options);
-      addTearDown(observer1.dispose);
+      final observer1 = InfiniteQueryObserver(client, options)..onMount();
+      addTearDown(observer1.onUnmount);
 
       async.elapse(const Duration(seconds: 1));
       expect(fetches, 1);
 
       // Data is still fresh
-      final observer2 = InfiniteQueryObserver(client, options);
-      addTearDown(observer2.dispose);
+      final observer2 = InfiniteQueryObserver(client, options)..onMount();
+      addTearDown(observer2.onUnmount);
 
       async.elapse(const Duration(seconds: 1));
       expect(fetches, 1);
@@ -1924,8 +1924,8 @@ void main() {
         refetchOnMount: RefetchOnMount.never,
       );
 
-      final observer1 = InfiniteQueryObserver(client, options);
-      addTearDown(observer1.dispose);
+      final observer1 = InfiniteQueryObserver(client, options)..onMount();
+      addTearDown(observer1.onUnmount);
 
       async.elapse(const Duration(seconds: 1));
       expect(fetches, 1);
@@ -1934,8 +1934,8 @@ void main() {
       async.elapse(const Duration(minutes: 5));
 
       // New observer should NOT refetch even with stale data
-      final observer2 = InfiniteQueryObserver(client, options);
-      addTearDown(observer2.dispose);
+      final observer2 = InfiniteQueryObserver(client, options)..onMount();
+      addTearDown(observer2.onUnmount);
 
       async.elapse(const Duration(seconds: 1));
       expect(fetches, 1);
@@ -1959,15 +1959,15 @@ void main() {
         refetchOnMount: RefetchOnMount.never,
       );
 
-      final observer1 = InfiniteQueryObserver(client, options);
-      addTearDown(observer1.dispose);
+      final observer1 = InfiniteQueryObserver(client, options)..onMount();
+      addTearDown(observer1.onUnmount);
 
       async.elapse(const Duration(seconds: 1));
       expect(fetches, 1);
 
       // Data is still fresh - new observer should NOT refetch
-      final observer2 = InfiniteQueryObserver(client, options);
-      addTearDown(observer2.dispose);
+      final observer2 = InfiniteQueryObserver(client, options)..onMount();
+      addTearDown(observer2.onUnmount);
 
       async.elapse(const Duration(seconds: 1));
       expect(fetches, 1);
@@ -1991,8 +1991,8 @@ void main() {
         refetchOnMount: RefetchOnMount.always,
       );
 
-      final observer1 = InfiniteQueryObserver(client, options);
-      addTearDown(observer1.dispose);
+      final observer1 = InfiniteQueryObserver(client, options)..onMount();
+      addTearDown(observer1.onUnmount);
 
       async.elapse(const Duration(seconds: 1));
       expect(fetches, 1);
@@ -2001,8 +2001,8 @@ void main() {
       async.elapse(const Duration(minutes: 5));
 
       // New observer should refetch
-      final observer2 = InfiniteQueryObserver(client, options);
-      addTearDown(observer2.dispose);
+      final observer2 = InfiniteQueryObserver(client, options)..onMount();
+      addTearDown(observer2.onUnmount);
 
       async.elapse(const Duration(seconds: 1));
       expect(fetches, 2);
@@ -2026,15 +2026,15 @@ void main() {
         refetchOnMount: RefetchOnMount.always,
       );
 
-      final observer1 = InfiniteQueryObserver(client, options);
-      addTearDown(observer1.dispose);
+      final observer1 = InfiniteQueryObserver(client, options)..onMount();
+      addTearDown(observer1.onUnmount);
 
       async.elapse(const Duration(seconds: 1));
       expect(fetches, 1);
 
       // Data is still fresh - but new observer should refetch anyway
-      final observer2 = InfiniteQueryObserver(client, options);
-      addTearDown(observer2.dispose);
+      final observer2 = InfiniteQueryObserver(client, options)..onMount();
+      addTearDown(observer2.onUnmount);
 
       async.elapse(const Duration(seconds: 1));
       expect(fetches, 2);
@@ -2062,8 +2062,8 @@ void main() {
           staleDuration: const StaleDuration(minutes: 5),
           refetchOnResume: RefetchOnResume.stale,
         ),
-      );
-      addTearDown(observer.dispose);
+      )..onMount();
+      addTearDown(observer.onUnmount);
 
       async.elapse(const Duration(seconds: 1));
       expect(fetches, 1);
@@ -2098,8 +2098,8 @@ void main() {
           staleDuration: const StaleDuration(minutes: 5),
           refetchOnResume: RefetchOnResume.stale,
         ),
-      );
-      addTearDown(observer.dispose);
+      )..onMount();
+      addTearDown(observer.onUnmount);
 
       async.elapse(const Duration(seconds: 1));
       expect(fetches, 1);
@@ -2131,8 +2131,8 @@ void main() {
           staleDuration: const StaleDuration(minutes: 5),
           refetchOnResume: RefetchOnResume.never,
         ),
-      );
-      addTearDown(observer.dispose);
+      )..onMount();
+      addTearDown(observer.onUnmount);
 
       async.elapse(const Duration(seconds: 1));
       expect(fetches, 1);
@@ -2167,8 +2167,8 @@ void main() {
           staleDuration: const StaleDuration(minutes: 5),
           refetchOnResume: RefetchOnResume.never,
         ),
-      );
-      addTearDown(observer.dispose);
+      )..onMount();
+      addTearDown(observer.onUnmount);
 
       async.elapse(const Duration(seconds: 1));
       expect(fetches, 1);
@@ -2200,8 +2200,8 @@ void main() {
           staleDuration: const StaleDuration(minutes: 5),
           refetchOnResume: RefetchOnResume.always,
         ),
-      );
-      addTearDown(observer.dispose);
+      )..onMount();
+      addTearDown(observer.onUnmount);
 
       async.elapse(const Duration(seconds: 1));
       expect(fetches, 1);
@@ -2236,8 +2236,8 @@ void main() {
           staleDuration: const StaleDuration(minutes: 5),
           refetchOnResume: RefetchOnResume.always,
         ),
-      );
-      addTearDown(observer.dispose);
+      )..onMount();
+      addTearDown(observer.onUnmount);
 
       async.elapse(const Duration(seconds: 1));
       expect(fetches, 1);
@@ -2270,8 +2270,8 @@ void main() {
           nextPageParamBuilder: (data) => data.pageParams.last + 1,
           refetchInterval: const Duration(seconds: 5),
         ),
-      );
-      addTearDown(observer.dispose);
+      )..onMount();
+      addTearDown(observer.onUnmount);
 
       // Initial fetch
       async.elapse(const Duration(seconds: 1));
@@ -2313,8 +2313,8 @@ void main() {
             return const Duration(seconds: 1);
           },
         ),
-      );
-      addTearDown(observer.dispose);
+      )..onMount();
+      addTearDown(observer.onUnmount);
 
       // First attempt fails, retry is scheduled
       async.flushMicrotasks();
@@ -2350,8 +2350,8 @@ void main() {
           nextPageParamBuilder: (data) => data.pageParams.last + 1,
           retry: (_, __) => null,
         ),
-      );
-      addTearDown(observer.dispose);
+      )..onMount();
+      addTearDown(observer.onUnmount);
 
       // First attempt fails
       async.flushMicrotasks();
@@ -2383,8 +2383,8 @@ void main() {
             return const Duration(seconds: 1);
           },
         ),
-      );
-      addTearDown(observer.dispose);
+      )..onMount();
+      addTearDown(observer.onUnmount);
 
       // First attempt fails
       async.flushMicrotasks();
@@ -2428,7 +2428,7 @@ void main() {
       );
 
       // First observer - fails and enters error state
-      final observer1 = InfiniteQueryObserver(client, options);
+      final observer1 = InfiniteQueryObserver(client, options)..onMount();
 
       // Wait for first observer to fail
       async.elapse(const Duration(seconds: 1));
@@ -2436,11 +2436,11 @@ void main() {
       expect(fetches, 1);
 
       // Dispose first observer
-      observer1.dispose();
+      observer1.onUnmount();
 
       // Second observer with retryOnMount: true (default)
-      final observer2 = InfiniteQueryObserver(client, options);
-      addTearDown(observer2.dispose);
+      final observer2 = InfiniteQueryObserver(client, options)..onMount();
+      addTearDown(observer2.onUnmount);
 
       // Should retry - fetches should increment
       async.elapse(const Duration(seconds: 1));
@@ -2467,7 +2467,7 @@ void main() {
       );
 
       // First observer - fails and enters error state
-      final observer1 = InfiniteQueryObserver(client, options);
+      final observer1 = InfiniteQueryObserver(client, options)..onMount();
 
       // Wait for first observer to fail
       async.elapse(const Duration(seconds: 1));
@@ -2475,11 +2475,11 @@ void main() {
       expect(fetches, 1);
 
       // Dispose first observer
-      observer1.dispose();
+      observer1.onUnmount();
 
       // Second observer with retryOnMount: false
-      final observer2 = InfiniteQueryObserver(client, options);
-      addTearDown(observer2.dispose);
+      final observer2 = InfiniteQueryObserver(client, options)..onMount();
+      addTearDown(observer2.onUnmount);
 
       // Should NOT retry - fetches should stay the same
       async.elapse(const Duration(seconds: 1));
@@ -2507,8 +2507,8 @@ void main() {
           nextPageParamBuilder: (data) => data.pageParams.last + 1,
           retryOnMount: false,
         ),
-      );
-      addTearDown(observer.dispose);
+      )..onMount();
+      addTearDown(observer.onUnmount);
 
       // Should fetch since there's no existing data (not error state)
       async.elapse(const Duration(seconds: 1));
@@ -2533,8 +2533,8 @@ void main() {
           nextPageParamBuilder: (data) => data.pageParams.last + 1,
           seed: const InfiniteData(['page-seed'], [0]),
         ),
-      );
-      addTearDown(observer.dispose);
+      )..onMount();
+      addTearDown(observer.onUnmount);
 
       expect(
         observer.result.data,
@@ -2559,8 +2559,8 @@ void main() {
           nextPageParamBuilder: (data) => data.pageParams.last + 1,
           seed: const InfiniteData(['page-seed'], [0]),
         ),
-      );
-      addTearDown(observer.dispose);
+      )..onMount();
+      addTearDown(observer.onUnmount);
 
       expect(
         client.cache.get(const ['test'])?.state.data,
@@ -2584,8 +2584,8 @@ void main() {
           placeholder: const InfiniteData(['page-ph'], [0]),
           seed: const InfiniteData(['page-seed'], [0]),
         ),
-      );
-      addTearDown(observer.dispose);
+      )..onMount();
+      addTearDown(observer.onUnmount);
 
       expect(observer.result.data!.pages, ['page-seed']);
       expect(observer.result.isPlaceholderData, isFalse);
@@ -2607,8 +2607,8 @@ void main() {
           seed: const InfiniteData(['page-seed'], [0]),
           staleDuration: StaleDuration.zero,
         ),
-      );
-      addTearDown(observer.dispose);
+      )..onMount();
+      addTearDown(observer.onUnmount);
 
       expect(observer.result.data!.pages, ['page-seed']);
 
@@ -2634,8 +2634,8 @@ void main() {
           nextPageParamBuilder: (data) => data.pageParams.last + 1,
           seed: const InfiniteData(['page-seed'], [0]),
         ),
-      );
-      addTearDown(observer.dispose);
+      )..onMount();
+      addTearDown(observer.onUnmount);
 
       expect(observer.result.dataUpdatedAt, clock.now());
     }));
@@ -2658,8 +2658,8 @@ void main() {
           seedUpdatedAt: clock.minutesAgo(10),
           staleDuration: const StaleDuration(minutes: 5),
         ),
-      );
-      addTearDown(observer.dispose);
+      )..onMount();
+      addTearDown(observer.onUnmount);
 
       expect(observer.result.isStale, isTrue);
     }));
@@ -2681,8 +2681,8 @@ void main() {
           seedUpdatedAt: clock.minutesAgo(2),
           staleDuration: const StaleDuration(minutes: 5),
         ),
-      );
-      addTearDown(observer.dispose);
+      )..onMount();
+      addTearDown(observer.onUnmount);
 
       expect(observer.result.isStale, isFalse);
     }));
@@ -2703,22 +2703,22 @@ void main() {
         staleDuration: const StaleDuration(minutes: 5),
       );
 
-      final observer1 = InfiniteQueryObserver(client, options);
-      addTearDown(observer1.dispose);
+      final observer1 = InfiniteQueryObserver(client, options)..onMount();
+      addTearDown(observer1.onUnmount);
 
       // Data should NOT be stale (seedUpdatedAt is 1 hour in the future)
       expect(observer1.result.isStale, isFalse);
 
       // Even after 30 minutes, data should still be fresh
       async.elapse(const Duration(minutes: 30));
-      final observer2 = InfiniteQueryObserver(client, options);
-      addTearDown(observer2.dispose);
+      final observer2 = InfiniteQueryObserver(client, options)..onMount();
+      addTearDown(observer2.onUnmount);
       expect(observer2.result.isStale, isFalse);
 
       // After 1 hour + 5 minutes (seedUpdatedAt + staleDuration), data becomes stale
       async.elapse(const Duration(minutes: 35));
       final observer3 = InfiniteQueryObserver(client, options);
-      addTearDown(observer3.dispose);
+      addTearDown(observer3.onUnmount);
       expect(observer3.result.isStale, isTrue);
     }));
   });
@@ -2743,7 +2743,7 @@ void main() {
           },
         ),
       );
-      addTearDown(observer1.dispose);
+      addTearDown(observer1.onUnmount);
 
       final observer2 = InfiniteQueryObserver<String, Object, int>(
         client,
@@ -2761,7 +2761,7 @@ void main() {
           },
         ),
       );
-      addTearDown(observer2.dispose);
+      addTearDown(observer2.onUnmount);
 
       final query = client.cache.get(const ['test'])!;
       expect(query.meta, {
@@ -2790,8 +2790,8 @@ void main() {
             return const Duration(seconds: 1);
           },
         ),
-      );
-      addTearDown(observer.dispose);
+      )..onMount();
+      addTearDown(observer.onUnmount);
 
       // First attempt fails
       async.flushMicrotasks();
@@ -2833,8 +2833,8 @@ void main() {
             return const Duration(seconds: 1);
           },
         ),
-      );
-      addTearDown(observer.dispose);
+      )..onMount();
+      addTearDown(observer.onUnmount);
 
       // First attempt fails
       async.flushMicrotasks();
@@ -2875,8 +2875,8 @@ void main() {
             return const Duration(seconds: 1);
           },
         ),
-      );
-      addTearDown(observer.dispose);
+      )..onMount();
+      addTearDown(observer.onUnmount);
 
       // First attempt fails
       async.flushMicrotasks();
@@ -2916,8 +2916,8 @@ void main() {
           initialPageParam: 0,
           nextPageParamBuilder: (data) => data.pageParams.last + 1,
         ),
-      );
-      addTearDown(observer.dispose);
+      )..onMount();
+      addTearDown(observer.onUnmount);
 
       expect(observer.result.isFetchedAfterMount, isFalse);
 
@@ -2940,8 +2940,8 @@ void main() {
           initialPageParam: 0,
           nextPageParamBuilder: (data) => data.pageParams.last + 1,
         ),
-      );
-      addTearDown(observer.dispose);
+      )..onMount();
+      addTearDown(observer.onUnmount);
 
       expect(observer.result.isFetchedAfterMount, isFalse);
 
@@ -2966,8 +2966,8 @@ void main() {
           initialPageParam: 0,
           nextPageParamBuilder: (data) => data.pageParams.last + 1,
         ),
-      );
-      addTearDown(observer.dispose);
+      )..onMount();
+      addTearDown(observer.onUnmount);
 
       async.elapse(const Duration(seconds: 1));
 
@@ -2992,8 +2992,8 @@ void main() {
           initialPageParam: 0,
           nextPageParamBuilder: (data) => data.pageParams.last + 1,
         ),
-      );
-      addTearDown(observer.dispose);
+      )..onMount();
+      addTearDown(observer.onUnmount);
 
       expect(observer.result.isRefetching, isFalse);
     }));
@@ -3012,8 +3012,8 @@ void main() {
           initialPageParam: 0,
           nextPageParamBuilder: (data) => data.pageParams.last + 1,
         ),
-      );
-      addTearDown(observer.dispose);
+      )..onMount();
+      addTearDown(observer.onUnmount);
 
       async.elapse(const Duration(seconds: 1));
 
@@ -3034,8 +3034,8 @@ void main() {
           initialPageParam: 0,
           nextPageParamBuilder: (data) => data.pageParams.last + 1,
         ),
-      );
-      addTearDown(observer.dispose);
+      )..onMount();
+      addTearDown(observer.onUnmount);
 
       async.elapse(const Duration(seconds: 1));
 
@@ -3059,8 +3059,8 @@ void main() {
           nextPageParamBuilder: (data) => data.pageParams.last + 1,
           prevPageParamBuilder: (data) => data.pageParams.first - 1,
         ),
-      );
-      addTearDown(observer.dispose);
+      )..onMount();
+      addTearDown(observer.onUnmount);
 
       async.elapse(const Duration(seconds: 1));
 
@@ -3087,7 +3087,7 @@ void main() {
           nextPageParamBuilder: (data) => data.pageParams.last + 1,
         ),
       );
-      addTearDown(observer1.dispose);
+      addTearDown(observer1.onUnmount);
 
       expect(observer1.result.data, isNull);
       expect(observer1.result.hasNextPage, isFalse);
@@ -3105,7 +3105,7 @@ void main() {
           nextPageParamBuilder: (data) => data.pageParams.last + 1,
         ),
       );
-      addTearDown(observer2.dispose);
+      addTearDown(observer2.onUnmount);
       async.elapse(const Duration(seconds: 1));
 
       expect(observer2.result.data, isNull);
@@ -3126,8 +3126,8 @@ void main() {
           initialPageParam: 0,
           nextPageParamBuilder: (_) => null,
         ),
-      );
-      addTearDown(observer.dispose);
+      )..onMount();
+      addTearDown(observer.onUnmount);
 
       async.elapse(const Duration(seconds: 1));
 
@@ -3149,8 +3149,8 @@ void main() {
           initialPageParam: 0,
           nextPageParamBuilder: (data) => data.pageParams.last + 1,
         ),
-      );
-      addTearDown(observer.dispose);
+      )..onMount();
+      addTearDown(observer.onUnmount);
 
       async.elapse(const Duration(seconds: 1));
 
@@ -3176,8 +3176,8 @@ void main() {
             return data.pageParams.last + 1;
           },
         ),
-      );
-      addTearDown(observer.dispose);
+      )..onMount();
+      addTearDown(observer.onUnmount);
 
       async.elapse(const Duration(seconds: 1));
 
@@ -3210,7 +3210,7 @@ void main() {
           prevPageParamBuilder: (data) => data.pageParams.first - 1,
         ),
       );
-      addTearDown(observer1.dispose);
+      addTearDown(observer1.onUnmount);
 
       expect(observer1.result.data, isNull);
       expect(observer1.result.hasPreviousPage, isFalse);
@@ -3229,7 +3229,7 @@ void main() {
           prevPageParamBuilder: (data) => data.pageParams.first - 1,
         ),
       );
-      addTearDown(observer2.dispose);
+      addTearDown(observer2.onUnmount);
 
       async.elapse(const Duration(seconds: 1));
 
@@ -3252,8 +3252,8 @@ void main() {
           nextPageParamBuilder: (data) => data.pageParams.last + 1,
           // prevPageParamBuilder not provided
         ),
-      );
-      addTearDown(observer.dispose);
+      )..onMount();
+      addTearDown(observer.onUnmount);
 
       async.elapse(const Duration(seconds: 1));
 
@@ -3276,8 +3276,8 @@ void main() {
           nextPageParamBuilder: (data) => data.pageParams.last + 1,
           prevPageParamBuilder: (_) => null,
         ),
-      );
-      addTearDown(observer.dispose);
+      )..onMount();
+      addTearDown(observer.onUnmount);
 
       async.elapse(const Duration(seconds: 1));
 
@@ -3300,8 +3300,8 @@ void main() {
           nextPageParamBuilder: (data) => data.pageParams.last + 1,
           prevPageParamBuilder: (data) => data.pageParams.first - 1,
         ),
-      );
-      addTearDown(observer.dispose);
+      )..onMount();
+      addTearDown(observer.onUnmount);
 
       async.elapse(const Duration(seconds: 1));
 
@@ -3328,8 +3328,8 @@ void main() {
             return data.pageParams.first - 1;
           },
         ),
-      );
-      addTearDown(observer.dispose);
+      )..onMount();
+      addTearDown(observer.onUnmount);
 
       async.elapse(const Duration(seconds: 1));
 
@@ -3359,8 +3359,8 @@ void main() {
           initialPageParam: 0,
           nextPageParamBuilder: (data) => data.pageParams.last + 1,
         ),
-      );
-      addTearDown(observer.dispose);
+      )..onMount();
+      addTearDown(observer.onUnmount);
 
       async.elapse(const Duration(seconds: 1));
 
@@ -3382,8 +3382,8 @@ void main() {
           initialPageParam: 0,
           nextPageParamBuilder: (data) => data.pageParams.last + 1,
         ),
-      );
-      addTearDown(observer.dispose);
+      )..onMount();
+      addTearDown(observer.onUnmount);
 
       expect(observer.result.isFetching, isTrue);
       expect(observer.result.isFetchingNextPage, isFalse);
@@ -3403,8 +3403,8 @@ void main() {
           initialPageParam: 0,
           nextPageParamBuilder: (data) => data.pageParams.last + 1,
         ),
-      );
-      addTearDown(observer.dispose);
+      )..onMount();
+      addTearDown(observer.onUnmount);
 
       async.elapse(const Duration(seconds: 1));
 
@@ -3429,8 +3429,8 @@ void main() {
           nextPageParamBuilder: (data) => data.pageParams.last + 1,
           prevPageParamBuilder: (data) => data.pageParams.first - 1,
         ),
-      );
-      addTearDown(observer.dispose);
+      )..onMount();
+      addTearDown(observer.onUnmount);
 
       async.elapse(const Duration(seconds: 1));
 
@@ -3454,8 +3454,8 @@ void main() {
           initialPageParam: 0,
           nextPageParamBuilder: (data) => data.pageParams.last + 1,
         ),
-      );
-      addTearDown(observer.dispose);
+      )..onMount();
+      addTearDown(observer.onUnmount);
 
       async.elapse(const Duration(seconds: 1));
 
@@ -3483,8 +3483,8 @@ void main() {
           nextPageParamBuilder: (data) => data.pageParams.last + 1,
           prevPageParamBuilder: (data) => data.pageParams.first - 1,
         ),
-      );
-      addTearDown(observer.dispose);
+      )..onMount();
+      addTearDown(observer.onUnmount);
 
       async.elapse(const Duration(seconds: 1));
 
@@ -3507,8 +3507,8 @@ void main() {
           nextPageParamBuilder: (data) => data.pageParams.last + 1,
           prevPageParamBuilder: (data) => data.pageParams.first - 1,
         ),
-      );
-      addTearDown(observer.dispose);
+      )..onMount();
+      addTearDown(observer.onUnmount);
 
       expect(observer.result.isFetching, isTrue);
       expect(observer.result.isFetchingPreviousPage, isFalse);
@@ -3529,8 +3529,8 @@ void main() {
           nextPageParamBuilder: (data) => data.pageParams.last + 1,
           prevPageParamBuilder: (data) => data.pageParams.first - 1,
         ),
-      );
-      addTearDown(observer.dispose);
+      )..onMount();
+      addTearDown(observer.onUnmount);
 
       async.elapse(const Duration(seconds: 1));
 
@@ -3555,8 +3555,8 @@ void main() {
           nextPageParamBuilder: (data) => data.pageParams.last + 1,
           prevPageParamBuilder: (data) => data.pageParams.first - 1,
         ),
-      );
-      addTearDown(observer.dispose);
+      )..onMount();
+      addTearDown(observer.onUnmount);
 
       async.elapse(const Duration(seconds: 1));
 
@@ -3581,8 +3581,8 @@ void main() {
           nextPageParamBuilder: (data) => data.pageParams.last + 1,
           prevPageParamBuilder: (data) => data.pageParams.first - 1,
         ),
-      );
-      addTearDown(observer.dispose);
+      )..onMount();
+      addTearDown(observer.onUnmount);
 
       async.elapse(const Duration(seconds: 1));
 

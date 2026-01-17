@@ -34,3 +34,23 @@ Map<K, V>? deepMergeMap<K, V>(
 
   return result;
 }
+
+extension ListExt<T> on List<T> {
+  /// Append item to end, removing first item if exceeding [maxLength].
+  List<T> appendBounded(T item, [int? maxLength]) {
+    final newItems = [...this, item];
+    if (maxLength != null && newItems.length > maxLength) {
+      return newItems.sublist(1);
+    }
+    return newItems;
+  }
+
+  /// Prepend item to start, removing last item if exceeding [maxLength].
+  List<T> prependBounded(T item, [int? maxLength]) {
+    final newItems = [item, ...this];
+    if (maxLength != null && newItems.length > maxLength) {
+      return newItems.sublist(0, newItems.length - 1);
+    }
+    return newItems;
+  }
+}

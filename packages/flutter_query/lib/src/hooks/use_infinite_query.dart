@@ -60,7 +60,6 @@ InfiniteQueryResult<TData, TError, TPageParam>
   Map<String, dynamic>? meta,
   QueryClient? queryClient,
 }) {
-  // Get QueryClient from context if not provided
   final client = queryClient ?? useQueryClient();
 
   // Create observer once per component instance
@@ -93,27 +92,25 @@ InfiniteQueryResult<TData, TError, TPageParam>
 
   // Update options during render (before subscribing)
   // This ensures we get the optimistic result immediately when options change
-  observer.updateOptions(
-    InfiniteQueryObserverOptions(
-      queryKey,
-      queryFn,
-      initialPageParam: initialPageParam,
-      nextPageParamBuilder: nextPageParamBuilder,
-      prevPageParamBuilder: prevPageParamBuilder,
-      maxPages: maxPages,
-      enabled: enabled,
-      staleDuration: staleDuration,
-      gcDuration: gcDuration,
-      placeholder: placeholder,
-      refetchOnMount: refetchOnMount,
-      refetchOnResume: refetchOnResume,
-      refetchInterval: refetchInterval,
-      retry: retry,
-      retryOnMount: retryOnMount,
-      seed: seed,
-      seedUpdatedAt: seedUpdatedAt,
-      meta: meta,
-    ),
+  observer.options = InfiniteQueryObserverOptions(
+    queryKey,
+    queryFn,
+    initialPageParam: initialPageParam,
+    nextPageParamBuilder: nextPageParamBuilder,
+    prevPageParamBuilder: prevPageParamBuilder,
+    maxPages: maxPages,
+    enabled: enabled,
+    staleDuration: staleDuration,
+    gcDuration: gcDuration,
+    placeholder: placeholder,
+    refetchOnMount: refetchOnMount,
+    refetchOnResume: refetchOnResume,
+    refetchInterval: refetchInterval,
+    retry: retry,
+    retryOnMount: retryOnMount,
+    seed: seed,
+    seedUpdatedAt: seedUpdatedAt,
+    meta: meta,
   );
 
   // Subscribe to observer and trigger rebuilds when result changes
@@ -126,18 +123,15 @@ InfiniteQueryResult<TData, TError, TPageParam>
     return unsubscribe;
   }, []);
 
-  // Refetch on app resume based on refetchOnResume option
+  useEffect(() {
+    observer.onMount();
+    return observer.onUnmount;
+  }, [observer]);
+
   useEffect(() {
     final listener = AppLifecycleListener(onResume: observer.onResume);
     return listener.dispose;
   }, [observer]);
-
-  // Cleanup on unmount
-  useEffect(() {
-    return () {
-      observer.dispose();
-    };
-  }, []);
 
   // Return observer.result directly to ensure synchronous updates are visible immediately.
   return result.value;

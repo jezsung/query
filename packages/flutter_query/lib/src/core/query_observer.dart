@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math';
 
 import 'package:clock/clock.dart';
+import 'package:collection/collection.dart';
 import 'package:meta/meta.dart';
 
 import 'infinite_data.dart';
@@ -11,13 +12,13 @@ import 'infinite_query_result.dart';
 import 'observable.dart';
 import 'query.dart';
 import 'query_client.dart';
-import 'query_function_context.dart';
 import 'query_options.dart';
 import 'query_result.dart';
 import 'query_state.dart';
 import 'refetch_on_mount.dart';
 import 'refetch_on_resume.dart';
 import 'stale_duration.dart';
+import 'utils.dart';
 
 part 'infinite_query_observer.dart';
 
