@@ -1,1 +1,1 @@
-enum RefetchOnResume { never, stale, always }
+enum RefetchOnResume { stale, never, always }
