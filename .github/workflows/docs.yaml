@@ -53,7 +53,7 @@ jobs:
             "pnpm run build"
 
       - if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref_name == 'main'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: docs-build
           path: docs/out
