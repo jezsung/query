@@ -180,14 +180,15 @@ class Mutation<TData, TError, TVariables, TOnMutateResult>
 
   @override
   void tryRemove() {
-    if (!hasObservers) {
-      if (_state.status == MutationStatus.pending) {
-        // Don't remove pending mutations, reschedule GC
-        scheduleGc(options.gcDuration ?? GcDuration(minutes: 5));
-      } else {
-        _cache.remove(this);
-      }
+    if (hasObservers) {
+      return;
     }
+    if (_state.status == MutationStatus.pending) {
+      // Don't remove pending mutations, reschedule GC
+      scheduleGc(options.gcDuration ?? GcDuration(minutes: 5));
+      return;
+    }
+    _cache.remove(this);
   }
 }
 
