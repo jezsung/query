@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:meta/meta.dart';
 
-import 'retry.dart';
+import 'query_options.dart';
 
 @internal
 class Retryer<TData, TError> {

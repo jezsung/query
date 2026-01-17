@@ -1,12 +1,8 @@
 import 'default_query_options.dart';
-import 'gc_duration.dart';
 import 'infinite_data.dart';
 import 'infinite_query_function_context.dart';
 import 'query_key.dart';
-import 'refetch_on_mount.dart';
-import 'refetch_on_resume.dart';
-import 'retry.dart';
-import 'stale_duration.dart';
+import 'query_options.dart';
 import 'utils.dart';
 
 /// Function type for infinite query functions.

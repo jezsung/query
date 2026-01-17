@@ -2,7 +2,6 @@ import 'package:clock/clock.dart';
 import 'package:meta/meta.dart';
 
 import 'garbage_collectable.dart';
-import 'gc_duration.dart';
 import 'mutation_cache.dart';
 import 'mutation_function_context.dart';
 import 'mutation_observer.dart';
@@ -10,7 +9,7 @@ import 'mutation_options.dart';
 import 'mutation_state.dart';
 import 'observable.dart';
 import 'query_client.dart';
-import 'retry.dart';
+import 'query_options.dart';
 import 'retryer.dart';
 import 'utils.dart';
 

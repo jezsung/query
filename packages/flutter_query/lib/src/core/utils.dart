@@ -1,6 +1,8 @@
 import 'package:collection/collection.dart';
 import 'package:meta/meta.dart';
 
+import 'query_options.dart';
+
 /// Shared instance for deep collection equality checks.
 @internal
 const deepEq = DeepCollectionEquality();
@@ -53,4 +55,51 @@ extension ListExt<T> on List<T> {
     }
     return newItems;
   }
+}
+
+/// Never retries - returns null for any error.
+///
+/// This is the default retry behavior for mutations.
+///
+/// Example:
+/// ```dart
+/// retry: retryNever
+/// ```
+Duration? retryNever(int retryCount, Object? error) => null;
+
+/// Creates an exponential backoff retry function.
+///
+/// Retries up to [maxRetries] times with exponential backoff delays.
+/// The delay formula is: min(baseDelay * 2^retryCount, maxDelay).
+///
+/// Default configuration matches TanStack Query v5:
+/// - 3 retries with delays of 1s, 2s, 4s (capped at 30s)
+///
+/// Parameters:
+/// - [maxRetries]: Maximum number of retry attempts (default: 3)
+/// - [baseDelay]: Base delay for the first retry (default: 1000ms)
+/// - [maxDelay]: Maximum delay cap (default: 30 seconds)
+///
+/// Example:
+/// ```dart
+/// // Default: 3 retries with delays of 1s, 2s, 4s
+/// retry: retryExponentialBackoff()
+///
+/// // Custom: 5 retries with 500ms base and 60s max
+/// retry: retryExponentialBackoff(
+///   maxRetries: 5,
+///   baseDelay: Duration(milliseconds: 500),
+///   maxDelay: Duration(seconds: 60),
+/// )
+/// ```
+RetryResolver<TError> retryExponentialBackoff<TError>({
+  int maxRetries = 3,
+  Duration baseDelay = const Duration(seconds: 1),
+  Duration maxDelay = const Duration(seconds: 30),
+}) {
+  return (int retryCount, TError error) {
+    if (retryCount >= maxRetries) return null;
+    final delayMs = baseDelay.inMilliseconds * (1 << retryCount);
+    return Duration(milliseconds: delayMs.clamp(0, maxDelay.inMilliseconds));
+  };
 }

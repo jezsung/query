@@ -1,5 +1,5 @@
-import 'gc_duration.dart';
-import 'retry.dart';
+import 'query_options.dart';
+import 'utils.dart';
 
 /// Default options for mutations that can be set at the QueryClient level.
 ///

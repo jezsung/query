@@ -1,6 +1,5 @@
 import 'default_mutation_options.dart';
 import 'default_query_options.dart';
-import 'gc_duration.dart';
 import 'infinite_data.dart';
 import 'infinite_query_function_context.dart';
 import 'infinite_query_observer_options.dart';
@@ -10,8 +9,6 @@ import 'query_cache.dart';
 import 'query_function_context.dart';
 import 'query_options.dart';
 import 'query_state.dart';
-import 'retry.dart';
-import 'stale_duration.dart';
 
 /// Controls which queries get refetched after invalidation.
 ///

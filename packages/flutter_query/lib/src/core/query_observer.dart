@@ -15,9 +15,6 @@ import 'query_client.dart';
 import 'query_options.dart';
 import 'query_result.dart';
 import 'query_state.dart';
-import 'refetch_on_mount.dart';
-import 'refetch_on_resume.dart';
-import 'stale_duration.dart';
 import 'utils.dart';
 
 part 'infinite_query_observer.dart';
