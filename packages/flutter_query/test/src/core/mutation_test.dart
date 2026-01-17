@@ -51,13 +51,11 @@ void main() {
 
   Mutation<String, Object, String, String> createMutation({
     MutationOptions<String, Object, String, String>? options,
-    MutationState<String, Object, String, String>? state,
   }) {
     final mutation = Mutation<String, Object, String, String>(
       client: client,
       mutationId: mutationIdCounter++,
       options: options ?? createOptions(),
-      state: state,
     );
     cache.add(mutation);
     addTearDown(mutation.dispose);
@@ -141,43 +139,6 @@ void main() {
       async.elapse(const Duration(minutes: 10));
       expect(cache.getAll(), isNot(contains(mutation)));
     }));
-  });
-
-  group('state', () {
-    test(
-        'SHOULD return idle state'
-        'WHEN state is not provided in constructor', () {
-      final mutation = Mutation<String, Object, String, String>(
-        client: client,
-        mutationId: 1,
-        options: createOptions(),
-      );
-      addTearDown(mutation.dispose);
-
-      expect(mutation.state.status, MutationStatus.idle);
-      expect(mutation.state.data, isNull);
-      expect(mutation.state.error, isNull);
-      expect(mutation.state.variables, isNull);
-    });
-
-    test(
-        'SHOULD return same state passed to constructor'
-        '', () {
-      final state = MutationState<String, Object, String, String>(
-        status: MutationStatus.success,
-        data: 'initial data',
-      );
-
-      final mutation = Mutation<String, Object, String, String>(
-        client: client,
-        mutationId: 1,
-        options: createOptions(),
-        state: state,
-      );
-      addTearDown(mutation.dispose);
-
-      expect(mutation.state, equals(state));
-    });
   });
 
   group('execute() - Success Path', () {

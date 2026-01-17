@@ -27,11 +27,9 @@ class Mutation<TData, TError, TVariables, TOnMutateResult>
     required QueryClient client,
     required int mutationId,
     required this.options,
-    MutationState<TData, TError, TVariables, TOnMutateResult>? state,
   })  : _client = client,
         _mutationId = mutationId,
-        _state = state ??
-            MutationState<TData, TError, TVariables, TOnMutateResult>() {
+        _state = MutationState<TData, TError, TVariables, TOnMutateResult>() {
     onAddObserver = (_) {
       cancelGc();
     };

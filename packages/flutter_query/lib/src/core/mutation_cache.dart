@@ -29,15 +29,13 @@ class MutationCache {
   /// deduplicated by key.
   Mutation<TData, TError, TVariables, TOnMutateResult>
       build<TData, TError, TVariables, TOnMutateResult>(
-    MutationOptions<TData, TError, TVariables, TOnMutateResult> options, {
-    MutationState<TData, TError, TVariables, TOnMutateResult>? state,
-  }) {
+    MutationOptions<TData, TError, TVariables, TOnMutateResult> options,
+  ) {
     assert(_client != null, 'MutationCache must have a client set');
     final mutation = Mutation<TData, TError, TVariables, TOnMutateResult>(
       client: _client!,
       mutationId: _mutationIdCounter++,
       options: options,
-      state: state,
     );
     add(mutation);
     return mutation;
