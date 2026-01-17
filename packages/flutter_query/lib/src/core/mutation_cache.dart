@@ -1,4 +1,5 @@
 import 'package:collection/collection.dart';
+import 'package:meta/meta.dart';
 
 import 'mutation.dart';
 import 'mutation_options.dart';
@@ -21,6 +22,7 @@ class MutationCache {
   ///
   /// This is called by QueryClient during construction to establish
   /// a back-reference needed for passing the client to Mutation instances.
+  @internal
   set client(QueryClient client) => _client = client;
 
   /// Builds a new mutation instance.
