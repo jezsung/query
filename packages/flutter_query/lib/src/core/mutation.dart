@@ -2,7 +2,6 @@ import 'package:clock/clock.dart';
 import 'package:meta/meta.dart';
 
 import 'garbage_collectable.dart';
-import 'mutation_cache.dart';
 import 'mutation_function_context.dart';
 import 'mutation_observer.dart';
 import 'mutation_options.dart';
@@ -26,12 +25,10 @@ class Mutation<TData, TError, TVariables, TOnMutateResult>
         GarbageCollectable {
   Mutation({
     required QueryClient client,
-    required MutationCache cache,
     required int mutationId,
     required this.options,
     MutationState<TData, TError, TVariables, TOnMutateResult>? state,
   })  : _client = client,
-        _cache = cache,
         _mutationId = mutationId,
         _state = state ??
             MutationState<TData, TError, TVariables, TOnMutateResult>() {
@@ -45,7 +42,6 @@ class Mutation<TData, TError, TVariables, TOnMutateResult>
   }
 
   final QueryClient _client;
-  final MutationCache _cache;
   final int _mutationId;
   MutationOptions<TData, TError, TVariables, TOnMutateResult> options;
   MutationState<TData, TError, TVariables, TOnMutateResult> _state;
@@ -188,7 +184,7 @@ class Mutation<TData, TError, TVariables, TOnMutateResult>
       scheduleGc(options.gcDuration ?? GcDuration(minutes: 5));
       return;
     }
-    _cache.remove(this);
+    _client.mutationCache.remove(this);
   }
 }
 

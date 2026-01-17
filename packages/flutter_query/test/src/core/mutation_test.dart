@@ -55,7 +55,6 @@ void main() {
   }) {
     final mutation = Mutation<String, Object, String, String>(
       client: client,
-      cache: cache,
       mutationId: mutationIdCounter++,
       options: options ?? createOptions(),
       state: state,
@@ -103,7 +102,6 @@ void main() {
         '', () {
       final mutation = Mutation(
         client: client,
-        cache: cache,
         mutationId: 42,
         options: createOptions(),
       );
@@ -120,7 +118,6 @@ void main() {
       final options = createOptions(mutationKey: const ['test']);
       final mutation = Mutation(
         client: client,
-        cache: cache,
         mutationId: 42,
         options: options,
       );
@@ -152,7 +149,6 @@ void main() {
         'WHEN state is not provided in constructor', () {
       final mutation = Mutation<String, Object, String, String>(
         client: client,
-        cache: cache,
         mutationId: 1,
         options: createOptions(),
       );
@@ -174,7 +170,6 @@ void main() {
 
       final mutation = Mutation<String, Object, String, String>(
         client: client,
-        cache: cache,
         mutationId: 1,
         options: createOptions(),
         state: state,

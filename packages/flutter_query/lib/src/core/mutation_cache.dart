@@ -34,7 +34,6 @@ class MutationCache {
   }) {
     assert(_client != null, 'MutationCache must have a client set');
     final mutation = Mutation<TData, TError, TVariables, TOnMutateResult>(
-      cache: this,
       client: _client!,
       mutationId: _mutationIdCounter++,
       options: options,
