@@ -2,24 +2,55 @@ import 'query_observer.dart';
 import 'query_state.dart';
 import 'utils.dart';
 
+/// Signature for a function that refetches all pages of an infinite query.
+///
+/// Returns a [Future] that completes with the updated [InfiniteQueryResult].
+///
+/// If [cancelRefetch] is true, cancels any in-flight refetch before starting
+/// a new one. If [throwOnError] is true, the returned future rejects on error
+/// instead of returning an error result.
 typedef InfiniteRefetch<TData, TError, TPageParam>
     = Future<InfiniteQueryResult<TData, TError, TPageParam>> Function({
   bool cancelRefetch,
   bool throwOnError,
 });
 
+/// Signature for a function that fetches the next page of an infinite query.
+///
+/// Returns a [Future] that completes with the updated [InfiniteQueryResult].
+///
+/// If [cancelRefetch] is true, cancels any in-flight fetch before starting
+/// a new one. If [throwOnError] is true, the returned future rejects on error
+/// instead of returning an error result.
 typedef FetchNextPage<TData, TError, TPageParam>
     = Future<InfiniteQueryResult<TData, TError, TPageParam>> Function({
   bool cancelRefetch,
   bool throwOnError,
 });
 
+/// Signature for a function that fetches the previous page of an infinite query.
+///
+/// Returns a [Future] that completes with the updated [InfiniteQueryResult].
+///
+/// If [cancelRefetch] is true, cancels any in-flight fetch before starting
+/// a new one. If [throwOnError] is true, the returned future rejects on error
+/// instead of returning an error result.
 typedef FetchPreviousPage<TData, TError, TPageParam>
     = Future<InfiniteQueryResult<TData, TError, TPageParam>> Function({
   bool cancelRefetch,
   bool throwOnError,
 });
 
+/// The result of an infinite query operation.
+///
+/// Contains the current state of an infinite query including its paginated data,
+/// error, and various status flags. This extends the standard query result with
+/// pagination-specific functionality like fetching next/previous pages.
+///
+/// The type parameters are:
+/// - [TData]: The type of data returned by each page.
+/// - [TError]: The type of error that may occur during fetching.
+/// - [TPageParam]: The type of the page parameter used for pagination.
 class InfiniteQueryResult<TData, TError, TPageParam> {
   const InfiniteQueryResult({
     required this.status,
@@ -47,51 +78,84 @@ class InfiniteQueryResult<TData, TError, TPageParam> {
     required this.isFetchPreviousPageError,
   });
 
+  /// The current status of the query.
   final QueryStatus status;
+
+  /// The current fetch status of the query.
   final FetchStatus fetchStatus;
+
+  /// The paginated data containing all fetched pages and their parameters.
   final InfiniteData<TData, TPageParam>? data;
+
+  /// The timestamp when the data was last updated.
   final DateTime? dataUpdatedAt;
+
+  /// The number of times the data has been updated.
   final int dataUpdateCount;
+
+  /// The error thrown by the last failed fetch, if any.
   final TError? error;
+
+  /// The timestamp when the error was last updated.
   final DateTime? errorUpdatedAt;
+
+  /// The number of times the error has been updated.
   final int errorUpdateCount;
+
+  /// The number of times the current fetch has failed.
+  ///
+  /// Resets to zero when a new fetch starts or when the fetch succeeds.
   final int failureCount;
+
+  /// The error from the most recent failed fetch attempt.
+  ///
+  /// Resets to null when a new fetch starts or when the fetch succeeds.
   final TError? failureReason;
+
+  /// Whether this query is enabled and can fetch.
   final bool isEnabled;
+
+  /// Whether this query's data is considered stale.
   final bool isStale;
+
+  /// Whether this query has been fetched after the observer mounted.
   final bool isFetchedAfterMount;
+
+  /// Whether the current data is placeholder data.
   final bool isPlaceholderData;
 
+  /// Refetches all pages of the query.
   final InfiniteRefetch<TData, TError, TPageParam> refetch;
 
-  /// Fetch the next page of data.
+  /// Fetches the next page of data.
   ///
-  /// Uses [getNextPageParam] to determine the page parameter for the next page.
-  /// No-op if [hasNextPage] is false.
+  /// Uses `nextPageParamBuilder` to determine the page parameter for the next
+  /// page. Does nothing if [hasNextPage] is false.
   final FetchNextPage<TData, TError, TPageParam> fetchNextPage;
 
-  /// Fetch the previous page of data.
+  /// Fetches the previous page of data.
   ///
-  /// Uses [getPreviousPageParam] to determine the page parameter for the previous page.
-  /// No-op if [hasPreviousPage] is false.
+  /// Uses `prevPageParamBuilder` to determine the page parameter for the
+  /// previous page. Does nothing if [hasPreviousPage] is false.
   final FetchPreviousPage<TData, TError, TPageParam> fetchPreviousPage;
 
   /// Whether there is a next page available.
   ///
-  /// Determined by calling [getNextPageParam] on the last page - returns true
-  /// if the result is non-null.
+  /// Determined by calling `nextPageParamBuilder` on the last page. Returns
+  /// true if the result is non-null.
   final bool hasNextPage;
 
   /// Whether there is a previous page available.
   ///
-  /// Determined by calling [getPreviousPageParam] on the first page - returns true
-  /// if the result is non-null. Always false if [getPreviousPageParam] is not provided.
+  /// Determined by calling `prevPageParamBuilder` on the first page. Returns
+  /// true if the result is non-null. Always false if `prevPageParamBuilder`
+  /// is not provided.
   final bool hasPreviousPage;
 
-  /// Whether we are currently fetching the next page.
+  /// Whether this query is currently fetching the next page.
   final bool isFetchingNextPage;
 
-  /// Whether we are currently fetching the previous page.
+  /// Whether this query is currently fetching the previous page.
   final bool isFetchingPreviousPage;
 
   /// Whether the last fetch of the next page resulted in an error.
@@ -100,24 +164,44 @@ class InfiniteQueryResult<TData, TError, TPageParam> {
   /// Whether the last fetch of the previous page resulted in an error.
   final bool isFetchPreviousPageError;
 
+  /// Whether the query is in an error state.
   bool get isError => status == QueryStatus.error;
+
+  /// Whether the query completed successfully.
   bool get isSuccess => status == QueryStatus.success;
+
+  /// Whether the query has no data yet.
   bool get isPending => status == QueryStatus.pending;
+
+  /// Whether the query is currently fetching data.
   bool get isFetching => fetchStatus == FetchStatus.fetching;
+
+  /// Whether the query fetch is paused.
   bool get isPaused => fetchStatus == FetchStatus.paused;
+
+  /// Whether the query has fetched at least once.
   bool get isFetched => dataUpdateCount > 0 || errorUpdateCount > 0;
+
+  /// Whether the query is fetching for the first time with no data.
   bool get isLoading => isPending && isFetching;
+
+  /// Whether the query failed on its initial load with no prior data.
   bool get isLoadingError => isError && data == null;
+
+  /// Whether the query failed while refetching with existing data.
   bool get isRefetchError => isError && data != null;
 
+  /// Whether the query is refetching all pages in the background.
   bool get isRefetching =>
       isFetching &&
       !isPending &&
       !isFetchingNextPage &&
       !isFetchingPreviousPage;
 
+  /// The list of all fetched pages.
   List<TData> get pages => data?.pages ?? const [];
 
+  /// The list of page parameters for all fetched pages.
   List<TPageParam> get pageParams => data?.pageParams ?? const [];
 
   @override
