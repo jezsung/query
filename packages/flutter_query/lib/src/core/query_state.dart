@@ -108,6 +108,20 @@ class QueryState<TData, TError> {
         deepEq.hash(failureReason),
         isInvalidated,
       );
+
+  @override
+  String toString() => 'QueryState('
+      'status: $status, '
+      'fetchStatus: $fetchStatus, '
+      'data: $data, '
+      'dataUpdatedAt: $dataUpdatedAt, '
+      'dataUpdateCount: $dataUpdateCount, '
+      'error: $error, '
+      'errorUpdatedAt: $errorUpdatedAt, '
+      'errorUpdateCount: $errorUpdateCount, '
+      'failureCount: $failureCount, '
+      'failureReason: $failureReason, '
+      'isInvalidated: $isInvalidated)';
 }
 
 extension QueryStateExt<TData, TError> on QueryState<TData, TError> {

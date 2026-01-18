@@ -51,6 +51,14 @@ class QueryOptions<TData, TError> {
         deepEq.hash(seed),
         seedUpdatedAt,
       );
+
+  @override
+  String toString() => 'QueryOptions('
+      'queryKey: $queryKey, '
+      'gcDuration: $gcDuration, '
+      'seed: $seed, '
+      'seedUpdatedAt: $seedUpdatedAt, '
+      'meta: $meta)';
 }
 
 /// Function that fetches data for a query.
@@ -122,6 +130,9 @@ class GcDurationInfinity implements GcDuration {
 
   @override
   int get hashCode => 0;
+
+  @override
+  String toString() => 'GcDuration.infinity';
 }
 
 /// Extension to add comparison operators for GcDurationValue.
@@ -219,6 +230,9 @@ class StaleDurationInfinity implements StaleDuration {
 
   @override
   int get hashCode => 0;
+
+  @override
+  String toString() => 'StaleDuration.infinity';
 }
 
 class StaleDurationStatic implements StaleDuration {
@@ -229,6 +243,9 @@ class StaleDurationStatic implements StaleDuration {
 
   @override
   int get hashCode => 0;
+
+  @override
+  String toString() => 'StaleDuration.static';
 }
 
 /// Controls refetch behavior when an observer mounts.

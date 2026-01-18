@@ -67,6 +67,21 @@ class QueryObserverOptions<TData, TError> extends QueryOptions<TData, TError> {
         refetchOnResume,
         retryOnMount,
       );
+
+  @override
+  String toString() => 'QueryObserverOptions('
+      'queryKey: $queryKey, '
+      'enabled: $enabled, '
+      'staleDuration: $staleDuration, '
+      'gcDuration: $gcDuration, '
+      'placeholder: $placeholder, '
+      'refetchOnMount: $refetchOnMount, '
+      'refetchOnResume: $refetchOnResume, '
+      'refetchInterval: $refetchInterval, '
+      'retryOnMount: $retryOnMount, '
+      'seed: $seed, '
+      'seedUpdatedAt: $seedUpdatedAt, '
+      'meta: $meta)';
 }
 
 extension QueryObserverOptionsExt<TData, TError>

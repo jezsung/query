@@ -157,6 +157,23 @@ class QueryResult<TData, TError> {
         isFetchedAfterMount,
         isPlaceholderData,
       );
+
+  @override
+  String toString() => 'QueryResult('
+      'status: $status, '
+      'fetchStatus: $fetchStatus, '
+      'data: $data, '
+      'dataUpdatedAt: $dataUpdatedAt, '
+      'dataUpdateCount: $dataUpdateCount, '
+      'error: $error, '
+      'errorUpdatedAt: $errorUpdatedAt, '
+      'errorUpdateCount: $errorUpdateCount, '
+      'failureCount: $failureCount, '
+      'failureReason: $failureReason, '
+      'isEnabled: $isEnabled, '
+      'isStale: $isStale, '
+      'isFetchedAfterMount: $isFetchedAfterMount, '
+      'isPlaceholderData: $isPlaceholderData)';
 }
 
 /// Extension methods for [QueryResult].

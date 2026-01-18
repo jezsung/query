@@ -67,4 +67,12 @@ final class InfiniteQueryFunctionContext<TPageParam> {
         deepEq.hash(pageParam),
         direction,
       );
+
+  @override
+  String toString() => 'InfiniteQueryFunctionContext('
+      'queryKey: $queryKey, '
+      'pageParam: $pageParam, '
+      'direction: $direction, '
+      'signal: $signal, '
+      'meta: $meta)';
 }

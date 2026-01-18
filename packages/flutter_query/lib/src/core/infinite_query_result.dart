@@ -253,4 +253,27 @@ class InfiniteQueryResult<TData, TError, TPageParam> {
         isFetchNextPageError,
         isFetchPreviousPageError,
       );
+
+  @override
+  String toString() => 'InfiniteQueryResult('
+      'status: $status, '
+      'fetchStatus: $fetchStatus, '
+      'data: $data, '
+      'dataUpdatedAt: $dataUpdatedAt, '
+      'dataUpdateCount: $dataUpdateCount, '
+      'error: $error, '
+      'errorUpdatedAt: $errorUpdatedAt, '
+      'errorUpdateCount: $errorUpdateCount, '
+      'failureCount: $failureCount, '
+      'failureReason: $failureReason, '
+      'isEnabled: $isEnabled, '
+      'isStale: $isStale, '
+      'isFetchedAfterMount: $isFetchedAfterMount, '
+      'isPlaceholderData: $isPlaceholderData, '
+      'hasNextPage: $hasNextPage, '
+      'hasPreviousPage: $hasPreviousPage, '
+      'isFetchingNextPage: $isFetchingNextPage, '
+      'isFetchingPreviousPage: $isFetchingPreviousPage, '
+      'isFetchNextPageError: $isFetchNextPageError, '
+      'isFetchPreviousPageError: $isFetchPreviousPageError)';
 }

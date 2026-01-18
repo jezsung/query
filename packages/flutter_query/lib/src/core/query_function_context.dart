@@ -47,4 +47,10 @@ final class QueryFunctionContext {
         client,
         deepEq.hash(meta),
       );
+
+  @override
+  String toString() => 'QueryFunctionContext('
+      'queryKey: $queryKey, '
+      'signal: $signal, '
+      'meta: $meta)';
 }

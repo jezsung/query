@@ -118,6 +118,23 @@ class InfiniteQueryObserverOptions<TData, TError, TPageParam> {
         seedUpdatedAt,
         deepEq.hash(meta),
       );
+
+  @override
+  String toString() => 'InfiniteQueryObserverOptions('
+      'queryKey: $queryKey, '
+      'initialPageParam: $initialPageParam, '
+      'maxPages: $maxPages, '
+      'enabled: $enabled, '
+      'staleDuration: $staleDuration, '
+      'gcDuration: $gcDuration, '
+      'placeholder: $placeholder, '
+      'refetchOnMount: $refetchOnMount, '
+      'refetchOnResume: $refetchOnResume, '
+      'refetchInterval: $refetchInterval, '
+      'retryOnMount: $retryOnMount, '
+      'seed: $seed, '
+      'seedUpdatedAt: $seedUpdatedAt, '
+      'meta: $meta)';
 }
 
 extension InfiniteQueryObserverOptionsExt<TData, TError, TPageParam>
