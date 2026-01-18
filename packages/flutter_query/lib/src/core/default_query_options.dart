@@ -1,17 +1,5 @@
 import 'query_options.dart';
 
-/// Default options for queries that can be set at the QueryClient level.
-///
-/// These options are applied to all queries unless overridden by query-specific
-/// options. Omits `queryKey` and `queryFn` since those are always required
-/// per-query, and `seed`, `seedUpdatedAt`, `placeholder`
-/// since those are inherently query-specific.
-///
-/// Uses `dynamic`/`Object?` for generic type parameters because defaults apply
-/// across all query types. Type conversion happens in [QueryOptions.mergeWith].
-///
-/// Aligned with TanStack Query v5's `DefaultOptions.queries` which is:
-/// `OmitKeyof<QueryObserverOptions, 'suspense' | 'queryKey'>`
 class DefaultQueryOptions {
   const DefaultQueryOptions({
     this.enabled = true,
@@ -24,27 +12,37 @@ class DefaultQueryOptions {
     this.retryOnMount = true,
   });
 
-  /// Whether queries are enabled by default.
   final bool enabled;
-
-  /// Default stale duration (when data becomes stale).
   final StaleDuration? staleDuration;
-
-  /// Default garbage collection duration.
   final GcDuration? gcDuration;
-
-  /// Default refetch interval.
   final Duration? refetchInterval;
-
-  /// Default refetch behavior on mount.
   final RefetchOnMount refetchOnMount;
-
-  /// Default refetch behavior on app resume.
   final RefetchOnResume refetchOnResume;
-
-  /// Default retry callback.
   final RetryResolver? retry;
-
-  /// Default retry on mount behavior.
   final bool retryOnMount;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is DefaultQueryOptions &&
+          enabled == other.enabled &&
+          staleDuration == other.staleDuration &&
+          gcDuration == other.gcDuration &&
+          refetchInterval == other.refetchInterval &&
+          refetchOnMount == other.refetchOnMount &&
+          refetchOnResume == other.refetchOnResume &&
+          identical(retry, other.retry) &&
+          retryOnMount == other.retryOnMount;
+
+  @override
+  int get hashCode => Object.hash(
+        enabled,
+        staleDuration,
+        gcDuration,
+        refetchInterval,
+        refetchOnMount,
+        refetchOnResume,
+        identityHashCode(retry),
+        retryOnMount,
+      );
 }
