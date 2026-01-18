@@ -1,6 +1,12 @@
 import 'mutation_state.dart';
 import 'utils.dart';
 
+typedef Mutate<TData, TVariables> = Future<TData> Function(
+  TVariables variables,
+);
+
+typedef Reset = void Function();
+
 class MutationResult<TData, TError, TVariables, TOnMutateResult> {
   const MutationResult({
     required this.status,
@@ -23,8 +29,8 @@ class MutationResult<TData, TError, TVariables, TOnMutateResult> {
   final int failureCount;
   final TError? failureReason;
   final bool isPaused;
-  final Future<TData> Function(TVariables variables) mutate;
-  final void Function() reset;
+  final Mutate<TData, TVariables> mutate;
+  final Reset reset;
 
   bool get isIdle => status == MutationStatus.idle;
   bool get isPending => status == MutationStatus.pending;
