@@ -60,7 +60,7 @@ InfiniteQueryResult<TData, TError, TPageParam>
   Map<String, dynamic>? meta,
   QueryClient? queryClient,
 }) {
-  final client = queryClient ?? useQueryClient();
+  final client = useQueryClient(queryClient);
 
   // Create observer once per component instance
   final observer = useMemoized(

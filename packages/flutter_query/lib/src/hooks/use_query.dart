@@ -22,8 +22,7 @@ QueryResult<TData, TError> useQuery<TData, TError>(
   Map<String, dynamic>? meta,
   QueryClient? queryClient,
 }) {
-  // Get QueryClient from context if not provided
-  final client = queryClient ?? useQueryClient();
+  final client = useQueryClient(queryClient);
 
   // Create observer once per component instance
   // Client defaults are applied inside QueryObserver constructor

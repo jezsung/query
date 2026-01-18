@@ -39,8 +39,7 @@ MutationResult<TData, TError, TVariables, TOnMutateResult>
   Map<String, dynamic>? meta,
   QueryClient? queryClient,
 }) {
-  // Get QueryClient from context if not provided
-  final client = queryClient ?? useQueryClient();
+  final client = useQueryClient(queryClient);
 
   // Build options (merging with defaults happens in MutationObserver)
   MutationOptions<TData, TError, TVariables, TOnMutateResult> buildOptions() {
