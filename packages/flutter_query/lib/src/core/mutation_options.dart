@@ -71,29 +71,6 @@ class MutationOptions<TData, TError, TVariables, TOnMutateResult> {
   }
 }
 
-/// Internal extension for merging mutation options with defaults.
-extension MergeWith<TData, TError, TVariables, TOnMutateResult>
-    on MutationOptions<TData, TError, TVariables, TOnMutateResult> {
-  /// Merges these options with the given defaults.
-  ///
-  /// Options specified here take precedence over defaults (null coalescing).
-  MutationOptions<TData, TError, TVariables, TOnMutateResult> mergeWith(
-    DefaultMutationOptions defaults,
-  ) {
-    return MutationOptions<TData, TError, TVariables, TOnMutateResult>(
-      mutationFn: mutationFn,
-      mutationKey: mutationKey,
-      meta: meta,
-      onMutate: onMutate,
-      onSuccess: onSuccess,
-      onError: onError,
-      onSettled: onSettled,
-      retry: retry ?? defaults.retry as RetryResolver<TError>?,
-      gcDuration: gcDuration ?? defaults.gcDuration,
-    );
-  }
-}
-
 /// Callback invoked before the mutation function is executed.
 ///
 /// Can be used to perform optimistic updates. The returned value is passed
@@ -131,3 +108,25 @@ typedef MutationOnSettled<TData, TError, TVariables, TOnMutateResult>
   TOnMutateResult? onMutateResult,
   MutationFunctionContext context,
 );
+
+extension MutationOptionsExt<TData, TError, TVariables, TOnMutateResult>
+    on MutationOptions<TData, TError, TVariables, TOnMutateResult> {
+  /// Merges these options with the given defaults.
+  ///
+  /// Options specified here take precedence over defaults (null coalescing).
+  MutationOptions<TData, TError, TVariables, TOnMutateResult> withDefaults(
+    DefaultMutationOptions defaults,
+  ) {
+    return MutationOptions<TData, TError, TVariables, TOnMutateResult>(
+      mutationFn: mutationFn,
+      mutationKey: mutationKey,
+      meta: meta,
+      onMutate: onMutate,
+      onSuccess: onSuccess,
+      onError: onError,
+      onSettled: onSettled,
+      retry: retry ?? defaults.retry as RetryResolver<TError>?,
+      gcDuration: gcDuration ?? defaults.gcDuration,
+    );
+  }
+}

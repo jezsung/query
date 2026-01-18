@@ -52,7 +52,7 @@ class MutationObserver<TData, TError, TVariables, TOnMutateResult>
   set options(
     MutationOptions<TData, TError, TVariables, TOnMutateResult> options,
   ) {
-    _options = options.mergeWith(_client.defaultMutationOptions);
+    _options = options.withDefaults(_client.defaultMutationOptions);
     _mutation?.options = _options;
   }
 
