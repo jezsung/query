@@ -1,6 +1,19 @@
 import 'utils.dart';
 
-enum MutationStatus { idle, pending, success, error }
+/// The execution status of a mutation.
+enum MutationStatus {
+  /// The mutation has not been invoked yet.
+  idle,
+
+  /// The mutation is currently executing.
+  pending,
+
+  /// The mutation completed successfully.
+  success,
+
+  /// The mutation encountered an error.
+  error,
+}
 
 final class MutationState<TData, TError, TVariables, TOnMutateResult> {
   const MutationState({
