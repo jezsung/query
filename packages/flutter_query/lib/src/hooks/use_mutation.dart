@@ -41,32 +41,38 @@ MutationResult<TData, TError, TVariables, TOnMutateResult>
 }) {
   final effectiveClient = useQueryClient(client);
 
-  // Build options (merging with defaults happens in MutationObserver)
-  MutationOptions<TData, TError, TVariables, TOnMutateResult> buildOptions() {
-    return MutationOptions<TData, TError, TVariables, TOnMutateResult>(
-      mutationFn: mutationFn,
-      mutationKey: mutationKey,
-      meta: meta,
-      onMutate: onMutate,
-      onSuccess: onSuccess,
-      onError: onError,
-      onSettled: onSettled,
-      retry: retry,
-      gcDuration: gcDuration,
-    );
-  }
-
   // Create observer once per component instance
   final observer = useMemoized(
     () => MutationObserver<TData, TError, TVariables, TOnMutateResult>(
       effectiveClient,
-      buildOptions(),
+      MutationOptions<TData, TError, TVariables, TOnMutateResult>(
+        mutationFn: mutationFn,
+        mutationKey: mutationKey,
+        meta: meta,
+        onMutate: onMutate,
+        onSuccess: onSuccess,
+        onError: onError,
+        onSettled: onSettled,
+        retry: retry,
+        gcDuration: gcDuration,
+      ),
     ),
     [effectiveClient],
   );
 
   // Update options during render
-  observer.options = buildOptions();
+  observer.options =
+      MutationOptions<TData, TError, TVariables, TOnMutateResult>(
+    mutationFn: mutationFn,
+    mutationKey: mutationKey,
+    meta: meta,
+    onMutate: onMutate,
+    onSuccess: onSuccess,
+    onError: onError,
+    onSettled: onSettled,
+    retry: retry,
+    gcDuration: gcDuration,
+  );
 
   // Subscribe to observer and trigger rebuilds when result changes
   final result = useState(observer.result);
