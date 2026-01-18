@@ -68,7 +68,7 @@ final class MutationState<TData, TError, TVariables, TOnMutateResult> {
   }
 }
 
-extension CopyWith<TData, TError, TVariables, TOnMutateResult>
+extension MutationStateExt<TData, TError, TVariables, TOnMutateResult>
     on MutationState<TData, TError, TVariables, TOnMutateResult> {
   MutationState<TData, TError, TVariables, TOnMutateResult> copyWith({
     MutationStatus? status,
