@@ -51,7 +51,7 @@ typedef MutateFn<TData, TVariables> = Future<TData> Function(
   MutationFunctionContext context,
 );
 
-/// Callback invoked before the mutation function executes.
+/// Signature for a callback invoked before the mutation function executes.
 ///
 /// Use this to perform optimistic updates. The returned value is passed to
 /// [MutationOnSuccess], [MutationOnError], and [MutationOnSettled] callbacks
@@ -62,7 +62,7 @@ typedef MutationOnMutate<TVariables, TOnMutateResult>
   MutationFunctionContext context,
 );
 
-/// Callback invoked when the mutation succeeds.
+/// Signature for a callback invoked when the mutation succeeds.
 ///
 /// Receives the [data] returned by the mutation function, the [variables]
 /// passed to the mutation, and any [onMutateResult] returned from the
@@ -75,7 +75,7 @@ typedef MutationOnSuccess<TData, TVariables, TOnMutateResult> = FutureOr<void>
   MutationFunctionContext context,
 );
 
-/// Callback invoked when the mutation fails.
+/// Signature for a callback invoked when the mutation fails.
 ///
 /// Receives the [error] thrown by the mutation function, the [variables]
 /// passed to the mutation, and any [onMutateResult] returned from the
@@ -88,7 +88,7 @@ typedef MutationOnError<TError, TVariables, TOnMutateResult> = FutureOr<void>
   MutationFunctionContext context,
 );
 
-/// Callback invoked when the mutation completes, regardless of outcome.
+/// Signature for a callback invoked when the mutation completes, regardless of outcome.
 ///
 /// Called after either [MutationOnSuccess] or [MutationOnError]. Receives the
 /// [data] if successful, the [error] if failed, the [variables] passed to the
