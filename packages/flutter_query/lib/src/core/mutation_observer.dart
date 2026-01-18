@@ -16,9 +16,9 @@ typedef MutationResultListener<TData, TError, TVariables, TOnMutateResult>
 class MutationObserver<TData, TError, TVariables, TOnMutateResult>
     with Observer<MutationState<TData, TError, TVariables, TOnMutateResult>> {
   MutationObserver(
-    QueryClient client,
+    this._client,
     MutationOptions<TData, TError, TVariables, TOnMutateResult> options,
-  ) : _client = client {
+  ) {
     this.options = options;
     _result = _buildResult();
   }

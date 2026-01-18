@@ -20,11 +20,11 @@ part 'infinite_query_observer.dart';
 
 class QueryObserver<TData, TError> with Observer<QueryState<TData, TError>> {
   QueryObserver(
-    QueryClient client,
+    this._client,
     QueryObserverOptions<TData, TError> options,
-  ) : _client = client {
-    _options = options.withDefaults(client.defaultQueryOptions);
-    _query = client.cache.build<TData, TError>(options)..addObserver(this);
+  ) {
+    _options = options.withDefaults(_client.defaultQueryOptions);
+    _query = _client.cache.build<TData, TError>(options)..addObserver(this);
     _initialDataUpdateCount = _query.state.dataUpdateCount;
     _initialErrorUpdateCount = _query.state.errorUpdateCount;
     _result = _buildResult(_options, _query.state, optimistic: true);

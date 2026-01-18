@@ -7,7 +7,7 @@ import 'query_key.dart';
 import 'query_options.dart';
 
 class QueryCache {
-  late final QueryClient? _client;
+  late final QueryClient _client;
   final Map<QueryKey, Query> _queries = {};
 
   /// Sets the QueryClient that owns this cache.
@@ -28,7 +28,7 @@ class QueryCache {
 
     return switch (query) {
       final query? => query..options = options,
-      null => _queries[key] = Query<TData, TError>(_client!, options),
+      null => _queries[key] = Query<TData, TError>(_client, options),
     };
   }
 

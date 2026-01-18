@@ -53,9 +53,9 @@ void main() {
     MutationOptions<String, Object, String, String>? options,
   }) {
     final mutation = Mutation<String, Object, String, String>(
-      client: client,
-      mutationId: mutationIdCounter++,
-      options: options ?? createOptions(),
+      client,
+      options ?? createOptions(),
+      mutationIdCounter++,
     );
     cache.add(mutation);
     addTearDown(mutation.dispose);
@@ -98,11 +98,7 @@ void main() {
     test(
         'SHOULD return same mutationId passed to constructor'
         '', () {
-      final mutation = Mutation(
-        client: client,
-        mutationId: 42,
-        options: createOptions(),
-      );
+      final mutation = Mutation(client, createOptions(), 42);
       addTearDown(mutation.dispose);
 
       expect(mutation.mutationId, 42);
@@ -114,11 +110,7 @@ void main() {
         'SHOULD return same options passed to constructor'
         '', () {
       final options = createOptions(mutationKey: const ['test']);
-      final mutation = Mutation(
-        client: client,
-        mutationId: 42,
-        options: options,
-      );
+      final mutation = Mutation(client, options, 42);
 
       expect(mutation.options, equals(options));
     });

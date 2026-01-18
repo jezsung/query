@@ -51,20 +51,13 @@ typedef InfiniteResultChangeListener<TData, TError, TPageParam> = void Function(
   InfiniteQueryResult<TData, TError, TPageParam> result,
 );
 
-/// Observer for infinite queries with pagination support.
-///
-/// Uses composition to wrap a standard [Query] with pagination logic.
-/// Does NOT extend [QueryObserver] - instead wraps a Query with a custom
-/// queryFn that handles page accumulation.
-///
-/// Matches TanStack Query v5's InfiniteQueryObserver behavior.
 @internal
 class InfiniteQueryObserver<TData, TError, TPageParam> {
   InfiniteQueryObserver(
-    QueryClient client,
+    this._client,
     InfiniteQueryObserverOptions<TData, TError, TPageParam> options,
-  ) : _client = client {
-    _options = options.withDefaults(client.defaultQueryOptions);
+  ) {
+    _options = options.withDefaults(_client.defaultQueryOptions);
     _inner = QueryObserver<InfiniteData<TData, TPageParam>, TError>(
       _client,
       queryObserverOptions,

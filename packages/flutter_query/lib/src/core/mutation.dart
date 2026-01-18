@@ -23,13 +23,11 @@ class Mutation<TData, TError, TVariables, TOnMutateResult>
         Observable<MutationState<TData, TError, TVariables, TOnMutateResult>,
             MutationObserver<TData, TError, TVariables, TOnMutateResult>>,
         GarbageCollectable {
-  Mutation({
-    required QueryClient client,
-    required int mutationId,
-    required this.options,
-  })  : _client = client,
-        _mutationId = mutationId,
-        _state = MutationState<TData, TError, TVariables, TOnMutateResult>() {
+  Mutation(
+    this._client,
+    this.options,
+    this.mutationId,
+  ) : _state = MutationState<TData, TError, TVariables, TOnMutateResult>() {
     onAddObserver = (_) {
       cancelGc();
     };
@@ -40,13 +38,11 @@ class Mutation<TData, TError, TVariables, TOnMutateResult>
   }
 
   final QueryClient _client;
-  final int _mutationId;
   MutationOptions<TData, TError, TVariables, TOnMutateResult> options;
+  final int mutationId;
   MutationState<TData, TError, TVariables, TOnMutateResult> _state;
 
   Retryer<TData, TError>? _retryer;
-
-  int get mutationId => _mutationId;
 
   MutationState<TData, TError, TVariables, TOnMutateResult> get state => _state;
 

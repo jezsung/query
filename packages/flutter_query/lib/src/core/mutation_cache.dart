@@ -14,7 +14,7 @@ import 'query_client.dart';
 ///
 /// Aligned with TanStack Query's MutationCache.
 class MutationCache {
-  late final QueryClient? _client;
+  late final QueryClient _client;
   final Set<Mutation> _mutations = {};
   int _mutationIdCounter = 0;
 
@@ -33,11 +33,10 @@ class MutationCache {
       build<TData, TError, TVariables, TOnMutateResult>(
     MutationOptions<TData, TError, TVariables, TOnMutateResult> options,
   ) {
-    assert(_client != null, 'MutationCache must have a client set');
     final mutation = Mutation<TData, TError, TVariables, TOnMutateResult>(
-      client: _client!,
-      mutationId: _mutationIdCounter++,
-      options: options,
+      _client,
+      options,
+      _mutationIdCounter++,
     );
     add(mutation);
     return mutation;
