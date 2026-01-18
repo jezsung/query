@@ -7,18 +7,12 @@ import 'mutation_state.dart';
 import 'observable.dart';
 import 'query_client.dart';
 
-/// Callback type for mutation result change listeners.
 @internal
 typedef MutationResultListener<TData, TError, TVariables, TOnMutateResult>
     = void Function(
-        MutationResult<TData, TError, TVariables, TOnMutateResult> result);
+  MutationResult<TData, TError, TVariables, TOnMutateResult> result,
+);
 
-/// Observer that bridges the hook layer to the mutation system.
-///
-/// MutationObserver manages the lifecycle of a mutation and provides
-/// the result to the UI layer.
-///
-/// Aligned with TanStack Query's MutationObserver.
 class MutationObserver<TData, TError, TVariables, TOnMutateResult>
     with Observer<MutationState<TData, TError, TVariables, TOnMutateResult>> {
   MutationObserver(
@@ -34,7 +28,6 @@ class MutationObserver<TData, TError, TVariables, TOnMutateResult>
   late MutationResult<TData, TError, TVariables, TOnMutateResult> _result;
   Mutation<TData, TError, TVariables, TOnMutateResult>? _mutation;
 
-  /// Listeners that are notified when the result changes.
   final Set<MutationResultListener<TData, TError, TVariables, TOnMutateResult>>
       _listeners = {};
 
@@ -43,12 +36,6 @@ class MutationObserver<TData, TError, TVariables, TOnMutateResult>
   MutationResult<TData, TError, TVariables, TOnMutateResult> get result =>
       _result;
 
-  /// Sets the options for this observer, merging with client defaults.
-  ///
-  /// This setter applies the client's default mutation options to the provided
-  /// options, then updates the observer and any active mutation.
-  ///
-  /// Aligned with TanStack Query's MutationObserver.setOptions().
   set options(
     MutationOptions<TData, TError, TVariables, TOnMutateResult> options,
   ) {
@@ -56,36 +43,26 @@ class MutationObserver<TData, TError, TVariables, TOnMutateResult>
     _mutation?.options = _options;
   }
 
-  /// Subscribe to result changes. Returns an unsubscribe function.
-  void Function() subscribe(
-    MutationResultListener<TData, TError, TVariables, TOnMutateResult> listener,
+  set result(
+    MutationResult<TData, TError, TVariables, TOnMutateResult> newResult,
   ) {
-    _listeners.add(listener);
-    return () => _listeners.remove(listener);
+    if (newResult == _result) {
+      return;
+    }
+    _result = newResult;
+    for (final listener in _listeners) {
+      listener(newResult);
+    }
   }
 
-  /// Called by Mutation when its state changes.
-  @override
-  void onNotified(
-    MutationState<TData, TError, TVariables, TOnMutateResult> newState,
-  ) {
-    final newResult = _buildResult(newState);
-    _setResult(newResult);
-  }
-
-  /// Triggers the mutation with the given variables.
-  ///
-  /// Creates a new mutation instance and executes it.
+  /// Executes the mutation with the given [variables].
   Future<TData> mutate(TVariables variables) async {
-    // Remove observer from old mutation if exists
     _mutation?.removeObserver(this);
 
-    // Create new mutation
     final mutation = _mutation = _client.mutationCache
         .build<TData, TError, TVariables, TOnMutateResult>(_options);
     mutation.addObserver(this);
 
-    // Execute and return result
     return mutation.execute(variables);
   }
 
@@ -93,13 +70,26 @@ class MutationObserver<TData, TError, TVariables, TOnMutateResult>
   void reset() {
     _mutation?.removeObserver(this);
     _mutation = null;
-    _setResult(_buildResult());
+    result = _buildResult();
   }
 
-  /// Disposes of the observer.
-  void dispose() {
+  void onUnmount() {
     _listeners.clear();
     _mutation?.removeObserver(this);
+  }
+
+  @override
+  void onNotified(
+    MutationState<TData, TError, TVariables, TOnMutateResult> newState,
+  ) {
+    result = _buildResult(newState);
+  }
+
+  void Function() subscribe(
+    MutationResultListener<TData, TError, TVariables, TOnMutateResult> listener,
+  ) {
+    _listeners.add(listener);
+    return () => _listeners.remove(listener);
   }
 
   MutationResult<TData, TError, TVariables, TOnMutateResult> _buildResult([
@@ -117,17 +107,5 @@ class MutationObserver<TData, TError, TVariables, TOnMutateResult>
       mutate: mutate,
       reset: reset,
     );
-  }
-
-  void _setResult(
-    MutationResult<TData, TError, TVariables, TOnMutateResult> newResult,
-  ) {
-    if (newResult == _result) return;
-
-    _result = newResult;
-
-    for (final listener in _listeners) {
-      listener(newResult);
-    }
   }
 }

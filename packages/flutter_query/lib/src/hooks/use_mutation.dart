@@ -81,10 +81,8 @@ MutationResult<TData, TError, TVariables, TOnMutateResult>
 
   // Cleanup on unmount
   useEffect(() {
-    return () {
-      observer.dispose();
-    };
-  }, []);
+    return observer.onUnmount;
+  }, [observer]);
 
   return result.value;
 }

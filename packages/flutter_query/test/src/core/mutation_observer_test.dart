@@ -420,7 +420,7 @@ void main() {
       observer.subscribe((result) => calls++);
       observer.subscribe((result) => calls++);
 
-      observer.dispose();
+      observer.onUnmount();
 
       observer.mutate('');
       async.flushMicrotasks();
@@ -434,9 +434,9 @@ void main() {
       final observer = MutationObserver(client, createOptions());
 
       expect(() {
-        observer.dispose();
-        observer.dispose();
-        observer.dispose();
+        observer.onUnmount();
+        observer.onUnmount();
+        observer.onUnmount();
       }, returnsNormally);
     });
 
@@ -457,7 +457,7 @@ void main() {
       final mutation = cache.find(mutationKey: const ['key'])!;
       expect(mutation.hasObservers, isTrue);
 
-      observer.dispose();
+      observer.onUnmount();
 
       expect(mutation.hasObservers, isFalse);
     }));
@@ -1429,7 +1429,7 @@ void main() {
       );
 
       observer.mutate('');
-      observer.dispose();
+      observer.onUnmount();
 
       // Keep elapsing time by 10s until mutation is removed from cache
       while (cache.find(mutationKey: const ['key']) != null) {
@@ -1477,7 +1477,7 @@ void main() {
       );
 
       observer.mutate('');
-      observer.dispose();
+      observer.onUnmount();
 
       // Mutation should never be removed with infinity duration
       async.elapse(const Duration(days: 365));
@@ -1498,7 +1498,7 @@ void main() {
       );
 
       observer.mutate('');
-      observer.dispose();
+      observer.onUnmount();
 
       // Wait for multiple gc cycles while pending - mutation should NOT be removed
       async.elapse(const Duration(minutes: 10));
@@ -1535,7 +1535,7 @@ void main() {
       );
 
       observer.mutate('');
-      observer.dispose();
+      observer.onUnmount();
 
       // Wait part of the gc duration (5 minutes)
       async.elapse(const Duration(minutes: 5));
@@ -1544,7 +1544,7 @@ void main() {
       // Mutate again - this creates a new mutation and attaches observer
       observer.mutate('');
       // Dispose again - gc timer restarts from beginning
-      observer.dispose();
+      observer.onUnmount();
       final disposedAt = clock.now();
 
       // Keep elapsing time by 10s until mutation is removed from cache
@@ -1568,7 +1568,7 @@ void main() {
       );
 
       observer.mutate('');
-      observer.dispose();
+      observer.onUnmount();
 
       // Keep elapsing time by 10s until mutation is removed from cache
       while (cache.find(mutationKey: const ['key']) != null) {
