@@ -39,6 +39,17 @@ handling, and more. Flutter Query handles all of this out of the box:
 Visit [flutterquery.com](https://flutterquery.com) for the full documentation, tutorials, and
 guides.
 
+## Platform Support
+
+| Android | iOS | macOS | Web | Linux | Windows |
+| :-----: | :-: | :---: | :-: | :---: | :-----: |
+|   ✅    | ✅  |  ✅   | ✅  |  ✅   |   ✅    |
+
+## Requirements
+
+- Flutter >=3.32.0
+- Dart >=3.0.0 <4.0.0
+
 ## Versioning
 
 This project strictly follows [Semantic Versioning](https://semver.org/). Given a version number

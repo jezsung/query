@@ -39,6 +39,17 @@ Visit **[flutterquery.com](https://flutterquery.com)** for comprehensive documen
 - [Overview](https://flutterquery.com/docs/overview)
 - [Quick Start](https://flutterquery.com/docs/quick-start)
 
+## Platform Support
+
+| Android | iOS | macOS | Web | Linux | Windows |
+| :-----: | :-: | :---: | :-: | :---: | :-----: |
+|   ✅    | ✅  |  ✅   | ✅  |  ✅   |   ✅    |
+
+## Requirements
+
+- Flutter >=3.32.0
+- Dart >=3.0.0 <4.0.0
+
 ## Versioning
 
 This project strictly follows [Semantic Versioning](https://semver.org/). Given a version number
