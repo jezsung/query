@@ -62,7 +62,7 @@ MutationResult<TData, TError, TVariables, TOnMutateResult>
       effectiveClient,
       buildOptions(),
     ),
-    [],
+    [effectiveClient],
   );
 
   // Update options during render
@@ -76,7 +76,7 @@ MutationResult<TData, TError, TVariables, TOnMutateResult>
       result.value = newResult;
     });
     return unsubscribe;
-  }, []);
+  }, [observer]);
 
   // Cleanup on unmount
   useEffect(() {

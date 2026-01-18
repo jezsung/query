@@ -87,7 +87,7 @@ InfiniteQueryResult<TData, TError, TPageParam>
         meta: meta,
       ),
     ),
-    [],
+    [effectiveClient],
   );
 
   // Update options during render (before subscribing)
@@ -121,7 +121,7 @@ InfiniteQueryResult<TData, TError, TPageParam>
       result.value = newResult;
     });
     return unsubscribe;
-  }, []);
+  }, [observer]);
 
   useEffect(() {
     observer.onMount();

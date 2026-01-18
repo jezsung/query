@@ -46,7 +46,7 @@ QueryResult<TData, TError> useQuery<TData, TError>(
         seedUpdatedAt: seedUpdatedAt,
       ),
     ),
-    [],
+    [effectiveClient],
   );
 
   // Update options during render (before subscribing)
