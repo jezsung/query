@@ -1,9 +1,6 @@
 import 'mutation_state.dart';
 import 'utils.dart';
 
-/// The result of a mutation, containing state and control methods.
-///
-/// This is the public API returned by useMutation and MutationObserver.
 class MutationResult<TData, TError, TVariables, TOnMutateResult> {
   const MutationResult({
     required this.status,
@@ -26,23 +23,12 @@ class MutationResult<TData, TError, TVariables, TOnMutateResult> {
   final int failureCount;
   final TError? failureReason;
   final bool isPaused;
-
-  /// Triggers the mutation with the given variables.
   final Future<TData> Function(TVariables variables) mutate;
-
-  /// Resets the mutation to its initial idle state.
   final void Function() reset;
 
-  /// True when status is idle (mutation has not been triggered yet or was reset).
   bool get isIdle => status == MutationStatus.idle;
-
-  /// True when status is pending (mutation is currently executing).
   bool get isPending => status == MutationStatus.pending;
-
-  /// True when status is success (last mutation completed successfully).
   bool get isSuccess => status == MutationStatus.success;
-
-  /// True when status is error (last mutation resulted in an error).
   bool get isError => status == MutationStatus.error;
 
   @override
