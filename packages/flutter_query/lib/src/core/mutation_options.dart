@@ -4,10 +4,6 @@ import 'default_mutation_options.dart';
 import 'mutation_function_context.dart';
 import 'query_options.dart';
 
-/// Options for configuring a mutation.
-///
-/// Contains all the configuration options for a mutation including the mutation
-/// function and callbacks for lifecycle events.
 class MutationOptions<TData, TError, TVariables, TOnMutateResult> {
   MutationOptions({
     required this.mutationFn,
@@ -21,40 +17,18 @@ class MutationOptions<TData, TError, TVariables, TOnMutateResult> {
     this.meta,
   });
 
-  /// The function that performs the mutation.
   final Future<TData> Function(
     TVariables variables,
     MutationFunctionContext context,
   ) mutationFn;
-
-  /// Called before the mutation function is fired.
-  ///
-  /// Can be used to perform optimistic updates. The returned value
-  /// is passed to onSuccess, onError, and onSettled callbacks as `onMutateResult`.
   final MutationOnMutate<TVariables, TOnMutateResult>? onMutate;
-
-  /// Called when the mutation is successful.
   final MutationOnSuccess<TData, TVariables, TOnMutateResult>? onSuccess;
-
-  /// Called when the mutation encounters an error.
   final MutationOnError<TError, TVariables, TOnMutateResult>? onError;
-
-  /// Called when the mutation is either successful or errors.
   final MutationOnSettled<TData, TError, TVariables, TOnMutateResult>?
       onSettled;
-
-  /// Optional key to identify this mutation.
   final List<Object?>? mutationKey;
-
-  /// Retry configuration.
-  ///
-  /// Defaults to 0 (no retries) for mutations, unlike queries which default to 3.
   final RetryResolver<TError>? retry;
-
-  /// Duration after which the mutation can be garbage collected.
   final GcDuration? gcDuration;
-
-  /// Optional metadata associated with the mutation.
   final Map<String, dynamic>? meta;
 
   @override
@@ -71,17 +45,22 @@ class MutationOptions<TData, TError, TVariables, TOnMutateResult> {
   }
 }
 
-/// Callback invoked before the mutation function is executed.
+/// Callback invoked before the mutation function executes.
 ///
-/// Can be used to perform optimistic updates. The returned value is passed
-/// to onSuccess, onError, and onSettled callbacks as `onMutateResult`.
+/// Use this to perform optimistic updates. The returned value is passed to
+/// [MutationOnSuccess], [MutationOnError], and [MutationOnSettled] callbacks
+/// as `onMutateResult`.
 typedef MutationOnMutate<TVariables, TOnMutateResult>
     = FutureOr<TOnMutateResult?> Function(
   TVariables variables,
   MutationFunctionContext context,
 );
 
-/// Callback invoked when the mutation is successful.
+/// Callback invoked when the mutation succeeds.
+///
+/// Receives the [data] returned by the mutation function, the [variables]
+/// passed to the mutation, and any [onMutateResult] returned from the
+/// [MutationOnMutate] callback.
 typedef MutationOnSuccess<TData, TVariables, TOnMutateResult> = FutureOr<void>
     Function(
   TData data,
@@ -90,7 +69,11 @@ typedef MutationOnSuccess<TData, TVariables, TOnMutateResult> = FutureOr<void>
   MutationFunctionContext context,
 );
 
-/// Callback invoked when the mutation encounters an error.
+/// Callback invoked when the mutation fails.
+///
+/// Receives the [error] thrown by the mutation function, the [variables]
+/// passed to the mutation, and any [onMutateResult] returned from the
+/// [MutationOnMutate] callback. Use this to roll back optimistic updates.
 typedef MutationOnError<TError, TVariables, TOnMutateResult> = FutureOr<void>
     Function(
   TError error,
@@ -99,7 +82,11 @@ typedef MutationOnError<TError, TVariables, TOnMutateResult> = FutureOr<void>
   MutationFunctionContext context,
 );
 
-/// Callback invoked when the mutation is either successful or errors.
+/// Callback invoked when the mutation completes, regardless of outcome.
+///
+/// Called after either [MutationOnSuccess] or [MutationOnError]. Receives the
+/// [data] if successful, the [error] if failed, the [variables] passed to the
+/// mutation, and any [onMutateResult] returned from [MutationOnMutate].
 typedef MutationOnSettled<TData, TError, TVariables, TOnMutateResult>
     = FutureOr<void> Function(
   TData? data,
