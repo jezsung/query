@@ -1,69 +1,31 @@
 import 'dart:async';
 
-/// Exception thrown when a query is aborted.
+/// A read-only signal indicating whether an operation has been aborted.
 ///
-/// This exception is thrown by [AbortSignal.throwIfAborted] when the signal
-/// has been aborted, and by the [Retryer] when it detects an abort during
-/// retry attempts.
+/// Passed to query functions via [QueryFunctionContext], allowing the function
+/// to check if it should stop execution or clean up resources.
 ///
-/// Aligned with TanStack Query's CancelledError.
-class AbortedException implements Exception {
-  /// Creates an aborted exception.
-  const AbortedException({
-    this.revert = true,
-    this.silent = false,
-  });
-
-  /// Whether to revert to the previous query state when aborted.
-  ///
-  /// When true, the query state will be restored to what it was before
-  /// the fetch started. This is useful for optimistic updates.
-  final bool revert;
-
-  /// Whether to suppress error notifications when aborted.
-  ///
-  /// When true, the abort will not trigger error callbacks or update
-  /// the query's error state.
-  final bool silent;
-
-  @override
-  String toString() => 'AbortedException: Query was aborted'
-      '${revert ? ' (reverting)' : ''}'
-      '${silent ? ' (silent)' : ''}';
-}
-
-/// A read-only signal that indicates whether an operation has been aborted.
+/// The signal provides multiple ways to detect abort:
+/// - [isAborted]: boolean check for immediate status
+/// - [whenAbort]: a future that completes when aborted
+/// - [throwIfAborted]: throws [AbortedException] if aborted
 ///
-/// This is passed to query functions via [QueryFunctionContext] and allows the
-/// function to check if it should stop execution or clean up resources.
-///
-/// The signal provides multiple ways to check for abort:
-/// - [isAborted]: Boolean check for immediate status
-/// - [whenAbort]: A future that completes when aborted (like [Completer.future])
-/// - [throwIfAborted]: Throws [AbortedException] if aborted
-///
-/// Aligned with TanStack Query's AbortSignal pattern.
-///
-/// Example:
 /// ```dart
-/// queryFn: (context) async {
-///   // Race against abort signal
+/// (QueryFunctionContext context) async {
+///   // Race against abort signal.
 ///   await Future.any([
 ///     someOperation(),
-///     context.signal.future,
+///     context.signal.whenAbort,
 ///   ]);
 ///   context.signal.throwIfAborted();
 ///
-///   // Or register a cleanup callback
-///   context.signal.future.whenComplete(() => cleanup());
+///   // Or register a cleanup callback.
+///   context.signal.whenAbort.whenComplete(() => cleanup());
 ///
-///   // Or check manually
+///   // Or check manually.
 ///   if (context.signal.isAborted) {
 ///     return cachedData;
 ///   }
-///
-///   // Or throw if aborted
-///   context.signal.throwIfAborted();
 /// }
 /// ```
 class AbortSignal {
@@ -73,8 +35,7 @@ class AbortSignal {
 
   /// Whether this signal has been aborted.
   ///
-  /// Accessing this property marks the signal as consumed, which affects
-  /// the cancellation behavior when observers are removed.
+  /// Accessing this property marks the signal as consumed.
   bool get isAborted {
     _controller._markConsumed();
     return _controller._isAborted;
@@ -82,17 +43,15 @@ class AbortSignal {
 
   /// A future that completes when this signal is aborted.
   ///
-  /// This follows the [Completer.future] pattern. Use it to:
-  /// - Race against the abort signal with [Future.any]
-  /// - Register callbacks with [Future.whenComplete] or [Future.then]
+  /// Use this to race against the abort signal with [Future.any] or register
+  /// callbacks with [Future.whenComplete].
   ///
-  /// Example:
   /// ```dart
-  /// // Race against abort
-  /// await Future.any([operation(), signal.future]);
+  /// // Race against abort.
+  /// await Future.any([operation(), signal.whenAbort]);
   /// signal.throwIfAborted();
   ///
-  /// // Register cleanup callback
+  /// // Register cleanup callback.
   /// signal.whenAbort.whenComplete(() => cleanup());
   /// ```
   ///
@@ -104,12 +63,10 @@ class AbortSignal {
 
   /// Throws [AbortedException] if this signal has been aborted.
   ///
-  /// The exception will have the same [revert] and [silent] flags that were
-  /// passed to [AbortController.abort].
+  /// The exception has the same [AbortedException.revert] and
+  /// [AbortedException.silent] values that were passed to
+  /// [AbortController.abort].
   ///
-  /// Use this to create early exit points in your query function.
-  ///
-  /// Example:
   /// ```dart
   /// queryFn: (context) async {
   ///   final part1 = await fetchPart1();
@@ -128,26 +85,41 @@ class AbortSignal {
   }
 }
 
-/// Controller that manages an [AbortSignal] and can trigger abort.
+/// An exception indicating a query was aborted.
 ///
-/// This is used internally by the Query class to create and control
-/// the abort signal for each fetch operation.
+/// Thrown by [AbortSignal.throwIfAborted] when the signal has been aborted,
+/// and by the [Retryer] when it detects an abort during retry attempts.
+class AbortedException implements Exception {
+  /// Creates an exception indicating a query was aborted.
+  const AbortedException({
+    this.revert = true,
+    this.silent = false,
+  });
+
+  /// Whether the query state should revert to its previous value.
+  ///
+  /// When `true`, the query state is restored to what it was before
+  /// the fetch started.
+  final bool revert;
+
+  /// Whether error notifications should be suppressed.
+  ///
+  /// When `true`, the abort does not trigger error callbacks or update
+  /// the query's error state.
+  final bool silent;
+
+  @override
+  String toString() => 'AbortedException: Query was aborted'
+      '${revert ? ' (reverting)' : ''}'
+      '${silent ? ' (silent)' : ''}';
+}
+
+/// A controller that manages an [AbortSignal] and can trigger abort.
 ///
-/// Aligned with TanStack Query's AbortController pattern.
-///
-/// Example:
-/// ```dart
-/// final controller = AbortController();
-/// final signal = controller.signal;
-///
-/// // Pass signal to query function
-/// queryFn(QueryFunctionContext(signal: signal, ...));
-///
-/// // Later, abort the operation
-/// controller.abort();
-/// ```
+/// Used internally by [Query] to create and control the abort signal for each
+/// fetch operation.
 class AbortController {
-  /// Creates a new abort controller.
+  /// Creates an abort controller.
   AbortController();
 
   final Completer<void> _completer = Completer<void>();
@@ -158,35 +130,32 @@ class AbortController {
 
   /// The signal associated with this controller.
   ///
-  /// This signal can be passed to query functions and will reflect
-  /// the aborted state when [abort] is called.
+  /// Pass this to query functions; it reflects the aborted state when [abort]
+  /// is called.
   late final AbortSignal signal = AbortSignal._(this);
 
   /// Whether the signal was consumed by the query function.
   ///
-  /// This is true if the query function accessed [AbortSignal.isAborted],
+  /// Returns `true` if the query function accessed [AbortSignal.isAborted],
   /// [AbortSignal.whenAbort], or called [AbortSignal.throwIfAborted].
   ///
-  /// This information is used to optimize cancellation behavior:
-  /// - If consumed: The query function supports cancellation, so abort it
-  /// - If not consumed: The query function doesn't check for abort,
-  ///   so let it complete but don't use the result
+  /// Used to optimize cancellation behavior: if consumed, the query function
+  /// supports cancellation, so abort it; if not consumed, let it complete but
+  /// discard the result.
   bool get wasConsumed => _wasConsumed;
 
   /// Aborts the signal.
   ///
-  /// When [revert] is true (default), the query state will be restored to
-  /// what it was before the fetch started.
+  /// When [revert] is `true` (the default), the query state is restored to
+  /// what it was before the fetch started. When [silent] is `true`, the
+  /// cancellation does not trigger error callbacks or update the query's
+  /// error state.
   ///
-  /// When [silent] is true, the cancellation will not trigger error callbacks
-  /// or update the query's error state.
+  /// After calling this, [AbortSignal.isAborted] returns `true`,
+  /// [AbortSignal.whenAbort] completes, and [AbortSignal.throwIfAborted]
+  /// throws [AbortedException].
   ///
-  /// After calling this:
-  /// - [AbortSignal.isAborted] will return true
-  /// - [AbortSignal.whenAbort] will complete
-  /// - [AbortSignal.throwIfAborted] will throw [AbortedException]
-  ///
-  /// Calling abort multiple times has no additional effect.
+  /// Calling this multiple times has no additional effect.
   void abort({bool revert = true, bool silent = false}) {
     if (!_isAborted) {
       _isAborted = true;
