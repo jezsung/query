@@ -3,30 +3,30 @@ import 'utils.dart';
 
 class DefaultMutationOptions {
   const DefaultMutationOptions({
-    this.retry = retryNever,
     this.gcDuration = const GcDuration(minutes: 5),
+    this.retry = retryNever,
   });
 
-  final RetryResolver retry;
   final GcDuration gcDuration;
+  final RetryResolver retry;
 
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       other is DefaultMutationOptions &&
-          identical(retry, other.retry) &&
-          gcDuration == other.gcDuration;
+          gcDuration == other.gcDuration &&
+          identical(retry, other.retry);
 
   @override
   int get hashCode => Object.hash(
-        identityHashCode(retry),
         gcDuration,
+        identityHashCode(retry),
       );
 
   @override
   String toString() {
     return 'DefaultMutationOptions('
-        'retry: <Function>, '
-        'gcDuration: $gcDuration)';
+        'gcDuration: $gcDuration, '
+        'retry: <Function>)';
   }
 }

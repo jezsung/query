@@ -12,8 +12,8 @@ class MutationOptions<TData, TError, TVariables, TOnMutateResult> {
     this.onError,
     this.onSettled,
     this.mutationKey,
-    this.retry,
     this.gcDuration,
+    this.retry,
     this.meta,
   });
 
@@ -24,8 +24,8 @@ class MutationOptions<TData, TError, TVariables, TOnMutateResult> {
   final MutationOnSettled<TData, TError, TVariables, TOnMutateResult>?
       onSettled;
   final List<Object?>? mutationKey;
-  final RetryResolver<TError>? retry;
   final GcDuration? gcDuration;
+  final RetryResolver<TError>? retry;
   final Map<String, dynamic>? meta;
 
   @override
@@ -36,8 +36,8 @@ class MutationOptions<TData, TError, TVariables, TOnMutateResult> {
         'onError: ${onError != null ? '<Function>' : 'null'}, '
         'onSettled: ${onSettled != null ? '<Function>' : 'null'}, '
         'mutationKey: $mutationKey, '
-        'retry: ${retry != null ? '<Function>' : 'null'}, '
         'gcDuration: $gcDuration, '
+        'retry: ${retry != null ? '<Function>' : 'null'}, '
         'meta: $meta)';
   }
 }
@@ -112,14 +112,14 @@ extension MutationOptionsExt<TData, TError, TVariables, TOnMutateResult>
   ) {
     return MutationOptions<TData, TError, TVariables, TOnMutateResult>(
       mutationFn: mutationFn,
-      mutationKey: mutationKey,
-      meta: meta,
       onMutate: onMutate,
       onSuccess: onSuccess,
       onError: onError,
       onSettled: onSettled,
-      retry: retry ?? defaults.retry as RetryResolver<TError>?,
+      mutationKey: mutationKey,
       gcDuration: gcDuration ?? defaults.gcDuration,
+      retry: retry ?? defaults.retry as RetryResolver<TError>?,
+      meta: meta,
     );
   }
 }

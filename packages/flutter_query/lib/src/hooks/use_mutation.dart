@@ -57,8 +57,8 @@ MutationResult<TData, TError, TVariables, TOnMutateResult>
   MutationOnError<TError, TVariables, TOnMutateResult>? onError,
   MutationOnSettled<TData, TError, TVariables, TOnMutateResult>? onSettled,
   List<Object?>? mutationKey,
-  RetryResolver<TError>? retry,
   GcDuration? gcDuration,
+  RetryResolver<TError>? retry,
   Map<String, dynamic>? meta,
   QueryClient? client,
 }) {
@@ -76,8 +76,8 @@ MutationResult<TData, TError, TVariables, TOnMutateResult>
         onSuccess: onSuccess,
         onError: onError,
         onSettled: onSettled,
-        retry: retry,
         gcDuration: gcDuration,
+        retry: retry,
       ),
     ),
     [effectiveClient],
@@ -93,8 +93,8 @@ MutationResult<TData, TError, TVariables, TOnMutateResult>
     onSuccess: onSuccess,
     onError: onError,
     onSettled: onSettled,
-    retry: retry,
     gcDuration: gcDuration,
+    retry: retry,
   );
 
   // Subscribe to observer and trigger rebuilds when result changes

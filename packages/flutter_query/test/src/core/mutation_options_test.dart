@@ -19,8 +19,8 @@ void main() {
         'onError: null, '
         'onSettled: null, '
         'mutationKey: null, '
-        'retry: null, '
         'gcDuration: null, '
+        'retry: null, '
         'meta: null)',
       );
     });
@@ -50,8 +50,8 @@ void main() {
         'onError: <Function>, '
         'onSettled: <Function>, '
         'mutationKey: [users, update], '
-        'retry: <Function>, '
         'gcDuration: $gcDuration, '
+        'retry: <Function>, '
         'meta: {priority: high})',
       );
     });
