@@ -2,6 +2,8 @@
 
 This release contains breaking changes to improve API consistency and usability.
 
+- **BREAKING**: The `queryClient` parameter on `useQuery`, `useMutation`, and `useInfiniteQuery` hooks has been renamed to `client` for simplicity.
+
 - **BREAKING**: `QueryClientProvider` API changed. The `client` parameter has been replaced with a `create` factory function. Use `QueryClientProvider.value()` for existing clients.
 
   ```dart

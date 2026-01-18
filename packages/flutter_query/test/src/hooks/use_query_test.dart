@@ -32,7 +32,7 @@ void main() {
           await Future.delayed(const Duration(seconds: 5));
           return data;
         },
-        queryClient: client,
+        client: client,
       ),
     );
 
@@ -77,7 +77,7 @@ void main() {
           throw error;
         },
         retry: (_, __) => null,
-        queryClient: client,
+        client: client,
       ),
     );
 
@@ -121,7 +121,7 @@ void main() {
           capturedContext = context;
           return 'data';
         },
-        queryClient: client,
+        client: client,
       ),
     );
 
@@ -140,7 +140,7 @@ void main() {
       () => useQuery(
         const ['key'],
         (context) async => data,
-        queryClient: client,
+        client: client,
       ),
     );
 
@@ -169,7 +169,7 @@ void main() {
           result1 = useQuery(
             ["key"],
             (context) async => 'data-${++fetchCount}',
-            queryClient: client,
+            client: client,
           );
           return Container();
         },
@@ -179,7 +179,7 @@ void main() {
           result2 = useQuery(
             ["key"],
             (context) async => 'data-${++fetchCount}',
-            queryClient: client,
+            client: client,
           );
           return Container();
         },
@@ -201,7 +201,7 @@ void main() {
       (key) => useQuery<String, Object>(
         key,
         (context) async => 'data-$key',
-        queryClient: client,
+        client: client,
       ),
       initialProps: const ['key1'],
     );
@@ -227,7 +227,7 @@ void main() {
       () => useQuery(
         const ['key'],
         (context) async => 'data',
-        queryClient: client,
+        client: client,
       ),
     );
 
@@ -253,7 +253,7 @@ void main() {
           result1 = useQuery(
             const ['key1'],
             (context) async => 'data1',
-            queryClient: client,
+            client: client,
           );
           return Container();
         }),
@@ -261,7 +261,7 @@ void main() {
           result2 = useQuery(
             const ['key2'],
             (context) async => 'data2',
-            queryClient: client,
+            client: client,
           );
           return Container();
         }),
@@ -282,7 +282,7 @@ void main() {
           const ['key'],
           (context) async => 'data',
           enabled: false,
-          queryClient: client,
+          client: client,
         ),
       );
 
@@ -301,7 +301,7 @@ void main() {
           const ['key'],
           (context) async => 'data',
           enabled: enabled,
-          queryClient: client,
+          client: client,
         ),
         initialProps: false,
       );
@@ -332,7 +332,7 @@ void main() {
           const ['key'],
           (context) async => 'data',
           staleDuration: StaleDuration.zero, // Data immediately stale
-          queryClient: client,
+          client: client,
         ),
       );
 
@@ -349,7 +349,7 @@ void main() {
           const ['key'],
           (context) async => 'data',
           staleDuration: const StaleDuration(minutes: 5), // Fresh for 5 minutes
-          queryClient: client,
+          client: client,
         ),
       );
 
@@ -371,7 +371,7 @@ void main() {
           const ['key'],
           (context) async => 'data',
           staleDuration: staleDuration,
-          queryClient: client,
+          client: client,
         ),
         initialProps: const StaleDuration(minutes: 5),
       );
@@ -396,7 +396,7 @@ void main() {
           const ['key'],
           (context) async => 'data',
           staleDuration: staleDuration,
-          queryClient: client,
+          client: client,
         ),
         initialProps: const StaleDuration(minutes: 5),
       );
@@ -428,7 +428,7 @@ void main() {
           const ['key'],
           (context) async => 'data',
           staleDuration: staleDuration,
-          queryClient: client,
+          client: client,
         ),
         initialProps: const StaleDuration(minutes: 5),
       );
@@ -453,7 +453,7 @@ void main() {
           const ['key'],
           (context) async => 'data',
           staleDuration: const StaleDuration(minutes: 5),
-          queryClient: client,
+          client: client,
         ),
       );
 
@@ -496,7 +496,7 @@ void main() {
           ['key'],
           (context) async => 'data',
           staleDuration: const StaleDuration(minutes: 5),
-          queryClient: client,
+          client: client,
         ),
       );
 
@@ -514,7 +514,7 @@ void main() {
           const ['key'],
           (context) async => 'data',
           staleDuration: StaleDuration.static, // Never stale
-          queryClient: client,
+          client: client,
         ),
       );
 
@@ -540,7 +540,7 @@ void main() {
           (context) async => 'data',
           staleDuration: StaleDuration.static,
           gcDuration: const GcDuration(minutes: 10),
-          queryClient: client,
+          client: client,
         ),
       );
 
@@ -567,7 +567,7 @@ void main() {
           (context) async => 'data',
           staleDuration: StaleDuration.static,
           gcDuration: const GcDuration(minutes: 10),
-          queryClient: client,
+          client: client,
         ),
       );
 
@@ -598,7 +598,7 @@ void main() {
           const ['key'],
           (context) async => 'data',
           staleDuration: StaleDuration.infinity, // Never stale
-          queryClient: client,
+          client: client,
         ),
       );
 
@@ -624,7 +624,7 @@ void main() {
           (context) async => 'data',
           staleDuration: StaleDuration.infinity,
           gcDuration: const GcDuration(minutes: 10),
-          queryClient: client,
+          client: client,
         ),
       );
 
@@ -651,7 +651,7 @@ void main() {
           (context) async => 'data',
           staleDuration: StaleDuration.infinity,
           gcDuration: const GcDuration(minutes: 10),
-          queryClient: client,
+          client: client,
         ),
       );
 
@@ -687,7 +687,7 @@ void main() {
     //           // Resolve to different durations based on external state
     //           return duration;
     //         },
-    //         queryClient: client,
+    //         client: client,
     //       );
     //     },
     //     initialProps: const StaleDuration(hours: 1),
@@ -740,7 +740,7 @@ void main() {
     //         capturedState = query.state;
     //         return const StaleDuration();
     //       },
-    //       queryClient: client,
+    //       client: client,
     //     ),
     //   );
 
@@ -764,7 +764,7 @@ void main() {
     //         return const StaleDuration();
     //       },
     //       retry: (_, __) => null,
-    //       queryClient: client,
+    //       client: client,
     //     ),
     //   );
 
@@ -786,7 +786,7 @@ void main() {
           const ['key'],
           (context) async => 'data',
           // staleDuration defaults to const StaleDuration()
-          queryClient: client,
+          client: client,
         ),
       );
 
@@ -807,7 +807,7 @@ void main() {
           (context) async => 'data',
           refetchOnMount: RefetchOnMount.stale,
           staleDuration: const StaleDuration(),
-          queryClient: client,
+          client: client,
         ),
       );
 
@@ -832,7 +832,7 @@ void main() {
           (context) async => 'data',
           refetchOnMount: RefetchOnMount.stale,
           staleDuration: StaleDuration.infinity,
-          queryClient: client,
+          client: client,
         ),
       );
 
@@ -857,7 +857,7 @@ void main() {
           (context) async => 'data',
           refetchOnMount: RefetchOnMount.never,
           staleDuration: const StaleDuration(),
-          queryClient: client,
+          client: client,
         ),
       );
 
@@ -881,7 +881,7 @@ void main() {
           const ['key'],
           (context) async => 'data',
           refetchOnMount: RefetchOnMount.never,
-          queryClient: client,
+          client: client,
         ),
       );
 
@@ -901,7 +901,7 @@ void main() {
           (context) async => 'data',
           refetchOnMount: RefetchOnMount.always,
           staleDuration: const StaleDuration(minutes: 5),
-          queryClient: client,
+          client: client,
         ),
       );
 
@@ -926,7 +926,7 @@ void main() {
           (context) async => 'data',
           refetchOnMount: RefetchOnMount.always,
           staleDuration: StaleDuration.static,
-          queryClient: client,
+          client: client,
         ),
       );
 
@@ -956,7 +956,7 @@ void main() {
           },
           refetchOnResume: RefetchOnResume.stale,
           staleDuration: const StaleDuration(),
-          queryClient: client,
+          client: client,
         ),
       );
 
@@ -989,7 +989,7 @@ void main() {
           },
           refetchOnResume: RefetchOnResume.stale,
           staleDuration: StaleDuration.infinity,
-          queryClient: client,
+          client: client,
         ),
       );
 
@@ -1019,7 +1019,7 @@ void main() {
           (context) async => 'data-${++fetchCount}',
           refetchOnResume: RefetchOnResume.stale,
           staleDuration: const StaleDuration(),
-          queryClient: client,
+          client: client,
         ),
       );
 
@@ -1048,7 +1048,7 @@ void main() {
           (context) async => 'data-${++fetchCount}',
           refetchOnResume: RefetchOnResume.stale,
           staleDuration: StaleDuration.infinity,
-          queryClient: client,
+          client: client,
         ),
       );
 
@@ -1081,7 +1081,7 @@ void main() {
           },
           refetchOnResume: RefetchOnResume.never,
           staleDuration: const StaleDuration(),
-          queryClient: client,
+          client: client,
         ),
       );
 
@@ -1120,7 +1120,7 @@ void main() {
           },
           refetchOnResume: RefetchOnResume.never,
           retry: (_, __) => null,
-          queryClient: client,
+          client: client,
         ),
       );
 
@@ -1163,7 +1163,7 @@ void main() {
           },
           refetchOnResume: RefetchOnResume.always,
           staleDuration: StaleDuration.infinity,
-          queryClient: client,
+          client: client,
         ),
       );
 
@@ -1196,7 +1196,7 @@ void main() {
           },
           refetchOnResume: RefetchOnResume.always,
           staleDuration: StaleDuration.static,
-          queryClient: client,
+          client: client,
         ),
       );
 
@@ -1227,7 +1227,7 @@ void main() {
           const ['key'],
           (context) async => 'data',
           gcDuration: const GcDuration(minutes: 5),
-          queryClient: client,
+          client: client,
         ),
       );
 
@@ -1254,7 +1254,7 @@ void main() {
           const ['key'],
           (context) async => 'data',
           gcDuration: GcDuration.infinity,
-          queryClient: client,
+          client: client,
         ),
       );
 
@@ -1285,7 +1285,7 @@ void main() {
                 const ['key'],
                 (context) async => 'data-1',
                 gcDuration: const GcDuration(minutes: 5),
-                queryClient: client,
+                client: client,
               );
               return Container();
             },
@@ -1296,7 +1296,7 @@ void main() {
                 const ['key'],
                 (context) async => 'data-2',
                 gcDuration: const GcDuration(minutes: 5),
-                queryClient: client,
+                client: client,
               );
               return Container();
             },
@@ -1318,7 +1318,7 @@ void main() {
                 const ['key'],
                 (context) async => 'data-2',
                 gcDuration: const GcDuration(minutes: 5),
-                queryClient: client,
+                client: client,
               );
               return Container();
             },
@@ -1349,7 +1349,7 @@ void main() {
           const ['key'],
           (context) async => 'data',
           // gcDuration defaults to 5 minutes
-          queryClient: client,
+          client: client,
         ),
       );
 
@@ -1378,7 +1378,7 @@ void main() {
           const ['key'],
           (context) async => 'data',
           gcDuration: const GcDuration(minutes: 10),
-          queryClient: client,
+          client: client,
         ),
       );
 
@@ -1428,7 +1428,7 @@ void main() {
         () => useQuery(
           const ['key'],
           (context) async => 'data',
-          queryClient: prioritizedQueryClient,
+          client: prioritizedQueryClient,
         ),
         wrapper: (child) => QueryClientProvider.value(
           client,
@@ -1471,7 +1471,7 @@ void main() {
           const ['key'],
           (context) async => 'data',
           seed: 'initial-data',
-          queryClient: client,
+          client: client,
         ),
       );
 
@@ -1488,7 +1488,7 @@ void main() {
           (context) async => 'data',
           seed: 'initial-data',
           staleDuration: const StaleDuration(),
-          queryClient: client,
+          client: client,
         ),
       );
 
@@ -1512,7 +1512,7 @@ void main() {
           (context) async => 'data',
           seed: 'initial-data',
           staleDuration: const StaleDuration(minutes: 5),
-          queryClient: client,
+          client: client,
         ),
       );
 
@@ -1539,7 +1539,7 @@ void main() {
             await Future.delayed(const Duration(minutes: 1));
             return 'data-1';
           },
-          queryClient: client,
+          client: client,
         ),
       );
 
@@ -1557,7 +1557,7 @@ void main() {
           const ['key'],
           (context) async => 'data-2',
           seed: 'initial-data',
-          queryClient: client,
+          client: client,
         ),
       );
 
@@ -1578,7 +1578,7 @@ void main() {
           const ['key'],
           (context) async => 'data',
           seed: 'initial-data',
-          queryClient: client,
+          client: client,
         ),
       );
 
@@ -1595,7 +1595,7 @@ void main() {
           (context) async => 'data',
           seed: 'initial-data',
           seedUpdatedAt: specificTime,
-          queryClient: client,
+          client: client,
         ),
       );
 
@@ -1612,7 +1612,7 @@ void main() {
           seed: 'initial-data',
           seedUpdatedAt: clock.minutesAgo(10),
           staleDuration: const StaleDuration(minutes: 5),
-          queryClient: client,
+          client: client,
         ),
       );
 
@@ -1627,7 +1627,7 @@ void main() {
           seed: 'initial-data',
           seedUpdatedAt: clock.minutesAgo(10),
           staleDuration: const StaleDuration(minutes: 15),
-          queryClient: client,
+          client: client,
         ),
       );
 
@@ -1646,7 +1646,7 @@ void main() {
           seedUpdatedAt: clock.minutesAgo(5),
           staleDuration: const StaleDuration(minutes: 10),
           gcDuration: GcDuration.infinity,
-          queryClient: client,
+          client: client,
         ),
       );
 
@@ -1680,7 +1680,7 @@ void main() {
           const ['key'],
           (context) async => 'data',
           placeholder: 'placeholder',
-          queryClient: client,
+          client: client,
         ),
       );
 
@@ -1698,7 +1698,7 @@ void main() {
           const ['key'],
           (context) async => 'data',
           placeholder: 'placeholder',
-          queryClient: client,
+          client: client,
         ),
       );
 
@@ -1721,7 +1721,7 @@ void main() {
           (context) async => 'data',
           placeholder: 'placeholder',
           enabled: false,
-          queryClient: client,
+          client: client,
         ),
       );
 
@@ -1747,7 +1747,7 @@ void main() {
           (context) async => 'data',
           placeholder: 'placeholder',
           staleDuration: StaleDuration.infinity,
-          queryClient: client,
+          client: client,
         ),
       );
 
@@ -1764,7 +1764,7 @@ void main() {
           (context) async => 'data',
           seed: 'initial',
           placeholder: 'placeholder',
-          queryClient: client,
+          client: client,
         ),
       );
 
@@ -1782,7 +1782,7 @@ void main() {
           const ['key'],
           (context) async => 'data',
           placeholder: 'placeholder',
-          queryClient: client,
+          client: client,
         ),
       );
 
@@ -1805,7 +1805,7 @@ void main() {
             return 'data';
           },
           placeholder: placeholder,
-          queryClient: client,
+          client: client,
         ),
         initialProps: 'placeholder-1',
       );
@@ -1831,7 +1831,7 @@ void main() {
     //       placeholder: PlaceholderData.resolveWith(
     //         (previousValue, _) => previousValue,
     //       ),
-    //       queryClient: client,
+    //       client: client,
     //     ),
     //     initialProps: const ['todos', 1],
     //   );
@@ -1868,7 +1868,7 @@ void main() {
     //           return 'placeholder';
     //         },
     //       ),
-    //       queryClient: client,
+    //       client: client,
     //     ),
     //     initialProps: const ['key-1'],
     //   );
@@ -1911,7 +1911,7 @@ void main() {
             return 'data-$fetchAttempts';
           },
           refetchInterval: const Duration(seconds: 10),
-          queryClient: client,
+          client: client,
         ),
       );
       expect(hookResult.current.isLoading, isTrue);
@@ -1948,7 +1948,7 @@ void main() {
             return 'data-$fetchAttempts';
           },
           refetchInterval: interval,
-          queryClient: client,
+          client: client,
         ),
         initialProps: const Duration(seconds: 10),
       );
@@ -1995,7 +1995,7 @@ void main() {
           },
           enabled: false,
           refetchInterval: const Duration(seconds: 10),
-          queryClient: client,
+          client: client,
         ),
       );
 
@@ -2021,7 +2021,7 @@ void main() {
           },
           enabled: enabled,
           refetchInterval: const Duration(seconds: 10),
-          queryClient: client,
+          client: client,
         ),
         initialProps: true,
       );
@@ -2071,7 +2071,7 @@ void main() {
             },
             refetchInterval: const Duration(seconds: 10),
             staleDuration: staleDuration,
-            queryClient: client,
+            client: client,
           ),
         );
         expect(hookResult.current.isLoading, isTrue);
@@ -2103,7 +2103,7 @@ void main() {
               if (retryCount >= N) return null;
               return const Duration(seconds: 1);
             },
-            queryClient: client,
+            client: client,
           ),
         );
 
@@ -2130,7 +2130,7 @@ void main() {
             throw Exception();
           },
           retry: (_, __) => null,
-          queryClient: client,
+          client: client,
         ),
       );
 
@@ -2164,7 +2164,7 @@ void main() {
             }
             return null;
           },
-          queryClient: client,
+          client: client,
         ),
       );
 
@@ -2198,7 +2198,7 @@ void main() {
             return const Duration(seconds: 1);
           },
           retryOnMount: true,
-          queryClient: client,
+          client: client,
         ),
       );
 
@@ -2251,7 +2251,7 @@ void main() {
             if (retryCount >= 3) return null;
             return const Duration(seconds: 1);
           },
-          queryClient: client,
+          client: client,
         ),
       );
 
@@ -2290,7 +2290,7 @@ void main() {
             return const Duration(seconds: 1);
           },
           retryOnMount: true,
-          queryClient: client,
+          client: client,
         ),
         // Don't retry on initial attempt
         initialProps: 0,
@@ -2330,7 +2330,7 @@ void main() {
             return const Duration(seconds: 1);
           },
           retryOnMount: false,
-          queryClient: client,
+          client: client,
         ),
       );
 
@@ -2378,7 +2378,7 @@ void main() {
             return const Duration(seconds: 1);
           },
           retryOnMount: true,
-          queryClient: client,
+          client: client,
         ),
       );
 
@@ -2427,7 +2427,7 @@ void main() {
             final delaySeconds = 1 << retryCount;
             return Duration(seconds: delaySeconds > 30 ? 30 : delaySeconds);
           },
-          queryClient: client,
+          client: client,
         ),
       );
 
@@ -2466,7 +2466,7 @@ void main() {
             if (retryCount >= 8) return null;
             return const Duration(seconds: 1);
           },
-          queryClient: client,
+          client: client,
         ),
       );
 
@@ -2500,7 +2500,7 @@ void main() {
             if (retryCount >= 3) return null;
             return delay;
           },
-          queryClient: client,
+          client: client,
         ),
       );
 
@@ -2546,7 +2546,7 @@ void main() {
             if (retryCount >= 3) return null;
             return const Duration(seconds: 1);
           },
-          queryClient: client,
+          client: client,
         ),
       );
 
@@ -2585,7 +2585,7 @@ void main() {
             return 'data-$fetches';
           },
           staleDuration: StaleDuration.infinity,
-          queryClient: client,
+          client: client,
         ),
       );
 
@@ -2625,7 +2625,7 @@ void main() {
             return 'data-$fetches';
           },
           staleDuration: StaleDuration.infinity,
-          queryClient: client,
+          client: client,
         ),
       );
 
@@ -2672,7 +2672,7 @@ void main() {
             return 'data-$fetches';
           },
           staleDuration: StaleDuration.infinity,
-          queryClient: client,
+          client: client,
         ),
       );
 
@@ -2717,7 +2717,7 @@ void main() {
             throw Exception();
           },
           retry: (_, __) => null,
-          queryClient: client,
+          client: client,
         ),
       );
 
@@ -2759,7 +2759,7 @@ void main() {
             throw thrownError;
           },
           retry: (_, __) => null,
-          queryClient: client,
+          client: client,
         ),
       );
 
@@ -2800,7 +2800,7 @@ void main() {
             return 'data-$fetches';
           },
           staleDuration: StaleDuration.infinity,
-          queryClient: client,
+          client: client,
         ),
       );
 
@@ -2832,7 +2832,7 @@ void main() {
             await Future.delayed(const Duration(seconds: 1));
             return 'data';
           },
-          queryClient: client,
+          client: client,
         ),
       );
 
@@ -2856,7 +2856,7 @@ void main() {
             throw Exception('error');
           },
           retry: (_, __) => null,
-          queryClient: client,
+          client: client,
         ),
       );
 
@@ -2881,7 +2881,7 @@ void main() {
             await Future.delayed(const Duration(seconds: 1));
             return 'cached-data';
           },
-          queryClient: client,
+          client: client,
         ),
       );
 
@@ -2903,7 +2903,7 @@ void main() {
             return 'new-data';
           },
           staleDuration: StaleDuration.infinity,
-          queryClient: client,
+          client: client,
         ),
       );
 
@@ -2922,7 +2922,7 @@ void main() {
             await Future.delayed(const Duration(seconds: 1));
             return 'data-${key.first}';
           },
-          queryClient: client,
+          client: client,
         ),
         initialProps: const ['key-1'],
       );
@@ -2959,7 +2959,7 @@ void main() {
             return 'data';
           },
           meta: meta,
-          queryClient: client,
+          client: client,
         ),
       );
 
@@ -2983,7 +2983,7 @@ void main() {
             capturedMeta = context.meta;
             return 'data';
           },
-          queryClient: client,
+          client: client,
         ),
       );
 

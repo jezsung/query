@@ -36,7 +36,7 @@ void main() {
         },
         initialPageParam: 0,
         nextPageParamBuilder: (data) => data.pageParams.last + 1,
-        queryClient: client,
+        client: client,
       ),
     );
 
@@ -69,7 +69,7 @@ void main() {
         },
         initialPageParam: 0,
         nextPageParamBuilder: (data) => data.pageParams.last + 1,
-        queryClient: client,
+        client: client,
       ),
     );
 
@@ -107,7 +107,7 @@ void main() {
             },
             initialPageParam: 0,
             nextPageParamBuilder: (data) => data.pageParams.last + 1,
-            queryClient: client,
+            client: client,
           );
           return Container();
         },
@@ -123,7 +123,7 @@ void main() {
             },
             initialPageParam: 0,
             nextPageParamBuilder: (data) => data.pageParams.last + 1,
-            queryClient: client,
+            client: client,
           );
           return Container();
         },
@@ -157,7 +157,7 @@ void main() {
             },
             initialPageParam: 0,
             nextPageParamBuilder: (_) => null,
-            queryClient: client,
+            client: client,
           );
           return Container();
         }),
@@ -170,7 +170,7 @@ void main() {
             },
             initialPageParam: 0,
             nextPageParamBuilder: (_) => null,
-            queryClient: client,
+            client: client,
           );
           return Container();
         }),
@@ -201,7 +201,7 @@ void main() {
           },
           initialPageParam: 0,
           nextPageParamBuilder: (data) => data.pageParams.last + 1,
-          queryClient: client,
+          client: client,
         ),
         initialProps: const ['test1'],
       );
@@ -236,7 +236,7 @@ void main() {
           initialPageParam: 10,
           nextPageParamBuilder: (data) => data.pageParams.last + 1,
           meta: {'key': 'value'},
-          queryClient: client,
+          client: client,
         ),
       );
 
@@ -263,7 +263,7 @@ void main() {
           },
           initialPageParam: 0,
           nextPageParamBuilder: (data) => data.pageParams.last + 1,
-          queryClient: client,
+          client: client,
         ),
       );
 
@@ -297,7 +297,7 @@ void main() {
           initialPageParam: 5,
           nextPageParamBuilder: (data) => data.pageParams.last + 1,
           prevPageParamBuilder: (data) => data.pageParams.first - 1,
-          queryClient: client,
+          client: client,
         ),
       );
 
@@ -333,7 +333,7 @@ void main() {
           initialPageParam: 0,
           nextPageParamBuilder: (data) => data.pageParams.last + 1,
           enabled: true,
-          queryClient: client,
+          client: client,
         ),
       );
 
@@ -358,7 +358,7 @@ void main() {
           initialPageParam: 0,
           nextPageParamBuilder: (data) => data.pageParams.last + 1,
           enabled: false,
-          queryClient: client,
+          client: client,
         ),
       );
 
@@ -383,7 +383,7 @@ void main() {
           initialPageParam: 0,
           nextPageParamBuilder: (data) => data.pageParams.last + 1,
           enabled: enabled,
-          queryClient: client,
+          client: client,
         ),
         initialProps: false,
       );
@@ -413,7 +413,7 @@ void main() {
           initialPageParam: 0,
           nextPageParamBuilder: (data) => data.pageParams.last + 1,
           enabled: enabled,
-          queryClient: client,
+          client: client,
         ),
         initialProps: true,
       );
@@ -445,7 +445,7 @@ void main() {
           nextPageParamBuilder: (data) => data.pageParams.last + 1,
           prevPageParamBuilder: (data) => data.pageParams.first - 1,
           enabled: enabled,
-          queryClient: client,
+          client: client,
         ),
         initialProps: true,
       );
@@ -476,7 +476,7 @@ void main() {
           initialPageParam: 0,
           nextPageParamBuilder: (data) => data.pageParams.last + 1,
           enabled: enabled,
-          queryClient: client,
+          client: client,
         ),
         initialProps: true,
       );
@@ -506,7 +506,7 @@ void main() {
           initialPageParam: 0,
           nextPageParamBuilder: (data) => data.pageParams.last + 1,
           staleDuration: StaleDuration.zero,
-          queryClient: client,
+          client: client,
         ),
       );
 
@@ -528,7 +528,7 @@ void main() {
           initialPageParam: 0,
           nextPageParamBuilder: (data) => data.pageParams.last + 1,
           staleDuration: const StaleDuration(minutes: 5),
-          queryClient: client,
+          client: client,
         ),
       );
 
@@ -557,7 +557,7 @@ void main() {
           initialPageParam: 0,
           nextPageParamBuilder: (data) => data.pageParams.last + 1,
           staleDuration: StaleDuration.infinity,
-          queryClient: client,
+          client: client,
         ),
       );
 
@@ -584,7 +584,7 @@ void main() {
           initialPageParam: 0,
           nextPageParamBuilder: (data) => data.pageParams.last + 1,
           staleDuration: StaleDuration.static,
-          queryClient: client,
+          client: client,
         ),
       );
 
@@ -611,7 +611,7 @@ void main() {
           initialPageParam: 0,
           nextPageParamBuilder: (data) => data.pageParams.last + 1,
           staleDuration: StaleDuration.infinity,
-          queryClient: client,
+          client: client,
         ),
       );
 
@@ -640,7 +640,7 @@ void main() {
           initialPageParam: 0,
           nextPageParamBuilder: (data) => data.pageParams.last + 1,
           staleDuration: StaleDuration.static,
-          queryClient: client,
+          client: client,
         ),
       );
 
@@ -671,7 +671,7 @@ void main() {
           initialPageParam: 0,
           nextPageParamBuilder: (data) => data.pageParams.last + 1,
           gcDuration: const GcDuration(minutes: 5),
-          queryClient: client,
+          client: client,
         ),
       );
 
@@ -702,7 +702,7 @@ void main() {
                 initialPageParam: 0,
                 nextPageParamBuilder: (data) => data.pageParams.last + 1,
                 gcDuration: const GcDuration(minutes: 5),
-                queryClient: client,
+                client: client,
               );
               return Container();
             },
@@ -719,7 +719,7 @@ void main() {
                 initialPageParam: 0,
                 nextPageParamBuilder: (data) => data.pageParams.last + 1,
                 gcDuration: const GcDuration(minutes: 5),
-                queryClient: client,
+                client: client,
               );
               return Container();
             },
@@ -744,7 +744,7 @@ void main() {
                 initialPageParam: 0,
                 nextPageParamBuilder: (data) => data.pageParams.last + 1,
                 gcDuration: const GcDuration(minutes: 5),
-                queryClient: client,
+                client: client,
               );
               return Container();
             },
@@ -772,7 +772,7 @@ void main() {
           initialPageParam: 0,
           nextPageParamBuilder: (data) => data.pageParams.last + 1,
           gcDuration: GcDuration.zero,
-          queryClient: client,
+          client: client,
         ),
       );
 
@@ -801,7 +801,7 @@ void main() {
           initialPageParam: 0,
           nextPageParamBuilder: (data) => data.pageParams.last + 1,
           gcDuration: GcDuration.infinity,
-          queryClient: client,
+          client: client,
         ),
       );
 
@@ -830,7 +830,7 @@ void main() {
                 initialPageParam: 0,
                 nextPageParamBuilder: (data) => data.pageParams.last + 1,
                 gcDuration: const GcDuration(minutes: 5),
-                queryClient: client,
+                client: client,
               );
               return Container();
             },
@@ -847,7 +847,7 @@ void main() {
                 initialPageParam: 0,
                 nextPageParamBuilder: (data) => data.pageParams.last + 1,
                 gcDuration: const GcDuration(minutes: 10),
-                queryClient: client,
+                client: client,
               );
               return Container();
             },
@@ -892,7 +892,7 @@ void main() {
                 initialPageParam: 0,
                 nextPageParamBuilder: (data) => data.pageParams.last + 1,
                 gcDuration: const GcDuration(minutes: 10),
-                queryClient: client,
+                client: client,
               );
               return Container();
             },
@@ -909,7 +909,7 @@ void main() {
                 initialPageParam: 0,
                 nextPageParamBuilder: (data) => data.pageParams.last + 1,
                 gcDuration: const GcDuration(minutes: 3),
-                queryClient: client,
+                client: client,
               );
               return Container();
             },
@@ -936,7 +936,7 @@ void main() {
                 initialPageParam: 0,
                 nextPageParamBuilder: (data) => data.pageParams.last + 1,
                 gcDuration: const GcDuration(minutes: 3),
-                queryClient: client,
+                client: client,
               );
               return Container();
             },
@@ -972,7 +972,7 @@ void main() {
           initialPageParam: 0,
           nextPageParamBuilder: (data) => data.pageParams.last + 1,
           placeholder: const InfiniteData(['page-ph'], [0]),
-          queryClient: client,
+          client: client,
         ),
       );
 
@@ -994,7 +994,7 @@ void main() {
           initialPageParam: 0,
           nextPageParamBuilder: (data) => data.pageParams.last + 1,
           placeholder: const InfiniteData(['page-ph'], [0]),
-          queryClient: client,
+          client: client,
         ),
       );
 
@@ -1014,7 +1014,7 @@ void main() {
           initialPageParam: 0,
           nextPageParamBuilder: (data) => data.pageParams.last + 1,
           placeholder: const InfiniteData(['page-ph'], [0]),
-          queryClient: client,
+          client: client,
         ),
       );
 
@@ -1040,7 +1040,7 @@ void main() {
           },
           initialPageParam: 0,
           nextPageParamBuilder: (data) => data.pageParams.last + 1,
-          queryClient: client,
+          client: client,
         ),
       );
 
@@ -1060,7 +1060,7 @@ void main() {
             initialPageParam: 0,
             nextPageParamBuilder: (data) => data.pageParams.last + 1,
             placeholder: const InfiniteData(['page-ph'], [0]),
-            queryClient: client,
+            client: client,
           );
           return Container();
         },
@@ -1090,7 +1090,7 @@ void main() {
           nextPageParamBuilder: (data) => data.pageParams.last + 1,
           staleDuration: const StaleDuration(minutes: 5),
           refetchOnMount: RefetchOnMount.stale,
-          queryClient: client,
+          client: client,
         ),
       );
 
@@ -1126,7 +1126,7 @@ void main() {
           nextPageParamBuilder: (data) => data.pageParams.last + 1,
           staleDuration: const StaleDuration(minutes: 5),
           refetchOnMount: RefetchOnMount.stale,
-          queryClient: client,
+          client: client,
         ),
       );
 
@@ -1161,7 +1161,7 @@ void main() {
           nextPageParamBuilder: (data) => data.pageParams.last + 1,
           staleDuration: const StaleDuration(minutes: 5),
           refetchOnMount: RefetchOnMount.never,
-          queryClient: client,
+          client: client,
         ),
       );
 
@@ -1197,7 +1197,7 @@ void main() {
           nextPageParamBuilder: (data) => data.pageParams.last + 1,
           staleDuration: const StaleDuration(minutes: 5),
           refetchOnMount: RefetchOnMount.always,
-          queryClient: client,
+          client: client,
         ),
       );
 
@@ -1233,7 +1233,7 @@ void main() {
           nextPageParamBuilder: (data) => data.pageParams.last + 1,
           staleDuration: const StaleDuration(minutes: 5),
           refetchOnResume: RefetchOnResume.stale,
-          queryClient: client,
+          client: client,
         ),
       );
 
@@ -1265,7 +1265,7 @@ void main() {
           nextPageParamBuilder: (data) => data.pageParams.last + 1,
           staleDuration: const StaleDuration(minutes: 5),
           refetchOnResume: RefetchOnResume.stale,
-          queryClient: client,
+          client: client,
         ),
       );
 
@@ -1296,7 +1296,7 @@ void main() {
           nextPageParamBuilder: (data) => data.pageParams.last + 1,
           staleDuration: const StaleDuration(minutes: 5),
           refetchOnResume: RefetchOnResume.never,
-          queryClient: client,
+          client: client,
         ),
       );
 
@@ -1328,7 +1328,7 @@ void main() {
           nextPageParamBuilder: (data) => data.pageParams.last + 1,
           staleDuration: const StaleDuration(minutes: 5),
           refetchOnResume: RefetchOnResume.always,
-          queryClient: client,
+          client: client,
         ),
       );
 
@@ -1358,7 +1358,7 @@ void main() {
           initialPageParam: 0,
           nextPageParamBuilder: (data) => data.pageParams.last + 1,
           refetchInterval: const Duration(seconds: 5),
-          queryClient: client,
+          client: client,
         ),
       );
 
@@ -1389,7 +1389,7 @@ void main() {
           initialPageParam: 0,
           nextPageParamBuilder: (data) => data.pageParams.last + 1,
           refetchInterval: const Duration(seconds: 5),
-          queryClient: client,
+          client: client,
         ),
       );
 
@@ -1424,7 +1424,7 @@ void main() {
             if (retryCount >= 3) return null;
             return const Duration(seconds: 1);
           },
-          queryClient: client,
+          client: client,
         ),
       );
 
@@ -1455,7 +1455,7 @@ void main() {
           initialPageParam: 0,
           nextPageParamBuilder: (data) => data.pageParams.last + 1,
           retry: (_, __) => null,
-          queryClient: client,
+          client: client,
         ),
       );
 
@@ -1487,7 +1487,7 @@ void main() {
             if (retryCount >= 2) return null; // Max 2 retries
             return const Duration(seconds: 1);
           },
-          queryClient: client,
+          client: client,
         ),
       );
 
@@ -1529,7 +1529,7 @@ void main() {
           nextPageParamBuilder: (data) => data.pageParams.last + 1,
           retry: (_, __) => null,
           retryOnMount: true,
-          queryClient: client,
+          client: client,
         ),
       );
 
@@ -1565,7 +1565,7 @@ void main() {
           nextPageParamBuilder: (data) => data.pageParams.last + 1,
           retry: (_, __) => null,
           retryOnMount: false,
-          queryClient: client,
+          client: client,
         ),
       );
 
@@ -1600,7 +1600,7 @@ void main() {
           initialPageParam: 0,
           nextPageParamBuilder: (data) => data.pageParams.last + 1,
           retryOnMount: false,
-          queryClient: client,
+          client: client,
         ),
       );
 
@@ -1624,7 +1624,7 @@ void main() {
           initialPageParam: 0,
           nextPageParamBuilder: (data) => data.pageParams.last + 1,
           seed: const InfiniteData(['page-seed'], [0]),
-          queryClient: client,
+          client: client,
         ),
       );
 
@@ -1649,7 +1649,7 @@ void main() {
           initialPageParam: 0,
           nextPageParamBuilder: (data) => data.pageParams.last + 1,
           seed: const InfiniteData(['page-seed'], [0]),
-          queryClient: client,
+          client: client,
         ),
       );
 
@@ -1673,7 +1673,7 @@ void main() {
           nextPageParamBuilder: (data) => data.pageParams.last + 1,
           placeholder: const InfiniteData(['page-ph'], [0]),
           seed: const InfiniteData(['page-seed'], [0]),
-          queryClient: client,
+          client: client,
         ),
       );
 
@@ -1695,7 +1695,7 @@ void main() {
           nextPageParamBuilder: (data) => data.pageParams.last + 1,
           seed: const InfiniteData(['page-seed'], [0]),
           staleDuration: StaleDuration.zero,
-          queryClient: client,
+          client: client,
         ),
       );
 
@@ -1721,7 +1721,7 @@ void main() {
           initialPageParam: 0,
           nextPageParamBuilder: (data) => data.pageParams.last + 1,
           seed: const InfiniteData(['page-seed'], [0]),
-          queryClient: client,
+          client: client,
         ),
       );
 
@@ -1744,7 +1744,7 @@ void main() {
           seed: const InfiniteData(['page-seed'], [0]),
           seedUpdatedAt: clock.minutesAgo(10),
           staleDuration: const StaleDuration(minutes: 5),
-          queryClient: client,
+          client: client,
         ),
       );
 
@@ -1767,7 +1767,7 @@ void main() {
           seed: const InfiniteData(['page-seed'], [0]),
           seedUpdatedAt: clock.minutesAgo(2),
           staleDuration: const StaleDuration(minutes: 5),
-          queryClient: client,
+          client: client,
         ),
       );
 
@@ -1790,7 +1790,7 @@ void main() {
           seed: const InfiniteData(['page-seed'], [0]),
           seedUpdatedAt: clock.minutesFromNow(60),
           staleDuration: const StaleDuration(minutes: 5),
-          queryClient: client,
+          client: client,
         ),
       );
 
@@ -1831,7 +1831,7 @@ void main() {
                 'source': 'hook1',
                 'nested': {'a': 1, 'b': 2},
               },
-              queryClient: client,
+              client: client,
             );
             return Container();
           },
@@ -1851,7 +1851,7 @@ void main() {
                 'extra': 'value',
                 'nested': {'c': 3},
               },
-              queryClient: client,
+              client: client,
             );
             return Container();
           },
@@ -1880,7 +1880,7 @@ void main() {
           },
           initialPageParam: 0,
           nextPageParamBuilder: (data) => data.pageParams.last + 1,
-          queryClient: client,
+          client: client,
         ),
       );
 
@@ -1916,7 +1916,7 @@ void main() {
           },
           initialPageParam: 0,
           nextPageParamBuilder: (data) => data.pageParams.last + 1,
-          queryClient: client,
+          client: client,
         ),
       );
 
@@ -1949,7 +1949,7 @@ void main() {
           },
           initialPageParam: 0,
           nextPageParamBuilder: (data) => null,
-          queryClient: client,
+          client: client,
         ),
       );
 
@@ -1980,7 +1980,7 @@ void main() {
           initialPageParam: 0,
           nextPageParamBuilder: (data) => data.pageParams.last + 1,
           maxPages: 2,
-          queryClient: client,
+          client: client,
         ),
       );
 
@@ -2012,7 +2012,7 @@ void main() {
           },
           initialPageParam: 0,
           nextPageParamBuilder: (data) => data.pageParams.last + 1,
-          queryClient: client,
+          client: client,
         ),
       );
 
@@ -2058,7 +2058,7 @@ void main() {
           },
           initialPageParam: 0,
           nextPageParamBuilder: (data) => data.pageParams.last + 1,
-          queryClient: client,
+          client: client,
         ),
       );
 
@@ -2103,7 +2103,7 @@ void main() {
           },
           initialPageParam: 0,
           nextPageParamBuilder: (data) => data.pageParams.last + 1,
-          queryClient: client,
+          client: client,
         ),
       );
 
@@ -2139,7 +2139,7 @@ void main() {
           initialPageParam: 5,
           nextPageParamBuilder: (data) => data.pageParams.last + 1,
           prevPageParamBuilder: (data) => data.pageParams.first - 1,
-          queryClient: client,
+          client: client,
         ),
       );
 
@@ -2176,7 +2176,7 @@ void main() {
           initialPageParam: 5,
           nextPageParamBuilder: (data) => data.pageParams.last + 1,
           prevPageParamBuilder: (data) => data.pageParams.first - 1,
-          queryClient: client,
+          client: client,
         ),
       );
 
@@ -2210,7 +2210,7 @@ void main() {
           initialPageParam: 0,
           nextPageParamBuilder: (data) => data.pageParams.last + 1,
           prevPageParamBuilder: (data) => null,
-          queryClient: client,
+          client: client,
         ),
       );
 
@@ -2240,7 +2240,7 @@ void main() {
           nextPageParamBuilder: (data) => data.pageParams.last + 1,
           prevPageParamBuilder: (data) => data.pageParams.first - 1,
           maxPages: 2,
-          queryClient: client,
+          client: client,
         ),
       );
 
@@ -2274,7 +2274,7 @@ void main() {
           initialPageParam: 5,
           nextPageParamBuilder: (data) => data.pageParams.last + 1,
           prevPageParamBuilder: (data) => data.pageParams.first - 1,
-          queryClient: client,
+          client: client,
         ),
       );
 
@@ -2322,7 +2322,7 @@ void main() {
           initialPageParam: 5,
           nextPageParamBuilder: (data) => data.pageParams.last + 1,
           prevPageParamBuilder: (data) => data.pageParams.first - 1,
-          queryClient: client,
+          client: client,
         ),
       );
 
@@ -2368,7 +2368,7 @@ void main() {
           initialPageParam: 5,
           nextPageParamBuilder: (data) => data.pageParams.last + 1,
           prevPageParamBuilder: (data) => data.pageParams.first - 1,
-          queryClient: client,
+          client: client,
         ),
       );
 
@@ -2404,7 +2404,7 @@ void main() {
           },
           initialPageParam: 0,
           nextPageParamBuilder: (data) => data.pageParams.last + 1,
-          queryClient: client,
+          client: client,
         ),
       );
 
@@ -2421,7 +2421,7 @@ void main() {
           },
           initialPageParam: 0,
           nextPageParamBuilder: (data) => data.pageParams.last + 1,
-          queryClient: client,
+          client: client,
         ),
       );
 
@@ -2443,7 +2443,7 @@ void main() {
           },
           initialPageParam: 0,
           nextPageParamBuilder: (_) => null,
-          queryClient: client,
+          client: client,
         ),
       );
 
@@ -2466,7 +2466,7 @@ void main() {
           },
           initialPageParam: 0,
           nextPageParamBuilder: (data) => data.pageParams.last + 1,
-          queryClient: client,
+          client: client,
         ),
       );
 
@@ -2492,7 +2492,7 @@ void main() {
           initialPageParam: 5,
           nextPageParamBuilder: (data) => data.pageParams.last + 1,
           prevPageParamBuilder: (data) => data.pageParams.first - 1,
-          queryClient: client,
+          client: client,
         ),
       );
 
@@ -2510,7 +2510,7 @@ void main() {
           initialPageParam: 5,
           nextPageParamBuilder: (data) => data.pageParams.last + 1,
           prevPageParamBuilder: (data) => data.pageParams.first - 1,
-          queryClient: client,
+          client: client,
         ),
       );
 
@@ -2534,7 +2534,7 @@ void main() {
           initialPageParam: 5,
           nextPageParamBuilder: (data) => data.pageParams.last + 1,
           // prevPageParamBuilder not provided
-          queryClient: client,
+          client: client,
         ),
       );
 
@@ -2557,7 +2557,7 @@ void main() {
           initialPageParam: 0,
           nextPageParamBuilder: (data) => data.pageParams.last + 1,
           prevPageParamBuilder: (_) => null,
-          queryClient: client,
+          client: client,
         ),
       );
 
@@ -2581,7 +2581,7 @@ void main() {
           initialPageParam: 5,
           nextPageParamBuilder: (data) => data.pageParams.last + 1,
           prevPageParamBuilder: (data) => data.pageParams.first - 1,
-          queryClient: client,
+          client: client,
         ),
       );
 
@@ -2605,7 +2605,7 @@ void main() {
           },
           initialPageParam: 0,
           nextPageParamBuilder: (data) => data.pageParams.last + 1,
-          queryClient: client,
+          client: client,
         ),
       );
 
@@ -2626,7 +2626,7 @@ void main() {
           },
           initialPageParam: 0,
           nextPageParamBuilder: (data) => data.pageParams.last + 1,
-          queryClient: client,
+          client: client,
         ),
       );
 
@@ -2645,7 +2645,7 @@ void main() {
           },
           initialPageParam: 0,
           nextPageParamBuilder: (data) => data.pageParams.last + 1,
-          queryClient: client,
+          client: client,
         ),
       );
 
@@ -2669,7 +2669,7 @@ void main() {
           initialPageParam: 5,
           nextPageParamBuilder: (data) => data.pageParams.last + 1,
           prevPageParamBuilder: (data) => data.pageParams.first - 1,
-          queryClient: client,
+          client: client,
         ),
       );
 
@@ -2692,7 +2692,7 @@ void main() {
           },
           initialPageParam: 0,
           nextPageParamBuilder: (data) => data.pageParams.last + 1,
-          queryClient: client,
+          client: client,
         ),
       );
 
@@ -2718,7 +2718,7 @@ void main() {
           initialPageParam: 5,
           nextPageParamBuilder: (data) => data.pageParams.last + 1,
           prevPageParamBuilder: (data) => data.pageParams.first - 1,
-          queryClient: client,
+          client: client,
         ),
       );
 
@@ -2740,7 +2740,7 @@ void main() {
           initialPageParam: 5,
           nextPageParamBuilder: (data) => data.pageParams.last + 1,
           prevPageParamBuilder: (data) => data.pageParams.first - 1,
-          queryClient: client,
+          client: client,
         ),
       );
 
@@ -2760,7 +2760,7 @@ void main() {
           initialPageParam: 5,
           nextPageParamBuilder: (data) => data.pageParams.last + 1,
           prevPageParamBuilder: (data) => data.pageParams.first - 1,
-          queryClient: client,
+          client: client,
         ),
       );
 
@@ -2784,7 +2784,7 @@ void main() {
           initialPageParam: 5,
           nextPageParamBuilder: (data) => data.pageParams.last + 1,
           prevPageParamBuilder: (data) => data.pageParams.first - 1,
-          queryClient: client,
+          client: client,
         ),
       );
 
@@ -2808,7 +2808,7 @@ void main() {
           initialPageParam: 5,
           nextPageParamBuilder: (data) => data.pageParams.last + 1,
           prevPageParamBuilder: (data) => data.pageParams.first - 1,
-          queryClient: client,
+          client: client,
         ),
       );
 
@@ -2836,7 +2836,7 @@ void main() {
           },
           initialPageParam: 0,
           nextPageParamBuilder: (data) => data.pageParams.last + 1,
-          queryClient: client,
+          client: client,
         ),
       );
 

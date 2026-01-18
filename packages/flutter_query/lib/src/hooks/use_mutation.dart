@@ -37,9 +37,9 @@ MutationResult<TData, TError, TVariables, TOnMutateResult>
   RetryResolver<TError>? retry,
   GcDuration? gcDuration,
   Map<String, dynamic>? meta,
-  QueryClient? queryClient,
+  QueryClient? client,
 }) {
-  final client = useQueryClient(queryClient);
+  final effectiveClient = useQueryClient(client);
 
   // Build options (merging with defaults happens in MutationObserver)
   MutationOptions<TData, TError, TVariables, TOnMutateResult> buildOptions() {
@@ -59,7 +59,7 @@ MutationResult<TData, TError, TVariables, TOnMutateResult>
   // Create observer once per component instance
   final observer = useMemoized(
     () => MutationObserver<TData, TError, TVariables, TOnMutateResult>(
-      client,
+      effectiveClient,
       buildOptions(),
     ),
     [],

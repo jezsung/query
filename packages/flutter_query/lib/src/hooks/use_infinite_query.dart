@@ -58,14 +58,14 @@ InfiniteQueryResult<TData, TError, TPageParam>
   InfiniteData<TData, TPageParam>? seed,
   DateTime? seedUpdatedAt,
   Map<String, dynamic>? meta,
-  QueryClient? queryClient,
+  QueryClient? client,
 }) {
-  final client = useQueryClient(queryClient);
+  final effectiveClient = useQueryClient(client);
 
   // Create observer once per component instance
   final observer = useMemoized(
     () => InfiniteQueryObserver<TData, TError, TPageParam>(
-      client,
+      effectiveClient,
       InfiniteQueryObserverOptions(
         queryKey,
         queryFn,

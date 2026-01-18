@@ -20,15 +20,15 @@ QueryResult<TData, TError> useQuery<TData, TError>(
   TData? seed,
   DateTime? seedUpdatedAt,
   Map<String, dynamic>? meta,
-  QueryClient? queryClient,
+  QueryClient? client,
 }) {
-  final client = useQueryClient(queryClient);
+  final effectiveClient = useQueryClient(client);
 
   // Create observer once per component instance
   // Client defaults are applied inside QueryObserver constructor
   final observer = useMemoized(
     () => QueryObserver<TData, TError>(
-      client,
+      effectiveClient,
       QueryObserverOptions(
         queryKey,
         queryFn,
