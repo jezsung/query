@@ -1,3 +1,32 @@
+## 0.6.0 (2025-01-18)
+
+This release contains breaking changes to improve API consistency and usability.
+
+- **BREAKING**: `QueryClientProvider` API changed. The `client` parameter has been replaced with a `create` factory function. Use `QueryClientProvider.value()` for existing clients.
+
+  ```dart
+  // Before
+  QueryClientProvider(
+    client: queryClient,
+    child: MyApp(),
+  )
+
+  // After (managed lifecycle)
+  QueryClientProvider(
+    create: (context) => QueryClient(),
+    child: MyApp(),
+  )
+
+  // After (existing client)
+  QueryClientProvider.value(
+    queryClient,
+    child: MyApp(),
+  )
+  ```
+
+- `QueryClientProvider` now supports lazy initialization via the `lazy` parameter
+- `QueryClientProvider` now automatically clears the `QueryClient` when removed from the widget tree (when using the default constructor)
+
 ## 0.5.1 (2025-01-14)
 
 This release adds support for infinite/paginated queries.
