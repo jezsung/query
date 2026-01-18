@@ -5,39 +5,88 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import '../core/core.dart';
 import 'use_query_client.dart';
 
-/// A hook that manages infinite/paginated queries with automatic page accumulation.
+/// A hook for fetching and caching paginated data with automatic page
+/// accumulation.
 ///
-/// Returns an [InfiniteQueryResult] containing the accumulated pages, pagination
-/// state, and methods to fetch more pages.
+/// This hook extends [useQuery] with pagination support, managing multiple
+/// pages of data and providing methods to fetch additional pages in either
+/// direction.
 ///
-/// Example:
-/// ```dart
-/// final query = useInfiniteQuery<Post, Error, int>(
-///   ['posts'],
-///   (context) => fetchPosts(page: context.pageParam),
-///   initialPageParam: 1,
-///   nextPageParamBuilder: (data) {
-///     return data.pages.last.hasMore ? data.pageParams.last + 1 : null;
-///   },
-/// );
+/// The [queryKey] uniquely identifies this query in the cache. Queries with the
+/// same key share cached data across the widget tree.
 ///
-/// // Access pages
-/// for (final page in query.data?.pages ?? []) {
-///   for (final post in page.items) {
-///     // render post
-///   }
-/// }
+/// The [queryFn] fetches a single page of data. It receives an
+/// [InfiniteQueryFunctionContext] containing the [pageParam] for the page to
+/// fetch.
 ///
-/// // Load more
-/// if (query.hasNextPage) {
-///   TextButton(
-///     onPressed: query.isFetchingNextPage ? null : () => query.fetchNextPage(),
-///     child: Text('Load More'),
-///   );
-/// }
-/// ```
+/// Returns an [InfiniteQueryResult] containing the accumulated pages,
+/// pagination state, and methods to fetch more pages. The widget rebuilds
+/// automatically when the query state changes.
 ///
-/// Matches TanStack Query v5's useInfiniteQuery hook.
+/// ## Options
+///
+/// - [initialPageParam]: The page parameter for the first page fetch.
+///
+/// - [nextPageParamBuilder]: A function that returns the page parameter for the
+///   next page, or `null` if there are no more pages. Receives the current
+///   [InfiniteData] containing all fetched pages.
+///
+/// - [prevPageParamBuilder]: A function that returns the page parameter for the
+///   previous page, or `null` if there are no previous pages. Required for
+///   bidirectional pagination.
+///
+/// - [maxPages]: The maximum number of pages to keep in cache. When exceeded,
+///   pages are removed from the opposite end of the fetch direction.
+///
+/// - [enabled]: Whether the query should execute. Defaults to `true`. Set to
+///   `false` to disable automatic fetching.
+///
+/// - [staleDuration]: How long data remains fresh before becoming stale.
+///   Stale data may be refetched on the next access. Defaults to zero (data is
+///   immediately stale).
+///
+/// - [gcDuration]: How long unused data remains in cache before garbage
+///   collection. Defaults to 5 minutes.
+///
+/// - [placeholder]: Data to display while the query is pending and has no
+///   cached data. Unlike [seed], placeholder data is not persisted to the
+///   cache.
+///
+/// - [refetchOnMount]: Controls refetch behavior when this hook mounts. Can be
+///   [RefetchOnMount.stale] (default), [RefetchOnMount.always], or
+///   [RefetchOnMount.never].
+///
+/// - [refetchOnResume]: Controls refetch behavior when the app resumes from
+///   background. Can be [RefetchOnResume.stale] (default),
+///   [RefetchOnResume.always], or [RefetchOnResume.never].
+///
+/// - [refetchInterval]: Automatically refetch at the specified interval while
+///   this hook is mounted.
+///
+/// - [retry]: A callback that controls retry behavior on failure. Returns a
+///   [Duration] to retry after waiting, or `null` to stop retrying. Defaults
+///   to 3 retries with exponential backoff (1s, 2s, 4s).
+///
+/// - [retryOnMount]: Whether to retry failed queries when this hook mounts.
+///   Defaults to `true`.
+///
+/// - [seed]: Initial data to populate the cache before the first fetch. Unlike
+///   [placeholder], seed data is persisted to the cache.
+///
+/// - [seedUpdatedAt]: The timestamp when [seed] data was last updated. Used to
+///   determine staleness of seed data.
+///
+/// - [meta]: A map of arbitrary metadata attached to this query, accessible
+///   in the query function context. When multiple hooks share the same query
+///   key, their [meta] maps are deep merged.
+///
+/// - [client]: The [QueryClient] to use. If provided, takes precedence over
+///   the nearest [QueryClientProvider] ancestor.
+///
+/// See also:
+///
+/// - [useQuery] for non-paginated data
+/// - [useMutation] for create, update, and delete operations
 InfiniteQueryResult<TData, TError, TPageParam>
     useInfiniteQuery<TData, TError, TPageParam>(
   List<Object?> queryKey,

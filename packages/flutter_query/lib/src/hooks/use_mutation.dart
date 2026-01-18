@@ -3,29 +3,52 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import '../core/core.dart';
 import 'use_query_client.dart';
 
-/// Hook for performing mutations (create, update, delete operations).
+/// A hook for performing create, update, and delete operations.
 ///
-/// Unlike useQuery which fetches data automatically, useMutation returns
-/// a `mutate` function that you call to trigger the mutation.
+/// Unlike [useQuery] which fetches data automatically, this hook returns a
+/// [MutationResult] with a `mutate` function that you call imperatively to
+/// trigger the mutation.
 ///
-/// Example:
-/// ```dart
-/// final mutation = useMutation<User, ApiError, CreateUserInput, PreviousUsers>(
-///   (input, context) => api.createUser(input),
-///   onSuccess: (data, variables, context, fnContext) {
-///     // Invalidate and refetch related queries
-///     fnContext.client.invalidateQueries(queryKey: ['users']);
-///   },
-/// );
+/// The [mutationFn] performs the actual mutation. It receives the variables
+/// passed to `mutate` and a [MutationFunctionContext].
 ///
-/// // In your UI:
-/// ElevatedButton(
-///   onPressed: mutation.isPending
-///     ? null
-///     : () => mutation.mutate(CreateUserInput(name: 'John')),
-///   child: Text(mutation.isPending ? 'Creating...' : 'Create User'),
-/// );
-/// ```
+/// Returns a [MutationResult] containing the mutation state and control
+/// methods. The widget rebuilds automatically when the mutation state changes.
+///
+/// ## Options
+///
+/// - [onMutate]: Called before the mutation executes. Use for optimistic
+///   updates. The returned value is passed to other callbacks as `context`.
+///
+/// - [onSuccess]: Called when the mutation succeeds. Receives the data,
+///   variables, and context from [onMutate].
+///
+/// - [onError]: Called when the mutation fails. Receives the error, variables,
+///   and context from [onMutate].
+///
+/// - [onSettled]: Called when the mutation completes, regardless of success or
+///   failure. Receives the data (if successful), error (if failed), variables,
+///   and context from [onMutate].
+///
+/// - [mutationKey]: An optional key to identify this mutation in the cache.
+///   Unlike query keys, mutation keys are not used for deduplication.
+///
+/// - [retry]: A callback that controls retry behavior on failure. Returns a
+///   [Duration] to retry after waiting, or `null` to stop retrying. Defaults
+///   to no retries.
+///
+/// - [gcDuration]: How long mutation data remains in cache after completion.
+///   Defaults to 5 minutes.
+///
+/// - [meta]: A map of arbitrary metadata attached to this mutation.
+///
+/// - [client]: The [QueryClient] to use. If provided, takes precedence over
+///   the nearest [QueryClientProvider] ancestor.
+///
+/// See also:
+///
+/// - [useQuery] for fetching data
+/// - [useInfiniteQuery] for paginated data
 MutationResult<TData, TError, TVariables, TOnMutateResult>
     useMutation<TData, TError, TVariables, TOnMutateResult>(
   MutateFn<TData, TVariables> mutationFn, {
