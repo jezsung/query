@@ -4,13 +4,10 @@ import 'query_key.dart';
 import 'query_observer.dart';
 import 'utils.dart';
 
-/// Context passed to infinite query functions.
+/// Context provided to infinite query functions during execution.
 ///
-/// Extends the standard query context with pagination-specific fields:
-/// - [pageParam]: The page parameter for the current fetch
-/// - [direction]: Whether fetching forward (next) or backward (previous)
-///
-/// This aligns with TanStack Query v5's QueryFunctionContext for infinite queries.
+/// Shares the fields with [QueryFunctionContext] and adds pagination-specific
+/// fields for fetching pages of data.
 final class InfiniteQueryFunctionContext<TPageParam> {
   const InfiniteQueryFunctionContext({
     required this.queryKey,
@@ -24,31 +21,31 @@ final class InfiniteQueryFunctionContext<TPageParam> {
   /// The query key that uniquely identifies this query.
   final List<Object?> queryKey;
 
-  /// The QueryClient instance managing this query.
+  /// The [QueryClient] instance managing this query.
   final QueryClient client;
 
   /// The abort signal for this query execution.
   ///
-  /// Use this to check if the query has been cancelled and to integrate
+  /// Use this to check whether the query has been cancelled and to integrate
   /// with HTTP clients that support cancellation.
   final AbortSignal signal;
 
-  /// Additional metadata stored on the query options.
+  /// Additional metadata associated with this query.
   ///
-  /// Use this to pass information through to query functions that can be
-  /// used for logging, analytics, or other custom logic.
+  /// Contains custom key-value pairs passed through query options for use
+  /// in logging, analytics, or other application-specific logic.
   final Map<String, dynamic> meta;
 
   /// The page parameter for the current page being fetched.
   ///
-  /// For the initial fetch, this is [InfiniteQueryObserverOptions.initialPageParam].
-  /// For subsequent fetches, this is the value returned by [getNextPageParam]
-  /// or [getPreviousPageParam].
+  /// For the initial fetch, this is the value from [initialPageParam]. For
+  /// subsequent fetches, this is the value returned by `getNextPageParam` or
+  /// `getPreviousPageParam`.
   final TPageParam pageParam;
 
   /// The direction of the current fetch.
   ///
-  /// [FetchDirection.forward] when fetching the next page,
+  /// Returns [FetchDirection.forward] when fetching the next page and
   /// [FetchDirection.backward] when fetching the previous page.
   final FetchDirection direction;
 

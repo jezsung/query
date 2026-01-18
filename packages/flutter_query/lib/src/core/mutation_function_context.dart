@@ -1,12 +1,11 @@
 import 'query_client.dart';
 import 'utils.dart';
 
-/// Context passed to mutation function and callbacks.
+/// Context provided to mutation functions and lifecycle callbacks.
 ///
-/// Contains references to the client, metadata, and mutation key that can be
-/// used within the mutation function and lifecycle callbacks.
-///
-/// Aligned with TanStack Query's MutationFunctionContext.
+/// Contains the client reference, optional metadata, and mutation key needed
+/// to execute a mutation and its associated callbacks such as `onMutate`,
+/// `onSuccess`, `onError`, and `onSettled`.
 class MutationFunctionContext {
   const MutationFunctionContext({
     required this.client,
@@ -14,13 +13,19 @@ class MutationFunctionContext {
     this.mutationKey,
   });
 
-  /// The QueryClient instance.
+  /// The [QueryClient] instance managing this mutation.
   final QueryClient client;
 
-  /// Optional metadata associated with the mutation.
+  /// Additional metadata associated with this mutation, if provided.
+  ///
+  /// Contains custom key-value pairs passed through mutation options for use
+  /// in logging, analytics, or other application-specific logic.
   final Map<String, dynamic>? meta;
 
-  /// The mutation key, if provided.
+  /// The key that identifies this mutation, if provided.
+  ///
+  /// Unlike query keys, mutation keys are optional and do not deduplicate
+  /// mutations. They can be used to filter or identify mutations in the cache.
   final List<Object?>? mutationKey;
 
   @override

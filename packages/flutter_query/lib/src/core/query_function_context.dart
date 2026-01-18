@@ -3,22 +3,10 @@ import 'query_client.dart';
 import 'query_key.dart';
 import 'utils.dart';
 
-/// Context passed to query functions containing the query key, client, and signal.
+/// Context provided to query functions during execution.
 ///
-/// Aligned with TanStack Query v5's QueryFunctionContext.
-///
-/// The [signal] property allows query functions to respond to cancellation:
-/// ```dart
-/// queryFn: (context) async {
-///   // Use with http package
-///   final request = AbortableRequest('GET', uri,
-///     abortTrigger: context.signal.whenAbort,
-///   );
-///
-///   // Or check manually
-///   context.signal.throwIfAborted();
-/// }
-/// ```
+/// Contains the query key, client reference, abort signal, and metadata
+/// needed to execute a query.
 final class QueryFunctionContext {
   const QueryFunctionContext({
     required this.queryKey,
@@ -30,19 +18,19 @@ final class QueryFunctionContext {
   /// The query key that uniquely identifies this query.
   final List<Object?> queryKey;
 
-  /// The QueryClient instance managing this query.
+  /// The [QueryClient] instance managing this query.
   final QueryClient client;
 
   /// The abort signal for this query execution.
   ///
-  /// Use this to check if the query has been cancelled and to integrate
+  /// Use this to check whether the query has been cancelled and to integrate
   /// with HTTP clients that support cancellation.
   final AbortSignal signal;
 
-  /// Additional metadata stored on the query options.
+  /// Additional metadata associated with this query.
   ///
-  /// Use this to pass information through to query functions that can be
-  /// used for logging, analytics, or other custom logic.
+  /// Contains custom key-value pairs passed through query options for use
+  /// in logging, analytics, or other application-specific logic.
   final Map<String, dynamic> meta;
 
   @override
