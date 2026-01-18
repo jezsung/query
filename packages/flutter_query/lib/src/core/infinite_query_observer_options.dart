@@ -193,12 +193,8 @@ class InfiniteQueryObserverOptions<TData, TError, TPageParam> {
       );
 }
 
-/// Extension methods for [InfiniteQueryObserverOptions].
-extension InfiniteQueryObserverOptionsWithDefaults<TData, TError, TPageParam>
+extension InfiniteQueryObserverOptionsExt<TData, TError, TPageParam>
     on InfiniteQueryObserverOptions<TData, TError, TPageParam> {
-  /// Merges this InfiniteQueryObserverOptions with default options.
-  ///
-  /// Query-specific options take precedence over defaults.
   InfiniteQueryObserverOptions<TData, TError, TPageParam> withDefaults(
     DefaultQueryOptions defaults,
   ) {
@@ -223,10 +219,7 @@ extension InfiniteQueryObserverOptionsWithDefaults<TData, TError, TPageParam>
       meta: meta,
     );
   }
-}
 
-extension InfiniteQueryObserverOptionsBuildNextPageParam<TData, TError,
-    TPageParam> on InfiniteQueryObserverOptions<TData, TError, TPageParam> {
   TPageParam? buildNextPageParam(InfiniteData<TData, TPageParam> data) {
     if (data.pages.isEmpty || data.pageParams.isEmpty) return null;
 
