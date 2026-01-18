@@ -17,10 +17,7 @@ class MutationOptions<TData, TError, TVariables, TOnMutateResult> {
     this.meta,
   });
 
-  final Future<TData> Function(
-    TVariables variables,
-    MutationFunctionContext context,
-  ) mutationFn;
+  final MutateFn<TData, TVariables> mutationFn;
   final MutationOnMutate<TVariables, TOnMutateResult>? onMutate;
   final MutationOnSuccess<TData, TVariables, TOnMutateResult>? onSuccess;
   final MutationOnError<TError, TVariables, TOnMutateResult>? onError;
@@ -44,6 +41,15 @@ class MutationOptions<TData, TError, TVariables, TOnMutateResult> {
         'meta: $meta)';
   }
 }
+
+/// Signature for the function that performs the mutation.
+///
+/// Receives the [variables] to mutate and a [context] containing metadata
+/// like the [MutationFunctionContext.signal] for cancellation.
+typedef MutateFn<TData, TVariables> = Future<TData> Function(
+  TVariables variables,
+  MutationFunctionContext context,
+);
 
 /// Callback invoked before the mutation function executes.
 ///

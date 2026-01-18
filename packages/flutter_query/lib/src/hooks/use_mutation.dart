@@ -28,10 +28,7 @@ import 'use_query_client.dart';
 /// ```
 MutationResult<TData, TError, TVariables, TOnMutateResult>
     useMutation<TData, TError, TVariables, TOnMutateResult>(
-  Future<TData> Function(
-    TVariables variables,
-    MutationFunctionContext context,
-  ) mutationFn, {
+  MutateFn<TData, TVariables> mutationFn, {
   MutationOnMutate<TVariables, TOnMutateResult>? onMutate,
   MutationOnSuccess<TData, TVariables, TOnMutateResult>? onSuccess,
   MutationOnError<TError, TVariables, TOnMutateResult>? onError,
