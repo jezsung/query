@@ -1,7 +1,7 @@
 import 'abort_signal.dart';
-import 'infinite_data.dart';
 import 'query_client.dart';
 import 'query_key.dart';
+import 'query_observer.dart';
 import 'utils.dart';
 
 /// Context passed to infinite query functions.

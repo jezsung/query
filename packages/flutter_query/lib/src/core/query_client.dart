@@ -1,12 +1,12 @@
 import 'default_mutation_options.dart';
 import 'default_query_options.dart';
-import 'infinite_data.dart';
 import 'infinite_query_function_context.dart';
 import 'infinite_query_observer_options.dart';
 import 'mutation_cache.dart';
 import 'query.dart';
 import 'query_cache.dart';
 import 'query_function_context.dart';
+import 'query_observer.dart';
 import 'query_options.dart';
 import 'query_state.dart';
 

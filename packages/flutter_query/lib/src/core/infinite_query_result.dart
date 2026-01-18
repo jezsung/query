@@ -1,4 +1,4 @@
-import 'infinite_data.dart';
+import 'query_observer.dart';
 import 'query_state.dart';
 import 'utils.dart';
 

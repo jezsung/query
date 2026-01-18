@@ -5,7 +5,6 @@ import 'package:clock/clock.dart';
 import 'package:collection/collection.dart';
 import 'package:meta/meta.dart';
 
-import 'infinite_data.dart';
 import 'infinite_query_function_context.dart';
 import 'infinite_query_observer_options.dart';
 import 'infinite_query_result.dart';

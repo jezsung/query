@@ -1,7 +1,7 @@
 import 'default_query_options.dart';
-import 'infinite_data.dart';
 import 'infinite_query_function_context.dart';
 import 'query_key.dart';
+import 'query_observer.dart';
 import 'query_options.dart';
 import 'utils.dart';
 
