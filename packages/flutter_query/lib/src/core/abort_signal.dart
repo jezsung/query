@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import 'package:meta/meta.dart';
+
 /// A read-only signal indicating whether an operation has been aborted.
 ///
 /// Passed to query functions via [QueryFunctionContext], allowing the function
@@ -118,6 +120,7 @@ class AbortedException implements Exception {
 ///
 /// Used internally by [Query] to create and control the abort signal for each
 /// fetch operation.
+@internal
 class AbortController {
   /// Creates an abort controller.
   AbortController();
