@@ -1,5 +1,5 @@
 name: flutter_query
-description: An async state management package that simplifies data fetching, caching, and updates.
+description: Fetch, cache, and sync server data with automatic state management and background updates, inspired by TanStack Query.
 version: 0.5.1
 repository: https://github.com/jezsung/query/tree/main/packages/flutter_query
 documentation: https://flutterquery.com
