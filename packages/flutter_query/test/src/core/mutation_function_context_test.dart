@@ -16,15 +16,19 @@ void main() {
   group('toString', () {
     test(
         'SHOULD return debug-friendly string '
-        'WHEN called with default fields', () {
-      final context = MutationFunctionContext(client: client);
+        'WHEN called with empty meta and null mutationKey', () {
+      final context = MutationFunctionContext(
+        client: client,
+        meta: const {},
+        mutationKey: null,
+      );
 
       expect(
         context.toString(),
         'MutationFunctionContext('
+        'mutationKey: null, '
         'client: $client, '
-        'meta: null, '
-        'mutationKey: null)',
+        'meta: {})',
       );
     });
 
@@ -40,9 +44,9 @@ void main() {
       expect(
         context.toString(),
         'MutationFunctionContext('
+        'mutationKey: [users, create], '
         'client: $client, '
-        'meta: {source: api}, '
-        'mutationKey: [users, create])',
+        'meta: {source: api})',
       );
     });
   });

@@ -66,7 +66,7 @@ class Mutation<TData, TError, TVariables, TOnMutateResult>
   Future<TData> execute(TVariables variables) async {
     final fnContext = MutationFunctionContext(
       client: _client,
-      meta: options.meta,
+      meta: options.meta ?? const {},
       mutationKey: options.mutationKey,
     );
 

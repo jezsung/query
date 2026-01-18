@@ -3,52 +3,53 @@ import 'utils.dart';
 
 /// Context provided to mutation functions and lifecycle callbacks.
 ///
-/// Contains the client reference, optional metadata, and mutation key needed
-/// to execute a mutation and its associated callbacks such as `onMutate`,
-/// `onSuccess`, `onError`, and `onSettled`.
+/// Contains the client reference, metadata, and mutation key needed to execute
+/// a mutation and its associated callbacks such as `onMutate`, `onSuccess`,
+/// `onError`, and `onSettled`.
 class MutationFunctionContext {
   const MutationFunctionContext({
+    required this.mutationKey,
     required this.client,
-    this.meta,
-    this.mutationKey,
+    required this.meta,
   });
+
+  /// The key that identifies this mutation.
+  ///
+  /// Unlike query keys, mutation keys do not deduplicate mutations. They can
+  /// be used to filter or identify mutations in the cache. May be null if no
+  /// mutation key was provided in the options.
+  final List<Object?>? mutationKey;
 
   /// The [QueryClient] instance managing this mutation.
   final QueryClient client;
 
-  /// Additional metadata associated with this mutation, if provided.
+  /// Additional metadata associated with this mutation.
   ///
   /// Contains custom key-value pairs passed through mutation options for use
   /// in logging, analytics, or other application-specific logic.
-  final Map<String, dynamic>? meta;
-
-  /// The key that identifies this mutation, if provided.
-  ///
-  /// Unlike query keys, mutation keys are optional and do not deduplicate
-  /// mutations. They can be used to filter or identify mutations in the cache.
-  final List<Object?>? mutationKey;
+  final Map<String, dynamic> meta;
 
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
     return other is MutationFunctionContext &&
+        deepEq.equals(mutationKey, other.mutationKey) &&
         identical(client, other.client) &&
-        deepEq.equals(meta, other.meta) &&
-        deepEq.equals(mutationKey, other.mutationKey);
+        deepEq.equals(meta, other.meta);
   }
 
   @override
   int get hashCode => Object.hash(
+        deepEq.hash(mutationKey),
         identityHashCode(client),
         deepEq.hash(meta),
-        deepEq.hash(mutationKey),
       );
 
   @override
   String toString() {
     return 'MutationFunctionContext('
+        'mutationKey: $mutationKey, '
         'client: $client, '
-        'meta: $meta, '
-        'mutationKey: $mutationKey)';
+        'meta: $meta)';
   }
 }
