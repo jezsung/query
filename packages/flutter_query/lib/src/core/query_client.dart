@@ -134,9 +134,8 @@ class QueryClient {
     final query = _cache.build<TData, TError>(effectiveOptions);
 
     // Use staleDuration for staleness check (observer-level concept, but used here imperatively)
-    final staleDurationValue = staleDuration ??
-        defaultQueryOptions.staleDuration ??
-        const StaleDuration();
+    final staleDurationValue =
+        staleDuration ?? defaultQueryOptions.staleDuration;
 
     // Check if data is stale
     if (query.shouldFetch(staleDurationValue)) {
@@ -424,9 +423,8 @@ class QueryClient {
         _cache.build<InfiniteData<TData, TPageParam>, TError>(effectiveOptions);
 
     // Use staleDuration for staleness check
-    final staleDurationValue = staleDuration ??
-        defaultQueryOptions.staleDuration ??
-        const StaleDuration();
+    final staleDurationValue =
+        staleDuration ?? defaultQueryOptions.staleDuration;
 
     // Check if data is stale
     if (query.shouldFetch(staleDurationValue)) {

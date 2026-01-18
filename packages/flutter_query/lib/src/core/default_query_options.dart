@@ -3,8 +3,8 @@ import 'query_options.dart';
 class DefaultQueryOptions {
   const DefaultQueryOptions({
     this.enabled = true,
-    this.staleDuration,
-    this.gcDuration,
+    this.staleDuration = StaleDuration.zero,
+    this.gcDuration = const GcDuration(minutes: 5),
     this.refetchInterval,
     this.refetchOnMount = RefetchOnMount.stale,
     this.refetchOnResume = RefetchOnResume.stale,
@@ -13,8 +13,8 @@ class DefaultQueryOptions {
   });
 
   final bool enabled;
-  final StaleDuration? staleDuration;
-  final GcDuration? gcDuration;
+  final StaleDuration staleDuration;
+  final GcDuration gcDuration;
   final Duration? refetchInterval;
   final RefetchOnMount refetchOnMount;
   final RefetchOnResume refetchOnResume;
