@@ -91,7 +91,6 @@ InfiniteQueryResult<TData, TError, TPageParam>
   );
 
   // Update options during render (before subscribing)
-  // This ensures we get the optimistic result immediately when options change
   observer.options = InfiniteQueryObserverOptions(
     queryKey,
     queryFn,
@@ -114,6 +113,7 @@ InfiniteQueryResult<TData, TError, TPageParam>
   );
 
   // Subscribe to observer and trigger rebuilds when result changes
+  // Uses useState with useEffect subscription for synchronous updates
   final result = useState(observer.result);
 
   useEffect(() {
@@ -123,16 +123,17 @@ InfiniteQueryResult<TData, TError, TPageParam>
     return unsubscribe;
   }, [observer]);
 
+  // Mount observer and cleanup on unmount
   useEffect(() {
     observer.onMount();
     return observer.onUnmount;
   }, [observer]);
 
+  // Handle app lifecycle resume events
   useEffect(() {
     final listener = AppLifecycleListener(onResume: observer.onResume);
     return listener.dispose;
   }, [observer]);
 
-  // Return observer.result directly to ensure synchronous updates are visible immediately.
   return result.value;
 }

@@ -75,6 +75,7 @@ MutationResult<TData, TError, TVariables, TOnMutateResult>
   );
 
   // Subscribe to observer and trigger rebuilds when result changes
+  // Uses useState with useEffect subscription for synchronous updates
   final result = useState(observer.result);
 
   useEffect(() {
