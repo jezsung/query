@@ -45,4 +45,15 @@ class DefaultQueryOptions {
         identityHashCode(retry),
         retryOnMount,
       );
+
+  @override
+  String toString() => 'DefaultQueryOptions('
+      'enabled: $enabled, '
+      'staleDuration: $staleDuration, '
+      'gcDuration: $gcDuration, '
+      'refetchInterval: $refetchInterval, '
+      'refetchOnMount: $refetchOnMount, '
+      'refetchOnResume: $refetchOnResume, '
+      'retry: $retry, '
+      'retryOnMount: $retryOnMount)';
 }
