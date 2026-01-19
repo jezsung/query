@@ -29,17 +29,15 @@ class MutationOptions<TData, TError, TVariables, TOnMutateResult> {
   final Map<String, dynamic>? meta;
 
   @override
-  String toString() {
-    return 'MutationOptions('
-        'onMutate: ${onMutate != null ? '<Function>' : 'null'}, '
-        'onSuccess: ${onSuccess != null ? '<Function>' : 'null'}, '
-        'onError: ${onError != null ? '<Function>' : 'null'}, '
-        'onSettled: ${onSettled != null ? '<Function>' : 'null'}, '
-        'mutationKey: $mutationKey, '
-        'gcDuration: $gcDuration, '
-        'retry: ${retry != null ? '<Function>' : 'null'}, '
-        'meta: $meta)';
-  }
+  String toString() => 'MutationOptions('
+      'onMutate: ${onMutate != null ? '<Function>' : 'null'}, '
+      'onSuccess: ${onSuccess != null ? '<Function>' : 'null'}, '
+      'onError: ${onError != null ? '<Function>' : 'null'}, '
+      'onSettled: ${onSettled != null ? '<Function>' : 'null'}, '
+      'mutationKey: $mutationKey, '
+      'gcDuration: $gcDuration, '
+      'retry: ${retry != null ? '<Function>' : 'null'}, '
+      'meta: $meta)';
 }
 
 /// Signature for the function that performs the mutation.

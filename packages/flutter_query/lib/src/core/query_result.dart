@@ -121,24 +121,23 @@ class QueryResult<TData, TError> {
   bool get isRefetching => isFetching && !isPending;
 
   @override
-  bool operator ==(Object other) {
-    if (identical(this, other)) return true;
-    return other is QueryResult<TData, TError> &&
-        status == other.status &&
-        fetchStatus == other.fetchStatus &&
-        deepEq.equals(data, other.data) &&
-        dataUpdatedAt == other.dataUpdatedAt &&
-        dataUpdateCount == other.dataUpdateCount &&
-        deepEq.equals(error, other.error) &&
-        errorUpdatedAt == other.errorUpdatedAt &&
-        errorUpdateCount == other.errorUpdateCount &&
-        failureCount == other.failureCount &&
-        deepEq.equals(failureReason, other.failureReason) &&
-        isEnabled == other.isEnabled &&
-        isStale == other.isStale &&
-        isFetchedAfterMount == other.isFetchedAfterMount &&
-        isPlaceholderData == other.isPlaceholderData;
-  }
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is QueryResult<TData, TError> &&
+          status == other.status &&
+          fetchStatus == other.fetchStatus &&
+          deepEq.equals(data, other.data) &&
+          dataUpdatedAt == other.dataUpdatedAt &&
+          dataUpdateCount == other.dataUpdateCount &&
+          deepEq.equals(error, other.error) &&
+          errorUpdatedAt == other.errorUpdatedAt &&
+          errorUpdateCount == other.errorUpdateCount &&
+          failureCount == other.failureCount &&
+          deepEq.equals(failureReason, other.failureReason) &&
+          isEnabled == other.isEnabled &&
+          isStale == other.isStale &&
+          isFetchedAfterMount == other.isFetchedAfterMount &&
+          isPlaceholderData == other.isPlaceholderData;
 
   @override
   int get hashCode => Object.hash(

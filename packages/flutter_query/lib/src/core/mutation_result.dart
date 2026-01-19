@@ -108,17 +108,15 @@ class MutationResult<TData, TError, TVariables, TOnMutateResult> {
       );
 
   @override
-  String toString() {
-    return 'MutationResult('
-        'status: $status, '
-        'data: $data, '
-        'error: $error, '
-        'variables: $variables, '
-        'submittedAt: $submittedAt, '
-        'failureCount: $failureCount, '
-        'failureReason: $failureReason, '
-        'isPaused: $isPaused, '
-        'mutate: <Function>, '
-        'reset: <Function>)';
-  }
+  String toString() => 'MutationResult('
+      'status: $status, '
+      'data: $data, '
+      'error: $error, '
+      'variables: $variables, '
+      'submittedAt: $submittedAt, '
+      'failureCount: $failureCount, '
+      'failureReason: $failureReason, '
+      'isPaused: $isPaused, '
+      'mutate: <Function>, '
+      'reset: <Function>)';
 }

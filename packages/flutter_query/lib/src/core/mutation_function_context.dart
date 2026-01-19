@@ -30,13 +30,12 @@ class MutationFunctionContext {
   final Map<String, dynamic> meta;
 
   @override
-  bool operator ==(Object other) {
-    if (identical(this, other)) return true;
-    return other is MutationFunctionContext &&
-        deepEq.equals(mutationKey, other.mutationKey) &&
-        identical(client, other.client) &&
-        deepEq.equals(meta, other.meta);
-  }
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is MutationFunctionContext &&
+          deepEq.equals(mutationKey, other.mutationKey) &&
+          identical(client, other.client) &&
+          deepEq.equals(meta, other.meta);
 
   @override
   int get hashCode => Object.hash(
@@ -46,10 +45,8 @@ class MutationFunctionContext {
       );
 
   @override
-  String toString() {
-    return 'MutationFunctionContext('
-        'mutationKey: $mutationKey, '
-        'client: $client, '
-        'meta: $meta)';
-  }
+  String toString() => 'MutationFunctionContext('
+      'mutationKey: $mutationKey, '
+      'client: $client, '
+      'meta: $meta)';
 }

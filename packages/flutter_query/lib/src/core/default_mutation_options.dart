@@ -49,9 +49,7 @@ class DefaultMutationOptions {
       );
 
   @override
-  String toString() {
-    return 'DefaultMutationOptions('
-        'gcDuration: $gcDuration, '
-        'retry: <Function>)';
-  }
+  String toString() => 'DefaultMutationOptions('
+      'gcDuration: $gcDuration, '
+      'retry: <Function>)';
 }

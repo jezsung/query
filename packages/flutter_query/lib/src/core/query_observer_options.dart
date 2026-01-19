@@ -31,24 +31,23 @@ class QueryObserverOptions<TData, TError> extends QueryOptions<TData, TError> {
   final bool? retryOnMount;
 
   @override
-  bool operator ==(Object other) {
-    if (identical(this, other)) return true;
-    return other is QueryObserverOptions<TData, TError> &&
-        queryKey == other.queryKey &&
-        identical(queryFn, other.queryFn) &&
-        gcDuration == other.gcDuration &&
-        deepEq.equals(meta, other.meta) &&
-        identical(retry, other.retry) &&
-        deepEq.equals(seed, other.seed) &&
-        seedUpdatedAt == other.seedUpdatedAt &&
-        enabled == other.enabled &&
-        staleDuration == other.staleDuration &&
-        deepEq.equals(placeholder, other.placeholder) &&
-        refetchInterval == other.refetchInterval &&
-        refetchOnMount == other.refetchOnMount &&
-        refetchOnResume == other.refetchOnResume &&
-        retryOnMount == other.retryOnMount;
-  }
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is QueryObserverOptions<TData, TError> &&
+          queryKey == other.queryKey &&
+          identical(queryFn, other.queryFn) &&
+          gcDuration == other.gcDuration &&
+          deepEq.equals(meta, other.meta) &&
+          identical(retry, other.retry) &&
+          deepEq.equals(seed, other.seed) &&
+          seedUpdatedAt == other.seedUpdatedAt &&
+          enabled == other.enabled &&
+          staleDuration == other.staleDuration &&
+          deepEq.equals(placeholder, other.placeholder) &&
+          refetchInterval == other.refetchInterval &&
+          refetchOnMount == other.refetchOnMount &&
+          refetchOnResume == other.refetchOnResume &&
+          retryOnMount == other.retryOnMount;
 
   @override
   int get hashCode => Object.hash(

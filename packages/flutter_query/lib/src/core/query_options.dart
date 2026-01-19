@@ -29,17 +29,16 @@ class QueryOptions<TData, TError> {
   final Map<String, dynamic>? meta;
 
   @override
-  bool operator ==(Object other) {
-    if (identical(this, other)) return true;
-    return other is QueryOptions<TData, TError> &&
-        queryKey == other.queryKey &&
-        identical(queryFn, other.queryFn) &&
-        gcDuration == other.gcDuration &&
-        deepEq.equals(meta, other.meta) &&
-        identical(retry, other.retry) &&
-        deepEq.equals(seed, other.seed) &&
-        seedUpdatedAt == other.seedUpdatedAt;
-  }
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is QueryOptions<TData, TError> &&
+          queryKey == other.queryKey &&
+          identical(queryFn, other.queryFn) &&
+          gcDuration == other.gcDuration &&
+          deepEq.equals(meta, other.meta) &&
+          identical(retry, other.retry) &&
+          deepEq.equals(seed, other.seed) &&
+          seedUpdatedAt == other.seedUpdatedAt;
 
   @override
   int get hashCode => Object.hash(

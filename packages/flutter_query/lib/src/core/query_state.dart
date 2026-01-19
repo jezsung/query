@@ -78,21 +78,20 @@ class QueryState<TData, TError> {
   bool get hasFetched => dataUpdateCount > 0 || errorUpdateCount > 0;
 
   @override
-  bool operator ==(Object other) {
-    if (identical(this, other)) return true;
-    return other is QueryState<TData, TError> &&
-        status == other.status &&
-        fetchStatus == other.fetchStatus &&
-        deepEq.equals(data, other.data) &&
-        dataUpdatedAt == other.dataUpdatedAt &&
-        dataUpdateCount == other.dataUpdateCount &&
-        deepEq.equals(error, other.error) &&
-        errorUpdatedAt == other.errorUpdatedAt &&
-        errorUpdateCount == other.errorUpdateCount &&
-        failureCount == other.failureCount &&
-        deepEq.equals(failureReason, other.failureReason) &&
-        isInvalidated == other.isInvalidated;
-  }
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is QueryState<TData, TError> &&
+          status == other.status &&
+          fetchStatus == other.fetchStatus &&
+          deepEq.equals(data, other.data) &&
+          dataUpdatedAt == other.dataUpdatedAt &&
+          dataUpdateCount == other.dataUpdateCount &&
+          deepEq.equals(error, other.error) &&
+          errorUpdatedAt == other.errorUpdatedAt &&
+          errorUpdateCount == other.errorUpdateCount &&
+          failureCount == other.failureCount &&
+          deepEq.equals(failureReason, other.failureReason) &&
+          isInvalidated == other.isInvalidated;
 
   @override
   int get hashCode => Object.hash(

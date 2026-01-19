@@ -74,28 +74,27 @@ class InfiniteQueryObserverOptions<TData, TError, TPageParam> {
   final Map<String, dynamic>? meta;
 
   @override
-  bool operator ==(Object other) {
-    if (identical(this, other)) return true;
-    return other is InfiniteQueryObserverOptions<TData, TError, TPageParam> &&
-        queryKey == other.queryKey &&
-        identical(queryFn, other.queryFn) &&
-        deepEq.equals(initialPageParam, other.initialPageParam) &&
-        identical(nextPageParamBuilder, other.nextPageParamBuilder) &&
-        identical(prevPageParamBuilder, other.prevPageParamBuilder) &&
-        maxPages == other.maxPages &&
-        enabled == other.enabled &&
-        staleDuration == other.staleDuration &&
-        gcDuration == other.gcDuration &&
-        deepEq.equals(placeholder, other.placeholder) &&
-        refetchOnMount == other.refetchOnMount &&
-        refetchOnResume == other.refetchOnResume &&
-        refetchInterval == other.refetchInterval &&
-        identical(retry, other.retry) &&
-        retryOnMount == other.retryOnMount &&
-        deepEq.equals(seed, other.seed) &&
-        seedUpdatedAt == other.seedUpdatedAt &&
-        deepEq.equals(meta, other.meta);
-  }
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is InfiniteQueryObserverOptions<TData, TError, TPageParam> &&
+          queryKey == other.queryKey &&
+          identical(queryFn, other.queryFn) &&
+          deepEq.equals(initialPageParam, other.initialPageParam) &&
+          identical(nextPageParamBuilder, other.nextPageParamBuilder) &&
+          identical(prevPageParamBuilder, other.prevPageParamBuilder) &&
+          maxPages == other.maxPages &&
+          enabled == other.enabled &&
+          staleDuration == other.staleDuration &&
+          gcDuration == other.gcDuration &&
+          deepEq.equals(placeholder, other.placeholder) &&
+          refetchOnMount == other.refetchOnMount &&
+          refetchOnResume == other.refetchOnResume &&
+          refetchInterval == other.refetchInterval &&
+          identical(retry, other.retry) &&
+          retryOnMount == other.retryOnMount &&
+          deepEq.equals(seed, other.seed) &&
+          seedUpdatedAt == other.seedUpdatedAt &&
+          deepEq.equals(meta, other.meta);
 
   @override
   int get hashCode => Object.hash(

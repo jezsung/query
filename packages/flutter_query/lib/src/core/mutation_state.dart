@@ -39,19 +39,18 @@ final class MutationState<TData, TError, TVariables, TOnMutateResult> {
   final bool isPaused;
 
   @override
-  bool operator ==(Object other) {
-    if (identical(this, other)) return true;
-    return other is MutationState<TData, TError, TVariables, TOnMutateResult> &&
-        status == other.status &&
-        deepEq.equals(data, other.data) &&
-        deepEq.equals(error, other.error) &&
-        deepEq.equals(variables, other.variables) &&
-        deepEq.equals(onMutateResult, other.onMutateResult) &&
-        submittedAt == other.submittedAt &&
-        failureCount == other.failureCount &&
-        deepEq.equals(failureReason, other.failureReason) &&
-        isPaused == other.isPaused;
-  }
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is MutationState<TData, TError, TVariables, TOnMutateResult> &&
+          status == other.status &&
+          deepEq.equals(data, other.data) &&
+          deepEq.equals(error, other.error) &&
+          deepEq.equals(variables, other.variables) &&
+          deepEq.equals(onMutateResult, other.onMutateResult) &&
+          submittedAt == other.submittedAt &&
+          failureCount == other.failureCount &&
+          deepEq.equals(failureReason, other.failureReason) &&
+          isPaused == other.isPaused;
 
   @override
   int get hashCode => Object.hash(
@@ -67,18 +66,16 @@ final class MutationState<TData, TError, TVariables, TOnMutateResult> {
       );
 
   @override
-  String toString() {
-    return 'MutationState('
-        'status: $status, '
-        'data: $data, '
-        'error: $error, '
-        'variables: $variables, '
-        'onMutateResult: $onMutateResult, '
-        'submittedAt: $submittedAt, '
-        'failureCount: $failureCount, '
-        'failureReason: $failureReason, '
-        'isPaused: $isPaused)';
-  }
+  String toString() => 'MutationState('
+      'status: $status, '
+      'data: $data, '
+      'error: $error, '
+      'variables: $variables, '
+      'onMutateResult: $onMutateResult, '
+      'submittedAt: $submittedAt, '
+      'failureCount: $failureCount, '
+      'failureReason: $failureReason, '
+      'isPaused: $isPaused)';
 }
 
 extension MutationStateExt<TData, TError, TVariables, TOnMutateResult>
