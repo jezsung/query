@@ -2,6 +2,19 @@
 
 This release contains breaking changes to improve API consistency and usability.
 
+- **BREAKING**: Removed `RefetchType` enum. `invalidateQueries()` now only marks queries as stale without automatically refetching. Call `refetchQueries()` separately with a predicate to refetch specific queries.
+
+  ```dart
+  // Before
+  await client.invalidateQueries(refetchType: RefetchType.active);
+
+  // After
+  client.invalidateQueries();
+  await client.refetchQueries(predicate: (state) => state.isActive);
+  ```
+
+- **BREAKING**: Predicate callbacks now receive immutable `QueryState` and `MutationState` objects instead of `Query` and `Mutation` instances. `QueryState` now includes `key`, `isActive`, and `meta` properties. `MutationState` now includes a `key` property.
+
 - **BREAKING**: `MutationFunctionContext.meta` is now a non-nullable `Map<String, dynamic>` (defaults to an empty map when not provided in options).
 
 - **BREAKING**: The `queryClient` parameter on `useQuery`, `useMutation`, and `useInfiniteQuery` hooks has been renamed to `client` for simplicity.
