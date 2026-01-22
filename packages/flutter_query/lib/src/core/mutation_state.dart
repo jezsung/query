@@ -17,6 +17,7 @@ enum MutationStatus {
 
 final class MutationState<TData, TError, TVariables, TOnMutateResult> {
   const MutationState({
+    this.key,
     this.status = MutationStatus.idle,
     this.data,
     this.error,
@@ -28,6 +29,7 @@ final class MutationState<TData, TError, TVariables, TOnMutateResult> {
     this.isPaused = false,
   });
 
+  final List<Object?>? key;
   final MutationStatus status;
   final TData? data;
   final TError? error;
@@ -42,6 +44,7 @@ final class MutationState<TData, TError, TVariables, TOnMutateResult> {
   bool operator ==(Object other) =>
       identical(this, other) ||
       other is MutationState<TData, TError, TVariables, TOnMutateResult> &&
+          deepEq.equals(key, other.key) &&
           status == other.status &&
           deepEq.equals(data, other.data) &&
           deepEq.equals(error, other.error) &&
@@ -54,6 +57,7 @@ final class MutationState<TData, TError, TVariables, TOnMutateResult> {
 
   @override
   int get hashCode => Object.hash(
+        deepEq.hash(key),
         status,
         deepEq.hash(data),
         deepEq.hash(error),
@@ -67,6 +71,7 @@ final class MutationState<TData, TError, TVariables, TOnMutateResult> {
 
   @override
   String toString() => 'MutationState('
+      'key: $key, '
       'status: $status, '
       'data: $data, '
       'error: $error, '
@@ -81,6 +86,7 @@ final class MutationState<TData, TError, TVariables, TOnMutateResult> {
 extension MutationStateExt<TData, TError, TVariables, TOnMutateResult>
     on MutationState<TData, TError, TVariables, TOnMutateResult> {
   MutationState<TData, TError, TVariables, TOnMutateResult> copyWith({
+    List<Object?>? key,
     MutationStatus? status,
     TData? data,
     TError? error,
@@ -92,6 +98,7 @@ extension MutationStateExt<TData, TError, TVariables, TOnMutateResult>
     bool? isPaused,
   }) {
     return MutationState<TData, TError, TVariables, TOnMutateResult>(
+      key: key ?? this.key,
       status: status ?? this.status,
       data: data ?? this.data,
       error: error ?? this.error,
@@ -105,12 +112,14 @@ extension MutationStateExt<TData, TError, TVariables, TOnMutateResult>
   }
 
   MutationState<TData, TError, TVariables, TOnMutateResult> copyWithNull({
+    bool key = false,
     bool data = false,
     bool error = false,
     bool onMutateResult = false,
     bool failureReason = false,
   }) {
     return MutationState<TData, TError, TVariables, TOnMutateResult>(
+      key: key ? null : this.key,
       status: status,
       data: data ? null : this.data,
       error: error ? null : this.error,

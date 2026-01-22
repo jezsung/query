@@ -218,8 +218,7 @@ void main() {
         'SHOULD find mutation using predicate'
         '', () {
       final mutation = cache.find(
-        predicate: (m) =>
-            m.options.mutationKey != null && m.options.mutationKey!.length == 2,
+        predicate: (m) => m.key != null && m.key!.length == 2,
       );
 
       expect(mutation, isNotNull);
@@ -243,8 +242,7 @@ void main() {
       final mutation = cache.find(
         mutationKey: const ['users'],
         exact: false,
-        predicate: (m) =>
-            m.options.mutationKey != null && m.options.mutationKey!.length == 2,
+        predicate: (m) => m.key != null && m.key!.length == 2,
       );
 
       expect(mutation, isNotNull);
@@ -332,8 +330,7 @@ void main() {
         'SHOULD find all mutations using predicate'
         '', () {
       final mutations = cache.findAll(
-        predicate: (m) =>
-            m.options.mutationKey != null && m.options.mutationKey!.length == 2,
+        predicate: (m) => m.key != null && m.key!.length == 2,
       );
 
       expect(mutations, hasLength(3));
@@ -346,8 +343,7 @@ void main() {
         'SHOULD return empty list '
         'WHEN predicate matches nothing', () {
       final mutations = cache.findAll(
-        predicate: (m) =>
-            m.options.mutationKey != null && m.options.mutationKey!.length == 5,
+        predicate: (m) => m.key != null && m.key!.length == 5,
       );
 
       expect(mutations, isEmpty);
@@ -370,8 +366,7 @@ void main() {
       final mutations = cache.findAll(
         mutationKey: const ['users'],
         exact: false,
-        predicate: (m) =>
-            m.options.mutationKey != null && m.options.mutationKey!.length == 2,
+        predicate: (m) => m.key != null && m.key!.length == 2,
         status: MutationStatus.idle,
       );
 

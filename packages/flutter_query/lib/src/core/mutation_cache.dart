@@ -61,7 +61,7 @@ class MutationCache {
   /// Finds mutations matching the given filters.
   List<Mutation> findAll({
     bool exact = false,
-    bool Function(Mutation)? predicate,
+    bool Function(MutationState)? predicate,
     List<Object?>? mutationKey,
     MutationStatus? status,
   }) {
@@ -80,7 +80,7 @@ class MutationCache {
   /// Unlike [findAll], this defaults [exact] to `true`.
   Mutation? find({
     bool exact = true,
-    bool Function(Mutation)? predicate,
+    bool Function(MutationState)? predicate,
     List<Object?>? mutationKey,
     MutationStatus? status,
   }) {

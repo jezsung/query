@@ -27,7 +27,9 @@ class Mutation<TData, TError, TVariables, TOnMutateResult>
     this._client,
     this.options,
     this.mutationId,
-  ) : _state = MutationState<TData, TError, TVariables, TOnMutateResult>() {
+  ) : _state = MutationState<TData, TError, TVariables, TOnMutateResult>(
+          key: options.mutationKey,
+        ) {
     onAddObserver = (_) {
       cancelGc();
     };
@@ -50,9 +52,12 @@ class Mutation<TData, TError, TVariables, TOnMutateResult>
   set state(
     MutationState<TData, TError, TVariables, TOnMutateResult> newState,
   ) {
-    if (newState != _state) {
-      _state = newState;
-      notifyObservers(newState);
+    final enrichedState = newState.copyWith(
+      key: options.mutationKey,
+    );
+    if (enrichedState != _state) {
+      _state = enrichedState;
+      notifyObservers(enrichedState);
     }
   }
 
@@ -191,18 +196,18 @@ extension MutationMatches on Mutation {
   ///
   /// - [exact]: when true, the mutation key must exactly equal the filter key;
   ///   when false (default), the mutation key only needs to start with the filter key
-  /// - [predicate]: custom filter function that receives the mutation and returns
+  /// - [predicate]: custom filter function that receives the mutation state and returns
   ///   whether it should be included
   /// - [mutationKey]: the key to match against; if the mutation has no key, it won't match
   /// - [status]: filters mutations by their current status (idle, pending, success, error)
   bool matches({
     bool exact = false,
-    bool Function(Mutation)? predicate,
+    bool Function(MutationState)? predicate,
     List<Object?>? mutationKey,
     MutationStatus? status,
   }) {
     if (mutationKey != null) {
-      final key = options.mutationKey;
+      final key = state.key;
       if (key == null) {
         return false;
       }
@@ -220,7 +225,7 @@ extension MutationMatches on Mutation {
       return false;
     }
 
-    if (predicate != null && !predicate(this)) {
+    if (predicate != null && !predicate(state)) {
       return false;
     }
 

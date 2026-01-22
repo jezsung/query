@@ -36,6 +36,7 @@ enum FetchStatus {
 
 class QueryState<TData, TError> {
   const QueryState({
+    required this.key,
     this.status = QueryStatus.pending,
     this.fetchStatus = FetchStatus.idle,
     this.data,
@@ -47,10 +48,19 @@ class QueryState<TData, TError> {
     this.failureCount = 0,
     this.failureReason,
     this.isInvalidated = false,
+    this.isActive = false,
+    this.meta = const {},
   });
 
-  factory QueryState.fromSeed(TData seed, DateTime? seedUpdatedAt) {
+  factory QueryState.fromSeed(
+    List<Object?> key,
+    TData seed,
+    DateTime? seedUpdatedAt, {
+    bool isActive = false,
+    Map<String, dynamic> meta = const {},
+  }) {
     return QueryState<TData, TError>(
+      key: key,
       status: QueryStatus.success,
       fetchStatus: FetchStatus.idle,
       data: seed,
@@ -60,9 +70,12 @@ class QueryState<TData, TError> {
       errorUpdateCount: 0,
       failureCount: 0,
       failureReason: null,
+      isActive: isActive,
+      meta: meta,
     );
   }
 
+  final List<Object?> key;
   final QueryStatus status;
   final FetchStatus fetchStatus;
   final TData? data;
@@ -74,6 +87,8 @@ class QueryState<TData, TError> {
   final int failureCount;
   final TError? failureReason;
   final bool isInvalidated;
+  final bool isActive;
+  final Map<String, dynamic> meta;
 
   bool get hasFetched => dataUpdateCount > 0 || errorUpdateCount > 0;
 
@@ -81,6 +96,7 @@ class QueryState<TData, TError> {
   bool operator ==(Object other) =>
       identical(this, other) ||
       other is QueryState<TData, TError> &&
+          deepEq.equals(key, other.key) &&
           status == other.status &&
           fetchStatus == other.fetchStatus &&
           deepEq.equals(data, other.data) &&
@@ -91,10 +107,13 @@ class QueryState<TData, TError> {
           errorUpdateCount == other.errorUpdateCount &&
           failureCount == other.failureCount &&
           deepEq.equals(failureReason, other.failureReason) &&
-          isInvalidated == other.isInvalidated;
+          isInvalidated == other.isInvalidated &&
+          isActive == other.isActive &&
+          deepEq.equals(meta, other.meta);
 
   @override
   int get hashCode => Object.hash(
+        deepEq.hash(key),
         status,
         fetchStatus,
         deepEq.hash(data),
@@ -106,10 +125,13 @@ class QueryState<TData, TError> {
         failureCount,
         deepEq.hash(failureReason),
         isInvalidated,
+        isActive,
+        deepEq.hash(meta),
       );
 
   @override
   String toString() => 'QueryState('
+      'key: $key, '
       'status: $status, '
       'fetchStatus: $fetchStatus, '
       'data: $data, '
@@ -120,11 +142,14 @@ class QueryState<TData, TError> {
       'errorUpdateCount: $errorUpdateCount, '
       'failureCount: $failureCount, '
       'failureReason: $failureReason, '
-      'isInvalidated: $isInvalidated)';
+      'isInvalidated: $isInvalidated, '
+      'isActive: $isActive, '
+      'meta: $meta)';
 }
 
 extension QueryStateExt<TData, TError> on QueryState<TData, TError> {
   QueryState<TData, TError> copyWith({
+    List<Object?>? key,
     QueryStatus? status,
     FetchStatus? fetchStatus,
     TData? data,
@@ -136,8 +161,11 @@ extension QueryStateExt<TData, TError> on QueryState<TData, TError> {
     int? failureCount,
     TError? failureReason,
     bool? isInvalidated,
+    bool? isActive,
+    Map<String, dynamic>? meta,
   }) {
     return QueryState<TData, TError>(
+      key: key ?? this.key,
       status: status ?? this.status,
       fetchStatus: fetchStatus ?? this.fetchStatus,
       data: data ?? this.data,
@@ -149,6 +177,8 @@ extension QueryStateExt<TData, TError> on QueryState<TData, TError> {
       failureCount: failureCount ?? this.failureCount,
       failureReason: failureReason ?? this.failureReason,
       isInvalidated: isInvalidated ?? this.isInvalidated,
+      isActive: isActive ?? this.isActive,
+      meta: meta ?? this.meta,
     );
   }
 
@@ -160,6 +190,7 @@ extension QueryStateExt<TData, TError> on QueryState<TData, TError> {
     bool failureReason = false,
   }) {
     return QueryState<TData, TError>(
+      key: key,
       status: status,
       fetchStatus: fetchStatus,
       data: data ? null : this.data,
@@ -171,6 +202,8 @@ extension QueryStateExt<TData, TError> on QueryState<TData, TError> {
       failureCount: failureCount,
       failureReason: failureReason ? null : this.failureReason,
       isInvalidated: isInvalidated,
+      isActive: isActive,
+      meta: meta,
     );
   }
 }

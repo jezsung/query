@@ -3,7 +3,6 @@ import 'default_query_options.dart';
 import 'infinite_query_function_context.dart';
 import 'infinite_query_observer_options.dart';
 import 'mutation_cache.dart';
-import 'query.dart';
 import 'query_cache.dart';
 import 'query_function_context.dart';
 import 'query_observer.dart';
@@ -221,7 +220,7 @@ class QueryClient {
   Future<void> invalidateQueries({
     List<Object?>? queryKey,
     bool exact = false,
-    bool Function(Query)? predicate,
+    bool Function(QueryState)? predicate,
     RefetchType refetchType = RefetchType.active,
   }) async {
     // Find and invalidate all matching queries
@@ -239,11 +238,13 @@ class QueryClient {
     if (refetchType == RefetchType.none) return;
 
     // Combine user's predicate with refetchType filter
-    bool Function(Query)? refetchPredicate;
+    bool Function(QueryState)? refetchPredicate;
     if (refetchType == RefetchType.active) {
-      refetchPredicate = (q) => (predicate?.call(q) ?? true) && q.isActive;
+      refetchPredicate =
+          (state) => (predicate?.call(state) ?? true) && state.isActive;
     } else if (refetchType == RefetchType.inactive) {
-      refetchPredicate = (q) => (predicate?.call(q) ?? true) && !q.isActive;
+      refetchPredicate =
+          (state) => (predicate?.call(state) ?? true) && !state.isActive;
     } else {
       refetchPredicate = predicate;
     }
@@ -282,7 +283,7 @@ class QueryClient {
   Future<void> refetchQueries({
     List<Object?>? queryKey,
     bool exact = false,
-    bool Function(Query)? predicate,
+    bool Function(QueryState)? predicate,
   }) async {
     final queries = _cache
         .findAll(
@@ -523,7 +524,7 @@ class QueryClient {
   Future<void> cancelQueries({
     List<Object?>? queryKey,
     bool exact = false,
-    bool Function(Query)? predicate,
+    bool Function(QueryState)? predicate,
     bool revert = true,
     bool silent = false,
   }) async {

@@ -925,7 +925,7 @@ void main() {
       );
 
       expect(
-        mutation.matches(predicate: (m) => m.options.mutationKey != null),
+        mutation.matches(predicate: (m) => m.key != null),
         isTrue,
       );
     });
@@ -936,7 +936,7 @@ void main() {
       final mutation = createMutation();
 
       expect(
-        mutation.matches(predicate: (m) => m.options.mutationKey != null),
+        mutation.matches(predicate: (m) => m.key != null),
         isFalse,
       );
     });

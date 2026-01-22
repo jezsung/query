@@ -5,6 +5,7 @@ import 'query.dart';
 import 'query_client.dart';
 import 'query_key.dart';
 import 'query_options.dart';
+import 'query_state.dart';
 
 class QueryCache {
   late final QueryClient _client;
@@ -91,7 +92,7 @@ class QueryCache {
   Query<TData, TError>? find<TData, TError>(
     List<Object?> queryKey, {
     bool exact = true,
-    bool Function(Query)? predicate,
+    bool Function(QueryState)? predicate,
   }) {
     return _queries.values.firstWhereOrNull((q) {
       if (!q.matches(queryKey, exact: exact)) return false;
@@ -105,7 +106,7 @@ class QueryCache {
   List<Query> findAll({
     List<Object?>? queryKey,
     bool exact = false,
-    bool Function(Query)? predicate,
+    bool Function(QueryState)? predicate,
   }) {
     // If no filters provided, return all
     if (queryKey == null && predicate == null) {

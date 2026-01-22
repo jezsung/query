@@ -40,9 +40,18 @@ class Query<TData, TError>
     };
 
     _initialState = switch (_options.seed) {
-      final seed? =>
-        QueryState<TData, TError>.fromSeed(seed, _options.seedUpdatedAt),
-      null => QueryState<TData, TError>(),
+      final seed? => QueryState<TData, TError>.fromSeed(
+          key.parts,
+          seed,
+          _options.seedUpdatedAt,
+          isActive: isActive,
+          meta: meta,
+        ),
+      null => QueryState<TData, TError>(
+          key: key.parts,
+          isActive: isActive,
+          meta: meta,
+        ),
     };
     _currentState = _initialState;
 
@@ -59,7 +68,13 @@ class Query<TData, TError>
   QueryState<TData, TError>? _revertState;
 
   QueryKey get key => _options.queryKey;
+
   QueryState<TData, TError> get state => _currentState;
+
+  bool get isActive {
+    return observers.any((obs) => obs.options.enabled ?? true);
+  }
+
   Map<String, dynamic> get meta {
     return observers
             .map((obs) => obs.options.meta)
@@ -67,22 +82,25 @@ class Query<TData, TError>
         const {};
   }
 
-  bool get isActive {
-    return observers.any((obs) => obs.options.enabled ?? true);
-  }
-
   @protected
   set state(QueryState<TData, TError> newState) {
-    _currentState = newState;
-    notifyObservers(newState);
+    _currentState = newState.copyWith(
+      key: key.parts,
+      isActive: isActive,
+      meta: meta,
+    );
+    notifyObservers(_currentState);
   }
 
   set options(QueryOptions<TData, TError> newOptions) {
     _options = _options.merge(newOptions);
     if (state.data == null && _options.seed != null) {
       state = _initialState = QueryState<TData, TError>.fromSeed(
+        key.parts,
         _options.seed as TData,
         _options.seedUpdatedAt,
+        isActive: isActive,
+        meta: meta,
       );
     }
   }
@@ -128,6 +146,7 @@ class Query<TData, TError>
       final data = await retryer.run();
 
       state = QueryState<TData, TError>(
+        key: state.key,
         status: QueryStatus.success,
         fetchStatus: FetchStatus.idle,
         data: data,
@@ -250,9 +269,9 @@ extension QueryMatches on Query {
 
   /// Returns true if this query matches the given predicate [test].
   ///
-  /// - [test]: custom filter function that receives the query and returns
+  /// - [test]: custom filter function that receives the query state and returns
   ///   whether it should be included
-  bool matchesWhere(bool Function(Query query) test) {
-    return test(this);
+  bool matchesWhere(bool Function(QueryState state) test) {
+    return test(state);
   }
 }
