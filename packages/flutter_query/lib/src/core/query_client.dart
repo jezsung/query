@@ -9,23 +9,6 @@ import 'query_observer.dart';
 import 'query_options.dart';
 import 'query_state.dart';
 
-/// Controls which queries get refetched after invalidation.
-///
-/// Aligned with TanStack Query's `refetchType` option in `InvalidateQueryFilters`.
-enum RefetchType {
-  /// Don't refetch any queries, just mark them as invalidated
-  none,
-
-  /// Refetch all matching queries
-  all,
-
-  /// Refetch only active queries (queries with enabled observers)
-  active,
-
-  /// Refetch only inactive queries (queries without enabled observers)
-  inactive,
-}
-
 class QueryClient {
   /// Creates a QueryClient with optional cache and default options.
   ///
@@ -193,13 +176,12 @@ class QueryClient {
     return _cache.get<TData, TError>(queryKey)?.state.data;
   }
 
-  /// Invalidates queries matching the filters and optionally refetches them.
+  /// Invalidates queries matching the filters.
   ///
-  /// Invalidation marks queries as stale, causing them to refetch when:
-  /// - An observer mounts that subscribes to the query
-  /// - The query is already mounted and [refetchType] is not [RefetchType.none]
-  ///
-  /// By default, only active queries are refetched after invalidation.
+  /// Invalidation marks queries as stale, causing them to refetch when an
+  /// observer mounts that subscribes to the query. This method does not
+  /// automatically refetch queries - use [refetchQueries] if you need to
+  /// trigger an immediate refetch.
   ///
   /// Example:
   /// ```dart
@@ -209,21 +191,20 @@ class QueryClient {
   /// // Invalidate queries with a specific key prefix
   /// await client.invalidateQueries(queryKey: ['users']);
   ///
-  /// // Invalidate but don't refetch
-  /// await client.invalidateQueries(
+  /// // Invalidate and refetch active queries
+  /// await client.invalidateQueries(queryKey: ['users']);
+  /// await client.refetchQueries(
   ///   queryKey: ['users'],
-  ///   refetchType: RefetchType.none,
+  ///   predicate: (state) => state.isActive,
   /// );
   /// ```
   ///
   /// Aligned with TanStack Query's `QueryClient.invalidateQueries` method.
-  Future<void> invalidateQueries({
+  void invalidateQueries({
     List<Object?>? queryKey,
     bool exact = false,
     bool Function(QueryState)? predicate,
-    RefetchType refetchType = RefetchType.active,
-  }) async {
-    // Find and invalidate all matching queries
+  }) {
     final queries = _cache.findAll(
       queryKey: queryKey,
       exact: exact,
@@ -233,27 +214,6 @@ class QueryClient {
     for (final query in queries) {
       query.invalidate();
     }
-
-    // Skip refetch if none
-    if (refetchType == RefetchType.none) return;
-
-    // Combine user's predicate with refetchType filter
-    bool Function(QueryState)? refetchPredicate;
-    if (refetchType == RefetchType.active) {
-      refetchPredicate =
-          (state) => (predicate?.call(state) ?? true) && state.isActive;
-    } else if (refetchType == RefetchType.inactive) {
-      refetchPredicate =
-          (state) => (predicate?.call(state) ?? true) && !state.isActive;
-    } else {
-      refetchPredicate = predicate;
-    }
-
-    await refetchQueries(
-      queryKey: queryKey,
-      exact: exact,
-      predicate: refetchPredicate,
-    );
   }
 
   /// Refetches queries matching the filters.

@@ -2,7 +2,6 @@ export 'src/core/core.dart'
     show
         // Client
         QueryClient,
-        RefetchType,
 
         // Query
         Query,
