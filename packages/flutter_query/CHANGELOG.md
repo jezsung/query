@@ -2,6 +2,8 @@
 
 This release contains breaking changes to improve API consistency and usability.
 
+- Added `getQueryState` method on `QueryClient` for retrieving the full query state (status, error, dataUpdatedAt, etc.) instead of just the data.
+
 - Added `setQueryData` method on `QueryClient` for imperatively setting or updating cached query data. Useful for optimistic updates in mutation callbacks.
 
 - **BREAKING**: `fetchQuery`, `prefetchQuery`, `fetchInfiniteQuery`, and `prefetchInfiniteQuery` now take `queryKey` and `queryFn` as positional parameters instead of named parameters.

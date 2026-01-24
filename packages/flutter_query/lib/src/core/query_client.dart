@@ -176,6 +176,23 @@ class QueryClient {
     return _cache.get<TData, TError>(queryKey)?.state.data;
   }
 
+  /// Returns the state for a query if it exists in the cache.
+  ///
+  /// This is an imperative way to retrieve the full query state by exact query key.
+  /// Returns `null` if the query doesn't exist in the cache.
+  ///
+  /// Use this when you need access to more than just the data, such as:
+  /// - `status` - whether the query is pending, success, or error
+  /// - `fetchStatus` - whether a fetch is in progress
+  /// - `error` - the error if the query failed
+  /// - `dataUpdatedAt` - when the data was last updated
+  /// - `isInvalidated` - whether the query has been invalidated
+  QueryState<TData, TError>? getQueryState<TData, TError>(
+    List<Object?> queryKey,
+  ) {
+    return _cache.get<TData, TError>(queryKey)?.state;
+  }
+
   /// Sets or updates the data for a query in the cache.
   ///
   /// This is an imperative way to update cached data by exact query key.

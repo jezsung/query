@@ -490,6 +490,92 @@ void main() {
     });
   });
 
+  group('getQueryState', () {
+    test(
+        'SHOULD return success state '
+        'WHEN fetch succeeds', withFakeAsync((async) {
+      client.fetchQuery<String, Object>(
+        const ['key'],
+        (context) async {
+          await Future.delayed(const Duration(seconds: 1));
+          return 'data';
+        },
+      );
+
+      var state = client.getQueryState<String, Object>(const ['key'])!;
+      expect(state.status, QueryStatus.pending);
+      expect(state.fetchStatus, FetchStatus.fetching);
+      expect(state.data, isNull);
+      expect(state.dataUpdatedAt, isNull);
+      expect(state.dataUpdateCount, 0);
+
+      async.elapse(const Duration(seconds: 1));
+
+      state = client.getQueryState<String, Object>(const ['key'])!;
+      expect(state.status, QueryStatus.success);
+      expect(state.fetchStatus, FetchStatus.idle);
+      expect(state.data, 'data');
+      expect(state.dataUpdatedAt, clock.now());
+      expect(state.dataUpdateCount, 1);
+    }));
+
+    test(
+        'SHOULD return error state '
+        'WHEN fetch fails', withFakeAsync((async) {
+      final expectedError = Exception();
+
+      client.fetchQuery<String, Object>(
+        const ['key'],
+        (context) async {
+          await Future.delayed(const Duration(seconds: 1));
+          throw expectedError;
+        },
+      ).ignore();
+
+      var state = client.getQueryState<String, Object>(const ['key'])!;
+      expect(state.status, QueryStatus.pending);
+      expect(state.fetchStatus, FetchStatus.fetching);
+      expect(state.error, isNull);
+      expect(state.errorUpdatedAt, isNull);
+      expect(state.errorUpdateCount, 0);
+
+      async.elapse(const Duration(seconds: 1));
+
+      state = client.getQueryState<String, Object>(const ['key'])!;
+      expect(state.status, QueryStatus.error);
+      expect(state.fetchStatus, FetchStatus.idle);
+      expect(state.error, same(expectedError));
+      expect(state.errorUpdatedAt, clock.now());
+      expect(state.errorUpdateCount, 1);
+    }));
+
+    test(
+        'SHOULD return null '
+        'WHEN query does not exist', () {
+      final state = client.getQueryState<String, Object>(const ['key']);
+
+      expect(state, isNull);
+    });
+
+    test(
+        'SHOULD use exact key matching'
+        '', () async {
+      await client.fetchQuery<String, Object>(
+        const ['users', '1'],
+        (context) async => 'data',
+      );
+
+      // Prefix key should not match
+      var state = client.getQueryState<String, Object>(const ['users']);
+      expect(state, isNull);
+
+      // Exact key should match
+      state = client.getQueryState<String, Object>(const ['users', '1']);
+      expect(state, isNotNull);
+      expect(state!.data, 'data');
+    });
+  });
+
   group('setQueryData', () {
     test(
         'SHOULD set data '
