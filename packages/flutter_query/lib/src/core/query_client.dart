@@ -538,6 +538,42 @@ class QueryClient {
         .data;
   }
 
+  /// Removes queries from the cache matching the filters.
+  ///
+  /// This completely removes queries from the cache, disposing them and freeing
+  /// any associated resources. Unlike [invalidateQueries], removed queries will
+  /// need to be fetched from scratch when accessed again.
+  ///
+  /// Example:
+  /// ```dart
+  /// // Remove all queries
+  /// client.removeQueries();
+  ///
+  /// // Remove queries with a specific key prefix
+  /// client.removeQueries(queryKey: ['users']);
+  ///
+  /// // Remove only a specific query with exact matching
+  /// client.removeQueries(queryKey: ['users', '123'], exact: true);
+  ///
+  /// // Remove queries matching a predicate
+  /// client.removeQueries(predicate: (state) => state.status == QueryStatus.error);
+  /// ```
+  void removeQueries({
+    List<Object?>? queryKey,
+    bool exact = false,
+    bool Function(QueryState)? predicate,
+  }) {
+    final queries = _cache.findAll(
+      queryKey: queryKey,
+      exact: exact,
+      predicate: predicate,
+    );
+
+    for (final query in queries) {
+      _cache.remove(query);
+    }
+  }
+
   /// Cancels all in-progress fetches for queries matching the filters.
   ///
   /// Returns a Future that completes when all matching queries have been

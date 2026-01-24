@@ -990,6 +990,107 @@ void main() {
     }));
   });
 
+  group('removeQueries', () {
+    test(
+        'SHOULD remove query from cache'
+        '', () async {
+      await client.prefetchQuery(
+        const ['key'],
+        (context) async => 'data',
+      );
+
+      expect(client.cache.get(const ['key']), isNotNull);
+
+      client.removeQueries(queryKey: const ['key']);
+
+      expect(client.cache.get(const ['key']), isNull);
+    });
+
+    test(
+        'SHOULD remove all matching queries by prefix'
+        '', () async {
+      await client.prefetchQuery(
+        const ['users', '1'],
+        (context) async => 'user-1',
+      );
+      await client.prefetchQuery(
+        const ['users', '2'],
+        (context) async => 'user-2',
+      );
+      await client.prefetchQuery(
+        const ['posts'],
+        (context) async => 'posts',
+      );
+
+      client.removeQueries(queryKey: const ['users']);
+
+      expect(client.cache.get(const ['users', '1']), isNull);
+      expect(client.cache.get(const ['users', '2']), isNull);
+      expect(client.cache.get(const ['posts']), isNotNull);
+    });
+
+    test(
+        'SHOULD remove all queries '
+        'WHEN no filters are provided', () async {
+      await client.prefetchQuery(
+        const ['users', 1],
+        (context) async => 'user-1',
+      );
+      await client.prefetchQuery(
+        const ['users', 2],
+        (context) async => 'user-2',
+      );
+      await client.prefetchQuery(
+        const ['posts'],
+        (context) async => 'posts',
+      );
+
+      client.removeQueries();
+
+      expect(client.cache.get(const ['users', 1]), isNull);
+      expect(client.cache.get(const ['users', 2]), isNull);
+      expect(client.cache.get(const ['posts']), isNull);
+      expect(client.cache.getAll(), isEmpty);
+    });
+
+    test(
+        'SHOULD remove query matching exact key only '
+        'WHEN exact == true', () async {
+      await client.prefetchQuery(
+        const ['users'],
+        (context) async => 'users',
+      );
+      await client.prefetchQuery(
+        const ['users', 1],
+        (context) async => 'user-1',
+      );
+
+      client.removeQueries(queryKey: const ['users'], exact: true);
+
+      expect(client.cache.get(const ['users']), isNull);
+      expect(client.cache.get(const ['users', 1]), isNotNull);
+    });
+
+    test(
+        'SHOULD remove queries matching predicate '
+        'WHEN predicate != null', withFakeAsync((async) {
+      client.prefetchQuery(
+        const ['users', 1],
+        (context) async => 'data',
+      );
+      client.prefetchQuery(
+        const ['users', 2],
+        (context) async => throw Exception(),
+      );
+      async.flushMicrotasks();
+
+      client.removeQueries(predicate: (s) => s.status == QueryStatus.error);
+
+      expect(client.cache.get(const ['users', 1]), isNotNull);
+      expect(client.cache.get(const ['users', 2]), isNull);
+    }));
+  });
+
   group('cancelQueries', () {
     /// Creates an abortable query function for testing.
     ///
