@@ -176,6 +176,70 @@ class QueryClient {
     return _cache.get<TData, TError>(queryKey)?.state.data;
   }
 
+  /// Sets or updates the data for a query in the cache.
+  ///
+  /// This is an imperative way to update cached data by exact query key.
+  /// The [updater] can be either a new value or a function that receives
+  /// the previous data and returns the new data.
+  ///
+  /// Returns `null` if the updater function returns `null`.
+  ///
+  /// If the query doesn't exist and the updater provides data, a new query
+  /// entry is created in the cache.
+  ///
+  /// Use this for optimistic updates in mutation callbacks or for manually
+  /// populating the cache.
+  ///
+  /// Example:
+  /// ```dart
+  /// // Set data directly
+  /// client.setQueryData<User, Error>(['user', userId], (_) => newUser);
+  ///
+  /// // Update data using previous value
+  /// client.setQueryData<User, Error>(['user', userId], (previous) {
+  ///   if (previous == null) return null;
+  ///   return previous.copyWith(name: 'New Name');
+  /// });
+  ///
+  /// // Optimistic update in a mutation
+  /// onMutate: (newTodo) async {
+  ///   await client.cancelQueries(queryKey: ['todos']);
+  ///   final previousTodos = client.getQueryData<List<Todo>, Error>(['todos']);
+  ///   client.setQueryData<List<Todo>, Error>(
+  ///     ['todos'],
+  ///     (previous) => [...?previous, newTodo],
+  ///   );
+  ///   return previousTodos;
+  /// }
+  /// ```
+  TData? setQueryData<TData, TError>(
+    List<Object?> queryKey,
+    TData? Function(TData? previousData) updater, {
+    DateTime? updatedAt,
+  }) {
+    final query = _cache.get<TData, TError>(queryKey);
+    final previousData = query?.state.data;
+    final data = updater(previousData);
+
+    if (data == null) {
+      return null;
+    }
+
+    if (query != null) {
+      return query.setData(data, updatedAt: updatedAt);
+    }
+
+    return _cache
+        .build<TData, TError>(QueryOptions<TData, TError>(
+          queryKey,
+          (_) => throw UnsupportedError(
+            'Query was created via setQueryData and has no queryFn. '
+            'Use fetchQuery or useQuery with a queryFn to fetch data.',
+          ),
+        )..withDefaults(defaultQueryOptions))
+        .setData(data, updatedAt: updatedAt);
+  }
+
   /// Invalidates queries matching the filters.
   ///
   /// Invalidation marks queries as stale, causing them to refetch when an

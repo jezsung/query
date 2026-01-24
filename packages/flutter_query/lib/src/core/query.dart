@@ -240,6 +240,25 @@ class Query<TData, TError>
     };
   }
 
+  TData setData(TData data, {DateTime? updatedAt}) {
+    state = QueryState<TData, TError>(
+      key: state.key,
+      status: QueryStatus.success,
+      fetchStatus: FetchStatus.idle,
+      data: data,
+      dataUpdatedAt: updatedAt ?? clock.now(),
+      dataUpdateCount: state.dataUpdateCount + 1,
+      error: null,
+      errorUpdatedAt: state.errorUpdatedAt,
+      errorUpdateCount: state.errorUpdateCount,
+      failureCount: 0,
+      failureReason: null,
+      isInvalidated: false,
+    );
+
+    return data;
+  }
+
   @override
   void tryRemove() {
     if (!hasObservers && state.fetchStatus == FetchStatus.idle) {

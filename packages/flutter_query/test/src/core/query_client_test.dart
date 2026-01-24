@@ -16,6 +16,8 @@ void main() {
 
   tearDown(() {
     client.clear();
+    client.defaultQueryOptions = const DefaultQueryOptions();
+    client.defaultMutationOptions = const DefaultMutationOptions();
   });
 
   group('defaultQueryOptions', () {
@@ -486,6 +488,231 @@ void main() {
       data = client.getQueryData<String, Object>(const ['users', '1']);
       expect(data, 'data');
     });
+  });
+
+  group('setQueryData', () {
+    test(
+        'SHOULD set data '
+        'WHEN query does not exist', () {
+      final data = client.setQueryData(
+        const ['key'],
+        (prev) => 'data',
+      );
+
+      expect(data, 'data');
+      expect(client.getQueryData(const ['key']), 'data');
+    });
+
+    test(
+        'SHOULD update data '
+        'WHEN query exists', () async {
+      await client.fetchQuery(
+        queryKey: const ['key'],
+        queryFn: (context) async => 'data',
+      );
+
+      final data = client.setQueryData(
+        const ['key'],
+        (prev) => '$prev-updated',
+      );
+
+      expect(data, 'data-updated');
+      expect(client.getQueryData(const ['key']), 'data-updated');
+    });
+
+    test(
+        'SHOULD return null '
+        'WHEN updater returns null', () {
+      final data = client.setQueryData<String, Object>(
+        const ['key'],
+        (prev) => null,
+      );
+
+      expect(data, isNull);
+      expect(client.getQueryData(const ['key']), isNull);
+    });
+
+    test(
+        'SHOULD NOT update data '
+        'WHEN updater returns null', () async {
+      await client.fetchQuery<String, Object>(
+        queryKey: const ['key'],
+        queryFn: (context) async => 'data',
+      );
+
+      final data = client.setQueryData<String, Object>(
+        const ['key'],
+        (prev) => null,
+      );
+
+      expect(data, isNull);
+      expect(client.getQueryData<String, Object>(const ['key']), 'data');
+    });
+
+    test(
+        'SHOULD pass previous data to updater function '
+        'WHEN query exists', () async {
+      String? capturedPreviousData;
+
+      await client.fetchQuery<String, Object>(
+        queryKey: const ['key'],
+        queryFn: (context) async => 'data-1',
+      );
+
+      client.setQueryData<String, Object>(
+        const ['key'],
+        (previousData) {
+          capturedPreviousData = previousData;
+          return 'data-2';
+        },
+      );
+
+      expect(capturedPreviousData, 'data-1');
+    });
+
+    test(
+        'SHOULD pass null to updater function '
+        'WHEN query does not exist', () {
+      String? capturedPreviousData = 'sentinel';
+
+      client.setQueryData<String, Object>(
+        const ['key'],
+        (previousData) {
+          capturedPreviousData = previousData;
+          return 'data';
+        },
+      );
+
+      expect(capturedPreviousData, isNull);
+    });
+
+    test(
+        'SHOULD set state to success'
+        '', withFakeAsync((async) {
+      client.setQueryData<String, Object>(
+        const ['key'],
+        (prev) => 'data',
+      );
+
+      final query = client.cache.get<String, Object>(const ['key'])!;
+      expect(query.state.status, QueryStatus.success);
+      expect(query.state.fetchStatus, FetchStatus.idle);
+      expect(query.state.data, 'data');
+      expect(query.state.dataUpdatedAt, isNotNull);
+      expect(query.state.dataUpdateCount, 1);
+    }));
+
+    test(
+        'SHOULD reset error to null'
+        '', withFakeAsync((async) {
+      client.prefetchQuery<String, Object>(
+        queryKey: const ['key'],
+        queryFn: (context) => throw Exception(),
+      );
+      async.flushMicrotasks();
+
+      expect(
+        client.cache.get<String, Object>(const ['key'])!.state.error,
+        isA<Exception>(),
+      );
+
+      client.setQueryData<String, Object>(
+        const ['key'],
+        (prev) => 'data',
+      );
+
+      expect(
+        client.cache.get<String, Object>(const ['key'])!.state.error,
+        isNull,
+      );
+    }));
+
+    test(
+        'SHOULD reset invalidation status'
+        '', withFakeAsync((async) {
+      client.prefetchQuery<String, Object>(
+        queryKey: const ['key'],
+        queryFn: (context) async => 'data',
+      );
+      async.flushMicrotasks();
+      client.invalidateQueries(
+        queryKey: const ['key'],
+        exact: true,
+      );
+
+      expect(
+        client.cache.get<String, Object>(const ['key'])!.state.isInvalidated,
+        isTrue,
+      );
+
+      client.setQueryData<String, Object>(
+        const ['key'],
+        (prev) => 'data',
+      );
+
+      expect(
+        client.cache.get<String, Object>(const ['key'])!.state.isInvalidated,
+        isFalse,
+      );
+    }));
+
+    test(
+        'SHOULD set dataUpdatedAt to provided updatedAt'
+        '', () {
+      client.setQueryData<String, Object>(
+        const ['key'],
+        (prev) => 'data',
+        updatedAt: DateTime(2026, 1, 1),
+      );
+
+      final query = client.cache.get<String, Object>(const ['key'])!;
+      expect(query.state.dataUpdatedAt, DateTime(2026, 1, 1));
+    });
+
+    test(
+        'SHOULD notify observers'
+        '', () async {
+      final expectedResults = <QueryResult<String, Object>>[];
+
+      final observer = QueryObserver<String, Object>(
+        client,
+        QueryObserverOptions(
+          const ['key'],
+          (context) async => throw UnimplementedError(),
+          enabled: false,
+        ),
+      );
+      addTearDown(observer.onUnmount);
+
+      observer.subscribe((result) => expectedResults.add(result));
+
+      client.setQueryData<String, Object>(
+        const ['key'],
+        (prev) => 'data',
+      );
+
+      expect(expectedResults.length, 1);
+      expect(expectedResults.last.data, 'data');
+    });
+
+    test(
+        'SHOULD set throwing queryFn '
+        'WHEN caching new query', withFakeAsync((async) {
+      client.defaultQueryOptions = DefaultQueryOptions(retry: (_, __) => null);
+      client.setQueryData<String, Object>(
+        const ['key'],
+        (prev) => 'data',
+      );
+
+      final query = client.cache.get<String, Object>(const ['key'])!;
+
+      expectLater(
+        query.fetch(),
+        throwsA(isA<Error>()),
+      );
+
+      async.flushMicrotasks();
+    }));
   });
 
   group('invalidateQueries', () {
