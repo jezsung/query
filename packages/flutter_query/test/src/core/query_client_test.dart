@@ -990,6 +990,396 @@ void main() {
     }));
   });
 
+  group('resetQueries', () {
+    test(
+        'SHOULD reset query to initial state'
+        '', withFakeAsync((async) {
+      client.prefetchQuery<String, Object>(
+        const ['key'],
+        (context) async {
+          await Future.delayed(const Duration(seconds: 1));
+          return 'data';
+        },
+      );
+      async.elapse(const Duration(seconds: 1));
+
+      var state = client.getQueryState<String, Object>(const ['key'])!;
+      expect(state.status, QueryStatus.success);
+      expect(state.data, 'data');
+
+      client.resetQueries(queryKey: const ['key']);
+
+      state = client.getQueryState<String, Object>(const ['key'])!;
+      expect(state.status, QueryStatus.pending);
+      expect(state.data, isNull);
+    }));
+
+    test(
+        'SHOULD reset query data to seed'
+        '', withFakeAsync((async) {
+      client.prefetchQuery<String, Object>(
+        const ['key'],
+        (context) async {
+          await Future.delayed(const Duration(seconds: 1));
+          return 'data';
+        },
+        seed: 'seed',
+      );
+      async.elapse(const Duration(seconds: 1));
+
+      expect(client.getQueryData(const ['key']), 'data');
+
+      client.resetQueries(queryKey: const ['key']);
+
+      expect(client.getQueryData(const ['key']), 'seed');
+    }));
+
+    test(
+        'SHOULD reset queries matching by key prefix '
+        'WHEN exact == false', withFakeAsync((async) {
+      client.prefetchQuery<String, Object>(
+        const ['users', '1'],
+        (context) async {
+          await Future.delayed(const Duration(seconds: 1));
+          return 'user-1';
+        },
+      );
+      client.prefetchQuery<String, Object>(
+        const ['users', '2'],
+        (context) async {
+          await Future.delayed(const Duration(seconds: 1));
+          return 'user-2';
+        },
+      );
+      client.prefetchQuery<String, Object>(
+        const ['posts'],
+        (context) async {
+          await Future.delayed(const Duration(seconds: 1));
+          return 'posts';
+        },
+      );
+      async.elapse(const Duration(seconds: 1));
+
+      client.resetQueries(queryKey: const ['users'], exact: false);
+
+      final user1 = client.getQueryState<String, Object>(const ['users', '1'])!;
+      final user2 = client.getQueryState<String, Object>(const ['users', '2'])!;
+      final posts = client.getQueryState<String, Object>(const ['posts'])!;
+
+      // Should have reset users queries
+      expect(user1.status, QueryStatus.pending);
+      expect(user1.data, isNull);
+      expect(user2.status, QueryStatus.pending);
+      expect(user2.data, isNull);
+      // Should NOT have reset posts queries
+      expect(posts.status, QueryStatus.success);
+      expect(posts.data, 'posts');
+    }));
+
+    test(
+        'SHOULD reset query matching by exact key'
+        'WHEN exact == true', withFakeAsync((async) {
+      client.prefetchQuery<String, Object>(
+        const ['users'],
+        (context) async {
+          await Future.delayed(const Duration(seconds: 1));
+          return 'users';
+        },
+      );
+      client.prefetchQuery<String, Object>(
+        const ['users', '1'],
+        (context) async {
+          await Future.delayed(const Duration(seconds: 1));
+          return 'user-1';
+        },
+      );
+      async.elapse(const Duration(seconds: 1));
+
+      client.resetQueries(queryKey: const ['users'], exact: true);
+
+      final users = client.getQueryState<String, Object>(const ['users'])!;
+      final user1 = client.getQueryState<String, Object>(const ['users', '1'])!;
+
+      // Should have reset exact key match
+      expect(users.status, QueryStatus.pending);
+      expect(users.data, isNull);
+      // Should NOT have reset prefix key match
+      expect(user1.status, QueryStatus.success);
+      expect(user1.data, 'user-1');
+    }));
+
+    test(
+        'SHOULD reset queries matching predicate '
+        'WHEN predicate != null', withFakeAsync((async) {
+      client.prefetchQuery<String, Object>(
+        const ['query', 1],
+        (context) async {
+          await Future.delayed(const Duration(seconds: 1));
+          return 'data-1';
+        },
+      );
+      client.prefetchQuery<String, Object>(
+        const ['query', 2],
+        (context) async {
+          await Future.delayed(const Duration(seconds: 1));
+          throw Exception();
+        },
+      );
+      async.elapse(const Duration(seconds: 1));
+
+      // Reset only error queries
+      client.resetQueries(predicate: (s) => s.status == QueryStatus.error);
+
+      final query1 = client.getQueryState<String, Object>(const ['query', 1])!;
+      final query2 = client.getQueryState<String, Object>(const ['query', 2])!;
+
+      // Should NOT have reset success query
+      expect(query1.status, QueryStatus.success);
+      expect(query1.data, 'data-1');
+      // Should have reset error query
+      expect(query2.status, QueryStatus.pending);
+      expect(query2.data, isNull);
+    }));
+
+    test(
+        'SHOULD reset all queries '
+        'WHEN no filters are provided', withFakeAsync((async) {
+      client.prefetchQuery<String, Object>(
+        const ['query', 1],
+        (context) async {
+          await Future.delayed(const Duration(seconds: 1));
+          return 'data-1';
+        },
+      );
+      client.prefetchQuery<String, Object>(
+        const ['query', 2],
+        (context) async {
+          await Future.delayed(const Duration(seconds: 1));
+          return 'data-2';
+        },
+      );
+      async.elapse(const Duration(seconds: 1));
+
+      client.resetQueries();
+
+      final query1 = client.getQueryState<String, Object>(const ['query', 1])!;
+      final query2 = client.getQueryState<String, Object>(const ['query', 2])!;
+
+      // Should have reset all queries
+      expect(query1.status, QueryStatus.pending);
+      expect(query1.data, isNull);
+      expect(query2.status, QueryStatus.pending);
+      expect(query2.data, isNull);
+    }));
+
+    test(
+        'SHOULD refetch all active queries after reset'
+        '', withFakeAsync((async) {
+      var fetches1 = 0;
+      var fetches2 = 0;
+
+      // Active query 1
+      final observer1 = QueryObserver<String, Object>(
+        client,
+        QueryObserverOptions(
+          const ['key', 1],
+          (context) async {
+            await Future.delayed(const Duration(seconds: 1));
+            fetches1++;
+            return 'data-1';
+          },
+          enabled: true,
+        ),
+      );
+      observer1.onMount();
+      addTearDown(observer1.onUnmount);
+
+      // Active query 2
+      final observer2 = QueryObserver<String, Object>(
+        client,
+        QueryObserverOptions(
+          const ['key', 2],
+          (context) async {
+            await Future.delayed(const Duration(seconds: 1));
+            fetches2++;
+            return 'data-2';
+          },
+          enabled: true,
+        ),
+      );
+      observer2.onMount();
+      addTearDown(observer2.onUnmount);
+
+      // Wait for initial fetch
+      async.elapse(const Duration(seconds: 1));
+
+      expect(fetches1, 1);
+      expect(fetches2, 1);
+
+      client.resetQueries();
+
+      async.elapse(const Duration(seconds: 1));
+
+      expect(fetches1, 2);
+      expect(fetches2, 2);
+    }));
+
+    test(
+        'SHOULD NOT refetch inactive queries after reset'
+        '', withFakeAsync((async) {
+      var fetches1 = 0;
+      var fetches2 = 0;
+
+      // Inactive query 1 (no observers)
+      client.prefetchQuery(
+        const ['key', 1],
+        (context) async {
+          await Future.delayed(const Duration(seconds: 1));
+          fetches1++;
+          return 'data';
+        },
+      );
+      async.elapse(const Duration(seconds: 1));
+
+      expect(fetches1, 1);
+
+      client.resetQueries();
+      async.elapse(const Duration(seconds: 1));
+
+      expect(fetches1, 1);
+
+      // Inactive query 2 (observer not enabled)
+      final observer = QueryObserver<String, Object>(
+        client,
+        QueryObserverOptions(
+          const ['key', 2],
+          (context) async {
+            await Future.delayed(const Duration(seconds: 1));
+            fetches2++;
+            return 'data';
+          },
+          enabled: false,
+        ),
+      );
+      observer.onMount();
+      addTearDown(observer.onUnmount);
+      async.elapse(const Duration(seconds: 1));
+
+      expect(fetches2, 0);
+
+      client.resetQueries();
+      async.elapse(const Duration(seconds: 1));
+
+      expect(fetches2, 0);
+    }));
+
+    test(
+        'SHOULD NOT refetch static queries after reset'
+        '', withFakeAsync((async) {
+      var fetches = 0;
+
+      // Static query
+      final observer = QueryObserver<String, Object>(
+        client,
+        QueryObserverOptions(
+          const ['key'],
+          (context) async {
+            await Future.delayed(const Duration(seconds: 1));
+            fetches++;
+            return 'data';
+          },
+          enabled: true,
+          staleDuration: StaleDuration.static,
+        ),
+      );
+      observer.onMount();
+      addTearDown(observer.onUnmount);
+      async.elapse(const Duration(seconds: 1));
+
+      expect(fetches, 1);
+
+      client.resetQueries();
+      async.elapse(const Duration(seconds: 1));
+
+      expect(fetches, 1);
+    }));
+
+    test(
+        'SHOULD notify observers'
+        '', withFakeAsync((async) {
+      final capturedResults = <QueryResult<String, Object>>[];
+
+      client.prefetchQuery<String, Object>(
+        const ['key'],
+        (context) async {
+          await Future.delayed(const Duration(seconds: 1));
+          return 'data';
+        },
+      );
+      async.elapse(const Duration(seconds: 1));
+
+      final observer = QueryObserver<String, Object>(
+        client,
+        QueryObserverOptions(
+          const ['key'],
+          (context) async => 'data-updated',
+          enabled: false,
+        ),
+      )..onMount();
+      addTearDown(observer.onUnmount);
+
+      observer.subscribe((result) => capturedResults.add(result));
+
+      expect(capturedResults.length, 0);
+
+      client.resetQueries(queryKey: const ['key']);
+
+      expect(capturedResults.length, 1);
+    }));
+
+    test(
+        'SHOULD cancel in-progress fetch'
+        '', withFakeAsync((async) {
+      var aborted = false;
+
+      client.prefetchQuery<String, Object>(
+        const ['key'],
+        (context) async {
+          await Future.any([
+            Future.delayed(const Duration(seconds: 1)),
+            context.signal.whenAbort,
+          ]);
+          aborted = context.signal.isAborted;
+          return 'data';
+        },
+      );
+
+      // Wait for half delay
+      async.elapse(const Duration(milliseconds: 500));
+
+      var state = client.getQueryState<String, Object>(const ['key'])!;
+      expect(state.fetchStatus, FetchStatus.fetching);
+
+      // Reset while fetch is in progress
+      client.resetQueries(queryKey: const ['key']);
+
+      // Should be reset immediately
+      state = client.getQueryState<String, Object>(const ['key'])!;
+      expect(state.fetchStatus, FetchStatus.idle);
+
+      async.flushMicrotasks();
+
+      // Should have been aborted
+      expect(aborted, isTrue);
+
+      async.elapse(const Duration(milliseconds: 500));
+
+      // Should still be reset state
+      state = client.getQueryState<String, Object>(const ['key'])!;
+      expect(state.fetchStatus, FetchStatus.idle);
+    }));
+  });
+
   group('removeQueries', () {
     test(
         'SHOULD remove query from cache'

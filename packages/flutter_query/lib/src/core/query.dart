@@ -75,6 +75,12 @@ class Query<TData, TError>
     return observers.any((obs) => obs.options.enabled ?? true);
   }
 
+  bool get isStatic {
+    return observers.any(
+      (observer) => observer.options.staleDuration == StaleDuration.static,
+    );
+  }
+
   Map<String, dynamic> get meta {
     return observers
             .map((obs) => obs.options.meta)
@@ -224,6 +230,7 @@ class Query<TData, TError>
 
   void reset() {
     cancelGc();
+    unawaited(cancel(revert: true, silent: true));
     state = _initialState;
   }
 

@@ -2,6 +2,8 @@
 
 This release contains breaking changes to improve API consistency and usability.
 
+- Added `resetQueries` method on `QueryClient` for resetting queries to their initial state. Unlike `invalidateQueries` (which marks queries as stale), `resetQueries` completely resets the query state - queries with seed data are reset to that seed, while queries without seed have their data cleared. Active queries are automatically refetched after reset.
+
 - Added `removeQueries` method on `QueryClient` for removing queries from the cache. Unlike `invalidateQueries`, removed queries are completely discarded and must be fetched from scratch when accessed again.
 
 - Added `getQueryState` method on `QueryClient` for retrieving the full query state (status, error, dataUpdatedAt, etc.) instead of just the data.

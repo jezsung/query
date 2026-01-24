@@ -67,6 +67,8 @@ class Retryer<TData, TError> {
   void cancel({Object? error}) {
     if (_isCancelled) return;
     _isCancelled = true;
-    _completer?.completeError(error ?? Exception());
+    if (_completer != null && !_completer!.isCompleted) {
+      _completer!.completeError(error ?? Exception());
+    }
   }
 }

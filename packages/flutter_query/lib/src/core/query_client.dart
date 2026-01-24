@@ -8,6 +8,7 @@ import 'query_function_context.dart';
 import 'query_observer.dart';
 import 'query_options.dart';
 import 'query_state.dart';
+import 'utils.dart';
 
 class QueryClient {
   /// Creates a QueryClient with optional cache and default options.
@@ -338,9 +339,7 @@ class QueryClient {
                 (ob) => ob.options.staleDuration != StaleDuration.static) &&
             q.state.fetchStatus != FetchStatus.paused);
 
-    await Future.wait(
-      queries.map((q) => q.fetch().then((_) {}).catchError((_) {})),
-    );
+    await Future.wait(queries.map((q) => q.fetch().suppress()));
   }
 
   // ============================================================================
@@ -572,6 +571,57 @@ class QueryClient {
     for (final query in queries) {
       _cache.remove(query);
     }
+  }
+
+  /// Resets queries matching the filters to their initial state.
+  ///
+  /// This method resets queries to their pre-loaded state - queries with seed
+  /// data will be reset to that seed, while queries without seed will have
+  /// their data cleared to null with pending status.
+  ///
+  /// Unlike [clear], this notifies subscribers of the state change.
+  /// Unlike [invalidateQueries], this completely resets query state rather
+  /// than just marking it stale.
+  ///
+  /// After resetting, active queries (those with enabled observers) are
+  /// automatically refetched.
+  ///
+  /// Example:
+  /// ```dart
+  /// // Reset all queries
+  /// await client.resetQueries();
+  ///
+  /// // Reset queries with a specific key prefix
+  /// await client.resetQueries(queryKey: ['users']);
+  ///
+  /// // Reset only a specific query with exact matching
+  /// await client.resetQueries(queryKey: ['users', '123'], exact: true);
+  /// ```
+  Future<void> resetQueries({
+    List<Object?>? queryKey,
+    bool exact = false,
+    bool Function(QueryState)? predicate,
+  }) async {
+    final queries = _cache.findAll(
+      queryKey: queryKey,
+      exact: exact,
+      predicate: predicate,
+    );
+
+    // Reset all matching queries to their initial state
+    for (final query in queries) {
+      query.reset();
+    }
+
+    // Refetch only active, non-static, and non-paused queries
+    final queriesToRefetch = queries.where(
+      (q) =>
+          q.isActive &&
+          !q.isStatic &&
+          q.state.fetchStatus != FetchStatus.paused,
+    );
+
+    await Future.wait(queriesToRefetch.map((q) => q.fetch().suppress()));
   }
 
   /// Cancels all in-progress fetches for queries matching the filters.

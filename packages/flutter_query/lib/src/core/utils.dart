@@ -37,6 +37,11 @@ Map<K, V>? deepMergeMap<K, V>(
   return result;
 }
 
+@internal
+extension FutureExt<T> on Future<T> {
+  Future<void> suppress() => then((_) {}).catchError((_) {});
+}
+
 extension ListExt<T> on List<T> {
   /// Append item to end, removing first item if exceeding [maxLength].
   List<T> appendBounded(T item, [int? maxLength]) {
