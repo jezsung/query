@@ -139,7 +139,7 @@ class Query<TData, TError>
 
     final retryer = _retryer = Retryer<TData, TError>(
       () => _options.queryFn(context),
-      _options.retry ?? retryExponentialBackoff(),
+      _options.retry ?? retryExponentialBackoff,
       onFail: (failureCount, error) {
         state = state.copyWith(
           failureCount: failureCount,

@@ -1,8 +1,6 @@
 import 'package:collection/collection.dart';
 import 'package:meta/meta.dart';
 
-import 'query_options.dart';
-
 /// Shared instance for deep collection equality checks.
 @internal
 const deepEq = DeepCollectionEquality();
@@ -72,39 +70,24 @@ extension ListExt<T> on List<T> {
 /// ```
 Duration? retryNever(int retryCount, Object? error) => null;
 
-/// Creates an exponential backoff retry function.
+/// Exponential backoff retry function.
 ///
-/// Retries up to [maxRetries] times with exponential backoff delays.
-/// The delay formula is: min(baseDelay * 2^retryCount, maxDelay).
-///
-/// Default configuration matches TanStack Query v5:
-/// - 3 retries with delays of 1s, 2s, 4s (capped at 30s)
-///
-/// Parameters:
-/// - [maxRetries]: Maximum number of retry attempts (default: 3)
-/// - [baseDelay]: Base delay for the first retry (default: 1000ms)
-/// - [maxDelay]: Maximum delay cap (default: 30 seconds)
+/// Retries up to 3 times with delays of 1s, 2s, 4s (capped at 30s).
 ///
 /// Example:
 /// ```dart
-/// // Default: 3 retries with delays of 1s, 2s, 4s
-/// retry: retryExponentialBackoff()
-///
-/// // Custom: 5 retries with 500ms base and 60s max
-/// retry: retryExponentialBackoff(
-///   maxRetries: 5,
-///   baseDelay: Duration(milliseconds: 500),
-///   maxDelay: Duration(seconds: 60),
-/// )
+/// retry: retryExponentialBackoff
 /// ```
-RetryResolver<TError> retryExponentialBackoff<TError>({
-  int maxRetries = 3,
-  Duration baseDelay = const Duration(seconds: 1),
-  Duration maxDelay = const Duration(seconds: 30),
-}) {
-  return (int retryCount, TError error) {
-    if (retryCount >= maxRetries) return null;
-    final delayMs = baseDelay.inMilliseconds * (1 << retryCount);
-    return Duration(milliseconds: delayMs.clamp(0, maxDelay.inMilliseconds));
-  };
+Duration? retryExponentialBackoff(int retryCount, Object? error) {
+  if (retryCount < 0) {
+    throw ArgumentError.value(retryCount, 'retryCount', 'must be non-negative');
+  }
+
+  const maxRetries = 3;
+  const baseDelayMs = 1000;
+  const maxDelayMs = 30000;
+
+  if (retryCount >= maxRetries) return null;
+  final delayMs = baseDelayMs * (1 << retryCount);
+  return Duration(milliseconds: delayMs.clamp(0, maxDelayMs));
 }
