@@ -4,6 +4,22 @@ This release contains breaking changes to improve API consistency and usability.
 
 - Added `setQueryData` method on `QueryClient` for imperatively setting or updating cached query data. Useful for optimistic updates in mutation callbacks.
 
+- **BREAKING**: `fetchQuery`, `prefetchQuery`, `fetchInfiniteQuery`, and `prefetchInfiniteQuery` now take `queryKey` and `queryFn` as positional parameters instead of named parameters.
+
+  ```dart
+  // Before
+  await client.fetchQuery<String, Object>(
+    queryKey: const ['users', id],
+    queryFn: (context) async => fetchUser(id),
+  );
+
+  // After
+  await client.fetchQuery<String, Object>(
+    const ['users', id],
+    (context) async => fetchUser(id),
+  );
+  ```
+
 - **BREAKING**: Removed `RefetchType` enum. `invalidateQueries()` now only marks queries as stale without automatically refetching. Call `refetchQueries()` separately with a predicate to refetch specific queries.
 
   ```dart

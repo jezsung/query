@@ -46,8 +46,8 @@ void main() {
       var fetches = 0;
 
       await client.fetchQuery<String, Object>(
-        queryKey: const ['key'],
-        queryFn: (context) async {
+        const ['key'],
+        (context) async {
           fetches++;
           return 'data-1';
         },
@@ -57,8 +57,8 @@ void main() {
 
       // Second call should use cached data (infinity stale time from defaults)
       await client.fetchQuery<String, Object>(
-        queryKey: const ['key'],
-        queryFn: (context) async {
+        const ['key'],
+        (context) async {
           fetches++;
           return 'data-2';
         },
@@ -73,8 +73,8 @@ void main() {
       var fetches = 0;
 
       await client.fetchQuery(
-        queryKey: const ['key'],
-        queryFn: (context) async {
+        const ['key'],
+        (context) async {
           fetches++;
           return 'data-1';
         },
@@ -86,8 +86,8 @@ void main() {
 
       // Second call should refetch (zero stale time overrides default)
       await client.fetchQuery(
-        queryKey: const ['key'],
-        queryFn: (context) async {
+        const ['key'],
+        (context) async {
           fetches++;
           return 'data-2';
         },
@@ -101,8 +101,8 @@ void main() {
     test('SHOULD use QueryClient.defaultQueryOptions for gcDuration',
         withFakeAsync((async) {
       client.fetchQuery(
-        queryKey: const ['key'],
-        queryFn: (context) async => 'data',
+        const ['key'],
+        (context) async => 'data',
       );
 
       // Check if query exists every 10s
@@ -138,8 +138,8 @@ void main() {
   group('fetchQuery', () {
     test('SHOULD fetch and return data WHEN query does not exist', () async {
       final data = await client.fetchQuery<String, Object>(
-        queryKey: const ['key'],
-        queryFn: (context) async => 'fetched data',
+        const ['key'],
+        (context) async => 'fetched data',
       );
 
       expect(data, equals('fetched data'));
@@ -148,15 +148,15 @@ void main() {
     test('SHOULD return cached data WHEN data is fresh', () async {
       // First fetch
       await client.fetchQuery<String, Object>(
-        queryKey: const ['key'],
-        queryFn: (context) async => 'first',
+        const ['key'],
+        (context) async => 'first',
         staleDuration: StaleDuration.infinity,
       );
 
       // Second fetch with different queryFn - should return cached
       final data = await client.fetchQuery<String, Object>(
-        queryKey: const ['key'],
-        queryFn: (context) async => 'second',
+        const ['key'],
+        (context) async => 'second',
         staleDuration: StaleDuration.infinity,
       );
 
@@ -169,15 +169,15 @@ void main() {
       var data = '';
 
       data = await client.fetchQuery<String, Object>(
-        queryKey: const ['key'],
-        queryFn: (context) async => 'data-${++calls}',
+        const ['key'],
+        (context) async => 'data-${++calls}',
         staleDuration: StaleDuration.zero,
       );
       expect(data, equals('data-1'));
 
       data = await client.fetchQuery<String, Object>(
-        queryKey: const ['key'],
-        queryFn: (context) async => 'data-${++calls}',
+        const ['key'],
+        (context) async => 'data-${++calls}',
         staleDuration: StaleDuration.zero,
       );
       expect(data, equals('data-2'));
@@ -188,8 +188,8 @@ void main() {
 
       try {
         await client.fetchQuery<String, Exception>(
-          queryKey: const ['key'],
-          queryFn: (context) async => throw error,
+          const ['key'],
+          (context) async => throw error,
         );
       } catch (e) {
         expect(e, same(error));
@@ -201,8 +201,8 @@ void main() {
       Object? caughtError;
 
       client.fetchQuery<String, Exception>(
-        queryKey: const ['key'],
-        queryFn: (context) async {
+        const ['key'],
+        (context) async {
           attempts++;
           await Future.delayed(const Duration(seconds: 3));
           throw Exception('error');
@@ -226,12 +226,12 @@ void main() {
       final completer = Completer<String>();
 
       final future1 = client.fetchQuery<String, Object>(
-        queryKey: const ['key'],
-        queryFn: (context) => completer.future,
+        const ['key'],
+        (context) => completer.future,
       );
       final future2 = client.fetchQuery<String, Object>(
-        queryKey: const ['key'],
-        queryFn: (context) async => 'data-2',
+        const ['key'],
+        (context) async => 'data-2',
       );
 
       // Both should be waiting for the same fetch
@@ -247,8 +247,8 @@ void main() {
       int attempts = 0;
 
       client.fetchQuery<String, Exception>(
-        queryKey: const ['key'],
-        queryFn: (context) async {
+        const ['key'],
+        (context) async {
           attempts++;
           await Future.delayed(const Duration(seconds: 3));
           throw Exception('error');
@@ -274,8 +274,8 @@ void main() {
 
     test('SHOULD store data in cache after fetch', () async {
       await client.fetchQuery<String, Object>(
-        queryKey: const ['key'],
-        queryFn: (context) async => 'cached data',
+        const ['key'],
+        (context) async => 'cached data',
       );
 
       final query = client.cache.get<String, Object>(const ['key']);
@@ -288,16 +288,16 @@ void main() {
 
       // First fetch
       await client.fetchQuery<String, Object>(
-        queryKey: const ['key'],
-        queryFn: (_) async => 'data-${++callCount}',
+        const ['key'],
+        (_) async => 'data-${++callCount}',
         staleDuration: StaleDuration.infinity,
       );
 
       // Multiple subsequent fetches should all return cached data
       for (int i = 0; i < 5; i++) {
         final data = await client.fetchQuery<String, Object>(
-          queryKey: const ['key'],
-          queryFn: (_) async => 'data-${++callCount}',
+          const ['key'],
+          (_) async => 'data-${++callCount}',
           staleDuration: StaleDuration.infinity,
         );
         expect(data, equals('data-1'));
@@ -311,8 +311,8 @@ void main() {
       QueryFunctionContext? receivedContext;
 
       await client.fetchQuery<String, Object>(
-        queryKey: const ['users', 123],
-        queryFn: (context) async {
+        const ['users', 123],
+        (context) async {
           receivedContext = context;
           return 'data';
         },
@@ -330,8 +330,8 @@ void main() {
         var attempts = 0;
 
         final data = await client.fetchQuery<String, Object>(
-          queryKey: const ['key'],
-          queryFn: (context) async {
+          const ['key'],
+          (context) async {
             attempts++;
             return 'data';
           },
@@ -349,8 +349,8 @@ void main() {
         var attempts = 0;
 
         final data = await client.fetchQuery<String, Object>(
-          queryKey: const ['key'],
-          queryFn: (context) async {
+          const ['key'],
+          (context) async {
             attempts++;
             return 'data';
           },
@@ -368,8 +368,8 @@ void main() {
         var attempts = 0;
 
         final data = await client.fetchQuery<String, Object>(
-          queryKey: const ['key'],
-          queryFn: (context) async {
+          const ['key'],
+          (context) async {
             attempts++;
             return 'data';
           },
@@ -388,8 +388,8 @@ void main() {
         var attempts = 0;
 
         final data = await client.fetchQuery<String, Object>(
-          queryKey: const ['key'],
-          queryFn: (context) async {
+          const ['key'],
+          (context) async {
             attempts++;
             return 'data';
           },
@@ -406,8 +406,8 @@ void main() {
           'SHOULD populate cache with seed'
           '', () async {
         await client.fetchQuery<String, Object>(
-          queryKey: const ['key'],
-          queryFn: (context) async => 'data',
+          const ['key'],
+          (context) async => 'data',
           seed: 'initial',
           staleDuration: StaleDuration.infinity,
         );
@@ -425,8 +425,8 @@ void main() {
         'WHEN fetch fails', () async {
       // This should complete without throwing
       await client.prefetchQuery<String, Exception>(
-        queryKey: const ['key'],
-        queryFn: (context) async => throw Exception('error'),
+        const ['key'],
+        (context) async => throw Exception('error'),
       );
 
       // Verify the query was created but has an error state
@@ -441,8 +441,8 @@ void main() {
         'SHOULD return data '
         'WHEN query exists with data', () async {
       await client.fetchQuery<String, Object>(
-        queryKey: const ['key'],
-        queryFn: (context) async => 'data',
+        const ['key'],
+        (context) async => 'data',
       );
 
       final data = client.getQueryData<String, Object>(const ['key']);
@@ -476,8 +476,8 @@ void main() {
         'SHOULD use exact key matching'
         '', () async {
       await client.fetchQuery<String, Object>(
-        queryKey: const ['users', '1'],
-        queryFn: (context) async => 'data',
+        const ['users', '1'],
+        (context) async => 'data',
       );
 
       // Prefix key should not match
@@ -507,8 +507,8 @@ void main() {
         'SHOULD update data '
         'WHEN query exists', () async {
       await client.fetchQuery(
-        queryKey: const ['key'],
-        queryFn: (context) async => 'data',
+        const ['key'],
+        (context) async => 'data',
       );
 
       final data = client.setQueryData(
@@ -536,8 +536,8 @@ void main() {
         'SHOULD NOT update data '
         'WHEN updater returns null', () async {
       await client.fetchQuery<String, Object>(
-        queryKey: const ['key'],
-        queryFn: (context) async => 'data',
+        const ['key'],
+        (context) async => 'data',
       );
 
       final data = client.setQueryData<String, Object>(
@@ -555,8 +555,8 @@ void main() {
       String? capturedPreviousData;
 
       await client.fetchQuery<String, Object>(
-        queryKey: const ['key'],
-        queryFn: (context) async => 'data-1',
+        const ['key'],
+        (context) async => 'data-1',
       );
 
       client.setQueryData<String, Object>(
@@ -606,8 +606,8 @@ void main() {
         'SHOULD reset error to null'
         '', withFakeAsync((async) {
       client.prefetchQuery<String, Object>(
-        queryKey: const ['key'],
-        queryFn: (context) => throw Exception(),
+        const ['key'],
+        (context) => throw Exception(),
       );
       async.flushMicrotasks();
 
@@ -631,8 +631,8 @@ void main() {
         'SHOULD reset invalidation status'
         '', withFakeAsync((async) {
       client.prefetchQuery<String, Object>(
-        queryKey: const ['key'],
-        queryFn: (context) async => 'data',
+        const ['key'],
+        (context) async => 'data',
       );
       async.flushMicrotasks();
       client.invalidateQueries(
@@ -720,8 +720,8 @@ void main() {
         'SHOULD mark query as invalidated'
         '', () async {
       await client.fetchQuery(
-        queryKey: const ['key'],
-        queryFn: (context) async => 'data',
+        const ['key'],
+        (context) async => 'data',
       );
 
       client.invalidateQueries(queryKey: const ['key']);
@@ -734,16 +734,16 @@ void main() {
         'SHOULD invalidate all matching queries by prefix'
         '', () async {
       await client.fetchQuery(
-        queryKey: const ['users', '1'],
-        queryFn: (context) async => 'user1',
+        const ['users', '1'],
+        (context) async => 'user1',
       );
       await client.fetchQuery(
-        queryKey: const ['users', '2'],
-        queryFn: (context) async => 'user2',
+        const ['users', '2'],
+        (context) async => 'user2',
       );
       await client.fetchQuery(
-        queryKey: const ['posts'],
-        queryFn: (context) async => 'posts',
+        const ['posts'],
+        (context) async => 'posts',
       );
 
       client.invalidateQueries(queryKey: const ['users']);
@@ -777,12 +777,12 @@ void main() {
         ),
       );
       await client.fetchQuery(
-        queryKey: const ['inactive', 1],
-        queryFn: (context) async => 'data',
+        const ['inactive', 1],
+        (context) async => 'data',
       );
       await client.fetchQuery(
-        queryKey: const ['inactive', 2],
-        queryFn: (context) async => 'data',
+        const ['inactive', 2],
+        (context) async => 'data',
       );
       final disabledObserver = QueryObserver(
         client,
@@ -820,8 +820,8 @@ void main() {
       var fetches = 0;
 
       client.fetchQuery(
-        queryKey: const ['key'],
-        queryFn: (context) async {
+        const ['key'],
+        (context) async {
           fetches++;
           await Future.delayed(const Duration(seconds: 1));
           return 'data';
@@ -933,8 +933,8 @@ void main() {
       // Use abortable query function that checks signal
       // Use ignore to prevent uncaught async error (expected to throw when cancelled with no prior data)
       client.fetchQuery(
-        queryKey: const ['key'],
-        queryFn: abortableQueryFn(
+        const ['key'],
+        abortableQueryFn(
           const Duration(seconds: 3),
           () => 'data',
         ),
@@ -956,8 +956,8 @@ void main() {
         'SHOULD complete immediately '
         'WHEN no fetch in progress', withFakeAsync((async) {
       client.fetchQuery(
-        queryKey: const ['key'],
-        queryFn: abortableQueryFn(
+        const ['key'],
+        abortableQueryFn(
           const Duration(seconds: 3),
           () => 'data',
         ),
@@ -983,16 +983,16 @@ void main() {
         '', withFakeAsync((async) {
       // Use abortable query for the one we want to cancel
       client.fetchQuery(
-        queryKey: const ['users', 1],
-        queryFn: abortableQueryFn(
+        const ['users', 1],
+        abortableQueryFn(
           const Duration(seconds: 10),
           () => 'data',
         ),
       ).ignore();
       // Use non-abortable (Completer) for the one that should keep fetching
       client.fetchQuery(
-        queryKey: const ['posts', 1],
-        queryFn: (context) => Completer<String>().future,
+        const ['posts', 1],
+        (context) => Completer<String>().future,
       );
 
       // Cancel only users queries
@@ -1012,15 +1012,15 @@ void main() {
         'SHOULD ONLY cancel queries matching predicate'
         'WHEN predicate != null', withFakeAsync((async) {
       client.fetchQuery(
-        queryKey: const ['query', 1],
-        queryFn: abortableQueryFn(
+        const ['query', 1],
+        abortableQueryFn(
           const Duration(seconds: 3),
           () => 'data',
         ),
       ).ignore();
       client.fetchQuery(
-        queryKey: const ['query', 2],
-        queryFn: (context) => Completer<String>().future,
+        const ['query', 2],
+        (context) => Completer<String>().future,
       );
 
       // Cancel only query with key ending in 1
@@ -1038,15 +1038,15 @@ void main() {
         'SHOULD ONLY cancel query matching exact query key '
         'WHEN exact == true', withFakeAsync((async) {
       client.fetchQuery(
-        queryKey: const ['users', 1],
-        queryFn: abortableQueryFn(
+        const ['users', 1],
+        abortableQueryFn(
           const Duration(seconds: 3),
           () => 'data-1',
         ),
       ).ignore();
       client.fetchQuery(
-        queryKey: const ['users', 2],
-        queryFn: abortableQueryFn(
+        const ['users', 2],
+        abortableQueryFn(
           const Duration(seconds: 3),
           () => 'data-2',
         ),
@@ -1068,8 +1068,8 @@ void main() {
         'WHEN revert == true', withFakeAsync((async) {
       // Fetch initial data
       client.fetchQuery<String, Object>(
-        queryKey: const ['key'],
-        queryFn: abortableQueryFn(
+        const ['key'],
+        abortableQueryFn(
           const Duration(seconds: 3),
           () => 'data-initial',
         ),
@@ -1081,8 +1081,8 @@ void main() {
       expect(query.state.failureCount, 0);
 
       client.fetchQuery<String, Object>(
-        queryKey: const ['key'],
-        queryFn: abortableQueryFn(
+        const ['key'],
+        abortableQueryFn(
           const Duration(seconds: 3),
           () => throw Exception(),
         ),
@@ -1108,8 +1108,8 @@ void main() {
         'WHEN revert == false', withFakeAsync((async) {
       // Fetch initial data
       client.fetchQuery<String, Object>(
-        queryKey: const ['key'],
-        queryFn: abortableQueryFn(
+        const ['key'],
+        abortableQueryFn(
           const Duration(seconds: 3),
           () => 'data-initial',
         ),
@@ -1122,8 +1122,8 @@ void main() {
 
       // Start new fetch that will fail
       client.fetchQuery<String, Object>(
-        queryKey: const ['key'],
-        queryFn: abortableQueryFn(
+        const ['key'],
+        abortableQueryFn(
           const Duration(seconds: 3),
           () => throw Exception(),
         ),
@@ -1151,8 +1151,8 @@ void main() {
       Object? caughtError;
 
       client.fetchQuery(
-        queryKey: const ['key'],
-        queryFn: abortableQueryFn(
+        const ['key'],
+        abortableQueryFn(
           const Duration(seconds: 3),
           () => 'data-initial',
         ),
@@ -1160,8 +1160,8 @@ void main() {
       async.elapse(const Duration(seconds: 3));
 
       client.fetchQuery(
-        queryKey: const ['key'],
-        queryFn: abortableQueryFn(
+        const ['key'],
+        abortableQueryFn(
           const Duration(seconds: 3),
           () => 'data-new',
         ),
@@ -1184,8 +1184,8 @@ void main() {
       Object? caughtError;
 
       client.fetchQuery(
-        queryKey: const ['key'],
-        queryFn: abortableQueryFn(
+        const ['key'],
+        abortableQueryFn(
           const Duration(seconds: 3),
           () => 'data',
         ),
@@ -1208,8 +1208,8 @@ void main() {
       Object? caughtError;
 
       client.fetchQuery<String, Object>(
-        queryKey: const ['key'],
-        queryFn: abortableQueryFn(
+        const ['key'],
+        abortableQueryFn(
           const Duration(seconds: 3),
           () => 'data',
         ),
@@ -1233,8 +1233,8 @@ void main() {
 
       // Start fetch with abortable queryFn
       client.fetchQuery<String, Object>(
-        queryKey: const ['key'],
-        queryFn: abortableQueryFn(const Duration(seconds: 10), () => 'data'),
+        const ['key'],
+        abortableQueryFn(const Duration(seconds: 10), () => 'data'),
       ).catchError((e) {
         caughtError = e;
         return 'error';
@@ -1255,8 +1255,8 @@ void main() {
         'SHOULD fetch and return data'
         '', withFakeAsync((async) {
       final future = client.fetchInfiniteQuery<String, Object, int>(
-        queryKey: const ['test'],
-        queryFn: (context) async {
+        const ['test'],
+        (context) async {
           await Future.delayed(const Duration(seconds: 1));
           return 'page-${context.pageParam}';
         },
@@ -1277,8 +1277,8 @@ void main() {
         'WHEN data is not stale', withFakeAsync((async) {
       // First fetch
       final future1 = client.fetchInfiniteQuery<String, Object, int>(
-        queryKey: const ['test'],
-        queryFn: (context) async {
+        const ['test'],
+        (context) async {
           await Future.delayed(const Duration(seconds: 1));
           return 'first-${context.pageParam}';
         },
@@ -1296,8 +1296,8 @@ void main() {
 
       // Second fetch with different queryFn - should return cached
       final future2 = client.fetchInfiniteQuery<String, Object, int>(
-        queryKey: const ['test'],
-        queryFn: (context) async {
+        const ['test'],
+        (context) async {
           await Future.delayed(const Duration(seconds: 1));
           return 'second-${context.pageParam}';
         },
@@ -1319,8 +1319,8 @@ void main() {
         'SHOULD refetch and return new data '
         'WHEN data is stale', withFakeAsync((async) {
       final future1 = client.fetchInfiniteQuery<String, Object, int>(
-        queryKey: const ['test'],
-        queryFn: (context) async {
+        const ['test'],
+        (context) async {
           await Future.delayed(const Duration(seconds: 1));
           return 'first-${context.pageParam}';
         },
@@ -1337,8 +1337,8 @@ void main() {
       async.elapse(const Duration(seconds: 1));
 
       final future2 = client.fetchInfiniteQuery<String, Object, int>(
-        queryKey: const ['test'],
-        queryFn: (context) async {
+        const ['test'],
+        (context) async {
           await Future.delayed(const Duration(seconds: 1));
           return 'second-${context.pageParam}';
         },
@@ -1361,8 +1361,8 @@ void main() {
       final expectedError = Exception();
 
       final future = client.fetchInfiniteQuery<String, Exception, int>(
-        queryKey: const ['test'],
-        queryFn: (context) async {
+        const ['test'],
+        (context) async {
           await Future.delayed(const Duration(seconds: 1));
           throw expectedError;
         },
@@ -1381,8 +1381,8 @@ void main() {
       var attempts = 0;
 
       final future = client.fetchInfiniteQuery<String, Exception, int>(
-        queryKey: const ['test'],
-        queryFn: (context) async {
+        const ['test'],
+        (context) async {
           await Future.delayed(const Duration(seconds: 1));
           attempts++;
           throw Exception();
@@ -1407,8 +1407,8 @@ void main() {
         'SHOULD fetch multiple pages '
         'WHEN pages parameter is set', withFakeAsync((async) {
       final future = client.fetchInfiniteQuery<String, Object, int>(
-        queryKey: const ['test'],
-        queryFn: (context) async {
+        const ['test'],
+        (context) async {
           await Future.delayed(const Duration(seconds: 1));
           return 'page-${context.pageParam}';
         },
@@ -1433,8 +1433,8 @@ void main() {
         'SHOULD stop fetching pages '
         'WHEN nextPageParamBuilder returns null', withFakeAsync((async) {
       final future = client.fetchInfiniteQuery<String, Object, int>(
-        queryKey: const ['test'],
-        queryFn: (context) async {
+        const ['test'],
+        (context) async {
           await Future.delayed(const Duration(seconds: 1));
           return 'page-${context.pageParam}';
         },
@@ -1462,8 +1462,8 @@ void main() {
         'SHOULD respect maxPages limit'
         '', withFakeAsync((async) {
       final future = client.fetchInfiniteQuery<String, Object, int>(
-        queryKey: const ['test'],
-        queryFn: (context) async {
+        const ['test'],
+        (context) async {
           await Future.delayed(const Duration(seconds: 1));
           return 'page-${context.pageParam}';
         },
@@ -1489,8 +1489,8 @@ void main() {
         '', withFakeAsync((async) {
       // First fetch 3 pages
       final future1 = client.fetchInfiniteQuery<String, Object, int>(
-        queryKey: const ['test'],
-        queryFn: (context) async {
+        const ['test'],
+        (context) async {
           await Future.delayed(const Duration(seconds: 1));
           return 'first-${context.pageParam}';
         },
@@ -1512,8 +1512,8 @@ void main() {
 
       // Refetch - should maintain 3 pages
       final future2 = client.fetchInfiniteQuery<String, Object, int>(
-        queryKey: const ['test'],
-        queryFn: (context) async {
+        const ['test'],
+        (context) async {
           await Future.delayed(const Duration(seconds: 1));
           return 'second-${context.pageParam}';
         },
@@ -1539,8 +1539,8 @@ void main() {
         'SHOULD persist data to cache'
         '', withFakeAsync((async) {
       client.fetchInfiniteQuery<String, Object, int>(
-        queryKey: const ['test'],
-        queryFn: (context) async {
+        const ['test'],
+        (context) async {
           await Future.delayed(const Duration(seconds: 1));
           return 'page-${context.pageParam}';
         },
@@ -1560,8 +1560,8 @@ void main() {
         'SHOULD return same future '
         'WHEN another fetch already in progress', withFakeAsync((async) {
       final future1 = client.fetchInfiniteQuery<String, Object, int>(
-        queryKey: const ['test'],
-        queryFn: (context) async {
+        const ['test'],
+        (context) async {
           await Future.delayed(const Duration(seconds: 1));
           return 'first-${context.pageParam}';
         },
@@ -1569,8 +1569,8 @@ void main() {
         nextPageParamBuilder: (data) => data.pageParams.last + 1,
       );
       final future2 = client.fetchInfiniteQuery<String, Object, int>(
-        queryKey: const ['test'],
-        queryFn: (context) async {
+        const ['test'],
+        (context) async {
           await Future.delayed(const Duration(seconds: 1));
           return 'second-${context.pageParam}';
         },
@@ -1597,8 +1597,8 @@ void main() {
         var attempts = 0;
 
         final future = client.fetchInfiniteQuery<String, Object, int>(
-          queryKey: const ['test'],
-          queryFn: (context) async {
+          const ['test'],
+          (context) async {
             attempts++;
             return 'page-${context.pageParam}';
           },
@@ -1624,8 +1624,8 @@ void main() {
         var attempts = 0;
 
         final future = client.fetchInfiniteQuery<String, Object, int>(
-          queryKey: const ['test'],
-          queryFn: (context) async {
+          const ['test'],
+          (context) async {
             attempts++;
             await Future.delayed(const Duration(seconds: 1));
             return 'page-${context.pageParam}';
@@ -1653,8 +1653,8 @@ void main() {
         'SHOULD NOT throw'
         '', withFakeAsync((async) {
       final future = client.prefetchInfiniteQuery<String, Exception, int>(
-        queryKey: const ['test'],
-        queryFn: (context) async {
+        const ['test'],
+        (context) async {
           await Future.delayed(const Duration(seconds: 1));
           throw Exception();
         },
@@ -1671,8 +1671,8 @@ void main() {
         'SHOULD persist data to cache'
         '', withFakeAsync((async) {
       client.prefetchInfiniteQuery<String, Object, int>(
-        queryKey: const ['test'],
-        queryFn: (context) async {
+        const ['test'],
+        (context) async {
           await Future.delayed(const Duration(seconds: 1));
           return 'page-${context.pageParam}';
         },
@@ -1695,8 +1695,8 @@ void main() {
         'SHOULD return data '
         'WHEN query exists with data', withFakeAsync((async) {
       client.fetchInfiniteQuery<String, Object, int>(
-        queryKey: const ['test'],
-        queryFn: (context) async {
+        const ['test'],
+        (context) async {
           await Future.delayed(const Duration(seconds: 1));
           return 'page-${context.pageParam}';
         },
@@ -1742,8 +1742,8 @@ void main() {
         'SHOULD use exact key matching'
         '', withFakeAsync((async) {
       client.fetchInfiniteQuery<String, Object, int>(
-        queryKey: const ['test', '1'],
-        queryFn: (context) async {
+        const ['test', '1'],
+        (context) async {
           await Future.delayed(const Duration(seconds: 1));
           return 'page-${context.pageParam}';
         },

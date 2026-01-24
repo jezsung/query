@@ -81,9 +81,9 @@ class QueryClient {
   /// Throws if the fetch fails.
   ///
   /// Aligned with TanStack Query's `fetchQuery` method.
-  Future<TData> fetchQuery<TData, TError>({
-    required List<Object?> queryKey,
-    required Future<TData> Function(QueryFunctionContext context) queryFn,
+  Future<TData> fetchQuery<TData, TError>(
+    List<Object?> queryKey,
+    QueryFn<TData> queryFn, {
     StaleDuration? staleDuration,
     RetryResolver<TError>? retry,
     GcDuration? gcDuration,
@@ -139,9 +139,9 @@ class QueryClient {
   /// Use this for preloading data before navigation or warming up the cache.
   ///
   /// Aligned with TanStack Query's `prefetchQuery` method.
-  Future<void> prefetchQuery<TData, TError>({
-    required List<Object?> queryKey,
-    required Future<TData> Function(QueryFunctionContext context) queryFn,
+  Future<void> prefetchQuery<TData, TError>(
+    List<Object?> queryKey,
+    QueryFn<TData> queryFn, {
     StaleDuration? staleDuration,
     RetryResolver<TError>? retry,
     GcDuration? gcDuration,
@@ -150,8 +150,8 @@ class QueryClient {
   }) async {
     try {
       await fetchQuery<TData, TError>(
-        queryKey: queryKey,
-        queryFn: queryFn,
+        queryKey,
+        queryFn,
         staleDuration: staleDuration,
         retry: retry,
         gcDuration: gcDuration,
@@ -344,9 +344,9 @@ class QueryClient {
   ///
   /// Aligned with TanStack Query's `fetchInfiniteQuery` method.
   Future<InfiniteData<TData, TPageParam>>
-      fetchInfiniteQuery<TData, TError, TPageParam>({
-    required List<Object?> queryKey,
-    required InfiniteQueryFn<TData, TPageParam> queryFn,
+      fetchInfiniteQuery<TData, TError, TPageParam>(
+    List<Object?> queryKey,
+    InfiniteQueryFn<TData, TPageParam> queryFn, {
     required TPageParam initialPageParam,
     required NextPageParamBuilder<TData, TPageParam> nextPageParamBuilder,
     PrevPageParamBuilder<TData, TPageParam>? prevPageParamBuilder,
@@ -469,9 +469,9 @@ class QueryClient {
   /// Use this for preloading paginated data before navigation.
   ///
   /// Aligned with TanStack Query's `prefetchInfiniteQuery` method.
-  Future<void> prefetchInfiniteQuery<TData, TError, TPageParam>({
-    required List<Object?> queryKey,
-    required InfiniteQueryFn<TData, TPageParam> queryFn,
+  Future<void> prefetchInfiniteQuery<TData, TError, TPageParam>(
+    List<Object?> queryKey,
+    InfiniteQueryFn<TData, TPageParam> queryFn, {
     required TPageParam initialPageParam,
     required NextPageParamBuilder<TData, TPageParam> nextPageParamBuilder,
     PrevPageParamBuilder<TData, TPageParam>? prevPageParamBuilder,
@@ -486,8 +486,8 @@ class QueryClient {
   }) async {
     try {
       await fetchInfiniteQuery<TData, TError, TPageParam>(
-        queryKey: queryKey,
-        queryFn: queryFn,
+        queryKey,
+        queryFn,
         initialPageParam: initialPageParam,
         nextPageParamBuilder: nextPageParamBuilder,
         prevPageParamBuilder: prevPageParamBuilder,

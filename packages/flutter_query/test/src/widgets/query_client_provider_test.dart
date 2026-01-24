@@ -37,8 +37,8 @@ void main() {
 
       // Add a query to the cache so we can verify clear was called
       await client.prefetchQuery(
-        queryKey: const ['key'],
-        queryFn: (context) async => 'data',
+        const ['key'],
+        (context) async => 'data',
       );
 
       await tester.pumpWidget(QueryClientProvider(
@@ -138,8 +138,8 @@ void main() {
 
       // Add a query to the cache so we can verify clear was NOT called
       await client.prefetchQuery(
-        queryKey: const ['key'],
-        queryFn: (context) async => 'data',
+        const ['key'],
+        (context) async => 'data',
       );
 
       await tester.pumpWidget(QueryClientProvider.value(
