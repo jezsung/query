@@ -2,6 +2,8 @@
 
 This release contains breaking changes to improve API consistency and usability.
 
+- Added `setQueryData` method on `QueryClient` for imperatively setting or updating cached query data. Useful for optimistic updates in mutation callbacks.
+
 - **BREAKING**: Removed `RefetchType` enum. `invalidateQueries()` now only marks queries as stale without automatically refetching. Call `refetchQueries()` separately with a predicate to refetch specific queries.
 
   ```dart
