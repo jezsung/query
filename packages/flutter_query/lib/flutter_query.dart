@@ -5,7 +5,6 @@ export 'src/core/core.dart'
 
         // Query
         Query,
-        QueryCache,
         QueryObserver,
         QueryState,
         QueryStatus,
@@ -18,7 +17,6 @@ export 'src/core/core.dart'
 
         // Mutation
         Mutation,
-        MutationCache,
         MutationObserver,
         MutationState,
         MutationStatus,

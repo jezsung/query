@@ -2,6 +2,8 @@
 
 This release contains breaking changes to improve API consistency and usability.
 
+- **BREAKING**: `QueryCache` and `MutationCache` are no longer part of the public API. The `cache` and `mutationCache` constructor parameters have been removed from `QueryClient`. The caches are now created and managed internally.
+
 - Fixed gc timer to start after fetch completes rather than at query creation time.
 
 - Added `resetQueries` method on `QueryClient` for resetting queries to their initial state. Unlike `invalidateQueries` (which marks queries as stale), `resetQueries` completely resets the query state - queries with seed data are reset to that seed, while queries without seed have their data cleared. Active queries are automatically refetched after reset.

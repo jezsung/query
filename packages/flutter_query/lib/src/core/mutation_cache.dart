@@ -13,6 +13,7 @@ import 'query_client.dart';
 /// a new mutation.
 ///
 /// Aligned with TanStack Query's MutationCache.
+@internal
 class MutationCache {
   late final QueryClient _client;
   final Set<Mutation> _mutations = {};

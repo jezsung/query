@@ -1,3 +1,5 @@
+import 'package:meta/meta.dart';
+
 import 'default_mutation_options.dart';
 import 'default_query_options.dart';
 import 'infinite_query_function_context.dart';
@@ -32,18 +34,15 @@ class QueryClient {
   /// );
   /// ```
   QueryClient({
-    QueryCache? cache,
-    MutationCache? mutationCache,
     this.defaultQueryOptions = const DefaultQueryOptions(),
     this.defaultMutationOptions = const DefaultMutationOptions(),
-  })  : _cache = cache ?? QueryCache(),
-        _mutationCache = mutationCache ?? MutationCache() {
+  }) {
     _cache.client = this;
     _mutationCache.client = this;
   }
 
-  final QueryCache _cache;
-  final MutationCache _mutationCache;
+  final QueryCache _cache = QueryCache();
+  final MutationCache _mutationCache = MutationCache();
 
   /// Default options applied to all queries.
   ///
@@ -57,10 +56,12 @@ class QueryClient {
   /// continue to use the options they were created with.
   DefaultMutationOptions defaultMutationOptions;
 
-  /// Gets the query cache
+  /// Gets the query cache.
+  @internal
   QueryCache get cache => _cache;
 
-  /// Gets the mutation cache
+  /// Gets the mutation cache.
+  @internal
   MutationCache get mutationCache => _mutationCache;
 
   /// Clears all queries and mutations from the cache.

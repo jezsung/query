@@ -7,6 +7,7 @@ import 'query_key.dart';
 import 'query_options.dart';
 import 'query_state.dart';
 
+@internal
 class QueryCache {
   late final QueryClient _client;
   final Map<QueryKey, Query> _queries = {};
