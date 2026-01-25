@@ -815,11 +815,11 @@ void main() {
 
       // Should exist just before gc duration
       async.elapse(const Duration(minutes: 1, seconds: 59));
-      expect(client.cache.get(const ['key']), isNotNull);
+      expect(cache.get(const ['key']), isNotNull);
 
       // Should have been removed after gc duration
       async.elapse(const Duration(seconds: 1));
-      expect(client.cache.get(const ['key']), isNull);
+      expect(cache.get(const ['key']), isNull);
     }));
 
     test(
@@ -984,7 +984,7 @@ void main() {
       );
       async.elapse(const Duration(seconds: 1));
 
-      final query = client.cache.get<String, Object>(const ['key']);
+      final query = cache.get<String, Object>(const ['key']);
       expect(query, isNotNull);
       expect(query!.state.data, 'seed');
     }));
@@ -1030,7 +1030,7 @@ void main() {
       async.elapse(const Duration(seconds: 1));
 
       expect(
-        client.cache.get<String, Object>(const ['key'])!.state.data,
+        cache.get<String, Object>(const ['key'])!.state.data,
         'data',
       );
     }));
@@ -1081,7 +1081,7 @@ void main() {
     test(
         'SHOULD return null '
         'WHEN query exists but has no data yet', withFakeAsync((async) {
-      client.cache.build<String, Object>(QueryOptions<String, Object>(
+      cache.build<String, Object>(QueryOptions<String, Object>(
         const ['key'],
         (context) async {
           await Future.delayed(const Duration(seconds: 1));
@@ -1311,7 +1311,7 @@ void main() {
         (prev) => 'data',
       );
 
-      final query = client.cache.get<String, Object>(const ['key'])!;
+      final query = cache.get<String, Object>(const ['key'])!;
       expect(query.state.status, QueryStatus.success);
       expect(query.state.fetchStatus, FetchStatus.idle);
       expect(query.state.data, 'data');
@@ -1329,7 +1329,7 @@ void main() {
       async.flushMicrotasks();
 
       expect(
-        client.cache.get<String, Object>(const ['key'])!.state.error,
+        cache.get<String, Object>(const ['key'])!.state.error,
         isA<Exception>(),
       );
 
@@ -1339,7 +1339,7 @@ void main() {
       );
 
       expect(
-        client.cache.get<String, Object>(const ['key'])!.state.error,
+        cache.get<String, Object>(const ['key'])!.state.error,
         isNull,
       );
     }));
@@ -1355,7 +1355,7 @@ void main() {
       client.invalidateQueries(queryKey: const ['key'], exact: true);
 
       expect(
-        client.cache.get<String, Object>(const ['key'])!.state.isInvalidated,
+        cache.get<String, Object>(const ['key'])!.state.isInvalidated,
         isTrue,
       );
 
@@ -1365,7 +1365,7 @@ void main() {
       );
 
       expect(
-        client.cache.get<String, Object>(const ['key'])!.state.isInvalidated,
+        cache.get<String, Object>(const ['key'])!.state.isInvalidated,
         isFalse,
       );
     }));
@@ -1379,7 +1379,7 @@ void main() {
         updatedAt: DateTime(2026, 1, 1),
       );
 
-      final query = client.cache.get<String, Object>(const ['key'])!;
+      final query = cache.get<String, Object>(const ['key'])!;
       expect(query.state.dataUpdatedAt, DateTime(2026, 1, 1));
     }));
 
@@ -1422,7 +1422,7 @@ void main() {
         (prev) => 'data',
       );
 
-      final query = client.cache.get<String, Object>(const ['key'])!;
+      final query = cache.get<String, Object>(const ['key'])!;
 
       expectLater(
         query.fetch(),
@@ -2178,9 +2178,9 @@ void main() {
 
       client.removeQueries(queryKey: const ['key'], exact: false);
 
-      expect(client.cache.get(const ['key', 1]), isNull);
-      expect(client.cache.get(const ['key', 2]), isNull);
-      expect(client.cache.get(const ['other']), isNotNull);
+      expect(cache.get(const ['key', 1]), isNull);
+      expect(cache.get(const ['key', 2]), isNull);
+      expect(cache.get(const ['other']), isNotNull);
     }));
 
     test(
@@ -2205,8 +2205,8 @@ void main() {
 
       client.removeQueries(queryKey: const ['key'], exact: true);
 
-      expect(client.cache.get(const ['key']), isNull);
-      expect(client.cache.get(const ['key', 1]), isNotNull);
+      expect(cache.get(const ['key']), isNull);
+      expect(cache.get(const ['key', 1]), isNotNull);
     }));
 
     test(
@@ -2231,8 +2231,8 @@ void main() {
 
       client.removeQueries(predicate: (s) => s.status == QueryStatus.error);
 
-      expect(client.cache.get(const ['key', 1]), isNotNull);
-      expect(client.cache.get(const ['key', 2]), isNull);
+      expect(cache.get(const ['key', 1]), isNotNull);
+      expect(cache.get(const ['key', 2]), isNull);
     }));
 
     test(
@@ -2264,10 +2264,10 @@ void main() {
 
       client.removeQueries();
 
-      expect(client.cache.get(const ['key', 1]), isNull);
-      expect(client.cache.get(const ['key', 2]), isNull);
-      expect(client.cache.get(const ['other']), isNull);
-      expect(client.cache.getAll(), isEmpty);
+      expect(cache.get(const ['key', 1]), isNull);
+      expect(cache.get(const ['key', 2]), isNull);
+      expect(cache.get(const ['other']), isNull);
+      expect(cache.getAll(), isEmpty);
     }));
   });
 
@@ -3220,7 +3220,7 @@ void main() {
     test(
         'SHOULD return null '
         'WHEN query exists but has no data yet', withFakeAsync((async) {
-      client.cache.build<InfiniteData<String, int>, Object>(QueryOptions(
+      cache.build<InfiniteData<String, int>, Object>(QueryOptions(
         const ['key'],
         (context) async {
           await Future.delayed(const Duration(seconds: 1));
