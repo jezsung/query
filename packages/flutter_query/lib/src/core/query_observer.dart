@@ -232,9 +232,13 @@ class QueryObserver<TData, TError> with Observer<QueryState<TData, TError>> {
       case RefetchOnMount.stale:
         switch (staleDuration) {
           case StaleDurationValue():
+            if (state.isInvalidated) {
+              return true;
+            }
             final age = clock.now().difference(state.dataUpdatedAt!);
             return age >= staleDuration;
           case StaleDurationInfinity():
+            return state.isInvalidated;
           case StaleDurationStatic():
             return false;
         }
@@ -266,9 +270,13 @@ class QueryObserver<TData, TError> with Observer<QueryState<TData, TError>> {
         }
         switch (staleDuration) {
           case StaleDurationValue():
+            if (state.isInvalidated) {
+              return true;
+            }
             final age = clock.now().difference(state.dataUpdatedAt!);
             return age >= staleDuration;
           case StaleDurationInfinity():
+            return state.isInvalidated;
           case StaleDurationStatic():
             return false;
         }
