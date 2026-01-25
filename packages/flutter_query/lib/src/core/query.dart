@@ -209,6 +209,7 @@ class Query<TData, TError>
     } finally {
       _abortController = null;
       _revertState = null;
+      scheduleGc(_options.gcDuration ?? GcDuration(minutes: 5));
     }
   }
 

@@ -675,6 +675,9 @@ void main() {
         ),
       );
 
+      // Garbage collection is scheduled after fetch completes
+      await tester.binding.delayed(const Duration(seconds: 1));
+
       expect(client.cache.get(const ['test']), isNotNull);
 
       await hook.unmount();
@@ -854,6 +857,9 @@ void main() {
           ),
         ],
       ));
+
+      // Garbage collection is scheduled after fetch completes
+      await tester.binding.delayed(const Duration(seconds: 1));
 
       expect(client.cache.get(const ['test']), isNotNull);
 
