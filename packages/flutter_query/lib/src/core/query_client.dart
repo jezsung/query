@@ -174,8 +174,8 @@ class QueryClient {
   /// Do not use inside widgets - use `useQuery` instead for reactive updates.
   ///
   /// Aligned with TanStack Query's `getQueryData` method.
-  TData? getQueryData<TData, TError>(List<Object?> queryKey) {
-    return _cache.get<TData, TError>(queryKey)?.state.data;
+  TData? getQueryData<TData>(List<Object?> queryKey) {
+    return _cache.get<TData, dynamic>(queryKey)?.state.data;
   }
 
   /// Returns the state for a query if it exists in the cache.
@@ -223,7 +223,7 @@ class QueryClient {
   /// // Optimistic update in a mutation
   /// onMutate: (newTodo) async {
   ///   await client.cancelQueries(queryKey: ['todos']);
-  ///   final previousTodos = client.getQueryData<List<Todo>, Error>(['todos']);
+  ///   final previousTodos = client.getQueryData<List<Todo>>(['todos']);
   ///   client.setQueryData<List<Todo>, Error>(
   ///     ['todos'],
   ///     (previous) => [...?previous, newTodo],
@@ -530,10 +530,11 @@ class QueryClient {
   /// Do not use inside widgets - use `useInfiniteQuery` instead for reactive updates.
   ///
   /// Aligned with TanStack Query's `getQueryData` method for infinite queries.
-  InfiniteData<TData, TPageParam>?
-      getInfiniteQueryData<TData, TError, TPageParam>(List<Object?> queryKey) {
+  InfiniteData<TData, TPageParam>? getInfiniteQueryData<TData, TPageParam>(
+    List<Object?> queryKey,
+  ) {
     return _cache
-        .get<InfiniteData<TData, TPageParam>, TError>(queryKey)
+        .get<InfiniteData<TData, TPageParam>, dynamic>(queryKey)
         ?.state
         .data;
   }

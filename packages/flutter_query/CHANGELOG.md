@@ -1,6 +1,18 @@
-## 0.6.0 (2025-01-18)
+## 0.6.0 (2025-01-26)
 
 This release contains breaking changes to improve API consistency and usability.
+
+- **BREAKING**: Simplified `getQueryData<TData>()` and `getInfiniteQueryData<TData, TPageParam>()` signatures by removing the `TError` generic type parameter. The error type is not needed when retrieving cached data.
+
+  ```dart
+  // Before
+  final data = client.getQueryData<String, Error>(const ['key']);
+  final infiniteData = client.getInfiniteQueryData<String, Error, int>(const ['key']);
+
+  // After
+  final data = client.getQueryData<String>(const ['key']);
+  final infiniteData = client.getInfiniteQueryData<String, int>(const ['key']);
+  ```
 
 - **BREAKING**: `QueryCache` and `MutationCache` are no longer part of the public API. The `cache` and `mutationCache` constructor parameters have been removed from `QueryClient`. The caches are now created and managed internally.
 

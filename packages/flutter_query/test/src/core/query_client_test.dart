@@ -1069,13 +1069,13 @@ void main() {
       );
       async.elapse(const Duration(seconds: 1));
 
-      expect(client.getQueryData<String, Object>(const ['key']), 'data');
+      expect(client.getQueryData<String>(const ['key']), 'data');
     }));
 
     test(
         'SHOULD return null '
         'WHEN query does not exist', withFakeAsync((async) {
-      expect(client.getQueryData<String, Object>(const ['key']), isNull);
+      expect(client.getQueryData<String>(const ['key']), isNull);
     }));
 
     test(
@@ -1089,7 +1089,7 @@ void main() {
         },
       ));
 
-      expect(client.getQueryData<String, Object>(const ['key']), isNull);
+      expect(client.getQueryData<String>(const ['key']), isNull);
     }));
 
     test(
@@ -1105,9 +1105,59 @@ void main() {
       async.elapse(const Duration(seconds: 1));
 
       // Should NOT match by prefix
-      expect(client.getQueryData<String, Object>(const ['key']), isNull);
+      expect(client.getQueryData<String>(const ['key']), isNull);
       // Should match exact key
-      expect(client.getQueryData<String, Object>(const ['key', 1]), 'data');
+      expect(client.getQueryData<String>(const ['key', 1]), 'data');
+    }));
+
+    test(
+        'SHOULD NOT have type casting problems with error type'
+        '', withFakeAsync((async) {
+      client.prefetchQuery<String, dynamic>(
+        const ['dynamic'],
+        (context) async => 'data-dynamic',
+      );
+      client.prefetchQuery<String, Object>(
+        const ['Object'],
+        (context) async => 'data-object',
+      );
+      client.prefetchQuery<String, Object?>(
+        const ['Object?'],
+        (context) async => 'data-object?',
+      );
+      client.prefetchQuery<String, Exception>(
+        const ['Exception'],
+        (context) async => 'data-exception',
+      );
+      client.prefetchQuery<String, Error>(
+        const ['Error'],
+        (context) async => 'data-error',
+      );
+      client.prefetchQuery<String, Null>(
+        const ['Null'],
+        (context) async => 'data-null',
+      );
+      client.prefetchQuery<String, Never>(
+        const ['Never'],
+        (context) async => 'data-never',
+      );
+      async.flushMicrotasks();
+
+      final dataDynamic = client.getQueryData<String>(const ['dynamic']);
+      final dataObject = client.getQueryData<String>(const ['Object']);
+      final dataObjectNullable = client.getQueryData<String>(const ['Object?']);
+      final dataException = client.getQueryData<String>(const ['Exception']);
+      final dataError = client.getQueryData<String>(const ['Error']);
+      final dataNull = client.getQueryData<String>(const ['Null']);
+      final dataNever = client.getQueryData<String>(const ['Never']);
+
+      expect(dataDynamic, 'data-dynamic');
+      expect(dataObject, 'data-object');
+      expect(dataObjectNullable, 'data-object?');
+      expect(dataException, 'data-exception');
+      expect(dataError, 'data-error');
+      expect(dataNull, 'data-null');
+      expect(dataNever, 'data-never');
     }));
   });
 
@@ -1205,7 +1255,7 @@ void main() {
       );
 
       expect(data, 'data');
-      expect(client.getQueryData<String, Object>(const ['key']), 'data');
+      expect(client.getQueryData<String>(const ['key']), 'data');
     }));
 
     test(
@@ -1259,7 +1309,7 @@ void main() {
       );
 
       expect(data, isNull);
-      expect(client.getQueryData<String, Object>(const ['key']), 'data');
+      expect(client.getQueryData<String>(const ['key']), 'data');
     }));
 
     test(
@@ -3254,6 +3304,76 @@ void main() {
         client.getInfiniteQueryData(const ['key', 1]),
         InfiniteData(['data-0'], [0]),
       );
+    }));
+
+    test(
+        'SHOULD NOT have type casting problems with error type'
+        '', withFakeAsync((async) {
+      client.prefetchInfiniteQuery<String, dynamic, int>(
+        const ['dynamic'],
+        (context) async => 'data-dynamic',
+        initialPageParam: 0,
+        nextPageParamBuilder: (data) => null,
+      );
+      client.prefetchInfiniteQuery<String, Object, int>(
+        const ['Object'],
+        (context) async => 'data-object',
+        initialPageParam: 0,
+        nextPageParamBuilder: (data) => null,
+      );
+      client.prefetchInfiniteQuery<String, Object?, int>(
+        const ['Object?'],
+        (context) async => 'data-object?',
+        initialPageParam: 0,
+        nextPageParamBuilder: (data) => null,
+      );
+      client.prefetchInfiniteQuery<String, Exception, int>(
+        const ['Exception'],
+        (context) async => 'data-exception',
+        initialPageParam: 0,
+        nextPageParamBuilder: (data) => null,
+      );
+      client.prefetchInfiniteQuery<String, Error, int>(
+        const ['Error'],
+        (context) async => 'data-error',
+        initialPageParam: 0,
+        nextPageParamBuilder: (data) => null,
+      );
+      client.prefetchInfiniteQuery<String, Null, int>(
+        const ['Null'],
+        (context) async => 'data-null',
+        initialPageParam: 0,
+        nextPageParamBuilder: (data) => null,
+      );
+      client.prefetchInfiniteQuery<String, Never, int>(
+        const ['Never'],
+        (context) async => 'data-never',
+        initialPageParam: 0,
+        nextPageParamBuilder: (data) => null,
+      );
+      async.flushMicrotasks();
+
+      final dataDynamic =
+          client.getInfiniteQueryData<String, int>(const ['dynamic']);
+      final dataObject =
+          client.getInfiniteQueryData<String, int>(const ['Object']);
+      final dataObjectNullable =
+          client.getInfiniteQueryData<String, int>(const ['Object?']);
+      final dataException =
+          client.getInfiniteQueryData<String, int>(const ['Exception']);
+      final dataError =
+          client.getInfiniteQueryData<String, int>(const ['Error']);
+      final dataNull = client.getInfiniteQueryData<String, int>(const ['Null']);
+      final dataNever =
+          client.getInfiniteQueryData<String, int>(const ['Never']);
+
+      expect(dataDynamic, InfiniteData(['data-dynamic'], [0]));
+      expect(dataObject, InfiniteData(['data-object'], [0]));
+      expect(dataObjectNullable, InfiniteData(['data-object?'], [0]));
+      expect(dataException, InfiniteData(['data-exception'], [0]));
+      expect(dataError, InfiniteData(['data-error'], [0]));
+      expect(dataNull, InfiniteData(['data-null'], [0]));
+      expect(dataNever, InfiniteData(['data-never'], [0]));
     }));
   });
 }
