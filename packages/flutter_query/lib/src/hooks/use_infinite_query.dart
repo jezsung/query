@@ -139,6 +139,18 @@ InfiniteQueryResult<TData, TError, TPageParam>
     [effectiveClient],
   );
 
+  // Mount observer and cleanup on unmount
+  useEffect(() {
+    observer.onMount();
+    return observer.onUnmount;
+  }, [observer]);
+
+  // Handle app lifecycle resume events
+  useEffect(() {
+    final listener = AppLifecycleListener(onResume: observer.onResume);
+    return listener.dispose;
+  }, [observer]);
+
   // Update options during render (before subscribing)
   observer.options = InfiniteQueryObserverOptions(
     queryKey,
@@ -170,18 +182,6 @@ InfiniteQueryResult<TData, TError, TPageParam>
       result.value = newResult;
     });
     return unsubscribe;
-  }, [observer]);
-
-  // Mount observer and cleanup on unmount
-  useEffect(() {
-    observer.onMount();
-    return observer.onUnmount;
-  }, [observer]);
-
-  // Handle app lifecycle resume events
-  useEffect(() {
-    final listener = AppLifecycleListener(onResume: observer.onResume);
-    return listener.dispose;
   }, [observer]);
 
   return result.value;

@@ -939,7 +939,7 @@ void main() {
             return data.pageParams.last < 5 ? data.pageParams.last + 1 : null;
           },
         ),
-      );
+      )..onMount();
 
       observer.subscribe((_) => calls++);
       observer.onUnmount();
@@ -1586,7 +1586,7 @@ void main() {
           nextPageParamBuilder: (data) => data.pageParams.last + 1,
           gcDuration: const GcDuration(minutes: 5),
         ),
-      );
+      )..onMount();
 
       async.elapse(const Duration(seconds: 1));
 
@@ -1654,7 +1654,7 @@ void main() {
           nextPageParamBuilder: (data) => data.pageParams.last + 1,
           gcDuration: GcDuration.zero,
         ),
-      );
+      )..onMount();
 
       async.elapse(const Duration(seconds: 1));
 
@@ -1685,7 +1685,7 @@ void main() {
           nextPageParamBuilder: (data) => data.pageParams.last + 1,
           gcDuration: GcDuration.infinity,
         ),
-      );
+      )..onMount();
 
       async.elapse(const Duration(seconds: 1));
 
@@ -1814,7 +1814,7 @@ void main() {
           nextPageParamBuilder: (data) => data.pageParams.last + 1,
           placeholder: const InfiniteData(['page-ph'], [0]),
         ),
-      );
+      )..onMount();
       addTearDown(observer1.onUnmount);
 
       final observer2 = InfiniteQueryObserver(
@@ -1828,7 +1828,7 @@ void main() {
           initialPageParam: 0,
           nextPageParamBuilder: (data) => data.pageParams.last + 1,
         ),
-      );
+      )..onMount();
       addTearDown(observer2.onUnmount);
 
       expect(observer1.result.pages, ['page-ph']);
@@ -2717,7 +2717,7 @@ void main() {
 
       // After 1 hour + 5 minutes (seedUpdatedAt + staleDuration), data becomes stale
       async.elapse(const Duration(minutes: 35));
-      final observer3 = InfiniteQueryObserver(client, options);
+      final observer3 = InfiniteQueryObserver(client, options)..onMount();
       addTearDown(observer3.onUnmount);
       expect(observer3.result.isStale, isTrue);
     }));
@@ -2742,7 +2742,7 @@ void main() {
             'nested': {'a': 1, 'b': 2},
           },
         ),
-      );
+      )..onMount();
       addTearDown(observer1.onUnmount);
 
       final observer2 = InfiniteQueryObserver<String, Object, int>(
@@ -2760,7 +2760,7 @@ void main() {
             'nested': {'c': 3},
           },
         ),
-      );
+      )..onMount();
       addTearDown(observer2.onUnmount);
 
       final query = client.cache.get(const ['test'])!;
@@ -3086,7 +3086,7 @@ void main() {
           initialPageParam: 0,
           nextPageParamBuilder: (data) => data.pageParams.last + 1,
         ),
-      );
+      )..onMount();
       addTearDown(observer1.onUnmount);
 
       expect(observer1.result.data, isNull);
@@ -3104,7 +3104,7 @@ void main() {
           initialPageParam: 0,
           nextPageParamBuilder: (data) => data.pageParams.last + 1,
         ),
-      );
+      )..onMount();
       addTearDown(observer2.onUnmount);
       async.elapse(const Duration(seconds: 1));
 
@@ -3209,7 +3209,7 @@ void main() {
           nextPageParamBuilder: (data) => data.pageParams.last + 1,
           prevPageParamBuilder: (data) => data.pageParams.first - 1,
         ),
-      );
+      )..onMount();
       addTearDown(observer1.onUnmount);
 
       expect(observer1.result.data, isNull);
@@ -3228,7 +3228,7 @@ void main() {
           nextPageParamBuilder: (data) => data.pageParams.last + 1,
           prevPageParamBuilder: (data) => data.pageParams.first - 1,
         ),
-      );
+      )..onMount();
       addTearDown(observer2.onUnmount);
 
       async.elapse(const Duration(seconds: 1));

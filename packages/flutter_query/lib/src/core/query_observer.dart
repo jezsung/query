@@ -24,10 +24,6 @@ class QueryObserver<TData, TError> with Observer<QueryState<TData, TError>> {
     QueryObserverOptions<TData, TError> options,
   ) {
     _options = options.withDefaults(_client.defaultQueryOptions);
-    _query = _client.cache.build<TData, TError>(options)..addObserver(this);
-    _initialDataUpdateCount = _query.state.dataUpdateCount;
-    _initialErrorUpdateCount = _query.state.errorUpdateCount;
-    _result = _buildResult(_options, _query.state, optimistic: true);
   }
 
   final QueryClient _client;
@@ -136,6 +132,12 @@ class QueryObserver<TData, TError> with Observer<QueryState<TData, TError>> {
   }
 
   void onMount() {
+    _query = _client.cache.build<TData, TError>(_options);
+    _query.addObserver(this);
+    _initialDataUpdateCount = _query.state.dataUpdateCount;
+    _initialErrorUpdateCount = _query.state.errorUpdateCount;
+    _result = _buildResult(_options, _query.state, optimistic: true);
+
     if (_shouldFetchOnMount(_options, _query.state)) {
       _query.fetch().ignore();
     }
