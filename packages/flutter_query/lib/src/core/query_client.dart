@@ -12,27 +12,22 @@ import 'query_options.dart';
 import 'query_state.dart';
 import 'utils.dart';
 
+/// Provides imperative methods to fetch, prefetch, invalidate, and update
+/// cached data with configurable defaults.
+///
+/// ```dart
+/// final client = QueryClient(
+///   defaultQueryOptions: DefaultQueryOptions(
+///     staleDuration: StaleDuration(minutes: 5),
+///     retry: (retryCount, error) {
+///       if (retryCount >= 3) return null;
+///       return Duration(seconds: 1 << retryCount);
+///     },
+///   ),
+/// );
+/// ```
 class QueryClient {
-  /// Creates a QueryClient with optional cache and default options.
-  ///
-  /// Example:
-  /// ```dart
-  /// final client = QueryClient(
-  ///   defaultQueryOptions: DefaultQueryOptions(
-  ///     staleDuration: StaleDuration(minutes: 5),
-  ///     retry: (retryCount, error) {
-  ///       if (retryCount >= 3) return null;
-  ///       return Duration(seconds: 1 << retryCount);
-  ///     },
-  ///   ),
-  ///   defaultMutationOptions: DefaultMutationOptions(
-  ///     retry: (retryCount, error) {
-  ///       if (retryCount >= 1) return null;
-  ///       return Duration(seconds: 1);
-  ///     },
-  ///   ),
-  /// );
-  /// ```
+  /// Creates a client with optional default options for queries and mutations.
   QueryClient({
     this.defaultQueryOptions = const DefaultQueryOptions(),
     this.defaultMutationOptions = const DefaultMutationOptions(),
@@ -44,45 +39,55 @@ class QueryClient {
   final QueryCache _cache = QueryCache();
   final MutationCache _mutationCache = MutationCache();
 
-  /// Default options applied to all queries.
+  /// The default options applied to all new queries.
   ///
-  /// Note: Changing this only affects new queries. Existing queries will
-  /// continue to use the options they were created with.
+  /// Changing this property only affects queries created after the change.
+  /// Existing queries continue using the options they were created with.
   DefaultQueryOptions defaultQueryOptions;
 
-  /// Default options applied to all mutations.
+  /// The default options applied to all new mutations.
   ///
-  /// Note: Changing this only affects new mutations. Existing mutations will
-  /// continue to use the options they were created with.
+  /// Changing this property only affects mutations created after the change.
+  /// Existing mutations continue using the options they were created with.
   DefaultMutationOptions defaultMutationOptions;
 
-  /// Gets the query cache.
+  /// The query cache managed by this client.
   @internal
   QueryCache get cache => _cache;
 
-  /// Gets the mutation cache.
+  /// The mutation cache managed by this client.
   @internal
   MutationCache get mutationCache => _mutationCache;
 
-  /// Clears all queries and mutations from the cache.
+  /// Removes all queries and mutations from the cache.
   void clear() {
     _cache.clear();
     _mutationCache.clear();
   }
 
-  /// Fetches a query, returning cached data if fresh or fetching new data if stale.
+  /// Fetches a query, returning cached data if fresh or new data if stale.
   ///
-  /// This is an imperative alternative to the useQuery hook, useful for:
-  /// - Prefetching data before navigation
-  /// - Fetching data in callbacks or event handlers
-  /// - Server-side data fetching
+  /// This is an imperative alternative to `useQuery`, useful for prefetching
+  /// data before navigation, fetching in callbacks, or server-side data
+  /// fetching.
   ///
-  /// Unlike useQuery, [retry] defaults to no retries when not specified
-  /// at either the query level or client default level.
+  /// The [queryKey] uniquely identifies this query in the cache. The [queryFn]
+  /// is called to fetch data when the cache is empty or stale.
+  ///
+  /// The [staleDuration] determines how long data is considered fresh. If not
+  /// specified, uses the value from [defaultQueryOptions].
+  ///
+  /// The [retry] resolver determines retry behavior on failure. Defaults to no
+  /// retries when not specified at either the query level or in
+  /// [defaultQueryOptions].
+  ///
+  /// The [gcDuration] controls how long unused queries remain in cache before
+  /// garbage collection.
+  ///
+  /// The [seed] provides initial data for the query, with [seedUpdatedAt]
+  /// specifying when that seed was last updated.
   ///
   /// Throws if the fetch fails.
-  ///
-  /// Aligned with TanStack Query's `fetchQuery` method.
   Future<TData> fetchQuery<TData, TError>(
     List<Object?> queryKey,
     QueryFn<TData> queryFn, {
@@ -132,15 +137,13 @@ class QueryClient {
     return query.state.data as TData;
   }
 
-  /// Prefetches a query and populates the cache.
+  /// Prefetches a query and populates the cache without returning data.
   ///
-  /// Unlike [fetchQuery], this method:
-  /// - Returns `Future<void>` instead of the data
-  /// - Silently ignores any errors (fire-and-forget pattern)
+  /// Unlike [fetchQuery], this method returns `Future<void>` and silently
+  /// ignores any errors, making it suitable for preloading data before
+  /// navigation or warming up the cache.
   ///
-  /// Use this for preloading data before navigation or warming up the cache.
-  ///
-  /// Aligned with TanStack Query's `prefetchQuery` method.
+  /// See [fetchQuery] for parameter descriptions.
   Future<void> prefetchQuery<TData, TError>(
     List<Object?> queryKey,
     QueryFn<TData> queryFn, {
@@ -165,71 +168,48 @@ class QueryClient {
     }
   }
 
-  /// Returns the data for a query if it exists in the cache.
+  /// The cached data for a query, or `null` if not found.
   ///
-  /// This is an imperative way to retrieve cached data by exact query key.
-  /// Returns `null` if the query doesn't exist or has no data yet.
+  /// The [queryKey] must exactly match a query in the cache. Use this for
+  /// reading cached data in callbacks or for optimistic updates.
   ///
-  /// Use this for reading cached data in callbacks or for optimistic updates.
-  /// Do not use inside widgets - use `useQuery` instead for reactive updates.
-  ///
-  /// Aligned with TanStack Query's `getQueryData` method.
+  /// For reactive updates in widgets, use `useQuery` instead.
   TData? getQueryData<TData>(List<Object?> queryKey) {
     return _cache.get<TData, dynamic>(queryKey)?.state.data;
   }
 
-  /// Returns the state for a query if it exists in the cache.
+  /// The full state for a query, or `null` if not found.
   ///
-  /// This is an imperative way to retrieve the full query state by exact query key.
-  /// Returns `null` if the query doesn't exist in the cache.
-  ///
-  /// Use this when you need access to more than just the data, such as:
-  /// - `status` - whether the query is pending, success, or error
-  /// - `fetchStatus` - whether a fetch is in progress
-  /// - `error` - the error if the query failed
-  /// - `dataUpdatedAt` - when the data was last updated
-  /// - `isInvalidated` - whether the query has been invalidated
+  /// The [queryKey] must exactly match a query in the cache. Use this when you
+  /// need more than just data, such as `status`, `fetchStatus`, `error`,
+  /// `dataUpdatedAt`, or `isInvalidated`.
   QueryState<TData, TError>? getQueryState<TData, TError>(
     List<Object?> queryKey,
   ) {
     return _cache.get<TData, TError>(queryKey)?.state;
   }
 
-  /// Sets or updates the data for a query in the cache.
+  /// Sets or updates cached data for a query.
   ///
-  /// This is an imperative way to update cached data by exact query key.
-  /// The [updater] can be either a new value or a function that receives
-  /// the previous data and returns the new data.
+  /// The [queryKey] identifies which query to update. The [updater] function
+  /// receives the previous data (or `null` if none exists) and returns the new
+  /// data. Returns `null` if [updater] returns `null`.
   ///
-  /// Returns `null` if the updater function returns `null`.
+  /// The optional [updatedAt] timestamp specifies when the data was updated.
+  /// Defaults to the current time.
   ///
-  /// If the query doesn't exist and the updater provides data, a new query
+  /// If the query does not exist and [updater] provides data, a new query
   /// entry is created in the cache.
   ///
-  /// Use this for optimistic updates in mutation callbacks or for manually
-  /// populating the cache.
-  ///
-  /// Example:
   /// ```dart
   /// // Set data directly
   /// client.setQueryData<User, Error>(['user', userId], (_) => newUser);
   ///
-  /// // Update data using previous value
+  /// // Update using previous value
   /// client.setQueryData<User, Error>(['user', userId], (previous) {
   ///   if (previous == null) return null;
   ///   return previous.copyWith(name: 'New Name');
   /// });
-  ///
-  /// // Optimistic update in a mutation
-  /// onMutate: (newTodo) async {
-  ///   await client.cancelQueries(queryKey: ['todos']);
-  ///   final previousTodos = client.getQueryData<List<Todo>>(['todos']);
-  ///   client.setQueryData<List<Todo>, Error>(
-  ///     ['todos'],
-  ///     (previous) => [...?previous, newTodo],
-  ///   );
-  ///   return previousTodos;
-  /// }
   /// ```
   TData? setQueryData<TData, TError>(
     List<Object?> queryKey,
@@ -259,30 +239,26 @@ class QueryClient {
         .setData(data, updatedAt: updatedAt);
   }
 
-  /// Invalidates queries matching the filters.
+  /// Marks matching queries as stale.
   ///
-  /// Invalidation marks queries as stale, causing them to refetch when an
-  /// observer mounts that subscribes to the query. This method does not
-  /// automatically refetch queries - use [refetchQueries] if you need to
-  /// trigger an immediate refetch.
+  /// Invalidated queries refetch when a new observer subscribes to them. This
+  /// method does not trigger an immediate refetch; use [refetchQueries] for
+  /// that.
   ///
-  /// Example:
+  /// The [queryKey] filters which queries to invalidate. When [exact] is false
+  /// (default), all queries whose keys start with [queryKey] are included.
+  /// When true, only queries with an exactly matching key are invalidated.
+  ///
+  /// The [predicate] function provides additional filtering based on query
+  /// state. Only queries for which it returns true are invalidated.
+  ///
   /// ```dart
   /// // Invalidate all queries
-  /// await client.invalidateQueries();
+  /// client.invalidateQueries();
   ///
   /// // Invalidate queries with a specific key prefix
-  /// await client.invalidateQueries(queryKey: ['users']);
-  ///
-  /// // Invalidate and refetch active queries
-  /// await client.invalidateQueries(queryKey: ['users']);
-  /// await client.refetchQueries(
-  ///   queryKey: ['users'],
-  ///   predicate: (state) => state.isActive,
-  /// );
+  /// client.invalidateQueries(queryKey: ['users']);
   /// ```
-  ///
-  /// Aligned with TanStack Query's `QueryClient.invalidateQueries` method.
   void invalidateQueries({
     List<Object?>? queryKey,
     bool exact = false,
@@ -299,30 +275,27 @@ class QueryClient {
     }
   }
 
-  /// Refetches queries matching the filters.
+  /// Triggers an immediate refetch for matching queries.
   ///
-  /// This method finds all queries matching the filters and triggers a refetch
-  /// for each one. Unlike invalidation, this doesn't mark queries as stale -
-  /// it immediately fetches fresh data.
+  /// Unlike [invalidateQueries], this fetches fresh data immediately rather
+  /// than marking queries as stale.
   ///
-  /// Skips:
-  /// - Disabled queries (no enabled observers)
-  /// - Static queries (staleDuration = static)
-  /// - Paused queries (fetchStatus = paused)
+  /// The [queryKey] filters which queries to refetch. When [exact] is false
+  /// (default), all queries whose keys start with [queryKey] are included.
+  /// When true, only queries with an exactly matching key are refetched.
   ///
-  /// Example:
+  /// The [predicate] function provides additional filtering based on query
+  /// state. Only queries for which it returns true are refetched.
+  ///
+  /// Queries are skipped if they are disabled, static, or paused.
+  ///
   /// ```dart
   /// // Refetch all queries
   /// await client.refetchQueries();
   ///
   /// // Refetch queries with a specific key prefix
   /// await client.refetchQueries(queryKey: ['users']);
-  ///
-  /// // Refetch only active queries using predicate
-  /// await client.refetchQueries(predicate: (q) => q.isActive);
   /// ```
-  ///
-  /// Aligned with TanStack Query's `QueryClient.refetchQueries` method.
   Future<void> refetchQueries({
     List<Object?>? queryKey,
     bool exact = false,
@@ -343,23 +316,33 @@ class QueryClient {
     await Future.wait(queries.map((q) => q.fetch().suppress()));
   }
 
-  // ============================================================================
-  // Infinite Query Methods
-  // ============================================================================
-
-  /// Fetches an infinite query, returning cached data if fresh or fetching new data if stale.
+  /// Fetches an infinite query, returning cached data if fresh or new data if stale.
   ///
-  /// This is an imperative alternative to the useInfiniteQuery hook, useful for:
-  /// - Prefetching paginated data before navigation
-  /// - Fetching paginated data in callbacks or event handlers
+  /// This is an imperative alternative to `useInfiniteQuery`, useful for
+  /// prefetching paginated data before navigation or fetching in callbacks.
   ///
-  /// The [pages] parameter controls how many pages to fetch initially. Defaults to 1.
+  /// The [queryKey] uniquely identifies this query in the cache. The [queryFn]
+  /// is called to fetch each page of data.
   ///
-  /// Unlike useInfiniteQuery, [retry] defaults to no retries when not specified.
+  /// The [initialPageParam] is used for the first page. The
+  /// [nextPageParamBuilder] derives parameters for subsequent pages from the
+  /// current data. The optional [prevPageParamBuilder] enables fetching
+  /// previous pages.
+  ///
+  /// The [maxPages] limits how many pages are kept in memory, dropping the
+  /// oldest pages when exceeded. The [pages] parameter controls how many pages
+  /// to fetch initially and defaults to 1.
+  ///
+  /// The [staleDuration] determines how long data is considered fresh. The
+  /// [retry] resolver determines retry behavior on failure and defaults to no
+  /// retries. The [gcDuration] controls how long unused queries remain in
+  /// cache.
+  ///
+  /// The [seed] provides initial data, with [seedUpdatedAt] specifying when
+  /// that seed was last updated. The [meta] map stores arbitrary metadata
+  /// accessible in [queryFn].
   ///
   /// Throws if the fetch fails.
-  ///
-  /// Aligned with TanStack Query's `fetchInfiniteQuery` method.
   Future<InfiniteData<TData, TPageParam>>
       fetchInfiniteQuery<TData, TError, TPageParam>(
     List<Object?> queryKey,
@@ -477,15 +460,13 @@ class QueryClient {
     return query.state.data!;
   }
 
-  /// Prefetches an infinite query and populates the cache.
+  /// Prefetches an infinite query and populates the cache without returning data.
   ///
-  /// Unlike [fetchInfiniteQuery], this method:
-  /// - Returns `Future<void>` instead of the data
-  /// - Silently ignores any errors (fire-and-forget pattern)
+  /// Unlike [fetchInfiniteQuery], this method returns `Future<void>` and
+  /// silently ignores any errors, making it suitable for preloading paginated
+  /// data before navigation.
   ///
-  /// Use this for preloading paginated data before navigation.
-  ///
-  /// Aligned with TanStack Query's `prefetchInfiniteQuery` method.
+  /// See [fetchInfiniteQuery] for parameter descriptions.
   Future<void> prefetchInfiniteQuery<TData, TError, TPageParam>(
     List<Object?> queryKey,
     InfiniteQueryFn<TData, TPageParam> queryFn, {
@@ -522,14 +503,12 @@ class QueryClient {
     }
   }
 
-  /// Returns the data for an infinite query if it exists in the cache.
+  /// The cached data for an infinite query, or `null` if not found.
   ///
-  /// Returns `null` if the query doesn't exist or has no data yet.
+  /// The [queryKey] must exactly match a query in the cache. Use this for
+  /// reading cached paginated data in callbacks or for optimistic updates.
   ///
-  /// Use this for reading cached paginated data in callbacks or for optimistic updates.
-  /// Do not use inside widgets - use `useInfiniteQuery` instead for reactive updates.
-  ///
-  /// Aligned with TanStack Query's `getQueryData` method for infinite queries.
+  /// For reactive updates in widgets, use `useInfiniteQuery` instead.
   InfiniteData<TData, TPageParam>? getInfiniteQueryData<TData, TPageParam>(
     List<Object?> queryKey,
   ) {
@@ -539,13 +518,19 @@ class QueryClient {
         .data;
   }
 
-  /// Removes queries from the cache matching the filters.
+  /// Removes matching queries from the cache.
   ///
-  /// This completely removes queries from the cache, disposing them and freeing
-  /// any associated resources. Unlike [invalidateQueries], removed queries will
-  /// need to be fetched from scratch when accessed again.
+  /// Removed queries are disposed and their resources freed. Unlike
+  /// [invalidateQueries], removed queries must be fetched from scratch when
+  /// accessed again.
   ///
-  /// Example:
+  /// The [queryKey] filters which queries to remove. When [exact] is false
+  /// (default), all queries whose keys start with [queryKey] are included.
+  /// When true, only queries with an exactly matching key are removed.
+  ///
+  /// The [predicate] function provides additional filtering based on query
+  /// state. Only queries for which it returns true are removed.
+  ///
   /// ```dart
   /// // Remove all queries
   /// client.removeQueries();
@@ -553,11 +538,8 @@ class QueryClient {
   /// // Remove queries with a specific key prefix
   /// client.removeQueries(queryKey: ['users']);
   ///
-  /// // Remove only a specific query with exact matching
+  /// // Remove only a specific query
   /// client.removeQueries(queryKey: ['users', '123'], exact: true);
-  ///
-  /// // Remove queries matching a predicate
-  /// client.removeQueries(predicate: (state) => state.status == QueryStatus.error);
   /// ```
   void removeQueries({
     List<Object?>? queryKey,
@@ -575,29 +557,29 @@ class QueryClient {
     }
   }
 
-  /// Resets queries matching the filters to their initial state.
+  /// Resets matching queries to their initial state.
   ///
-  /// This method resets queries to their pre-loaded state - queries with seed
-  /// data will be reset to that seed, while queries without seed will have
-  /// their data cleared to null with pending status.
+  /// Queries with seed data are reset to that seed; queries without seed have
+  /// their data cleared to `null` with pending status.
   ///
-  /// Unlike [clear], this notifies subscribers of the state change.
-  /// Unlike [invalidateQueries], this completely resets query state rather
-  /// than just marking it stale.
+  /// Unlike [invalidateQueries], this completely resets query state rather than
+  /// just marking it stale.
   ///
-  /// After resetting, active queries (those with enabled observers) are
-  /// automatically refetched.
+  /// The [queryKey] filters which queries to reset. When [exact] is false
+  /// (default), all queries whose keys start with [queryKey] are included.
+  /// When true, only queries with an exactly matching key are reset.
   ///
-  /// Example:
+  /// The [predicate] function provides additional filtering based on query
+  /// state. Only queries for which it returns true are reset.
+  ///
+  /// Active queries are automatically refetched after resetting.
+  ///
   /// ```dart
   /// // Reset all queries
   /// await client.resetQueries();
   ///
   /// // Reset queries with a specific key prefix
   /// await client.resetQueries(queryKey: ['users']);
-  ///
-  /// // Reset only a specific query with exact matching
-  /// await client.resetQueries(queryKey: ['users', '123'], exact: true);
   /// ```
   Future<void> resetQueries({
     List<Object?>? queryKey,
@@ -626,30 +608,29 @@ class QueryClient {
     await Future.wait(queriesToRefetch.map((q) => q.fetch().suppress()));
   }
 
-  /// Cancels all in-progress fetches for queries matching the filters.
+  /// Cancels in-progress fetches for matching queries.
   ///
-  /// Returns a Future that completes when all matching queries have been
-  /// cancelled. Queries that are not currently fetching complete immediately.
+  /// Completes when all matching queries have been cancelled. Queries that are
+  /// not currently fetching complete immediately.
   ///
-  /// When [revert] is true (default), cancelled queries will restore their
-  /// state to what it was before the fetch started.
+  /// The [queryKey] filters which queries to cancel. When [exact] is false
+  /// (default), all queries whose keys start with [queryKey] are included.
+  /// When true, only queries with an exactly matching key are cancelled.
   ///
-  /// When [silent] is true, the cancellation will not trigger error callbacks
-  /// or update the query's error state.
+  /// The [predicate] function provides additional filtering based on query
+  /// state. Only queries for which it returns true are cancelled.
   ///
-  /// Example:
+  /// When [revert] is true (default), cancelled queries restore their state to
+  /// what it was before the fetch started. When [silent] is true, cancellation
+  /// does not trigger error callbacks or update the query's error state.
+  ///
   /// ```dart
-  /// // Cancel all queries and wait
+  /// // Cancel all queries
   /// await client.cancelQueries();
   ///
   /// // Cancel queries with a specific key prefix
   /// await client.cancelQueries(queryKey: ['users']);
-  ///
-  /// // Cancel silently without reverting
-  /// await client.cancelQueries(queryKey: ['users'], revert: false, silent: true);
   /// ```
-  ///
-  /// Aligned with TanStack Query's `QueryClient.cancelQueries` method.
   Future<void> cancelQueries({
     List<Object?>? queryKey,
     bool exact = false,
