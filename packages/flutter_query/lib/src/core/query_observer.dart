@@ -22,33 +22,29 @@ class QueryObserver<TData, TError> with Observer<QueryState<TData, TError>> {
   QueryObserver(
     this._client,
     QueryOptions<TData, TError> options,
-  ) {
-    _options = options.withDefaults(_client.defaultQueryOptions);
-  }
+  ) : _options = options.withDefaults(_client.defaultQueryOptions);
 
   final QueryClient _client;
-
-  late QueryOptions<TData, TError> _options;
+  QueryOptions<TData, TError> _options;
+  QueryResult<TData, TError>? _result;
   late Query<TData, TError> _query;
   late int _initialDataUpdateCount;
   late int _initialErrorUpdateCount;
-  late QueryResult<TData, TError> _result;
 
   Timer? _refetchIntervalTimer;
 
   final Set<ResultChangeListener<TData, TError>> _listeners = {};
 
   QueryOptions<TData, TError> get options => _options;
-  QueryResult<TData, TError> get result => _result;
 
-  Future<TData> _fetch({bool cancelRefetch = false}) {
-    return _query.fetch(
-      _options.queryFn,
-      gcDuration: _options.gcDuration,
-      retry: _options.retry,
-      meta: _options.meta,
-      cancelRefetch: cancelRefetch,
-    );
+  QueryResult<TData, TError> get result {
+    if (_result == null) {
+      throw StateError(
+        'Cannot access result before QueryObserver is mounted. '
+        'Call onMount() first.',
+      );
+    }
+    return _result as QueryResult<TData, TError>;
   }
 
   set options(QueryOptions<TData, TError> value) {
@@ -59,27 +55,7 @@ class QueryObserver<TData, TError> with Observer<QueryState<TData, TError>> {
     // Handle query key change separately - requires switching queries
     if (newOptions.key != oldOptions.key) {
       _query.removeObserver(this);
-
-      _query = Query.cached(
-        _client,
-        newOptions.key.parts,
-        gcDuration: newOptions.gcDuration,
-        seed: newOptions.seed,
-        seedUpdatedAt: newOptions.seedUpdatedAt,
-      );
-      _query.addObserver(this);
-
-      _initialDataUpdateCount = _query.state.dataUpdateCount;
-      _initialErrorUpdateCount = _query.state.errorUpdateCount;
-
-      result = _buildResult(_options, _query.state, optimistic: true);
-
-      if (_shouldFetchOnMount(newOptions, _query.state)) {
-        _fetch().ignore();
-      }
-
-      _startRefetchInterval();
-
+      onMount();
       return;
     }
 
@@ -158,7 +134,10 @@ class QueryObserver<TData, TError> with Observer<QueryState<TData, TError>> {
     _query.addObserver(this);
     _initialDataUpdateCount = _query.state.dataUpdateCount;
     _initialErrorUpdateCount = _query.state.errorUpdateCount;
-    _result = _buildResult(_options, _query.state, optimistic: true);
+
+    final newResult = _buildResult(_options, _query.state, optimistic: true);
+    _result ??= newResult;
+    result = newResult;
 
     if (_shouldFetchOnMount(_options, _query.state)) {
       _fetch().ignore();
@@ -207,6 +186,16 @@ class QueryObserver<TData, TError> with Observer<QueryState<TData, TError>> {
   void Function() subscribe(ResultChangeListener<TData, TError> listener) {
     _listeners.add(listener);
     return () => _listeners.remove(listener);
+  }
+
+  Future<TData> _fetch({bool cancelRefetch = false}) {
+    return _query.fetch(
+      _options.queryFn,
+      gcDuration: _options.gcDuration,
+      retry: _options.retry,
+      meta: _options.meta,
+      cancelRefetch: cancelRefetch,
+    );
   }
 
   void _startRefetchInterval() {

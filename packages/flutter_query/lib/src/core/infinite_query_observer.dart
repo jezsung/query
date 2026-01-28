@@ -70,7 +70,7 @@ class InfiniteQueryObserver<TData, TError, TPageParam> {
   FetchDirection? _fetchDirection;
 
   InfiniteQueryResult<TData, TError, TPageParam> get result {
-    final queryResult = _inner._result;
+    final queryResult = _inner.result;
     final data = queryResult.data;
 
     final hasNextPage = data != null &&
