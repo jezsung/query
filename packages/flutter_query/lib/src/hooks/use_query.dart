@@ -96,7 +96,7 @@ QueryResult<TData, TError> useQuery<TData, TError>(
   final observer = useMemoized(
     () => QueryObserver<TData, TError>(
       effectiveClient,
-      QueryObserverOptions(
+      QueryOptions(
         queryKey,
         queryFn,
         enabled: enabled,
@@ -129,7 +129,7 @@ QueryResult<TData, TError> useQuery<TData, TError>(
   }, [observer]);
 
   // Update options during render (before subscribing)
-  observer.options = QueryObserverOptions(
+  observer.options = QueryOptions(
     queryKey,
     queryFn,
     enabled: enabled,

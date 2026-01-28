@@ -9,7 +9,7 @@ export 'src/core/core.dart'
         QueryState,
         QueryStatus,
         FetchStatus,
-        QueryObserverOptions,
+        QueryOptions,
         QueryResult,
         QueryFn,
         QueryFunctionContext,

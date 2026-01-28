@@ -7,8 +7,8 @@ import 'utils.dart';
 ///
 /// Contains all configuration that affects the QueryObserver instance,
 /// including query identity, fetch behavior, and observer-specific settings.
-class QueryObserverOptions<TData, TError> {
-  QueryObserverOptions(
+class QueryOptions<TData, TError> {
+  QueryOptions(
     List<Object?> queryKey,
     this.queryFn, {
     this.retry,
@@ -23,9 +23,9 @@ class QueryObserverOptions<TData, TError> {
     this.refetchOnResume,
     this.refetchInterval,
     this.retryOnMount,
-  }) : queryKey = QueryKey(queryKey);
+  }) : key = QueryKey(queryKey);
 
-  final QueryKey queryKey;
+  final QueryKey key;
   final QueryFn<TData> queryFn;
   final RetryResolver<TError>? retry;
   final GcDuration? gcDuration;
@@ -43,8 +43,8 @@ class QueryObserverOptions<TData, TError> {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      other is QueryObserverOptions<TData, TError> &&
-          queryKey == other.queryKey &&
+      other is QueryOptions<TData, TError> &&
+          key == other.key &&
           identical(queryFn, other.queryFn) &&
           gcDuration == other.gcDuration &&
           deepEq.equals(meta, other.meta) &&
@@ -61,7 +61,7 @@ class QueryObserverOptions<TData, TError> {
 
   @override
   int get hashCode => Object.hash(
-        queryKey,
+        key,
         identityHashCode(queryFn),
         gcDuration,
         deepEq.hash(meta),
@@ -78,8 +78,8 @@ class QueryObserverOptions<TData, TError> {
       );
 
   @override
-  String toString() => 'QueryObserverOptions('
-      'queryKey: $queryKey, '
+  String toString() => 'QueryOptions('
+      'key: $key, '
       'enabled: $enabled, '
       'staleDuration: $staleDuration, '
       'gcDuration: $gcDuration, '
@@ -93,16 +93,12 @@ class QueryObserverOptions<TData, TError> {
       'meta: $meta)';
 }
 
-extension QueryObserverOptionsExt<TData, TError>
-    on QueryObserverOptions<TData, TError> {
-  /// Merges this QueryObserverOptions with default options.
-  ///
-  /// Observer-specific options take precedence over defaults.
-  QueryObserverOptions<TData, TError> withDefaults(
+extension QueryOptionsExt<TData, TError> on QueryOptions<TData, TError> {
+  QueryOptions<TData, TError> withDefaults(
     DefaultQueryOptions defaults,
   ) {
-    return QueryObserverOptions<TData, TError>(
-      queryKey.parts,
+    return QueryOptions<TData, TError>(
+      key.parts,
       queryFn,
       gcDuration: gcDuration ?? defaults.gcDuration,
       meta: meta,

@@ -432,7 +432,7 @@ void main() {
 
       final observer1 = QueryObserver<String, Object>(
         client,
-        QueryObserverOptions(
+        QueryOptions(
           const ['key'],
           (context) async {
             capturedMeta = context.meta;
@@ -459,7 +459,7 @@ void main() {
 
       final observer2 = QueryObserver<String, Object>(
         client,
-        QueryObserverOptions(
+        QueryOptions(
           const ['key'],
           (context) async {
             capturedMeta = context.meta;

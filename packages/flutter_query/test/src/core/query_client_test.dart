@@ -30,7 +30,7 @@ void main() {
       );
       final observer1 = QueryObserver<String, Object>(
         client,
-        QueryObserverOptions(
+        QueryOptions(
           const ['key', 1],
           (context) async {
             await Future.delayed(const Duration(seconds: 1));
@@ -54,7 +54,7 @@ void main() {
       );
       final observer2 = QueryObserver<String, Object>(
         client,
-        QueryObserverOptions(
+        QueryOptions(
           const ['key', 2],
           (context) async {
             await Future.delayed(const Duration(seconds: 1));
@@ -80,7 +80,7 @@ void main() {
       );
       final observer1 = QueryObserver<String, Object>(
         client,
-        QueryObserverOptions(
+        QueryOptions(
           const ['key', 1],
           (context) async {
             await Future.delayed(const Duration(seconds: 1));
@@ -110,7 +110,7 @@ void main() {
       );
       final observer2 = QueryObserver<String, Object>(
         client,
-        QueryObserverOptions(
+        QueryOptions(
           const ['key', 2],
           (context) async {
             await Future.delayed(const Duration(seconds: 1));
@@ -150,7 +150,7 @@ void main() {
       );
       final observer3 = QueryObserver<String, Object>(
         client,
-        QueryObserverOptions(
+        QueryOptions(
           const ['key', 3],
           (context) async {
             await Future.delayed(const Duration(seconds: 1));
@@ -190,7 +190,7 @@ void main() {
       );
       final observer4 = QueryObserver<String, Object>(
         client,
-        QueryObserverOptions(
+        QueryOptions(
           const ['key', 4],
           (context) async {
             await Future.delayed(const Duration(seconds: 1));
@@ -231,7 +231,7 @@ void main() {
       );
       final observer1 = QueryObserver<String, Object>(
         client,
-        QueryObserverOptions(
+        QueryOptions(
           const ['key', 1],
           (context) async {
             await Future.delayed(const Duration(seconds: 1));
@@ -257,7 +257,7 @@ void main() {
       );
       final observer2 = QueryObserver<String, Object>(
         client,
-        QueryObserverOptions(
+        QueryOptions(
           const ['key', 2],
           (context) async {
             await Future.delayed(const Duration(seconds: 1));
@@ -286,7 +286,7 @@ void main() {
       );
       final observer3 = QueryObserver<String, Object>(
         client,
-        QueryObserverOptions(
+        QueryOptions(
           const ['key', 3],
           (context) async {
             await Future.delayed(const Duration(seconds: 1));
@@ -313,7 +313,7 @@ void main() {
       );
       final observer = QueryObserver<String, Object>(
         client,
-        QueryObserverOptions(
+        QueryOptions(
           const ['key'],
           (context) async {
             await Future.delayed(const Duration(seconds: 1));
@@ -346,7 +346,7 @@ void main() {
       // With stale data (staleDuration: zero) - should refetch
       final observer1 = QueryObserver<String, Object>(
         client,
-        QueryObserverOptions(
+        QueryOptions(
           const ['key', 1],
           (context) async {
             await Future.delayed(const Duration(seconds: 1));
@@ -371,7 +371,7 @@ void main() {
       fetches = 0;
       final observer2 = QueryObserver<String, Object>(
         client,
-        QueryObserverOptions(
+        QueryOptions(
           const ['key', 2],
           (context) async {
             await Future.delayed(const Duration(seconds: 1));
@@ -402,7 +402,7 @@ void main() {
       );
       final observer3 = QueryObserver<String, Object>(
         client,
-        QueryObserverOptions(
+        QueryOptions(
           const ['key', 3],
           (context) async {
             await Future.delayed(const Duration(seconds: 1));
@@ -432,7 +432,7 @@ void main() {
       );
       final observer4 = QueryObserver<String, Object>(
         client,
-        QueryObserverOptions(
+        QueryOptions(
           const ['key', 4],
           (context) async {
             await Future.delayed(const Duration(seconds: 1));
@@ -467,7 +467,7 @@ void main() {
       // With stale data (staleDuration: zero) - should refetch
       final observer1 = QueryObserver<String, Object>(
         client,
-        QueryObserverOptions(
+        QueryOptions(
           const ['key', 1],
           (context) async {
             await Future.delayed(const Duration(seconds: 1));
@@ -491,7 +491,7 @@ void main() {
       fetches = 0;
       final observer2 = QueryObserver<String, Object>(
         client,
-        QueryObserverOptions(
+        QueryOptions(
           const ['key', 2],
           (context) async {
             await Future.delayed(const Duration(seconds: 1));
@@ -521,7 +521,7 @@ void main() {
       );
       final observer3 = QueryObserver<String, Object>(
         client,
-        QueryObserverOptions(
+        QueryOptions(
           const ['key', 3],
           (context) async {
             await Future.delayed(const Duration(seconds: 1));
@@ -550,7 +550,7 @@ void main() {
       );
       final observer4 = QueryObserver<String, Object>(
         client,
-        QueryObserverOptions(
+        QueryOptions(
           const ['key', 4],
           (context) async {
             await Future.delayed(const Duration(seconds: 1));
@@ -585,7 +585,7 @@ void main() {
       );
       final observer = QueryObserver<String, Object>(
         client,
-        QueryObserverOptions(
+        QueryOptions(
           const ['key'],
           (context) async {
             await Future.delayed(const Duration(seconds: 1));
@@ -625,7 +625,7 @@ void main() {
       );
       final observer1 = QueryObserver<String, Object>(
         client,
-        QueryObserverOptions(
+        QueryOptions(
           const ['key', 1],
           (context) async {
             await Future.delayed(const Duration(seconds: 1));
@@ -657,7 +657,7 @@ void main() {
       );
       final observer2 = QueryObserver<String, Object>(
         client,
-        QueryObserverOptions(
+        QueryOptions(
           const ['key', 2],
           (context) async {
             fetches++;
@@ -1434,7 +1434,7 @@ void main() {
 
       final observer = QueryObserver<String, Object>(
         client,
-        QueryObserverOptions(
+        QueryOptions(
           const ['key'],
           (context) async {
             await Future.delayed(const Duration(seconds: 1));
@@ -1557,7 +1557,7 @@ void main() {
         'WHEN no filters are provided', withFakeAsync((async) {
       final activeObserver1 = QueryObserver(
         client,
-        QueryObserverOptions(
+        QueryOptions(
           const ['key', 1],
           (context) async {
             await Future.delayed(const Duration(seconds: 1));
@@ -1568,7 +1568,7 @@ void main() {
       )..onMount();
       final activeObserver2 = QueryObserver(
         client,
-        QueryObserverOptions(
+        QueryOptions(
           const ['key', 2],
           (context) async {
             await Future.delayed(const Duration(seconds: 1));
@@ -1593,7 +1593,7 @@ void main() {
       );
       final disabledObserver = QueryObserver(
         client,
-        QueryObserverOptions(
+        QueryOptions(
           const ['key', 5],
           (context) async {
             await Future.delayed(const Duration(seconds: 1));
@@ -1628,7 +1628,7 @@ void main() {
 
       final observer1 = QueryObserver(
         client,
-        QueryObserverOptions(
+        QueryOptions(
           const ['key', 1],
           (context) async {
             await Future.delayed(const Duration(seconds: 1));
@@ -1641,7 +1641,7 @@ void main() {
       addTearDown(observer1.onUnmount);
       final observer2 = QueryObserver(
         client,
-        QueryObserverOptions(
+        QueryOptions(
           const ['key', 2],
           (context) async {
             await Future.delayed(const Duration(seconds: 1));
@@ -1654,7 +1654,7 @@ void main() {
       addTearDown(observer2.onUnmount);
       final observer3 = QueryObserver(
         client,
-        QueryObserverOptions(
+        QueryOptions(
           const ['other'],
           (context) async {
             await Future.delayed(const Duration(seconds: 1));
@@ -1687,7 +1687,7 @@ void main() {
 
       final observer1 = QueryObserver(
         client,
-        QueryObserverOptions(
+        QueryOptions(
           const ['key'],
           (context) async {
             await Future.delayed(const Duration(seconds: 1));
@@ -1700,7 +1700,7 @@ void main() {
       addTearDown(observer1.onUnmount);
       final observer2 = QueryObserver(
         client,
-        QueryObserverOptions(
+        QueryOptions(
           const ['key', 2],
           (context) async {
             await Future.delayed(const Duration(seconds: 1));
@@ -1731,7 +1731,7 @@ void main() {
 
       final observer1 = QueryObserver<String, Object>(
         client,
-        QueryObserverOptions(
+        QueryOptions(
           const ['key', 1],
           (context) async {
             await Future.delayed(const Duration(seconds: 1));
@@ -1744,7 +1744,7 @@ void main() {
       addTearDown(observer1.onUnmount);
       final observer2 = QueryObserver<String, Object>(
         client,
-        QueryObserverOptions(
+        QueryOptions(
           const ['key', 2],
           (context) async {
             await Future.delayed(const Duration(seconds: 1));
@@ -1775,7 +1775,7 @@ void main() {
 
       final observer = QueryObserver(
         client,
-        QueryObserverOptions(
+        QueryOptions(
           const ['key'],
           (context) async {
             await Future.delayed(const Duration(seconds: 1));
@@ -1803,7 +1803,7 @@ void main() {
 
       final observer = QueryObserver<String, Object>(
         client,
-        QueryObserverOptions(
+        QueryOptions(
           const ['key'],
           (context) async {
             await Future.delayed(const Duration(seconds: 1));
@@ -1989,7 +1989,7 @@ void main() {
 
       final observer1 = QueryObserver<String, Object>(
         client,
-        QueryObserverOptions(
+        QueryOptions(
           const ['key', 1],
           (context) async {
             await Future.delayed(const Duration(seconds: 1));
@@ -2002,7 +2002,7 @@ void main() {
       addTearDown(observer1.onUnmount);
       final observer2 = QueryObserver<String, Object>(
         client,
-        QueryObserverOptions(
+        QueryOptions(
           const ['key', 2],
           (context) async {
             await Future.delayed(const Duration(seconds: 1));
@@ -2052,7 +2052,7 @@ void main() {
       // Inactive query 2 (observer not enabled)
       final observer = QueryObserver<String, Object>(
         client,
-        QueryObserverOptions(
+        QueryOptions(
           const ['key', 2],
           (context) async {
             await Future.delayed(const Duration(seconds: 1));
@@ -2080,7 +2080,7 @@ void main() {
 
       final observer = QueryObserver<String, Object>(
         client,
-        QueryObserverOptions(
+        QueryOptions(
           const ['key'],
           (context) async {
             await Future.delayed(const Duration(seconds: 1));
@@ -2109,7 +2109,7 @@ void main() {
 
       final observer = QueryObserver<String, Object>(
         client,
-        QueryObserverOptions(
+        QueryOptions(
           const ['key'],
           (context) async {
             await Future.delayed(const Duration(seconds: 1));

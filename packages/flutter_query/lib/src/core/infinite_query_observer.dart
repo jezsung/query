@@ -111,9 +111,9 @@ class InfiniteQueryObserver<TData, TError, TPageParam> {
     );
   }
 
-  QueryObserverOptions<InfiniteData<TData, TPageParam>, TError>
+  QueryOptions<InfiniteData<TData, TPageParam>, TError>
       get queryObserverOptions {
-    return QueryObserverOptions<InfiniteData<TData, TPageParam>, TError>(
+    return QueryOptions<InfiniteData<TData, TPageParam>, TError>(
       _options.queryKey.parts,
       (context) async {
         final data = _inner._query.state.data ?? InfiniteData.empty();

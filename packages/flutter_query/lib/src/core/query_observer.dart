@@ -21,14 +21,14 @@ part 'infinite_query_observer.dart';
 class QueryObserver<TData, TError> with Observer<QueryState<TData, TError>> {
   QueryObserver(
     this._client,
-    QueryObserverOptions<TData, TError> options,
+    QueryOptions<TData, TError> options,
   ) {
     _options = options.withDefaults(_client.defaultQueryOptions);
   }
 
   final QueryClient _client;
 
-  late QueryObserverOptions<TData, TError> _options;
+  late QueryOptions<TData, TError> _options;
   late Query<TData, TError> _query;
   late int _initialDataUpdateCount;
   late int _initialErrorUpdateCount;
@@ -38,7 +38,7 @@ class QueryObserver<TData, TError> with Observer<QueryState<TData, TError>> {
 
   final Set<ResultChangeListener<TData, TError>> _listeners = {};
 
-  QueryObserverOptions<TData, TError> get options => _options;
+  QueryOptions<TData, TError> get options => _options;
   QueryResult<TData, TError> get result => _result;
 
   Future<TData> _fetch({bool cancelRefetch = false}) {
@@ -51,18 +51,18 @@ class QueryObserver<TData, TError> with Observer<QueryState<TData, TError>> {
     );
   }
 
-  set options(QueryObserverOptions<TData, TError> value) {
+  set options(QueryOptions<TData, TError> value) {
     final oldOptions = _options;
     final newOptions = value.withDefaults(_client.defaultQueryOptions);
     _options = newOptions;
 
     // Handle query key change separately - requires switching queries
-    if (newOptions.queryKey != oldOptions.queryKey) {
+    if (newOptions.key != oldOptions.key) {
       _query.removeObserver(this);
 
       _query = Query.cached(
         _client,
-        newOptions.queryKey.parts,
+        newOptions.key.parts,
         gcDuration: newOptions.gcDuration,
         seed: newOptions.seed,
         seedUpdatedAt: newOptions.seedUpdatedAt,
@@ -150,7 +150,7 @@ class QueryObserver<TData, TError> with Observer<QueryState<TData, TError>> {
   void onMount() {
     _query = Query.cached(
       _client,
-      _options.queryKey.parts,
+      _options.key.parts,
       gcDuration: _options.gcDuration,
       seed: _options.seed,
       seedUpdatedAt: _options.seedUpdatedAt,
@@ -232,7 +232,7 @@ class QueryObserver<TData, TError> with Observer<QueryState<TData, TError>> {
   }
 
   bool _shouldFetchOnMount(
-    final QueryObserverOptions<TData, TError> options,
+    final QueryOptions<TData, TError> options,
     final QueryState<TData, TError> state,
   ) {
     final enabled = options.enabled ?? true;
@@ -274,7 +274,7 @@ class QueryObserver<TData, TError> with Observer<QueryState<TData, TError>> {
   }
 
   bool _shouldFetchOnResume(
-    final QueryObserverOptions<TData, TError> options,
+    final QueryOptions<TData, TError> options,
     final QueryState<TData, TError> state,
   ) {
     final enabled = options.enabled ?? true;
@@ -312,7 +312,7 @@ class QueryObserver<TData, TError> with Observer<QueryState<TData, TError>> {
   }
 
   QueryResult<TData, TError> _buildResult(
-    QueryObserverOptions<TData, TError> options,
+    QueryOptions<TData, TError> options,
     QueryState<TData, TError> state, {
     bool optimistic = false,
   }) {
