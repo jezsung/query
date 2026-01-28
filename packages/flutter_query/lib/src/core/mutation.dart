@@ -12,17 +12,12 @@ import 'query_options.dart';
 import 'retryer.dart';
 import 'utils.dart';
 
-/// A mutation instance that manages the execution and state of a single mutation.
-///
-/// Mutations are used for creating, updating, or deleting data, as opposed to
-/// queries which are used for fetching data.
-///
-/// Aligned with TanStack Query's Mutation class.
 class Mutation<TData, TError, TVariables, TOnMutateResult>
     with
         Observable<MutationState<TData, TError, TVariables, TOnMutateResult>,
             MutationObserver<TData, TError, TVariables, TOnMutateResult>>,
         GarbageCollectable {
+  @visibleForTesting
   Mutation(
     this._client,
     this.options,
@@ -32,9 +27,22 @@ class Mutation<TData, TError, TVariables, TOnMutateResult>
       cancelGc();
     };
     onRemoveObserver = (observer) {
-      scheduleGc(observer.options.gcDuration ?? GcDuration(minutes: 5));
+      scheduleGc(observer.options.gcDuration);
     };
-    scheduleGc(options.gcDuration ?? GcDuration(minutes: 5));
+  }
+
+  factory Mutation.cached(
+    QueryClient client,
+    MutationOptions<TData, TError, TVariables, TOnMutateResult> options,
+  ) {
+    final mutation = Mutation<TData, TError, TVariables, TOnMutateResult>(
+      client,
+      options,
+      client.mutationCache.getNextMutationId(),
+    );
+    client.mutationCache.add(mutation);
+    mutation.scheduleGc(options.gcDuration);
+    return mutation;
   }
 
   final QueryClient _client;

@@ -24,11 +24,11 @@ void main() {
     );
   }
 
-  group('build', () {
+  group('Mutation.cached', () {
     test(
         'SHOULD create new mutation'
         '', () {
-      final mutation = cache.build(createOptions());
+      final mutation = Mutation.cached(client, createOptions());
 
       expect(mutation, isA<Mutation>());
     });
@@ -36,7 +36,7 @@ void main() {
     test(
         'SHOULD add mutation to cache'
         '', () {
-      final mutation = cache.build(createOptions());
+      final mutation = Mutation.cached(client, createOptions());
 
       expect(cache.getAll(), contains(mutation));
     });
@@ -44,9 +44,9 @@ void main() {
     test(
         'SHOULD assign unique mutationId to each mutation'
         '', () {
-      final mutation1 = cache.build(createOptions());
-      final mutation2 = cache.build(createOptions());
-      final mutation3 = cache.build(createOptions());
+      final mutation1 = Mutation.cached(client, createOptions());
+      final mutation2 = Mutation.cached(client, createOptions());
+      final mutation3 = Mutation.cached(client, createOptions());
 
       expect(mutation1.mutationId, isNot(equals(mutation2.mutationId)));
       expect(mutation2.mutationId, isNot(equals(mutation3.mutationId)));
@@ -56,8 +56,10 @@ void main() {
     test(
         'SHOULD create different mutations for same key (no deduplication)'
         '', () {
-      final mutation1 = cache.build(createOptions(mutationKey: const ['key']));
-      final mutation2 = cache.build(createOptions(mutationKey: const ['key']));
+      final mutation1 =
+          Mutation.cached(client, createOptions(mutationKey: const ['key']));
+      final mutation2 =
+          Mutation.cached(client, createOptions(mutationKey: const ['key']));
 
       expect(mutation1, isNot(same(mutation2)));
       expect(cache.getAll(), hasLength(2));
@@ -68,7 +70,7 @@ void main() {
     test(
         'SHOULD add mutation to cache'
         '', () {
-      final mutation = cache.build(createOptions());
+      final mutation = Mutation.cached(client, createOptions());
       cache.remove(mutation);
       expect(cache.getAll(), isEmpty);
 
@@ -80,7 +82,7 @@ void main() {
     test(
         'SHOULD NOT add duplicate mutation instances'
         '', () {
-      final mutation = cache.build(createOptions());
+      final mutation = Mutation.cached(client, createOptions());
 
       cache.add(mutation);
       cache.add(mutation);
@@ -93,7 +95,7 @@ void main() {
     test(
         'SHOULD remove mutation from cache'
         '', () {
-      final mutation = cache.build(createOptions());
+      final mutation = Mutation.cached(client, createOptions());
       expect(cache.getAll(), contains(mutation));
 
       cache.remove(mutation);
@@ -108,7 +110,7 @@ void main() {
     test(
         'SHOULD NOT throw '
         'WHEN removing already removed mutation', () {
-      final mutation = cache.build(createOptions());
+      final mutation = Mutation.cached(client, createOptions());
       cache.remove(mutation);
 
       // Should not throw when removing already removed mutation
@@ -128,9 +130,9 @@ void main() {
     test(
         'SHOULD return all mutations in cache'
         '', () {
-      cache.build(createOptions(mutationKey: const ['key1']));
-      cache.build(createOptions(mutationKey: const ['key2']));
-      cache.build(createOptions(mutationKey: const ['key3']));
+      Mutation.cached(client, createOptions(mutationKey: const ['key1']));
+      Mutation.cached(client, createOptions(mutationKey: const ['key2']));
+      Mutation.cached(client, createOptions(mutationKey: const ['key3']));
 
       final mutations = cache.getAll();
 
@@ -140,7 +142,7 @@ void main() {
     test(
         'SHOULD return copy of mutations list'
         '', () {
-      cache.build(createOptions());
+      Mutation.cached(client, createOptions());
 
       final mutations1 = cache.getAll();
       final mutations2 = cache.getAll();
@@ -162,9 +164,9 @@ void main() {
     test(
         'SHOULD remove all mutations from cache'
         '', () {
-      cache.build(createOptions(mutationKey: const ['key1']));
-      cache.build(createOptions(mutationKey: const ['key2']));
-      cache.build(createOptions(mutationKey: const ['key3']));
+      Mutation.cached(client, createOptions(mutationKey: const ['key1']));
+      Mutation.cached(client, createOptions(mutationKey: const ['key2']));
+      Mutation.cached(client, createOptions(mutationKey: const ['key3']));
 
       cache.clear();
 
@@ -178,11 +180,11 @@ void main() {
 
   group('find', () {
     setUp(() {
-      cache.build(createOptions(mutationKey: const ['users']));
-      cache.build(createOptions(mutationKey: const ['users', '1']));
-      cache.build(createOptions(mutationKey: const ['users', '2']));
-      cache.build(createOptions(mutationKey: const ['posts']));
-      cache.build(createOptions(mutationKey: const ['posts', '1']));
+      Mutation.cached(client, createOptions(mutationKey: const ['users']));
+      Mutation.cached(client, createOptions(mutationKey: const ['users', '1']));
+      Mutation.cached(client, createOptions(mutationKey: const ['users', '2']));
+      Mutation.cached(client, createOptions(mutationKey: const ['posts']));
+      Mutation.cached(client, createOptions(mutationKey: const ['posts', '1']));
     });
 
     test(
@@ -263,11 +265,11 @@ void main() {
 
   group('findAll', () {
     setUp(() {
-      cache.build(createOptions(mutationKey: const ['users']));
-      cache.build(createOptions(mutationKey: const ['users', '1']));
-      cache.build(createOptions(mutationKey: const ['users', '2']));
-      cache.build(createOptions(mutationKey: const ['posts']));
-      cache.build(createOptions(mutationKey: const ['posts', '1']));
+      Mutation.cached(client, createOptions(mutationKey: const ['users']));
+      Mutation.cached(client, createOptions(mutationKey: const ['users', '1']));
+      Mutation.cached(client, createOptions(mutationKey: const ['users', '2']));
+      Mutation.cached(client, createOptions(mutationKey: const ['posts']));
+      Mutation.cached(client, createOptions(mutationKey: const ['posts', '1']));
     });
 
     test(

@@ -66,31 +66,36 @@ void main() {
     test(
         'SHOULD use default GC duration of 5 minutes '
         'WHEN not specified in options', withFakeAsync((async) {
-      final mutation = createMutation();
+      final mutation = Mutation.cached(
+        client,
+        MutationOptions(
+          mutationFn: (variables, context) async => 'result: $variables',
+        ),
+      );
 
-      // Elapse less than 5 minutes - mutation should still exist
       async.elapse(const Duration(minutes: 4, seconds: 59));
       expect(cache.getAll(), contains(mutation));
 
-      // Elapse past 5 minutes - mutation should be removed
       async.elapse(const Duration(seconds: 1));
       expect(cache.getAll(), isNot(contains(mutation)));
     }));
 
     test(
         'SHOULD use custom GC duration '
-        'WHEN provided in options (must be >= default 5 min due to max logic)',
-        withFakeAsync((async) {
-      // Note: GcDuration uses max logic, so can only increase beyond default 5 min
-      final mutation = createMutation(
-        options: createOptions(gcDuration: const GcDuration(minutes: 10)),
+        'WHEN provided in options', withFakeAsync((async) {
+      final mutation = Mutation.cached(
+        client,
+        MutationOptions(
+          mutationFn: (variables, context) async => 'result: $variables',
+          gcDuration: const GcDuration(minutes: 3),
+        ),
       );
 
-      while (cache.getAll().contains(mutation)) {
-        async.elapse(const Duration(seconds: 10));
-      }
+      async.elapse(const Duration(minutes: 2, seconds: 59));
+      expect(cache.getAll(), contains(mutation));
 
-      expect(async.elapsed, const Duration(minutes: 10));
+      async.elapse(const Duration(seconds: 1));
+      expect(cache.getAll(), isNot(contains(mutation)));
     }));
   });
 
@@ -118,8 +123,12 @@ void main() {
     test(
         'SHOULD store new GC duration but NOT reschedule GC '
         'WHEN options setter is called', withFakeAsync((async) {
-      final mutation = createMutation(
-        options: createOptions(gcDuration: const GcDuration(minutes: 10)),
+      final mutation = Mutation.cached(
+        client,
+        MutationOptions(
+          mutationFn: (variables, context) async => 'result: $variables',
+          gcDuration: const GcDuration(minutes: 10),
+        ),
       );
 
       // Update options with longer GC duration

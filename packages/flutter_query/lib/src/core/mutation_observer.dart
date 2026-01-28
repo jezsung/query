@@ -59,8 +59,7 @@ class MutationObserver<TData, TError, TVariables, TOnMutateResult>
   Future<TData> mutate(TVariables variables) async {
     _mutation?.removeObserver(this);
 
-    final mutation = _mutation = _client.mutationCache
-        .build<TData, TError, TVariables, TOnMutateResult>(_options);
+    final mutation = _mutation = Mutation.cached(_client, _options);
     mutation.addObserver(this);
 
     return mutation.execute(variables);

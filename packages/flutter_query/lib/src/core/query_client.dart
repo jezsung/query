@@ -32,9 +32,7 @@ class QueryClient {
   QueryClient({
     this.defaultQueryOptions = const DefaultQueryOptions(),
     this.defaultMutationOptions = const DefaultMutationOptions(),
-  }) {
-    _mutationCache.client = this;
-  }
+  });
 
   final QueryCache _cache = QueryCache();
   final MutationCache _mutationCache = MutationCache();
