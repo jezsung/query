@@ -690,7 +690,6 @@ void main() {
       expect(
         state.toString(),
         'MutationState('
-        'key: null, '
         'status: MutationStatus.idle, '
         'data: null, '
         'error: null, '
@@ -709,7 +708,6 @@ void main() {
       final now = DateTime(2024, 1, 1, 12, 0, 0);
       final error = Exception('test error');
       final state = MutationState<String, Exception, int, String>(
-        key: const ['users', 'create'],
         status: MutationStatus.success,
         data: 'result',
         error: error,
@@ -724,7 +722,6 @@ void main() {
       expect(
         state.toString(),
         'MutationState('
-        'key: [users, create], '
         'status: MutationStatus.success, '
         'data: result, '
         'error: $error, '

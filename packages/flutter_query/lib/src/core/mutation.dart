@@ -27,9 +27,7 @@ class Mutation<TData, TError, TVariables, TOnMutateResult>
     this._client,
     this.options,
     this.mutationId,
-  ) : _state = MutationState<TData, TError, TVariables, TOnMutateResult>(
-          key: options.mutationKey,
-        ) {
+  ) : _state = const MutationState() {
     onAddObserver = (_) {
       cancelGc();
     };
@@ -52,12 +50,9 @@ class Mutation<TData, TError, TVariables, TOnMutateResult>
   set state(
     MutationState<TData, TError, TVariables, TOnMutateResult> newState,
   ) {
-    final enrichedState = newState.copyWith(
-      key: options.mutationKey,
-    );
-    if (enrichedState != _state) {
-      _state = enrichedState;
-      notifyObservers(enrichedState);
+    if (newState != _state) {
+      _state = newState;
+      notifyObservers(newState);
     }
   }
 
@@ -187,27 +182,17 @@ class Mutation<TData, TError, TVariables, TOnMutateResult>
   }
 }
 
-/// Extension methods for matching mutations against filters.
-///
-/// Aligned with TanStack Query's matchMutation utility function.
 @internal
 extension MutationMatches on Mutation {
-  /// Returns true if this mutation matches the given filters.
-  ///
-  /// - [exact]: when true, the mutation key must exactly equal the filter key;
-  ///   when false (default), the mutation key only needs to start with the filter key
-  /// - [predicate]: custom filter function that receives the mutation state and returns
-  ///   whether it should be included
-  /// - [mutationKey]: the key to match against; if the mutation has no key, it won't match
-  /// - [status]: filters mutations by their current status (idle, pending, success, error)
   bool matches({
-    bool exact = false,
-    bool Function(MutationState)? predicate,
     List<Object?>? mutationKey,
+    bool exact = false,
+    bool Function(List<Object?>? mutationKey, MutationState state)? predicate,
     MutationStatus? status,
   }) {
+    final key = options.mutationKey;
+
     if (mutationKey != null) {
-      final key = state.key;
       if (key == null) {
         return false;
       }
@@ -225,16 +210,13 @@ extension MutationMatches on Mutation {
       return false;
     }
 
-    if (predicate != null && !predicate(state)) {
+    if (predicate != null && !predicate(key, state)) {
       return false;
     }
 
     return true;
   }
 
-  /// Checks if [key] starts with [prefix].
-  ///
-  /// Uses deep equality for comparing individual elements.
   static bool _partialMatchKey(List<Object?> key, List<Object?> prefix) {
     if (key.length < prefix.length) {
       return false;

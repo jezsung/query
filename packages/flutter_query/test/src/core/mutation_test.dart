@@ -925,7 +925,7 @@ void main() {
       );
 
       expect(
-        mutation.matches(predicate: (m) => m.key != null),
+        mutation.matches(predicate: (key, state) => key != null),
         isTrue,
       );
     });
@@ -936,7 +936,7 @@ void main() {
       final mutation = createMutation();
 
       expect(
-        mutation.matches(predicate: (m) => m.key != null),
+        mutation.matches(predicate: (key, state) => key != null),
         isFalse,
       );
     });
@@ -954,7 +954,7 @@ void main() {
           mutationKey: const ['users'],
           exact: false,
           status: MutationStatus.idle,
-          predicate: (m) => true,
+          predicate: (key, state) => true,
         ),
         isTrue,
       );
@@ -965,7 +965,7 @@ void main() {
           mutationKey: const ['users'],
           exact: false,
           status: MutationStatus.pending, // This doesn't match
-          predicate: (m) => true,
+          predicate: (key, state) => true,
         ),
         isFalse,
       );
