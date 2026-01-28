@@ -19,18 +19,16 @@ class Query<TData, TError>
     with
         Observable<QueryState<TData, TError>, QueryObserver<TData, TError>>,
         GarbageCollectable {
-  Query(
-    QueryClient client,
-    QueryOptions<TData, TError> options,
-  )   : _client = client,
-        _options = options.withDefaults(client.defaultQueryOptions) {
+  @visibleForTesting
+  Query(this._client, this._queryKey)
+      : _initialState = const QueryState(),
+        _currentState = const QueryState() {
     onAddObserver = (_) {
       cancelGc();
     };
     onRemoveObserver = (observer) {
       if (observers.isEmpty) {
-        // Use the removed observer's gcDuration since it was the last one
-        scheduleGc(observer.options.gcDuration ?? GcDuration(minutes: 5));
+        scheduleGc(observer.options.gcDuration);
         if (state.fetchStatus == FetchStatus.fetching &&
             _abortController != null &&
             _abortController!.wasConsumed) {
@@ -38,41 +36,44 @@ class Query<TData, TError>
         }
       }
     };
+  }
 
-    _initialState = switch (_options.seed) {
-      final seed? => QueryState<TData, TError>.fromSeed(
-          key.parts,
-          seed,
-          _options.seedUpdatedAt,
-          isActive: isActive,
-          meta: meta,
-        ),
-      null => QueryState<TData, TError>(
-          key: key.parts,
-          isActive: isActive,
-          meta: meta,
-        ),
-    };
-    _currentState = _initialState;
+  factory Query.cached(
+    QueryClient client,
+    List<Object?> queryKey, {
+    GcDuration? gcDuration,
+    TData? seed,
+    DateTime? seedUpdatedAt,
+  }) {
+    var query = client.cache.get<TData, TError>(queryKey);
+    if (query == null) {
+      query = Query<TData, TError>(client, queryKey);
+      client.cache.add(query);
+      query.scheduleGc(gcDuration ?? client.defaultQueryOptions.gcDuration);
+    }
 
-    scheduleGc(_options.gcDuration ?? GcDuration(minutes: 5));
+    if (seed != null) {
+      query.setSeed(seed, seedUpdatedAt);
+    }
+
+    return query;
   }
 
   final QueryClient _client;
-  QueryOptions<TData, TError> _options;
-  late QueryState<TData, TError> _initialState;
-  late QueryState<TData, TError> _currentState;
+  final List<Object?> _queryKey;
+  QueryState<TData, TError> _initialState;
+  QueryState<TData, TError> _currentState;
 
   Retryer<TData, TError>? _retryer;
   AbortController? _abortController;
   QueryState<TData, TError>? _revertState;
 
-  QueryKey get key => _options.queryKey;
+  QueryKey get key => QueryKey(_queryKey);
 
   QueryState<TData, TError> get state => _currentState;
 
   bool get isActive {
-    return observers.any((obs) => obs.options.enabled ?? true);
+    return observers.any((observer) => observer.options.enabled ?? true);
   }
 
   bool get isStatic {
@@ -81,37 +82,69 @@ class Query<TData, TError>
     );
   }
 
-  Map<String, dynamic> get meta {
-    return observers
-            .map((obs) => obs.options.meta)
-            .fold(_options.meta, deepMergeMap) ??
-        const {};
-  }
-
   @protected
   set state(QueryState<TData, TError> newState) {
-    _currentState = newState.copyWith(
-      key: key.parts,
-      isActive: isActive,
-      meta: meta,
-    );
+    _currentState = newState.copyWith(isActive: isActive);
     notifyObservers(_currentState);
   }
 
-  set options(QueryOptions<TData, TError> newOptions) {
-    _options = _options.merge(newOptions);
-    if (state.data == null && _options.seed != null) {
-      state = _initialState = QueryState<TData, TError>.fromSeed(
-        key.parts,
-        _options.seed as TData,
-        _options.seedUpdatedAt,
-        isActive: isActive,
-        meta: meta,
-      );
+  void setSeed(TData seed, [DateTime? updatedAt]) {
+    final data = _currentState.data;
+    final dataUpdatedAt = _currentState.dataUpdatedAt;
+
+    if (data == seed && dataUpdatedAt != null) {
+      return;
     }
+
+    if (updatedAt != null &&
+        dataUpdatedAt != null &&
+        updatedAt.isBefore(dataUpdatedAt)) {
+      return;
+    }
+
+    state = _initialState = QueryState<TData, TError>(
+      status: QueryStatus.success,
+      fetchStatus: FetchStatus.idle,
+      data: seed,
+      dataUpdatedAt: updatedAt ?? clock.now(),
+      error: null,
+      errorUpdatedAt: null,
+      errorUpdateCount: 0,
+      failureCount: 0,
+      failureReason: null,
+      isActive: isActive,
+      meta: observers
+              .map((observer) => observer.options.meta)
+              .fold(null, deepMergeMap) ??
+          const {},
+    );
   }
 
-  Future<TData> fetch({bool cancelRefetch = false}) async {
+  TData setData(TData data, {DateTime? updatedAt}) {
+    state = QueryState<TData, TError>(
+      status: QueryStatus.success,
+      fetchStatus: FetchStatus.idle,
+      data: data,
+      dataUpdatedAt: updatedAt ?? clock.now(),
+      dataUpdateCount: state.dataUpdateCount + 1,
+      error: null,
+      errorUpdatedAt: state.errorUpdatedAt,
+      errorUpdateCount: state.errorUpdateCount,
+      failureCount: 0,
+      failureReason: null,
+      isInvalidated: false,
+    );
+
+    return data;
+  }
+
+  Future<TData> fetch(
+    QueryFn<TData> queryFn, {
+    GcDuration? gcDuration,
+    RetryResolver<TError>? retry,
+    Map<String, dynamic>? meta,
+    bool cancelRefetch = false,
+  }) async {
     if (state.fetchStatus == FetchStatus.fetching && _retryer != null) {
       if (cancelRefetch && state.data != null) {
         unawaited(cancel(silent: true));
@@ -134,12 +167,15 @@ class Query<TData, TError>
       queryKey: key.parts,
       client: _client,
       signal: _abortController!.signal,
-      meta: meta,
+      meta: observers
+              .map((observer) => observer.options.meta)
+              .fold(meta, deepMergeMap) ??
+          const {},
     );
 
     final retryer = _retryer = Retryer<TData, TError>(
-      () => _options.queryFn(context),
-      _options.retry ?? retryExponentialBackoff,
+      () => queryFn(context),
+      retry ?? _client.defaultQueryOptions.retry ?? retryExponentialBackoff,
       onFail: (failureCount, error) {
         state = state.copyWith(
           failureCount: failureCount,
@@ -152,7 +188,6 @@ class Query<TData, TError>
       final data = await retryer.run();
 
       state = QueryState<TData, TError>(
-        key: state.key,
         status: QueryStatus.success,
         fetchStatus: FetchStatus.idle,
         data: data,
@@ -209,7 +244,7 @@ class Query<TData, TError>
     } finally {
       _abortController = null;
       _revertState = null;
-      scheduleGc(_options.gcDuration ?? GcDuration(minutes: 5));
+      scheduleGc(gcDuration ?? observers.lastOrNull?.options.gcDuration);
     }
   }
 
@@ -248,25 +283,6 @@ class Query<TData, TError>
     };
   }
 
-  TData setData(TData data, {DateTime? updatedAt}) {
-    state = QueryState<TData, TError>(
-      key: state.key,
-      status: QueryStatus.success,
-      fetchStatus: FetchStatus.idle,
-      data: data,
-      dataUpdatedAt: updatedAt ?? clock.now(),
-      dataUpdateCount: state.dataUpdateCount + 1,
-      error: null,
-      errorUpdatedAt: state.errorUpdatedAt,
-      errorUpdateCount: state.errorUpdateCount,
-      failureCount: 0,
-      failureReason: null,
-      isInvalidated: false,
-    );
-
-    return data;
-  }
-
   @override
   void tryRemove() {
     if (!hasObservers && state.fetchStatus == FetchStatus.idle) {
@@ -275,11 +291,8 @@ class Query<TData, TError>
   }
 }
 
-/// Extension methods for matching queries against filters.
-///
-/// Aligned with TanStack Query's matchQuery utility function.
 @internal
-extension QueryMatches on Query {
+extension QueryExt on Query {
   /// Returns true if this query's key matches the given key.
   ///
   /// - [queryKey]: the key to match against (required)
@@ -296,9 +309,10 @@ extension QueryMatches on Query {
 
   /// Returns true if this query matches the given predicate [test].
   ///
-  /// - [test]: custom filter function that receives the query state and returns
-  ///   whether it should be included
-  bool matchesWhere(bool Function(QueryState state) test) {
-    return test(state);
+  /// - [test]: custom filter function that receives the query key and state,
+  ///   and returns whether it should be included
+  bool matchesWhere(
+      bool Function(List<Object?> queryKey, QueryState state) test) {
+    return test(key.parts, state);
   }
 }

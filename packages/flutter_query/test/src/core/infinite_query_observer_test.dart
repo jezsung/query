@@ -2727,12 +2727,15 @@ void main() {
     test(
         'SHOULD deep merge values'
         'WHEN provided by multiple observers', withFakeAsync((async) {
+      Map<String, dynamic>? capturedMeta;
+
       final observer1 = InfiniteQueryObserver<String, Object, int>(
         client,
         InfiniteQueryObserverOptions(
-          const ['test'],
+          const ['key'],
           (context) async {
             await Future.delayed(const Duration(seconds: 1));
+            capturedMeta = context.meta;
             return 'page-${context.pageParam}';
           },
           initialPageParam: 0,
@@ -2743,14 +2746,20 @@ void main() {
           },
         ),
       )..onMount();
-      addTearDown(observer1.onUnmount);
+      async.elapse(const Duration(seconds: 1));
+
+      expect(capturedMeta, {
+        'source': 'observer1',
+        'nested': {'a': 1, 'b': 2},
+      });
 
       final observer2 = InfiniteQueryObserver<String, Object, int>(
         client,
         InfiniteQueryObserverOptions(
-          const ['test'],
+          const ['key'],
           (context) async {
             await Future.delayed(const Duration(seconds: 1));
+            capturedMeta = context.meta;
             return 'page-${context.pageParam}';
           },
           initialPageParam: 0,
@@ -2761,14 +2770,48 @@ void main() {
           },
         ),
       )..onMount();
-      addTearDown(observer2.onUnmount);
+      async.elapse(const Duration(seconds: 1));
 
-      final query = client.cache.get(const ['test'])!;
-      expect(query.meta, {
+      expect(capturedMeta, {
         'source': 'observer1',
         'extra': 'value',
         'nested': {'a': 1, 'b': 2, 'c': 3},
       });
+
+      observer2.onUnmount();
+      async.flushMicrotasks();
+      client.fetchInfiniteQuery<String, Object, int>(
+        const ['key'],
+        (context) async {
+          await Future.delayed(const Duration(seconds: 1));
+          capturedMeta = context.meta;
+          return 'data';
+        },
+        initialPageParam: 0,
+        nextPageParamBuilder: (data) => data.pageParams.last + 1,
+      );
+      async.elapse(const Duration(seconds: 1));
+
+      expect(capturedMeta, {
+        'source': 'observer1',
+        'nested': {'a': 1, 'b': 2},
+      });
+
+      observer1.onUnmount();
+      async.flushMicrotasks();
+      client.fetchInfiniteQuery<String, Object, int>(
+        const ['key'],
+        (context) async {
+          await Future.delayed(const Duration(seconds: 1));
+          capturedMeta = context.meta;
+          return 'data';
+        },
+        initialPageParam: 0,
+        nextPageParamBuilder: (data) => data.pageParams.last + 1,
+      );
+      async.elapse(const Duration(seconds: 1));
+
+      expect(capturedMeta, {});
     }));
   });
 

@@ -15,93 +15,51 @@ void main() {
     client.clear();
   });
 
-  group('build', () {
-    test('SHOULD create and cache new query', () {
-      final query = cache.build(QueryOptions(
-        const ['key1'],
-        (context) async => 'data',
-      ));
+  group('Method: get', () {
+    test(
+        'SHOULD return null '
+        'WHEN query does not exist', () {
+      final query = cache.get(const ['key']);
 
-      expect(query, isA<Query>());
-      expect(query.key.parts, equals(const ['key1']));
-    });
-
-    test('SHOULD return same query for same key', () {
-      final query1 = cache.build(QueryOptions(
-        const ['key1'],
-        (context) async => 'data1',
-      ));
-      final query2 = cache.build(QueryOptions(
-        const ['key1'],
-        (context) async => 'data2',
-      ));
-
-      expect(query1, same(query2));
-    });
-
-    test('SHOULD create different queries for different keys', () {
-      final query1 = cache.build(QueryOptions(
-        const ['key1'],
-        (context) async => 'data1',
-      ));
-      final query2 = cache.build(QueryOptions(
-        const ['key2'],
-        (context) async => 'data2',
-      ));
-
-      expect(query1, isNot(same(query2)));
-    });
-  });
-
-  group('get', () {
-    test('SHOULD return null WHEN query does not exist', () {
-      final query = cache.get(const ['nonexistent']);
       expect(query, isNull);
     });
 
-    test('SHOULD return query WHEN it exists', () {
-      cache.build(QueryOptions(
-        const ['key1'],
-        (context) async => 'data',
-      ));
+    test(
+        'SHOULD return query '
+        'WHEN query exists', () {
+      final expectedQuery = Query<String, Object>.cached(client, const ['key']);
 
-      final query = cache.get(const ['key1']);
-      expect(query, isNotNull);
-      expect(query!.key.parts, equals(const ['key1']));
+      final returnedQuery = cache.get(const ['key']);
+
+      expect(returnedQuery, same(expectedQuery));
     });
   });
 
-  group('getAll', () {
-    test('SHOULD return empty list WHEN cache is empty', () {
+  group('Method: getAll', () {
+    test(
+        'SHOULD return empty list '
+        'WHEN there are no queries in cache', () {
       final queries = cache.getAll();
 
       expect(queries, isEmpty);
     });
 
-    test('SHOULD return all queries in cache', () {
-      cache.build(QueryOptions(
-        const ['key1'],
-        (context) async => 'data1',
-      ));
-      cache.build(QueryOptions(
-        const ['key2'],
-        (context) async => 'data2',
-      ));
-      cache.build(QueryOptions(
-        const ['key3'],
-        (context) async => 'data3',
-      ));
+    test(
+        'SHOULD return all queries in cache'
+        '', () {
+      Query<String, Object>.cached(client, const ['key', 1]);
+      Query<String, Object>.cached(client, const ['key', 2]);
+      Query<String, Object>.cached(client, const ['key', 3]);
 
       final queries = cache.getAll();
 
       expect(queries, hasLength(3));
     });
 
-    test('SHOULD return copy of the queries list', () {
-      cache.build(QueryOptions(
-        const ['key1'],
-        (context) async => 'data1',
-      ));
+    test(
+        'SHOULD return copy of list'
+        '', () {
+      Query<String, Object>.cached(client, const ['key']);
 
       final queries1 = cache.getAll();
       final queries2 = cache.getAll();
@@ -110,15 +68,11 @@ void main() {
       expect(queries1.length, equals(queries2.length));
     });
 
-    test('SHOULD return same queries in list', () {
-      cache.build(QueryOptions(
-        const ['key1'],
-        (context) async => 'data1',
-      ));
-      cache.build(QueryOptions(
-        const ['key2'],
-        (context) async => 'data2',
-      ));
+    test(
+        'SHOULD return same queries in list'
+        '', () {
+      Query<String, Object>.cached(client, const ['key', 1]);
+      Query<String, Object>.cached(client, const ['key', 2]);
 
       final queries1 = cache.getAll();
       final queries2 = cache.getAll();
@@ -130,172 +84,101 @@ void main() {
     });
   });
 
-  group('remove', () {
-    test('SHOULD remove query from cache', () {
-      final query = cache.build(QueryOptions(
-        const ['key1'],
-        (context) async => 'data',
-      ));
+  group('Method: remove', () {
+    test(
+        'SHOULD remove query'
+        '', () {
+      final query1 = Query<String, Object>.cached(client, const ['key', 1]);
+      final query2 = Query<String, Object>.cached(client, const ['key', 2]);
 
-      cache.remove(query);
+      cache.remove(query1);
 
-      expect(cache.get(const ['key1']), isNull);
+      expect(cache.get(const ['key', 1]), isNull);
+      expect(cache.get(const ['key', 2]), same(query2));
     });
 
-    // test('SHOULD dispose query WHEN removed', () {
-    //   final query = cache.build(QueryOptions(
-    //     const ['key1'],
-    //     (context) async => 'data',
-    //   ));
+    test(
+        'SHOULD NOT remove different query with same key'
+        '', () {
+      final query1 = Query<String, Object>.cached(client, const ['key']);
+      final query2 = Query<String, Object>(client, const ['key']);
 
-    //   expect(query.isClosed, false);
-
-    //   cache.remove(query);
-
-    //   expect(query.isClosed, true);
-    // });
-
-    test('SHOULD NOT remove different query with same key', () {
-      final query1 = cache.build(QueryOptions(
-        const ['key1'],
-        (context) async => 'data1',
-      ));
-
-      // Manually create a different query instance (not in cache)
-      final query2 = Query(
-        client,
-        QueryOptions(
-          const ['key1'],
-          (context) async => 'data2',
-        ),
-      );
-
-      // Try to remove query2 (which is not the one in cache)
       cache.remove(query2);
 
-      // query1 should still be in cache since it's a different instance
-      expect(cache.get(const ['key1']), same(query1));
+      expect(cache.get(const ['key']), same(query1));
     });
   });
 
-  group('removeByKey', () {
-    test('SHOULD remove query from cache', () {
-      cache.build(QueryOptions(
-        const ['key1'],
-        (context) async => 'data',
-      ));
+  group('Method: removeByKey', () {
+    test(
+        'SHOULD remove query by key'
+        '', () {
+      Query<String, Object>.cached(client, const ['key', 1]);
+      Query<String, Object>.cached(client, const ['key', 2]);
 
-      cache.removeByKey(const ['key1']);
+      cache.removeByKey(const ['key', 1]);
 
-      expect(cache.get(const ['key1']), isNull);
+      expect(cache.get(const ['key', 1]), isNull);
+      expect(cache.get(const ['key', 2]), isNotNull);
     });
-
-    // test('SHOULD dispose query WHEN removed', () {
-    //   final query = cache.build(QueryOptions(
-    //     const ['key1'],
-    //     (context) async => 'data',
-    //   ));
-
-    //   expect(query.isClosed, false);
-
-    //   cache.removeByKey(const ['key1']);
-
-    //   expect(query.isClosed, true);
-    // });
   });
 
-  group('clear', () {
-    test('SHOULD remove all queries from cache', () {
-      cache.build(QueryOptions(
-        const ['key1'],
-        (context) async => 'data1',
-      ));
-      cache.build(QueryOptions(
-        const ['key2'],
-        (context) async => 'data2',
-      ));
-      cache.build(QueryOptions(
-        const ['key3'],
-        (context) async => 'data3',
-      ));
+  group('Method: clear', () {
+    test(
+        'SHOULD remove all queries'
+        '', () {
+      Query<String, Object>.cached(client, const ['key', 1]);
+      Query<String, Object>.cached(client, const ['key', 2]);
+      Query<String, Object>.cached(client, const ['key', 3]);
 
       cache.clear();
 
+      expect(cache.get(const ['key', 1]), isNull);
+      expect(cache.get(const ['key', 2]), isNull);
+      expect(cache.get(const ['key', 3]), isNull);
       expect(cache.getAll(), isEmpty);
-      expect(cache.get(const ['key1']), isNull);
-      expect(cache.get(const ['key2']), isNull);
-      expect(cache.get(const ['key3']), isNull);
     });
-
-    // test('SHOULD dispose all queries', () {
-    //   final query1 = cache.build(QueryOptions(
-    //     const ['key1'],
-    //     (context) async => 'data1',
-    //   ));
-    //   final query2 = cache.build(QueryOptions(
-    //     const ['key2'],
-    //     (context) async => 'data2',
-    //   ));
-
-    //   expect(query1.isClosed, isFalse);
-    //   expect(query2.isClosed, isFalse);
-
-    //   cache.clear();
-
-    //   expect(cache.getAll(), isEmpty);
-    //   expect(query1.isClosed, isTrue);
-    //   expect(query2.isClosed, isTrue);
-    // });
   });
 
-  group('find', () {
+  group('Method: find', () {
     setUp(() {
-      cache.build(QueryOptions(
-        const ['users'],
-        (context) async => 'users data',
-      ));
-      cache.build(QueryOptions(
-        const ['users', '1'],
-        (context) async => 'user 1 data',
-      ));
-      cache.build(QueryOptions(
-        const ['users', '2'],
-        (context) async => 'user 2 data',
-      ));
-      cache.build(QueryOptions(
-        const ['posts'],
-        (context) async => 'posts data',
-      ));
-      cache.build(QueryOptions(
-        const ['posts', '1'],
-        (context) async => 'post 1 data',
-      ));
+      Query<String, Object>.cached(client, const ['users']);
+      Query<String, Object>.cached(client, const ['users', 1]);
+      Query<String, Object>.cached(client, const ['users', 2]);
+      Query<String, Object>.cached(client, const ['posts']);
+      Query<String, Object>.cached(client, const ['posts', 2]);
     });
 
     tearDown(() {
       cache.clear();
     });
 
-    test('SHOULD find query by exact key match', () {
+    test(
+        'SHOULD find query by exact match'
+        '', () {
       final query = cache.find(
-        const ['users', '1'],
+        const ['users', 1],
         exact: true,
       );
 
       expect(query, isNotNull);
-      expect(query!.key.parts, equals(const ['users', '1']));
+      expect(query!.key.parts, equals(const ['users', 1]));
     });
 
-    test('SHOULD return null WHEN exact match not found', () {
+    test(
+        'SHOULD return null '
+        'WHEN exact match not found', () {
       final query = cache.find(
-        const ['users', '3'],
+        const ['users', 3],
         exact: true,
       );
 
       expect(query, isNull);
     });
 
-    test('SHOULD find query by prefix match', () {
+    test(
+        'SHOULD find query by prefix match'
+        'WHEN exact == false', () {
       final query = cache.find(
         const ['users'],
         exact: false,
@@ -305,7 +188,9 @@ void main() {
       expect(query!.key[0], equals('users'));
     });
 
-    test('SHOULD return null WHEN prefix match not found', () {
+    test(
+        'SHOULD return null '
+        'WHEN prefix match not found', () {
       final query = cache.find(
         const ['comments'],
         exact: false,
@@ -314,85 +199,57 @@ void main() {
       expect(query, isNull);
     });
 
-    test('SHOULD find query using predicate', () {
+    test(
+        'SHOULD find query by predicate'
+        '', () {
       final query = cache.find(
         const ['posts'],
         exact: false,
-        predicate: (q) => q.key.length == 2,
+        predicate: (key, state) => key.length == 2,
       );
 
       expect(query, isNotNull);
-      expect(query!.key[0], equals('posts'));
-      expect(query.key.length, equals(2));
+      expect(query!.key.length, equals(2));
+      expect(query.key[0], equals('posts'));
     });
 
-    test('SHOULD return null WHEN predicate matches nothing', () {
-      final query = cache.find(
-        const ['comments'],
-        exact: false,
-      );
-
-      expect(query, isNull);
-    });
-
-    test('SHOULD combine queryKey and predicate filters', () {
+    test(
+        'SHOULD return null '
+        'WHEN predicate matches nothing', () {
       final query = cache.find(
         const ['users'],
         exact: false,
-        predicate: (q) => q.key.length == 2,
-      );
-
-      expect(query, isNotNull);
-      expect(query!.key[0], equals('users'));
-      expect(query.key.length, equals(2));
-    });
-
-    test('SHOULD return null WHEN combined filters match nothing', () {
-      final query = cache.find(
-        const ['users'],
-        exact: false,
-        predicate: (q) => q.key.length == 3,
+        predicate: (key, state) => key.length == 3,
       );
 
       expect(query, isNull);
     });
   });
 
-  group('findAll', () {
+  group('Method: findAll', () {
     setUp(() {
-      cache.build(QueryOptions(
-        const ['users'],
-        (context) async => 'users data',
-      ));
-      cache.build(QueryOptions(
-        const ['users', '1'],
-        (context) async => 'user 1 data',
-      ));
-      cache.build(QueryOptions(
-        const ['users', '2'],
-        (context) async => 'user 2 data',
-      ));
-      cache.build(QueryOptions(
-        const ['posts'],
-        (context) async => 'posts data',
-      ));
-      cache.build(QueryOptions(
-        const ['posts', '1'],
-        (context) async => 'post 1 data',
-      ));
+      Query<String, Object>.cached(client, const ['users']);
+      Query<String, Object>.cached(client, const ['users', '1']);
+      Query<String, Object>.cached(client, const ['users', '2']);
+      Query<String, Object>.cached(client, const ['posts']);
+      Query<String, Object>.cached(client, const ['posts', '1']);
     });
 
     tearDown(() {
       cache.clear();
     });
 
-    test('SHOULD return all queries WHEN no filters provided', () {
+    test(
+        'SHOULD return all queries '
+        'WHEN no filters provided', () {
       final queries = cache.findAll();
 
       expect(queries, hasLength(5));
     });
 
-    test('SHOULD find all queries by exact key match', () {
+    test(
+        'SHOULD find query by exact match'
+        'WHEN exact == true', () {
       final queries = cache.findAll(
         queryKey: const ['users', '1'],
         exact: true,
@@ -402,7 +259,9 @@ void main() {
       expect(queries[0].key.parts, equals(const ['users', '1']));
     });
 
-    test('SHOULD return empty list WHEN exact match not found', () {
+    test(
+        'SHOULD return empty list '
+        'WHEN exact match not found', () {
       final queries = cache.findAll(
         queryKey: const ['users', '3'],
         exact: true,
@@ -411,7 +270,9 @@ void main() {
       expect(queries, isEmpty);
     });
 
-    test('SHOULD find all queries by prefix match', () {
+    test(
+        'SHOULD find all queries by prefix match'
+        'WHEN exact == false', () {
       final queries = cache.findAll(
         queryKey: const ['users'],
         exact: false,
@@ -423,7 +284,9 @@ void main() {
       }
     });
 
-    test('SHOULD return empty list WHEN prefix match not found', () {
+    test(
+        'SHOULD return empty list '
+        'WHEN prefix match not found', () {
       final queries = cache.findAll(
         queryKey: const ['comments'],
         exact: false,
@@ -432,9 +295,11 @@ void main() {
       expect(queries, isEmpty);
     });
 
-    test('SHOULD find all queries using predicate', () {
+    test(
+        'SHOULD find all queries by predicate'
+        'WHEN predicate != null', () {
       final queries = cache.findAll(
-        predicate: (q) => q.key.length == 2,
+        predicate: (key, state) => key.length == 2,
       );
 
       expect(queries, hasLength(3));
@@ -443,19 +308,23 @@ void main() {
       }
     });
 
-    test('SHOULD return empty list WHEN predicate matches nothing', () {
+    test(
+        'SHOULD return empty list '
+        'WHEN predicate matches nothing', () {
       final queries = cache.findAll(
-        predicate: (q) => q.key.length == 5,
+        predicate: (key, state) => key.length == 5,
       );
 
       expect(queries, isEmpty);
     });
 
-    test('SHOULD combine queryKey and predicate filters', () {
+    test(
+        'SHOULD find queries matching both queryKey and predicate'
+        'WHEN queryKey != null && predicate != null', () {
       final queries = cache.findAll(
         queryKey: const ['users'],
         exact: false,
-        predicate: (q) => q.key.length == 2,
+        predicate: (key, state) => key.length == 2,
       );
 
       expect(queries, hasLength(2));
@@ -465,11 +334,13 @@ void main() {
       }
     });
 
-    test('SHOULD return empty list WHEN combined filters match nothing', () {
+    test(
+        'SHOULD return empty list '
+        'WHEN combined filters match nothing', () {
       final queries = cache.findAll(
         queryKey: const ['users'],
         exact: false,
-        predicate: (q) => q.key.length == 5,
+        predicate: (key, state) => key.length == 5,
       );
 
       expect(queries, isEmpty);

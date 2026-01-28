@@ -19,160 +19,301 @@ void main() {
     client.clear();
   });
 
-  Query<String, Object> createQuery({
-    List<Object?> queryKey = const ['test'],
-  }) {
-    return Query<String, Object>(
-      client,
-      QueryOptions(
-        queryKey,
-        (context) async => 'data',
-      ),
-    );
-  }
-
-  group('defaultQueryOptions', () {
+  group('Constructor: new', () {
     test(
-        'SHOULD use gcDuration from defaultQueryOptions '
-        'WHEN query does not specify', withFakeAsync((async) {
-      final testClient = QueryClient(
-        defaultQueryOptions: const DefaultQueryOptions(
-          gcDuration: GcDuration(minutes: 10),
-        ),
-      );
-      addTearDown(testClient.clear);
-
-      final query = Query<String, Object>(
-        testClient,
-        QueryOptions(
-          const ['key'],
-          (context) async => 'data',
-        ),
-      );
-      testClient.cache.add(query);
-
-      async.elapse(const Duration(minutes: 5));
-
-      expect(testClient.cache.get(const ['key']), isNotNull);
-
-      async.elapse(const Duration(minutes: 5));
-
-      expect(testClient.cache.get(const ['key']), isNull);
-    }));
-
-    test(
-        'SHOULD prefer query gcDuration over defaultQueryOptions'
+        'SHOULD NOT be cached'
         '', withFakeAsync((async) {
-      final testClient = QueryClient(
-        defaultQueryOptions: const DefaultQueryOptions(
-          gcDuration: GcDuration(minutes: 10),
-        ),
-      );
-      addTearDown(testClient.clear);
+      Query<String, Object>(client, const ['key']);
 
-      final query = Query<String, Object>(
-        testClient,
-        QueryOptions(
-          const ['key'],
-          (context) async => 'data',
-          gcDuration: const GcDuration(minutes: 2),
-        ),
-      );
-      testClient.cache.add(query);
-
-      async.elapse(const Duration(minutes: 2));
-
-      expect(testClient.cache.get(const ['key']), isNull);
-    }));
-
-    test(
-        'SHOULD use retry from defaultQueryOptions '
-        'WHEN query does not specify', withFakeAsync((async) {
-      final testClient = QueryClient(
-        defaultQueryOptions: DefaultQueryOptions(
-          retry: (count, error) =>
-              count < 2 ? const Duration(milliseconds: 100) : null,
-        ),
-      );
-      addTearDown(testClient.clear);
-
-      var attempts = 0;
-
-      final query = Query<String, Object>(
-        testClient,
-        QueryOptions(
-          const ['key'],
-          (context) async {
-            attempts++;
-            throw Exception();
-          },
-        ),
-      );
-
-      query.fetch().ignore();
-
-      async.flushMicrotasks();
-      expect(attempts, 1);
-      async.elapse(const Duration(milliseconds: 100));
-      expect(attempts, 2);
-      async.elapse(const Duration(milliseconds: 100));
-      expect(attempts, 3);
-    }));
-
-    test(
-        'SHOULD prefer query retry over defaultQueryOptions'
-        '', withFakeAsync((async) {
-      final testClient = QueryClient(
-        defaultQueryOptions: DefaultQueryOptions(
-          retry: (count, error) =>
-              count < 5 ? const Duration(milliseconds: 100) : null,
-        ),
-      );
-      addTearDown(testClient.clear);
-
-      var attempts = 0;
-
-      final query = Query<String, Object>(
-        testClient,
-        QueryOptions(
-          const ['key'],
-          (context) async {
-            attempts++;
-            throw Exception();
-          },
-          retry: (_, __) => null, // No retries
-        ),
-      );
-
-      query.fetch().ignore();
-
-      async.flushMicrotasks();
-      expect(attempts, 1);
-
-      // Should NOT retry
-      async.elapse(const Duration(hours: 24));
-      expect(attempts, 1);
+      expect(client.cache.get(const ['key']), isNull);
     }));
   });
 
-  group('fetch', () {
+  group('Constructor: cached', () {
+    test(
+        'SHOULD be cached'
+        '', withFakeAsync((async) {
+      Query<String, Object>.cached(client, const ['key']);
+
+      expect(client.cache.get(const ['key']), isNotNull);
+    }));
+
+    test(
+        'SHOULD return same query for same key'
+        '', withFakeAsync((async) {
+      final query1 = Query<String, Object>.cached(client, const ['key']);
+      final query2 = Query<String, Object>.cached(client, const ['key']);
+      final query3 = Query<String, Object>.cached(client, const ['other']);
+
+      expect(query1, same(query2));
+      expect(query2, isNot(same(query3)));
+      expect(query3, isNot(same(query1)));
+    }));
+
+    test(
+        'SHOULD use client default for retry '
+        'WHEN gcDuration == null', withFakeAsync((async) {
+      client.defaultQueryOptions = DefaultQueryOptions(
+        retry: (count, error) {
+          if (count < 2) {
+            return const Duration(seconds: 1);
+          }
+          return null;
+        },
+      );
+
+      final query = Query<String, Object>.cached(client, const ['key']);
+
+      query.fetch((context) async {
+        throw Exception();
+      }).ignore();
+
+      async.flushMicrotasks();
+      expect(query.state.failureCount, 1);
+      async.elapse(const Duration(seconds: 1));
+      expect(query.state.failureCount, 2);
+      async.elapse(const Duration(seconds: 1));
+      expect(query.state.failureCount, 3);
+
+      // Should NOT have retried further
+      async.elapse(const Duration(seconds: 1));
+      expect(query.state.failureCount, 3);
+    }));
+
+    test(
+        'SHOULD use client default for gc duration '
+        'WHEN gcDuration == null', withFakeAsync((async) {
+      client.defaultQueryOptions = const DefaultQueryOptions(
+        gcDuration: GcDuration(minutes: 10),
+      );
+
+      Query<String, Object>.cached(client, const ['key']);
+
+      async.elapse(const Duration(minutes: 9, seconds: 59));
+      expect(client.cache.get(const ['key']), isNotNull);
+
+      async.elapse(const Duration(seconds: 1));
+      expect(client.cache.get(const ['key']), isNull);
+    }));
+
+    test(
+        'SHOULD take precedence over client default for gc duration '
+        'WHEN gcDuration != null', withFakeAsync((async) {
+      client.defaultQueryOptions = const DefaultQueryOptions(
+        gcDuration: GcDuration(minutes: 10),
+      );
+
+      Query<String, Object>.cached(
+        client,
+        const ['key'],
+        gcDuration: const GcDuration(minutes: 3),
+      );
+
+      async.elapse(const Duration(minutes: 2, seconds: 59));
+      expect(client.cache.get(const ['key']), isNotNull);
+
+      async.elapse(const Duration(seconds: 1));
+      expect(client.cache.get(const ['key']), isNull);
+    }));
+
+    test(
+        'SHOULD persist seed to cache '
+        'WHEN seed != null', withFakeAsync((async) {
+      Query<String, Object>.cached(
+        client,
+        const ['key'],
+        seed: 'data-seed',
+      );
+
+      final query = client.cache.get(const ['key'])!;
+      expect(query.state.data, 'data-seed');
+      expect(query.state.dataUpdatedAt, clock.now());
+      expect(query.state.dataUpdateCount, 0);
+    }));
+
+    test(
+        'SHOULD persist seed to cache with seedUpdatedAt '
+        'WHEN seedUpdatedAt != null', withFakeAsync((async) {
+      Query<String, Object>.cached(
+        client,
+        const ['key'],
+        seed: 'data-seed',
+        seedUpdatedAt: clock.minutesAgo(15),
+      );
+
+      final query = client.cache.get(const ['key'])!;
+      expect(query.state.data, 'data-seed');
+      expect(query.state.dataUpdatedAt, clock.minutesAgo(15));
+      expect(query.state.dataUpdateCount, 0);
+    }));
+
+    test(
+        'SHOULD NOT persist anything to cache '
+        'WHEN seed != null && seedUpdatedAt != null', withFakeAsync((async) {
+      Query<String, Object>.cached(
+        client,
+        const ['key'],
+        seedUpdatedAt: clock.minutesAgo(15),
+      );
+
+      final query = client.cache.get(const ['key'])!;
+      expect(query.state.data, isNull);
+      expect(query.state.dataUpdatedAt, isNull);
+      expect(query.state.dataUpdateCount, 0);
+    }));
+  });
+
+  group('Method: setSeed', () {
+    test(
+        'SHOULD start with seed data'
+        '', withFakeAsync((async) {
+      Object expectedSeed = Object();
+
+      final query1 = Query<Object, Object>(client, const ['key-1'])
+        ..setSeed(expectedSeed);
+
+      expect(query1.state.status, QueryStatus.success);
+      expect(query1.state.data, same(expectedSeed));
+      expect(query1.state.dataUpdatedAt, clock.now());
+
+      final query2 = Query<Object, Object>(client, const ['key-2'])
+        ..setSeed(expectedSeed, clock.minutesAgo(15));
+
+      expect(query2.state.status, QueryStatus.success);
+      expect(query2.state.data, same(expectedSeed));
+      expect(query2.state.dataUpdatedAt, clock.minutesAgo(15));
+    }));
+  });
+
+  group('Method: setData', () {
+    test(
+        'SHOULD set data and update state to success'
+        '', withFakeAsync((async) {
+      final expectedData = Object();
+
+      final query = Query<Object, Object>(client, const ['key']);
+
+      final returnedData = query.setData(expectedData);
+
+      expect(returnedData, same(expectedData));
+      expect(query.state.status, QueryStatus.success);
+      expect(query.state.fetchStatus, FetchStatus.idle);
+      expect(query.state.data, same(expectedData));
+      expect(query.state.dataUpdatedAt, clock.now());
+      expect(query.state.dataUpdateCount, 1);
+      expect(query.state.error, isNull);
+      expect(query.state.errorUpdatedAt, isNull);
+      expect(query.state.errorUpdateCount, 0);
+      expect(query.state.failureCount, 0);
+      expect(query.state.failureReason, isNull);
+      expect(query.state.isInvalidated, isFalse);
+      expect(query.state.isActive, isFalse);
+      expect(query.state.meta, const {});
+    }));
+
+    test(
+        'SHOULD use provided updatedAt'
+        '', withFakeAsync((async) {
+      final query = Query<String, Object>(client, const ['key']);
+
+      query.setData('data', updatedAt: clock.minutesAgo(30));
+
+      expect(query.state.dataUpdatedAt, clock.minutesAgo(30));
+    }));
+
+    test(
+        'SHOULD increment dataUpdateCount on each call'
+        '', withFakeAsync((async) {
+      final query = Query<String, Object>(client, const ['key']);
+
+      expect(query.state.dataUpdateCount, 0);
+
+      query.setData('data-1');
+      expect(query.state.dataUpdateCount, 1);
+
+      query.setData('data-2');
+      expect(query.state.dataUpdateCount, 2);
+
+      // Should increment even for same data
+      query.setData('data-2');
+      expect(query.state.dataUpdateCount, 3);
+    }));
+
+    test(
+        'SHOULD reset error state'
+        '', withFakeAsync((async) {
+      final query = Query<String, Exception>(client, const ['key']);
+
+      query.fetch((context) async {
+        throw Exception('error');
+      }).ignore();
+
+      async.flushMicrotasks();
+      expect(query.state.status, QueryStatus.error);
+      expect(query.state.error, isA<Exception>());
+      expect(query.state.errorUpdatedAt, isNotNull);
+      expect(query.state.errorUpdateCount, 1);
+
+      // Now set data
+      query.setData('data');
+      expect(query.state.status, QueryStatus.success);
+      expect(query.state.error, isNull);
+      // errorUpdatedAt and errorUpdateCount are preserved
+      expect(query.state.errorUpdatedAt, isNotNull);
+      expect(query.state.errorUpdateCount, 1);
+    }));
+
+    test(
+        'SHOULD reset failureCount and failureReason'
+        '', withFakeAsync((async) {
+      final query = Query<String, Object>(client, const ['key']);
+
+      query.fetch(
+        (context) async {
+          throw Exception();
+        },
+        retry: (count, error) {
+          if (count < 2) return const Duration(seconds: 1);
+          return null;
+        },
+      ).ignore();
+
+      async.elapse(const Duration(seconds: 2));
+      // Should have fetched once and retried 2 times
+      expect(query.state.failureCount, 3);
+      expect(query.state.failureReason, isNotNull);
+
+      query.setData('data');
+      expect(query.state.failureCount, 0);
+      expect(query.state.failureReason, isNull);
+    }));
+
+    test(
+        'SHOULD reset isInvalidated to false'
+        '', withFakeAsync((async) {
+      final query = Query<String, Object>(client, const ['key']);
+
+      query.invalidate();
+      expect(query.state.isInvalidated, isTrue);
+
+      query.setData('data');
+      expect(query.state.isInvalidated, isFalse);
+    }));
+  });
+
+  group('Method: fetch', () {
     test(
         'SHOULD succeed and return data'
         '', withFakeAsync((async) {
       Object expectedData = Object();
       Object? capturedData;
-      final query = Query<Object, Object>(
-        client,
-        QueryOptions(
-          const ['key'],
-          (context) async {
-            await Future.delayed(const Duration(seconds: 3));
-            return expectedData;
-          },
-        ),
-      );
 
-      query.fetch().then((data) => capturedData = data);
+      final query = Query<Object, Object>(client, const ['key']);
+
+      query.fetch((context) async {
+        await Future.delayed(const Duration(seconds: 1));
+        return expectedData;
+      }).then((data) => capturedData = data);
 
       expect(query.state.status, QueryStatus.pending);
       expect(query.state.fetchStatus, FetchStatus.fetching);
@@ -181,7 +322,7 @@ void main() {
       expect(query.state.dataUpdateCount, 0);
       expect(capturedData, isNull);
 
-      async.elapse(const Duration(seconds: 3));
+      async.elapse(const Duration(seconds: 1));
 
       expect(query.state.status, QueryStatus.success);
       expect(query.state.fetchStatus, FetchStatus.idle);
@@ -194,21 +335,15 @@ void main() {
     test(
         'SHOULD fail and throw error'
         '', withFakeAsync((async) {
-      Object expectedError = Exception();
+      Exception expectedError = Exception();
       Object? capturedError;
 
-      final query = Query<String, Object>(
-        client,
-        QueryOptions(
-          const ['key'],
-          (context) async {
-            await Future.delayed(const Duration(seconds: 3));
-            throw expectedError;
-          },
-        ),
-      );
+      final query = Query<String, Exception>(client, const ['key']);
 
-      query.fetch().catchError((error) {
+      query.fetch((context) async {
+        await Future.delayed(const Duration(seconds: 1));
+        throw expectedError;
+      }).catchError((error) {
         capturedError = error;
         return 'error';
       });
@@ -220,7 +355,7 @@ void main() {
       expect(query.state.errorUpdateCount, 0);
       expect(capturedError, isNull);
 
-      async.elapse(const Duration(seconds: 3));
+      async.elapse(const Duration(seconds: 1));
 
       expect(query.state.status, QueryStatus.error);
       expect(query.state.fetchStatus, FetchStatus.idle);
@@ -231,51 +366,185 @@ void main() {
     }));
 
     test(
-        'SHOULD reset isInvalidated to false on success'
+        'SHOULD reset invalidation status on success'
         '', withFakeAsync((async) {
-      final query = Query<String, Object>(
-        client,
-        QueryOptions(
-          const ['key'],
-          (context) async {
-            await Future.delayed(const Duration(seconds: 3));
-            return 'data';
-          },
-        ),
-      );
+      final query = Query<String, Object>(client, const ['key']);
+      expect(query.state.isInvalidated, isFalse);
 
       query.invalidate();
       expect(query.state.isInvalidated, isTrue);
 
-      query.fetch();
-      async.elapse(const Duration(seconds: 3));
-
+      query.fetch((context) async {
+        await Future.delayed(const Duration(seconds: 1));
+        return 'data';
+      });
+      async.elapse(const Duration(seconds: 1));
+      expect(query.state.status, QueryStatus.success);
       expect(query.state.isInvalidated, isFalse);
+    }));
+
+    test(
+        'SHOULD pass context to queryFn'
+        '', withFakeAsync((async) {
+      QueryFunctionContext? capturedContext;
+
+      final query = Query<String, Object>(client, const ['key', 123]);
+
+      query.fetch(
+        (context) async {
+          await Future.delayed(const Duration(seconds: 1));
+          capturedContext = context;
+          return 'data';
+        },
+        meta: {'key': 'value'},
+      );
+      async.elapse(const Duration(seconds: 1));
+
+      expect(capturedContext, isNotNull);
+      expect(capturedContext!.queryKey, const ['key', 123]);
+      expect(capturedContext!.client, same(client));
+      expect(capturedContext!.signal, isA<AbortSignal>());
+      expect(capturedContext!.meta, {'key': 'value'});
+    }));
+
+    test(
+        'SHOULD pass deep-merged meta through context to queryFn'
+        '', withFakeAsync((async) {
+      Map<String, dynamic>? capturedMeta;
+
+      final query = Query<String, Object>.cached(client, const ['key']);
+
+      Map<String, dynamic>? captureMeta([Map<String, dynamic>? meta]) {
+        query.fetch(
+          (context) async {
+            capturedMeta = context.meta;
+            return 'data';
+          },
+          meta: meta,
+        );
+        async.flushMicrotasks();
+        return capturedMeta;
+      }
+
+      expect(captureMeta(), <String, dynamic>{});
+
+      expect(captureMeta({'key': 'value'}), {'key': 'value'});
+
+      final observer1 = QueryObserver<String, Object>(
+        client,
+        QueryObserverOptions(
+          const ['key'],
+          (context) async {
+            capturedMeta = context.meta;
+            return 'data';
+          },
+          meta: {
+            'observer': 1,
+            'extra-1': 'value-1',
+            'nested': {
+              'extra-1': 'value-1',
+            },
+          },
+        ),
+      )..onMount();
+      async.flushMicrotasks();
+
+      expect(capturedMeta, {
+        'observer': 1,
+        'extra-1': 'value-1',
+        'nested': {
+          'extra-1': 'value-1',
+        },
+      });
+
+      final observer2 = QueryObserver<String, Object>(
+        client,
+        QueryObserverOptions(
+          const ['key'],
+          (context) async {
+            capturedMeta = context.meta;
+            return 'data';
+          },
+          meta: {
+            'observer': 2,
+            'extra-2': 'value-2',
+            'nested': {
+              'extra-2': 'value-2',
+            },
+          },
+        ),
+      )..onMount();
+      async.flushMicrotasks();
+
+      expect(capturedMeta, {
+        'observer': 2,
+        'extra-1': 'value-1',
+        'extra-2': 'value-2',
+        'nested': {
+          'extra-1': 'value-1',
+          'extra-2': 'value-2',
+        },
+      });
+
+      observer2.onUnmount();
+
+      expect(captureMeta(), {
+        'observer': 1,
+        'extra-1': 'value-1',
+        'nested': {
+          'extra-1': 'value-1',
+        },
+      });
+
+      observer1.onUnmount();
+
+      expect(captureMeta(), <String, dynamic>{});
+    }));
+
+    test(
+        'SHOULD schedule garbage collection after completion'
+        'WHEN gcDuration != null', withFakeAsync((async) {
+      final query = Query<String, Object>.cached(client, const ['key']);
+
+      query.fetch(
+        (context) async {
+          await Future.delayed(const Duration(seconds: 1));
+          return 'data';
+        },
+        gcDuration: const GcDuration(minutes: 3),
+      );
+      async.elapse(const Duration(seconds: 1));
+      // Garbage collcetion timer starts
+
+      async.elapse(const Duration(minutes: 2, seconds: 59));
+      expect(client.cache.get(const ['key']), isNotNull);
+
+      async.elapse(const Duration(seconds: 1));
+      expect(client.cache.get(const ['key']), isNull);
     }));
 
     test(
         'SHOULD increment failureCount on each failed attempt'
         '', withFakeAsync((async) {
-      final query = Query<String, Object>(
-        client,
-        QueryOptions(
-          const ['key'],
-          (context) async {
-            throw Exception();
-          },
-          retry: (count, error) =>
-              count < 2 ? const Duration(milliseconds: 100) : null,
-        ),
-      );
+      final query = Query<String, Object>(client, const ['key']);
 
-      query.fetch().ignore();
+      query.fetch(
+        (context) async {
+          throw Exception();
+        },
+        retry: (count, error) {
+          if (count < 2) {
+            return const Duration(seconds: 1);
+          }
+          return null;
+        },
+      ).ignore();
 
       async.flushMicrotasks();
       expect(query.state.failureCount, 1);
-
-      async.elapse(const Duration(milliseconds: 100));
+      async.elapse(const Duration(seconds: 1));
       expect(query.state.failureCount, 2);
-      async.elapse(const Duration(milliseconds: 100));
+      async.elapse(const Duration(seconds: 1));
       expect(query.state.failureCount, 3);
     }));
 
@@ -283,343 +552,195 @@ void main() {
         'SHOULD update failureReason on each failed attempt'
         '', withFakeAsync((async) {
       var attempts = 0;
-      final query = Query<Never, String>(
-        client,
-        QueryOptions(
-          const ['key'],
-          (context) async {
-            attempts++;
-            throw 'error-$attempts';
-          },
-          retry: (count, error) =>
-              count < 2 ? const Duration(milliseconds: 100) : null,
-        ),
-      );
+      final query = Query<Never, String>(client, const ['key']);
 
-      query.fetch().ignore();
+      query.fetch(
+        (context) async {
+          throw 'error-${++attempts}';
+        },
+        retry: (count, error) {
+          if (count < 2) {
+            return const Duration(seconds: 1);
+          }
+          return null;
+        },
+      ).ignore();
 
       async.flushMicrotasks();
       expect(query.state.failureReason, 'error-1');
-
-      async.elapse(const Duration(milliseconds: 100));
+      async.elapse(const Duration(seconds: 1));
       expect(query.state.failureReason, 'error-2');
-      async.elapse(const Duration(milliseconds: 100));
+      async.elapse(const Duration(seconds: 1));
       expect(query.state.failureReason, 'error-3');
     }));
 
     test(
         'SHOULD reset failureCount to 0 on each fetch attempt'
         '', withFakeAsync((async) {
-      var shouldFail = true;
-      final query = Query<String, Object>(
-        client,
-        QueryOptions(
-          const ['key'],
-          (context) async {
-            if (shouldFail) throw Exception();
-            return 'data';
-          },
-          retry: (count, error) =>
-              count < 1 ? const Duration(milliseconds: 100) : null,
-        ),
-      );
+      final query = Query<String, Object>(client, const ['key']);
 
-      query.fetch().ignore();
+      query.fetch(
+        (context) async {
+          throw Exception();
+        },
+        retry: (count, error) {
+          if (count < 1) {
+            return const Duration(seconds: 1);
+          }
+          return null;
+        },
+      ).ignore();
 
       async.flushMicrotasks();
-      async.elapse(const Duration(milliseconds: 100));
+      expect(query.state.failureCount, 1);
+      async.elapse(const Duration(seconds: 1));
       expect(query.state.failureCount, 2);
 
-      shouldFail = false;
-      query.fetch();
+      query.fetch((context) async {
+        throw Exception();
+      }).ignore();
 
       expect(query.state.failureCount, 0);
     }));
 
     test(
-        'SHOULD pass in correct QueryFunctionContext to queryFn'
-        '', withFakeAsync((async) {
-      QueryFunctionContext? capturedContext;
-
-      final query = Query<String, Object>(
-        client,
-        QueryOptions(
-          const ['users', 123],
-          (context) async {
-            capturedContext = context;
-            return 'data';
-          },
-        ),
-      );
-
-      query.fetch();
-
-      expect(capturedContext, isNotNull);
-      expect(capturedContext!.queryKey, const ['users', 123]);
-      expect(capturedContext!.client, same(client));
-      expect(capturedContext!.signal, isA<AbortSignal>());
-    }));
-
-    test(
-        'SHOULD retry with custom delay'
-        '', withFakeAsync((async) {
-      int attempts = 0;
-      List<DateTime> attemptedAt = [];
-      final query = Query<String, Object>(
-        client,
-        QueryOptions(
-          const ['key'],
-          (context) async {
-            attempts++;
-            attemptedAt.add(clock.now());
-            throw Exception();
-          },
-          retry: (count, error) =>
-              count < 3 ? Duration(seconds: (2 * count) + 1) : null,
-        ),
-      );
-
-      query.fetch().ignore();
-
-      async.flushMicrotasks();
-      expect(attempts, 1);
-      async.elapse(const Duration(seconds: 1));
-      expect(attempts, 2);
-      async.elapse(const Duration(seconds: 3));
-      expect(attempts, 3);
-      async.elapse(const Duration(seconds: 5));
-      expect(attempts, 4);
-
-      expect(
-        attemptedAt[1].difference(attemptedAt[0]),
-        const Duration(seconds: 1),
-      );
-      expect(
-        attemptedAt[2].difference(attemptedAt[1]),
-        const Duration(seconds: 3),
-      );
-      expect(
-        attemptedAt[3].difference(attemptedAt[2]),
-        const Duration(seconds: 5),
-      );
-    }));
-
-    test(
-        'SHOULD retry based on error type '
-        '', withFakeAsync((async) {
-      int attempts = 0;
-      final query = Query<String, Object>(
-        client,
-        QueryOptions(
-          const ['key'],
-          (context) async {
-            attempts++;
-            if (attempts < 3) {
-              throw Exception();
-            }
-            throw Error();
-          },
-          retry: (count, error) {
-            if (error is Exception) {
-              return const Duration(milliseconds: 100);
-            }
-            return null;
-          },
-        ),
-      );
-
-      query.fetch().ignore();
-
-      async.flushMicrotasks();
-      expect(attempts, 1);
-
-      async.elapse(const Duration(milliseconds: 100));
-      expect(attempts, 2);
-      async.elapse(const Duration(milliseconds: 100));
-      expect(attempts, 3);
-
-      // Third attempt throws StateError - should NOT retry
-      async.elapse(const Duration(milliseconds: 100));
-      expect(attempts, 3);
-    }));
-
-    test(
-        'SHOULD start with seed data'
-        '', withFakeAsync((async) {
-      Object expectedSeed = Object();
-      final query1 = Query<Object, Object>(
-        client,
-        QueryOptions(
-          const ['key'],
-          (context) async => Object(),
-          seed: expectedSeed,
-        ),
-      );
-
-      expect(query1.state.status, QueryStatus.success);
-      expect(query1.state.data, same(expectedSeed));
-      // Should default to current time when seedUpdatedAt is not provided
-      expect(query1.state.dataUpdatedAt, clock.now());
-
-      final query2 = Query<Object, Object>(
-        client,
-        QueryOptions(
-          const ['key'],
-          (context) async => Object(),
-          seed: expectedSeed,
-          seedUpdatedAt: clock.minutesAgo(15),
-        ),
-      );
-
-      expect(query2.state.status, QueryStatus.success);
-      expect(query2.state.data, same(expectedSeed));
-      // Should respect provided seedUpdatedAt
-      expect(query2.state.dataUpdatedAt, clock.minutesAgo(15));
-    }));
-
-    test(
         'SHOULD return same Future (deduplication) '
         'WHEN cancelRefetch == false', withFakeAsync((async) {
-      var calls = 0;
+      var fetches = 0;
+      String? capturedResult1;
+      String? capturedResult2;
 
-      final query = Query<String, Object>(
-        client,
-        QueryOptions(
-          const ['key'],
-          (context) async {
-            calls++;
-            await Future.any([
-              Future.delayed(const Duration(seconds: 1)),
-              context.signal.whenAbort,
-            ]);
-            context.signal.throwIfAborted();
-            return 'data-$calls';
-          },
-        ),
-      );
+      final query = Query<String, Object>(client, const ['key']);
 
-      // Establish initial data so cancelRefetch can work
-      query.fetch();
-      async.elapse(const Duration(seconds: 1));
-      expect(calls, 1);
-      expect(query.state.data, 'data-1');
+      Future<String> queryFn(QueryFunctionContext context) async {
+        Future.delayed(const Duration(seconds: 1));
+        fetches++;
+        return 'data-$fetches';
+      }
 
-      String? result1;
-      String? result2;
-
-      query.fetch().then((d) => result1 = d);
-      query.fetch(cancelRefetch: false).then((d) => result2 = d);
+      query.fetch(queryFn).then((data) => capturedResult1 = data);
+      query
+          .fetch(queryFn, cancelRefetch: false)
+          .then((data) => capturedResult2 = data);
       async.elapse(const Duration(seconds: 1));
 
-      // Only ONE additional call (deduplication - same fetch shared)
-      expect(calls, 2);
-      expect(result1, 'data-2');
-      expect(result2, 'data-2');
+      expect(fetches, 1);
+      expect(capturedResult1, 'data-1');
+      expect(capturedResult2, 'data-1');
     }));
 
     test(
-        'SHOULD piggyback cancelled fetch Future onto new fetch result '
+        'SHOULD piggyback cancelled fetch onto new fetch result '
         'WHEN cancelRefetch == true', withFakeAsync((async) {
-      var calls = 0;
+      var fetches = 0;
+      String? capturedResult1;
+      String? capturedResult2;
 
-      final query = Query<String, Object>(
-        client,
-        QueryOptions(
-          const ['key'],
-          (context) async {
-            calls++;
-            await Future.any([
-              Future.delayed(const Duration(seconds: 1)),
-              context.signal.whenAbort,
-            ]);
-            context.signal.throwIfAborted();
-            return 'data-$calls';
-          },
-        ),
-      );
+      final query = Query<String, Object>(client, const ['key']);
+
+      Future<String> queryFn(QueryFunctionContext context) async {
+        await Future.any([
+          Future.delayed(const Duration(seconds: 1)),
+          context.signal.whenAbort,
+        ]);
+        fetches++;
+        context.signal.throwIfAborted();
+        return 'data-$fetches';
+      }
 
       // Establish initial data so cancelRefetch can work
-      query.fetch();
+      query.fetch(queryFn);
       async.elapse(const Duration(seconds: 1));
-      expect(calls, 1);
+      expect(fetches, 1);
       expect(query.state.data, 'data-1');
 
-      String? result1;
-      String? result2;
-
-      query.fetch().then((d) => result1 = d);
-      query.fetch(cancelRefetch: true).then((d) => result2 = d);
+      query.fetch(queryFn).then((data) => capturedResult1 = data);
+      query
+          .fetch(queryFn, cancelRefetch: true)
+          .then((data) => capturedResult2 = data);
       async.elapse(const Duration(seconds: 1));
 
-      // TWO additional invocations (A was started then cancelled, B completed)
-      expect(calls, 3);
-      // Both get result from fetch B (A was cancelled, result1 piggybacked onto B)
-      expect(result1, 'data-3');
-      expect(result2, 'data-3');
+      expect(fetches, 3);
+      expect(capturedResult1, 'data-3');
+      expect(capturedResult2, 'data-3');
     }));
   });
 
-  group('cancel', () {
+  group('Method: cancel', () {
     test(
-        'SHOULD set fetchStatus to idle '
-        'WHEN cancelled', withFakeAsync((async) {
-      final query = Query<String, Object>(
-        client,
-        QueryOptions(
-          const ['key'],
-          (context) async {
-            await Future.any([
-              Future.delayed(const Duration(seconds: 1)),
-              context.signal.whenAbort,
-            ]);
-            context.signal.throwIfAborted();
-            return 'data';
-          },
-        ),
-      );
+        'SHOULD cancel in-progress fetch'
+        '', withFakeAsync((async) {
+      var isAborted = false;
 
-      query.fetch().ignore();
+      final query = Query<String, Object>(client, const ['key']);
+
+      query.fetch((context) async {
+        await Future.any([
+          Future.delayed(const Duration(seconds: 1)),
+          context.signal.whenAbort,
+        ]);
+        isAborted = context.signal.isAborted;
+        context.signal.throwIfAborted();
+        return 'data';
+      }).ignore();
 
       expect(query.state.fetchStatus, FetchStatus.fetching);
+      expect(isAborted, isFalse);
 
+      async.elapse(const Duration(milliseconds: 500));
       query.cancel();
       async.flushMicrotasks();
 
       expect(query.state.fetchStatus, FetchStatus.idle);
+      expect(isAborted, isTrue);
+    }));
+
+    test(
+        'SHOULD make fetch return prior data'
+        '', withFakeAsync((async) {
+      String? capturedData;
+
+      final query = Query<String, Object>(client, const ['key']);
+      query.setData('data');
+      query.fetch((context) async {
+        await Future.any([
+          Future.delayed(const Duration(seconds: 1)),
+          context.signal.whenAbort,
+        ]);
+        context.signal.throwIfAborted();
+        return 'data-updated';
+      }).then((data) => capturedData = data);
+      query.cancel();
+      async.flushMicrotasks();
+
+      expect(capturedData, 'data');
     }));
 
     test(
         'SHOULD revert to previous state '
         'WHEN revert == true', withFakeAsync((async) {
-      final query = Query<String, Object>(
-        client,
-        QueryOptions(
-          const ['key'],
-          (context) async {
-            await Future.any([
-              Future.delayed(const Duration(seconds: 1)),
-              context.signal.whenAbort,
-            ]);
-            context.signal.throwIfAborted();
-            throw Exception();
-          },
-          retry: (count, error) => const Duration(milliseconds: 100),
-        ),
-      );
+      final query = Query<String, Object>(client, const ['key']);
 
-      // Start fetch that will fail and retry
-      query.fetch().ignore();
-
-      // Let it fail once and start retrying
+      query.fetch(
+        (context) async {
+          await Future.any([
+            Future.delayed(const Duration(seconds: 1)),
+            context.signal.whenAbort,
+          ]);
+          context.signal.throwIfAborted();
+          throw Exception();
+        },
+        retry: (count, error) => const Duration(seconds: 1),
+      ).ignore();
       async.elapse(const Duration(seconds: 1));
+
+      expect(query.state.fetchStatus, FetchStatus.fetching);
       expect(query.state.failureCount, 1);
       expect(query.state.failureReason, isA<Exception>());
 
-      // Cancel with revert: true
       query.cancel(revert: true);
       async.flushMicrotasks();
 
-      // Should revert to initial state (before fetch started)
       expect(query.state.fetchStatus, FetchStatus.idle);
       expect(query.state.failureCount, 0);
       expect(query.state.failureReason, isNull);
@@ -628,129 +749,47 @@ void main() {
     test(
         'SHOULD preserve current state '
         'WHEN revert == false', withFakeAsync((async) {
-      final query = Query<String, Object>(
-        client,
-        QueryOptions(
-          const ['key'],
-          (context) async {
-            await Future.any([
-              Future.delayed(const Duration(seconds: 1)),
-              context.signal.whenAbort,
-            ]);
-            context.signal.throwIfAborted();
-            throw Exception();
-          },
-          retry: (count, error) => const Duration(milliseconds: 100),
-        ),
-      );
+      final query = Query<String, Object>(client, const ['key']);
 
-      // Start fetch that will fail and retry
-      query.fetch().ignore();
-
-      // Let it fail once and start retrying
+      query.fetch(
+        (context) async {
+          await Future.any([
+            Future.delayed(const Duration(seconds: 1)),
+            context.signal.whenAbort,
+          ]);
+          context.signal.throwIfAborted();
+          throw Exception();
+        },
+        retry: (count, error) => const Duration(milliseconds: 100),
+      ).ignore();
       async.elapse(const Duration(seconds: 1));
+
       expect(query.state.failureCount, 1);
       expect(query.state.failureReason, isA<Exception>());
 
-      // Cancel with revert: false
       query.cancel(revert: false);
       async.flushMicrotasks();
 
-      // Should preserve current state (keep failureCount and failureReason)
-      expect(query.state.fetchStatus, FetchStatus.idle);
       expect(query.state.failureCount, 1);
       expect(query.state.failureReason, isA<Exception>());
     }));
 
     test(
-        'SHOULD throw AbortedException from fetch '
-        'WHEN revert == true AND no prior data', withFakeAsync((async) {
-      Object? capturedFetchError;
-      Object? capturedCancelError;
-
-      final query = Query<String, Object>(
-        client,
-        QueryOptions(
-          const ['key'],
-          (context) async {
-            await Future.any([
-              Future.delayed(const Duration(seconds: 1)),
-              context.signal.whenAbort,
-            ]);
-            context.signal.throwIfAborted();
-            return 'data';
-          },
-        ),
-      );
-
-      query.fetch().catchError((e) {
-        capturedFetchError = e;
-        return 'error';
-      });
-      query.cancel(revert: true).catchError((e) {
-        capturedCancelError = e;
-      });
-      async.flushMicrotasks();
-
-      expect(capturedFetchError, isA<AbortedException>());
-      expect(capturedCancelError, isNull);
-    }));
-
-    test(
-        'SHOULD return prior data from fetch '
-        'WHEN revert == true AND has prior data', withFakeAsync((async) {
-      String? capturedData;
-
-      final query = Query<String, Object>(
-        client,
-        QueryOptions(
-          const ['key'],
-          (context) async {
-            await Future.any([
-              Future.delayed(const Duration(seconds: 1)),
-              context.signal.whenAbort,
-            ]);
-            context.signal.throwIfAborted();
-            return 'data';
-          },
-        ),
-      );
-
-      // Establish initial data
-      query.fetch();
-      async.elapse(const Duration(seconds: 1));
-      expect(query.state.data, 'data');
-
-      // Start another fetch and cancel with revert
-      query.fetch().then((data) => capturedData = data);
-      query.cancel(revert: true);
-      async.flushMicrotasks();
-
-      expect(capturedData, 'data');
-    }));
-
-    test(
-        'SHOULD NOT throw from fetch '
+        'SHOULD NOT make fetch throw '
         'WHEN silent == true', withFakeAsync((async) {
       Object? capturedFetchError;
       Object? capturedCancelError;
 
-      final query = Query<String, Object>(
-        client,
-        QueryOptions(
-          const ['key'],
-          (context) async {
-            await Future.any([
-              Future.delayed(const Duration(seconds: 1)),
-              context.signal.whenAbort,
-            ]);
-            context.signal.throwIfAborted();
-            return 'data';
-          },
-        ),
-      );
+      final query = Query<String, Object>(client, const ['key']);
 
-      query.fetch().catchError((e) {
+      query.fetch((context) async {
+        await Future.any([
+          Future.delayed(const Duration(seconds: 1)),
+          context.signal.whenAbort,
+        ]);
+        context.signal.throwIfAborted();
+        return 'data';
+      }).catchError((e) {
         capturedFetchError = e;
         return 'error';
       });
@@ -764,27 +803,21 @@ void main() {
     }));
 
     test(
-        'SHOULD throw AbortedException from fetch '
-        'WHEN silent == false AND no prior data', withFakeAsync((async) {
+        'SHOULD make fetch throw AbortedException '
+        'WHEN silent == false', withFakeAsync((async) {
       Object? capturedFetchError;
       Object? capturedCancelError;
 
-      final query = Query<String, Object>(
-        client,
-        QueryOptions(
-          const ['key'],
-          (context) async {
-            await Future.any([
-              Future.delayed(const Duration(seconds: 1)),
-              context.signal.whenAbort,
-            ]);
-            context.signal.throwIfAborted();
-            return 'data';
-          },
-        ),
-      );
+      final query = Query<String, Object>(client, const ['key']);
 
-      query.fetch().catchError((e) {
+      query.fetch((context) async {
+        await Future.any([
+          Future.delayed(const Duration(seconds: 1)),
+          context.signal.whenAbort,
+        ]);
+        context.signal.throwIfAborted();
+        return 'data';
+      }).catchError((e) {
         capturedFetchError = e;
         return 'error';
       });
@@ -798,417 +831,86 @@ void main() {
     }));
 
     test(
-        'SHOULD return prior data from fetch '
-        'WHEN silent == false AND has prior data', withFakeAsync((async) {
-      String? capturedData;
-
-      final query = Query<String, Object>(
-        client,
-        QueryOptions(
-          const ['key'],
-          (context) async {
-            await Future.any([
-              Future.delayed(const Duration(seconds: 1)),
-              context.signal.whenAbort,
-            ]);
-            context.signal.throwIfAborted();
-            return 'data';
-          },
-        ),
-      );
-
-      // Establish initial data
-      query.fetch();
-      async.elapse(const Duration(seconds: 1));
-      expect(query.state.data, 'data');
-
-      // Start another fetch and cancel
-      query.fetch().then((data) => capturedData = data);
-      query.cancel(silent: false);
-      async.flushMicrotasks();
-
-      // Should return the prior data instead of throwing
-      expect(capturedData, 'data');
-    }));
-
-    test(
         'SHOULD complete immediately '
         'WHEN there is no fetch in progress', withFakeAsync((async) {
-      var complete = false;
+      final query = Query<String, Object>(client, const ['key']);
 
-      final query = Query<String, Object>(
-        client,
-        QueryOptions(
-          const ['key'],
-          (context) async {
-            await Future.any([
-              Future.delayed(const Duration(seconds: 1)),
-              context.signal.whenAbort,
-            ]);
-            context.signal.throwIfAborted();
-            return 'data';
-          },
-        ),
-      );
+      expectLater(query.cancel(), completes);
 
-      query.cancel().then((_) => complete = true);
       async.flushMicrotasks();
-
-      expect(complete, isTrue);
     }));
 
     test(
         'SHOULD complete immediately '
         'WHEN queryFn does not check abort signal', withFakeAsync((async) {
-      var cancelCompleted = false;
+      final query = Query<String, Object>(client, const ['key']);
 
-      final query = Query<String, Object>(
-        client,
-        QueryOptions(
-          const ['key'],
-          // This queryFn does NOT check the abort signal
-          (context) async {
-            await Future.delayed(const Duration(seconds: 3));
-            return 'data';
-          },
-        ),
-      );
-
-      query.fetch().ignore();
-      query.cancel().then((_) => cancelCompleted = true);
-      async.flushMicrotasks();
+      query.fetch((context) async {
+        await Future.delayed(const Duration(seconds: 3));
+        return 'data';
+      }).ignore();
 
       // cancel() completes immediately by settling the promise,
       // even though the underlying queryFn might still be running
-      expect(cancelCompleted, isTrue);
+      expectLater(query.cancel(), completes);
+
+      async.flushMicrotasks();
     }));
 
     test(
-        'SHOULD cancel immediately '
-        'WHEN retryer is waiting for retry delay', withFakeAsync((async) {
-      var cancelCompleted = false;
+        'SHOULD complete immediately '
+        'WHEN waiting for retry delay', withFakeAsync((async) {
+      final query = Query<String, Object>(client, const ['key']);
 
-      final query = Query<String, Object>(
-        client,
-        QueryOptions(
-          const ['key'],
-          (context) async {
-            context.signal.throwIfAborted();
-            throw Exception();
-          },
-          // Long retry delay to ensure cancel interrupts it
-          retry: (count, error) => const Duration(seconds: 10),
-        ),
-      );
-
-      query.fetch().ignore();
+      query.fetch(
+        (context) async {
+          context.signal.throwIfAborted();
+          throw Exception();
+        },
+        retry: (count, error) => const Duration(seconds: 10),
+      ).ignore();
       async.flushMicrotasks();
 
-      // Query should have failed once and be waiting for retry delay
+      // Should have failed once and been waiting for retry delay
       expect(query.state.failureCount, 1);
       expect(query.state.fetchStatus, FetchStatus.fetching);
 
-      // Cancel while waiting for retry delay
-      query.cancel().then((_) => cancelCompleted = true);
+      // Should complete immediately
+      expectLater(query.cancel(), completes);
       async.flushMicrotasks();
-
-      // Cancel should complete immediately without waiting for the 10s delay
-      expect(cancelCompleted, isTrue);
       expect(query.state.fetchStatus, FetchStatus.idle);
     }));
   });
 
-  group('QueryMatches.matches', () {
+  group('Extension: QueryExt.matches', () {
     test(
         'SHOULD match exact key '
-        'WHEN exact == true AND key matches', () {
-      final query = createQuery(queryKey: const ['users', '1']);
+        'WHEN exact == true', () {
+      final query = Query<String, Object>(client, const ['users', 1]);
 
-      expect(
-        query.matches(const ['users', '1'], exact: true),
-        isTrue,
-      );
+      expect(query.matches(const ['users', 1], exact: true), isTrue);
+      expect(query.matches(const ['users'], exact: true), isFalse);
     });
 
     test(
-        'SHOULD NOT match '
-        'WHEN exact == true AND key differs', () {
-      final query = createQuery(queryKey: const ['users', '1']);
+        'SHOULD match key by prefix'
+        'WHEN exact == false', () {
+      final query = Query<String, Object>(client, const ['users', 1]);
 
-      expect(
-        query.matches(const ['users', '2'], exact: true),
-        isFalse,
-      );
+      expect(query.matches(const ['users', 1], exact: false), isTrue);
+      expect(query.matches(const ['users'], exact: false), isTrue);
+      expect(query.matches(const ['users', 1, 'posts'], exact: false), isFalse);
     });
+  });
 
-    test('SHOULD match partial key', () {
-      final query = createQuery(queryKey: const ['users', '1', 'profile']);
-
-      expect(
-        query.matches(const ['users', '1']),
-        isTrue,
-      );
-    });
-
+  group('Extension: QueryExt.matchesWhere', () {
     test(
-        'SHOULD NOT match partial key '
-        'WHEN filter is longer than key', () {
-      final query = createQuery(queryKey: const ['users']);
-
-      expect(
-        query.matches(const ['users', '1']),
-        isFalse,
-      );
-    });
-  });
-
-  group('QueryMatches.matchesWhere', () {
-    test('SHOULD match predicate', () {
-      final query = createQuery(queryKey: const ['users']);
-
-      expect(
-        query.matchesWhere((q) => q.key[0] == 'users'),
-        isTrue,
-      );
-    });
-
-    test('SHOULD NOT match predicate', () {
-      final query = createQuery(queryKey: const ['posts']);
-
-      expect(
-        query.matchesWhere((q) => q.key[0] == 'users'),
-        isFalse,
-      );
-    });
-  });
-
-  group('QueryMatches combined', () {
-    test('SHOULD require ALL filters to match (AND logic)', () {
-      final query = createQuery(queryKey: const ['users', '1']);
-
-      // All match
-      expect(
-        query.matches(const ['users']) && query.matchesWhere((q) => true),
-        isTrue,
-      );
-
-      // One doesn't match (predicate fails)
-      expect(
-        query.matches(const ['users']) && query.matchesWhere((q) => false),
-        isFalse,
-      );
-    });
-  });
-
-  group('meta', () {
-    test(
-        'SHOULD return meta from options'
+        'SHOULD match by predicate'
         '', () {
-      final expectedMeta = {'source': 'test', 'priority': 1};
-      final query = Query<String, Object>(
-        client,
-        QueryOptions(
-          const ['key'],
-          (context) async => 'data',
-          meta: expectedMeta,
-        ),
-      );
+      final query = Query<String, Object>(client, const ['users']);
 
-      expect(query.meta, expectedMeta);
-      expect(query.meta['source'], 'test');
-      expect(query.meta['priority'], 1);
-    });
-
-    test(
-        'SHOULD return empty map '
-        'WHEN meta is not provided', () {
-      final query = Query<String, Object>(
-        client,
-        QueryOptions(
-          const ['key'],
-          (context) async => 'data',
-        ),
-      );
-
-      expect(query.meta, isEmpty);
-    });
-
-    test(
-        'SHOULD pass meta to queryFn via QueryFunctionContext'
-        '', withFakeAsync((async) {
-      final expectedMeta = {'source': 'api', 'version': 2};
-      QueryFunctionContext? capturedContext;
-
-      final query = Query<String, Object>(
-        client,
-        QueryOptions(
-          const ['users', 123],
-          (context) async {
-            capturedContext = context;
-            return 'data';
-          },
-          meta: expectedMeta,
-        ),
-      );
-
-      query.fetch();
-      async.flushMicrotasks();
-
-      expect(capturedContext, isNotNull);
-      expect(capturedContext!.meta, expectedMeta);
-    }));
-
-    test(
-        'SHOULD pass empty meta to queryFn '
-        'WHEN meta is not provided', withFakeAsync((async) {
-      QueryFunctionContext? capturedContext;
-
-      final query = Query<String, Object>(
-        client,
-        QueryOptions(
-          const ['key'],
-          (context) async {
-            capturedContext = context;
-            return 'data';
-          },
-        ),
-      );
-
-      query.fetch();
-      async.flushMicrotasks();
-
-      expect(capturedContext, isNotNull);
-      expect(capturedContext!.meta, isEmpty);
-    }));
-
-    // TODO: Comment out until bug gets fixed
-    // test(
-    //     'SHOULD dynamically merge meta from multiple observers'
-    //     '', () {
-    //   final query = Query<String, Object>(
-    //     client,
-    //     QueryOptions(
-    //       const ['key'],
-    //       (context) async => 'data',
-    //       meta: {'base': 'value'},
-    //     ),
-    //   );
-    //   client.cache.add(query);
-    //   addTearDown(query.dispose);
-    //   expect(query.meta, {'base': 'value'});
-
-    //   final observer1 = QueryObserver<String, Object>(
-    //     client,
-    //     QueryObserverOptions(
-    //       const ['key'],
-    //       (context) async => 'data',
-    //       meta: {'observer': '1', 'extra-1': 'value-1'},
-    //     ),
-    //   )..onMount();
-    //   expect(query.observers.length, 1);
-    //   expect(query.meta, {
-    //     'base': 'value',
-    //     'observer': '1',
-    //     'extra-1': 'value-1',
-    //   });
-
-    //   final observer2 = QueryObserver<String, Object>(
-    //     client,
-    //     QueryObserverOptions(
-    //       const ['key'],
-    //       (context) async => 'data',
-    //       meta: {'observer': '2', 'extra-2': 'value-2'},
-    //     ),
-    //   )..onMount();
-    //   expect(query.observers.length, 2);
-    //   expect(query.meta, {
-    //     'base': 'value',
-    //     'observer': '2',
-    //     'extra-1': 'value-1',
-    //     'extra-2': 'value-2',
-    //   });
-
-    //   observer2.onUnmount();
-    //   expect(query.observers.length, 1);
-    //   expect(query.meta, {
-    //     'base': 'value',
-    //     'observer': '1',
-    //     'extra-1': 'value-1',
-    //   });
-
-    //   observer1.onUnmount();
-    //   expect(query.meta, {'base': 'value'});
-    // });
-
-    test(
-        'SHOULD deeply merge meta '
-        'WHEN options setter is called', () {
-      final query = Query<String, Object>(
-        client,
-        QueryOptions(
-          const ['key'],
-          (context) async => 'data',
-          meta: {
-            'source': 'A',
-            'nested': {'a': 1, 'b': 2}
-          },
-        ),
-      );
-
-      query.options = QueryOptions(
-        const ['key'],
-        (context) async => 'data',
-        meta: {
-          'feature': 'B',
-          'nested': {'b': 3, 'c': 4}
-        },
-      );
-
-      expect(query.meta, {
-        'source': 'A',
-        'feature': 'B',
-        'nested': {'a': 1, 'b': 3, 'c': 4},
-      });
-    });
-
-    test(
-        'SHOULD preserve existing meta '
-        'WHEN options setter has null meta', () {
-      final query = Query<String, Object>(
-        client,
-        QueryOptions(
-          const ['key'],
-          (context) async => 'data',
-          meta: {'preserved': 'value'},
-        ),
-      );
-
-      query.options = QueryOptions(
-        const ['key'],
-        (context) async => 'data',
-      );
-
-      expect(query.meta, {'preserved': 'value'});
-    });
-
-    test(
-        'SHOULD use new meta '
-        'WHEN existing meta is null', () {
-      final query = Query<String, Object>(
-        client,
-        QueryOptions(
-          const ['key'],
-          (context) async => 'data',
-        ),
-      );
-
-      query.options = QueryOptions(
-        const ['key'],
-        (context) async => 'data',
-        meta: {'new': 'value'},
-      );
-
-      expect(query.meta, {'new': 'value'});
+      expect(query.matchesWhere((key, state) => key[0] == 'users'), isTrue);
+      expect(query.matchesWhere((key, state) => key[0] == 'posts'), isFalse);
     });
   });
 }

@@ -5,6 +5,7 @@ import 'default_query_options.dart';
 import 'infinite_query_function_context.dart';
 import 'infinite_query_observer_options.dart';
 import 'mutation_cache.dart';
+import 'query.dart';
 import 'query_cache.dart';
 import 'query_function_context.dart';
 import 'query_observer.dart';
@@ -32,7 +33,6 @@ class QueryClient {
     this.defaultQueryOptions = const DefaultQueryOptions(),
     this.defaultMutationOptions = const DefaultMutationOptions(),
   }) {
-    _cache.client = this;
     _mutationCache.client = this;
   }
 
@@ -97,43 +97,22 @@ class QueryClient {
     TData? seed,
     DateTime? seedUpdatedAt,
   }) async {
-    // Create base query options (cache-level)
-    final options = QueryOptions<TData, TError>(
+    final query = Query<TData, TError>.cached(
+      this,
       queryKey,
-      queryFn,
-      retry: retry,
       gcDuration: gcDuration,
       seed: seed,
       seedUpdatedAt: seedUpdatedAt,
     );
 
-    // Merge with client defaults
-    final mergedOptions = options.withDefaults(defaultQueryOptions);
-
-    // fetchQuery defaults to no retry if not specified
-    final effectiveOptions = QueryOptions<TData, TError>(
-      mergedOptions.queryKey.parts,
-      mergedOptions.queryFn,
-      retry: mergedOptions.retry ?? (_, __) => null,
-      gcDuration: mergedOptions.gcDuration,
-      seed: mergedOptions.seed,
-      seedUpdatedAt: mergedOptions.seedUpdatedAt,
-    );
-
-    final query = _cache.build<TData, TError>(effectiveOptions);
-
-    // Use staleDuration for staleness check (observer-level concept, but used here imperatively)
-    final staleDurationValue =
-        staleDuration ?? defaultQueryOptions.staleDuration;
-
-    // Check if data is stale
-    if (query.shouldFetch(staleDurationValue)) {
-      // Pass options to fetch so query updates its stored options
-      // This matches TanStack Query's behavior where fetch(options) calls setOptions
-      return query.fetch();
+    if (query.shouldFetch(staleDuration ?? defaultQueryOptions.staleDuration)) {
+      return query.fetch(
+        queryFn,
+        gcDuration: gcDuration,
+        retry: retry ?? defaultQueryOptions.retry ?? retryNever,
+      );
     }
 
-    // Data is fresh, return cached data
     return query.state.data as TData;
   }
 
@@ -216,27 +195,16 @@ class QueryClient {
     TData? Function(TData? previousData) updater, {
     DateTime? updatedAt,
   }) {
-    final query = _cache.get<TData, TError>(queryKey);
-    final previousData = query?.state.data;
+    final query = Query<TData, TError>.cached(this, queryKey);
+
+    final previousData = query.state.data;
     final data = updater(previousData);
 
     if (data == null) {
       return null;
     }
 
-    if (query != null) {
-      return query.setData(data, updatedAt: updatedAt);
-    }
-
-    return _cache
-        .build<TData, TError>(QueryOptions<TData, TError>(
-          queryKey,
-          (_) => throw UnsupportedError(
-            'Query was created via setQueryData and has no queryFn. '
-            'Use fetchQuery or useQuery with a queryFn to fetch data.',
-          ),
-        )..withDefaults(defaultQueryOptions))
-        .setData(data, updatedAt: updatedAt);
+    return query.setData(data, updatedAt: updatedAt);
   }
 
   /// Marks matching queries as stale.
@@ -262,7 +230,7 @@ class QueryClient {
   void invalidateQueries({
     List<Object?>? queryKey,
     bool exact = false,
-    bool Function(QueryState)? predicate,
+    bool Function(List<Object?> queryKey, QueryState state)? predicate,
   }) {
     final queries = _cache.findAll(
       queryKey: queryKey,
@@ -299,7 +267,7 @@ class QueryClient {
   Future<void> refetchQueries({
     List<Object?>? queryKey,
     bool exact = false,
-    bool Function(QueryState)? predicate,
+    bool Function(List<Object?> queryKey, QueryState state)? predicate,
   }) async {
     final queries = _cache
         .findAll(
@@ -308,12 +276,20 @@ class QueryClient {
           predicate: predicate,
         )
         .where((q) =>
-            q.state.hasFetched &&
-            q.observers.every(
-                (ob) => ob.options.staleDuration != StaleDuration.static) &&
+            q.isActive &&
+            !q.isStatic &&
             q.state.fetchStatus != FetchStatus.paused);
 
-    await Future.wait(queries.map((q) => q.fetch().suppress()));
+    await Future.wait(queries.map((q) {
+      final observer = q.observers.first;
+      return q
+          .fetch(
+            observer.options.queryFn,
+            retry: observer.options.retry,
+            meta: observer.options.meta,
+          )
+          .suppress();
+    }));
   }
 
   /// Fetches an infinite query, returning cached data if fresh or new data if stale.
@@ -418,45 +394,23 @@ class QueryClient {
       return result;
     }
 
-    // Create options with wrapped queryFn
-    final options = QueryOptions<InfiniteData<TData, TPageParam>, TError>(
+    final query = Query<InfiniteData<TData, TPageParam>, TError>.cached(
+      this,
       queryKey,
-      wrappedQueryFn,
-      retry: retry,
-      gcDuration: gcDuration,
+      gcDuration: gcDuration ?? defaultQueryOptions.gcDuration,
       seed: seed,
       seedUpdatedAt: seedUpdatedAt,
-      meta: meta,
     );
 
-    // Merge with client defaults
-    final mergedOptions = options.withDefaults(defaultQueryOptions);
-
-    // fetchInfiniteQuery defaults to no retry if not specified
-    final effectiveOptions =
-        QueryOptions<InfiniteData<TData, TPageParam>, TError>(
-      mergedOptions.queryKey.parts,
-      mergedOptions.queryFn,
-      retry: mergedOptions.retry ?? (_, __) => null,
-      gcDuration: mergedOptions.gcDuration,
-      seed: mergedOptions.seed,
-      seedUpdatedAt: mergedOptions.seedUpdatedAt,
-      meta: mergedOptions.meta,
-    );
-
-    final query =
-        _cache.build<InfiniteData<TData, TPageParam>, TError>(effectiveOptions);
-
-    // Use staleDuration for staleness check
-    final staleDurationValue =
-        staleDuration ?? defaultQueryOptions.staleDuration;
-
-    // Check if data is stale
-    if (query.shouldFetch(staleDurationValue)) {
-      return query.fetch();
+    if (query.shouldFetch(staleDuration ?? defaultQueryOptions.staleDuration)) {
+      return query.fetch(
+        wrappedQueryFn,
+        gcDuration: gcDuration ?? defaultQueryOptions.gcDuration,
+        retry: retry ?? defaultQueryOptions.retry ?? retryNever,
+        meta: meta,
+      );
     }
 
-    // Data is fresh, return cached data
     return query.state.data!;
   }
 
@@ -544,7 +498,7 @@ class QueryClient {
   void removeQueries({
     List<Object?>? queryKey,
     bool exact = false,
-    bool Function(QueryState)? predicate,
+    bool Function(List<Object?> queryKey, QueryState state)? predicate,
   }) {
     final queries = _cache.findAll(
       queryKey: queryKey,
@@ -584,7 +538,7 @@ class QueryClient {
   Future<void> resetQueries({
     List<Object?>? queryKey,
     bool exact = false,
-    bool Function(QueryState)? predicate,
+    bool Function(List<Object?> queryKey, QueryState state)? predicate,
   }) async {
     final queries = _cache.findAll(
       queryKey: queryKey,
@@ -597,7 +551,7 @@ class QueryClient {
       query.reset();
     }
 
-    // Refetch only active, non-static, and non-paused queries
+    // Refetch only active, non-static, non-paused queries that have observers
     final queriesToRefetch = queries.where(
       (q) =>
           q.isActive &&
@@ -605,7 +559,16 @@ class QueryClient {
           q.state.fetchStatus != FetchStatus.paused,
     );
 
-    await Future.wait(queriesToRefetch.map((q) => q.fetch().suppress()));
+    await Future.wait(queriesToRefetch.map((q) {
+      final observer = q.observers.first;
+      return q
+          .fetch(
+            observer.options.queryFn,
+            retry: observer.options.retry,
+            meta: observer.options.meta,
+          )
+          .suppress();
+    }));
   }
 
   /// Cancels in-progress fetches for matching queries.
@@ -634,7 +597,7 @@ class QueryClient {
   Future<void> cancelQueries({
     List<Object?>? queryKey,
     bool exact = false,
-    bool Function(QueryState)? predicate,
+    bool Function(List<Object?> queryKey, QueryState state)? predicate,
     bool revert = true,
     bool silent = false,
   }) async {

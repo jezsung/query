@@ -1,5 +1,3 @@
-import 'package:clock/clock.dart';
-
 import 'utils.dart';
 
 /// The status of a query's data.
@@ -36,7 +34,6 @@ enum FetchStatus {
 
 class QueryState<TData, TError> {
   const QueryState({
-    required this.key,
     this.status = QueryStatus.pending,
     this.fetchStatus = FetchStatus.idle,
     this.data,
@@ -52,30 +49,6 @@ class QueryState<TData, TError> {
     this.meta = const {},
   });
 
-  factory QueryState.fromSeed(
-    List<Object?> key,
-    TData seed,
-    DateTime? seedUpdatedAt, {
-    bool isActive = false,
-    Map<String, dynamic> meta = const {},
-  }) {
-    return QueryState<TData, TError>(
-      key: key,
-      status: QueryStatus.success,
-      fetchStatus: FetchStatus.idle,
-      data: seed,
-      dataUpdatedAt: seedUpdatedAt ?? clock.now(),
-      error: null,
-      errorUpdatedAt: null,
-      errorUpdateCount: 0,
-      failureCount: 0,
-      failureReason: null,
-      isActive: isActive,
-      meta: meta,
-    );
-  }
-
-  final List<Object?> key;
   final QueryStatus status;
   final FetchStatus fetchStatus;
   final TData? data;
@@ -96,7 +69,6 @@ class QueryState<TData, TError> {
   bool operator ==(Object other) =>
       identical(this, other) ||
       other is QueryState<TData, TError> &&
-          deepEq.equals(key, other.key) &&
           status == other.status &&
           fetchStatus == other.fetchStatus &&
           deepEq.equals(data, other.data) &&
@@ -113,7 +85,6 @@ class QueryState<TData, TError> {
 
   @override
   int get hashCode => Object.hash(
-        deepEq.hash(key),
         status,
         fetchStatus,
         deepEq.hash(data),
@@ -131,7 +102,6 @@ class QueryState<TData, TError> {
 
   @override
   String toString() => 'QueryState('
-      'key: $key, '
       'status: $status, '
       'fetchStatus: $fetchStatus, '
       'data: $data, '
@@ -149,7 +119,6 @@ class QueryState<TData, TError> {
 
 extension QueryStateExt<TData, TError> on QueryState<TData, TError> {
   QueryState<TData, TError> copyWith({
-    List<Object?>? key,
     QueryStatus? status,
     FetchStatus? fetchStatus,
     TData? data,
@@ -165,7 +134,6 @@ extension QueryStateExt<TData, TError> on QueryState<TData, TError> {
     Map<String, dynamic>? meta,
   }) {
     return QueryState<TData, TError>(
-      key: key ?? this.key,
       status: status ?? this.status,
       fetchStatus: fetchStatus ?? this.fetchStatus,
       data: data ?? this.data,
@@ -190,7 +158,6 @@ extension QueryStateExt<TData, TError> on QueryState<TData, TError> {
     bool failureReason = false,
   }) {
     return QueryState<TData, TError>(
-      key: key,
       status: status,
       fetchStatus: fetchStatus,
       data: data ? null : this.data,

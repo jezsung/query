@@ -41,6 +41,16 @@ class QueryObserver<TData, TError> with Observer<QueryState<TData, TError>> {
   QueryObserverOptions<TData, TError> get options => _options;
   QueryResult<TData, TError> get result => _result;
 
+  Future<TData> _fetch({bool cancelRefetch = false}) {
+    return _query.fetch(
+      _options.queryFn,
+      gcDuration: _options.gcDuration,
+      retry: _options.retry,
+      meta: _options.meta,
+      cancelRefetch: cancelRefetch,
+    );
+  }
+
   set options(QueryObserverOptions<TData, TError> value) {
     final oldOptions = _options;
     final newOptions = value.withDefaults(_client.defaultQueryOptions);
@@ -50,7 +60,13 @@ class QueryObserver<TData, TError> with Observer<QueryState<TData, TError>> {
     if (newOptions.queryKey != oldOptions.queryKey) {
       _query.removeObserver(this);
 
-      _query = _client.cache.build<TData, TError>(newOptions);
+      _query = Query.cached(
+        _client,
+        newOptions.queryKey.parts,
+        gcDuration: newOptions.gcDuration,
+        seed: newOptions.seed,
+        seedUpdatedAt: newOptions.seedUpdatedAt,
+      );
       _query.addObserver(this);
 
       _initialDataUpdateCount = _query.state.dataUpdateCount;
@@ -59,7 +75,7 @@ class QueryObserver<TData, TError> with Observer<QueryState<TData, TError>> {
       result = _buildResult(_options, _query.state, optimistic: true);
 
       if (_shouldFetchOnMount(newOptions, _query.state)) {
-        _query.fetch().ignore();
+        _fetch().ignore();
       }
 
       _startRefetchInterval();
@@ -114,7 +130,7 @@ class QueryObserver<TData, TError> with Observer<QueryState<TData, TError>> {
     }
 
     if (mayFetch && _shouldFetchOnMount(newOptions, _query.state)) {
-      _query.fetch().ignore();
+      _fetch().ignore();
     }
 
     if (mayStartRefetchInterval) {
@@ -132,14 +148,20 @@ class QueryObserver<TData, TError> with Observer<QueryState<TData, TError>> {
   }
 
   void onMount() {
-    _query = _client.cache.build<TData, TError>(_options);
+    _query = Query.cached(
+      _client,
+      _options.queryKey.parts,
+      gcDuration: _options.gcDuration,
+      seed: _options.seed,
+      seedUpdatedAt: _options.seedUpdatedAt,
+    );
     _query.addObserver(this);
     _initialDataUpdateCount = _query.state.dataUpdateCount;
     _initialErrorUpdateCount = _query.state.errorUpdateCount;
     _result = _buildResult(_options, _query.state, optimistic: true);
 
     if (_shouldFetchOnMount(_options, _query.state)) {
-      _query.fetch().ignore();
+      _fetch().ignore();
     }
 
     _startRefetchInterval();
@@ -147,7 +169,7 @@ class QueryObserver<TData, TError> with Observer<QueryState<TData, TError>> {
 
   void onResume() {
     if (_shouldFetchOnResume(_options, _query.state)) {
-      _query.fetch().ignore();
+      _fetch().ignore();
     }
   }
 
@@ -174,7 +196,7 @@ class QueryObserver<TData, TError> with Observer<QueryState<TData, TError>> {
     bool throwOnError = false,
   }) async {
     try {
-      await _query.fetch(cancelRefetch: cancelRefetch);
+      await _fetch(cancelRefetch: cancelRefetch);
     } catch (e) {
       if (throwOnError) rethrow;
       // Swallow error - it's captured in query state
@@ -200,7 +222,7 @@ class QueryObserver<TData, TError> with Observer<QueryState<TData, TError>> {
 
     _refetchIntervalTimer = Timer.periodic(
       interval,
-      (_) => _query.fetch().ignore(),
+      (_) => _fetch().ignore(),
     );
   }
 

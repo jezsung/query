@@ -13,9 +13,9 @@ mixin GarbageCollectable {
   Timer? _gcTimer;
 
   @protected
-  void scheduleGc(GcDuration duration) {
+  void scheduleGc([GcDuration? duration]) {
     cancelGc();
-    switch (duration) {
+    switch (duration ?? const GcDuration(minutes: 5)) {
       case final GcDurationDuration duration:
         _gcTimer = Timer(duration, tryRemove);
       case GcDurationInfinity():

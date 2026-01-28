@@ -3,14 +3,12 @@ import 'query_function_context.dart';
 import 'query_key.dart';
 import 'utils.dart';
 
-part 'query_observer_options.dart';
-
-/// Base options for configuring a query at the cache level.
+/// Options for configuring a QueryObserver.
 ///
-/// Contains core configuration that affects the Query instance itself,
-/// shared across all observers watching this query.
-class QueryOptions<TData, TError> {
-  QueryOptions(
+/// Contains all configuration that affects the QueryObserver instance,
+/// including query identity, fetch behavior, and observer-specific settings.
+class QueryObserverOptions<TData, TError> {
+  QueryObserverOptions(
     List<Object?> queryKey,
     this.queryFn, {
     this.retry,
@@ -18,6 +16,13 @@ class QueryOptions<TData, TError> {
     this.seed,
     this.seedUpdatedAt,
     this.meta,
+    this.enabled,
+    this.staleDuration,
+    this.placeholder,
+    this.refetchOnMount,
+    this.refetchOnResume,
+    this.refetchInterval,
+    this.retryOnMount,
   }) : queryKey = QueryKey(queryKey);
 
   final QueryKey queryKey;
@@ -27,18 +32,32 @@ class QueryOptions<TData, TError> {
   final TData? seed;
   final DateTime? seedUpdatedAt;
   final Map<String, dynamic>? meta;
+  final bool? enabled;
+  final StaleDuration? staleDuration;
+  final TData? placeholder;
+  final RefetchOnMount? refetchOnMount;
+  final RefetchOnResume? refetchOnResume;
+  final Duration? refetchInterval;
+  final bool? retryOnMount;
 
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      other is QueryOptions<TData, TError> &&
+      other is QueryObserverOptions<TData, TError> &&
           queryKey == other.queryKey &&
           identical(queryFn, other.queryFn) &&
           gcDuration == other.gcDuration &&
           deepEq.equals(meta, other.meta) &&
           identical(retry, other.retry) &&
           deepEq.equals(seed, other.seed) &&
-          seedUpdatedAt == other.seedUpdatedAt;
+          seedUpdatedAt == other.seedUpdatedAt &&
+          enabled == other.enabled &&
+          staleDuration == other.staleDuration &&
+          deepEq.equals(placeholder, other.placeholder) &&
+          refetchInterval == other.refetchInterval &&
+          refetchOnMount == other.refetchOnMount &&
+          refetchOnResume == other.refetchOnResume &&
+          retryOnMount == other.retryOnMount;
 
   @override
   int get hashCode => Object.hash(
@@ -49,15 +68,56 @@ class QueryOptions<TData, TError> {
         identityHashCode(retry),
         deepEq.hash(seed),
         seedUpdatedAt,
+        enabled,
+        staleDuration,
+        deepEq.hash(placeholder),
+        refetchInterval,
+        refetchOnMount,
+        refetchOnResume,
+        retryOnMount,
       );
 
   @override
-  String toString() => 'QueryOptions('
+  String toString() => 'QueryObserverOptions('
       'queryKey: $queryKey, '
+      'enabled: $enabled, '
+      'staleDuration: $staleDuration, '
       'gcDuration: $gcDuration, '
+      'placeholder: $placeholder, '
+      'refetchOnMount: $refetchOnMount, '
+      'refetchOnResume: $refetchOnResume, '
+      'refetchInterval: $refetchInterval, '
+      'retryOnMount: $retryOnMount, '
       'seed: $seed, '
       'seedUpdatedAt: $seedUpdatedAt, '
       'meta: $meta)';
+}
+
+extension QueryObserverOptionsExt<TData, TError>
+    on QueryObserverOptions<TData, TError> {
+  /// Merges this QueryObserverOptions with default options.
+  ///
+  /// Observer-specific options take precedence over defaults.
+  QueryObserverOptions<TData, TError> withDefaults(
+    DefaultQueryOptions defaults,
+  ) {
+    return QueryObserverOptions<TData, TError>(
+      queryKey.parts,
+      queryFn,
+      gcDuration: gcDuration ?? defaults.gcDuration,
+      meta: meta,
+      retry: retry ?? defaults.retry as RetryResolver<TError>?,
+      seed: seed,
+      seedUpdatedAt: seedUpdatedAt,
+      enabled: enabled ?? defaults.enabled,
+      staleDuration: staleDuration ?? defaults.staleDuration,
+      placeholder: placeholder,
+      refetchInterval: refetchInterval ?? defaults.refetchInterval,
+      refetchOnMount: refetchOnMount ?? defaults.refetchOnMount,
+      refetchOnResume: refetchOnResume ?? defaults.refetchOnResume,
+      retryOnMount: retryOnMount ?? defaults.retryOnMount,
+    );
+  }
 }
 
 /// Function that fetches data for a query.
@@ -334,49 +394,3 @@ typedef RetryResolver<TError> = Duration? Function(
   int retryCount,
   TError error,
 );
-
-extension QueryOptionsExt<TData, TError> on QueryOptions<TData, TError> {
-  /// Merges this QueryOptions with default options.
-  ///
-  /// Query-specific options take precedence over defaults.
-  QueryOptions<TData, TError> withDefaults(DefaultQueryOptions defaults) {
-    return QueryOptions<TData, TError>(
-      queryKey.parts,
-      queryFn,
-      gcDuration: gcDuration ?? defaults.gcDuration,
-      meta: meta,
-      retry: retry ?? defaults.retry as RetryResolver<TError>?,
-      seed: seed,
-      seedUpdatedAt: seedUpdatedAt,
-    );
-  }
-
-  QueryOptions<TData, TError> merge(QueryOptions<TData, TError> options) {
-    assert(options.queryKey == queryKey);
-
-    return QueryOptions<TData, TError>(
-      options.queryKey.parts,
-      options.queryFn,
-      gcDuration: switch ((options.gcDuration, gcDuration)) {
-        (null, null) => null,
-        (final a?, null) => a,
-        (null, final b?) => b,
-        (final a?, final b?) => a > b ? a : b,
-      },
-      meta: deepMergeMap(meta, options.meta),
-      retry: options.retry ?? retry,
-      seed: switch ((options.seed, seed)) {
-        (null, null) => null,
-        (final TData a, null) => a,
-        (null, final TData b) => b,
-        (final TData a, final TData _) => a,
-      },
-      seedUpdatedAt: switch ((options.seedUpdatedAt, seedUpdatedAt)) {
-        (null, null) => null,
-        (final a?, null) => a,
-        (null, final b?) => b,
-        (final a?, final b?) => a.isAfter(b) ? a : b,
-      },
-    );
-  }
-}

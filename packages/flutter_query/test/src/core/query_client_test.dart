@@ -1081,13 +1081,7 @@ void main() {
     test(
         'SHOULD return null '
         'WHEN query exists but has no data yet', withFakeAsync((async) {
-      cache.build<String, Object>(QueryOptions<String, Object>(
-        const ['key'],
-        (context) async {
-          await Future.delayed(const Duration(seconds: 1));
-          return 'data';
-        },
-      ));
+      Query<String, Object>.cached(client, const ['key']);
 
       expect(client.getQueryData<String>(const ['key']), isNull);
     }));
@@ -1462,24 +1456,6 @@ void main() {
       expect(capturedResults.length, 1);
       expect(capturedResults.last.data, 'data');
     }));
-
-    test(
-        'SHOULD set throwing queryFn '
-        'WHEN caching new query', withFakeAsync((async) {
-      client.defaultQueryOptions = DefaultQueryOptions(retry: (_, __) => null);
-      client.setQueryData<String, Object>(
-        const ['key'],
-        (prev) => 'data',
-      );
-
-      final query = cache.get<String, Object>(const ['key'])!;
-
-      expectLater(
-        query.fetch(),
-        throwsA(isA<Error>()),
-      );
-      async.flushMicrotasks();
-    }));
   });
 
   group('Method: invalidateQueries', () {
@@ -1567,7 +1543,7 @@ void main() {
       );
       async.elapse(const Duration(seconds: 1));
 
-      client.invalidateQueries(predicate: (s) => s.key.last == 2);
+      client.invalidateQueries(predicate: (key, state) => key.last == 2);
 
       final query1 = cache.get(const ['key', 1]);
       final query2 = cache.get(const ['key', 2]);
@@ -1785,7 +1761,7 @@ void main() {
       expect(fetches2, 1);
 
       // Refetch only queries with key ending in 2
-      client.refetchQueries(predicate: (s) => s.key.last == 2);
+      client.refetchQueries(predicate: (key, state) => key.last == 2);
 
       async.elapse(const Duration(seconds: 1));
       expect(fetches1, 1);
@@ -1991,7 +1967,8 @@ void main() {
       async.elapse(const Duration(seconds: 1));
 
       // Reset only error queries
-      client.resetQueries(predicate: (s) => s.status == QueryStatus.error);
+      client.resetQueries(
+          predicate: (key, state) => state.status == QueryStatus.error);
 
       final state1 = cache.get<String, Object>(const ['key', 1])!.state;
       final state2 = cache.get<String, Object>(const ['key', 2])!.state;
@@ -2279,7 +2256,8 @@ void main() {
 
       async.elapse(const Duration(seconds: 1));
 
-      client.removeQueries(predicate: (s) => s.status == QueryStatus.error);
+      client.removeQueries(
+          predicate: (key, state) => state.status == QueryStatus.error);
 
       expect(cache.get(const ['key', 1]), isNotNull);
       expect(cache.get(const ['key', 2]), isNull);
@@ -2452,7 +2430,7 @@ void main() {
       );
 
       // Cancel only query with key ending in 1
-      client.cancelQueries(predicate: (q) => q.key.last == 1);
+      client.cancelQueries(predicate: (key, state) => key.last == 1);
       async.flushMicrotasks();
 
       final query1 = cache.get(const ['key', 1])!;
@@ -3270,13 +3248,7 @@ void main() {
     test(
         'SHOULD return null '
         'WHEN query exists but has no data yet', withFakeAsync((async) {
-      cache.build<InfiniteData<String, int>, Object>(QueryOptions(
-        const ['key'],
-        (context) async {
-          await Future.delayed(const Duration(seconds: 1));
-          return InfiniteData(['data'], [0]);
-        },
-      ));
+      Query<InfiniteData<String, int>, Object>.cached(client, const ['key']);
 
       final data = client.getInfiniteQueryData(const ['key']);
 

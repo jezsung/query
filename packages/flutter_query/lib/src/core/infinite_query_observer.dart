@@ -217,7 +217,7 @@ class InfiniteQueryObserver<TData, TError, TPageParam> {
   }) async {
     _fetchDirection = FetchDirection.forward;
     try {
-      await _inner._query.fetch(cancelRefetch: cancelRefetch);
+      await _inner._fetch(cancelRefetch: cancelRefetch);
     } catch (e) {
       if (throwOnError) rethrow;
     } finally {
@@ -235,7 +235,7 @@ class InfiniteQueryObserver<TData, TError, TPageParam> {
   }) async {
     _fetchDirection = FetchDirection.backward;
     try {
-      await _inner._query.fetch(cancelRefetch: cancelRefetch);
+      await _inner._fetch(cancelRefetch: cancelRefetch);
     } catch (e) {
       if (throwOnError) rethrow;
     } finally {
@@ -251,7 +251,7 @@ class InfiniteQueryObserver<TData, TError, TPageParam> {
   }) async {
     _fetchDirection = null;
     try {
-      await _inner._query.fetch(cancelRefetch: cancelRefetch);
+      await _inner._fetch(cancelRefetch: cancelRefetch);
     } catch (e) {
       if (throwOnError) rethrow;
     } finally {

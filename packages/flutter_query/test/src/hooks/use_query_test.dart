@@ -485,11 +485,8 @@ void main() {
     testWidgets('SHOULD NOT refetch WHEN data is fresh on mount',
         withCleanup((tester) async {
       // Pre-populate cache with fresh data
-      final query = client.cache.build(QueryOptions<String, Object>(
-        ['key'],
-        (context) async => 'initial',
-      ));
-      await query.fetch();
+      final query = Query<String, Object>.cached(client, const ['key']);
+      await query.fetch((context) async => 'initial');
 
       final hookResult = await buildHook(
         () => useQuery<String, Object>(
@@ -1735,11 +1732,8 @@ void main() {
 
     testWidgets('SHOULD NOT show placeholder WHEN query already has data',
         withCleanup((tester) async {
-      final query = client.cache.build(QueryOptions<String, Object>(
-        const ['key'],
-        (context) async => 'data-cached',
-      ));
-      await query.fetch();
+      final query = Query<String, Object>.cached(client, const ['key']);
+      await query.fetch((context) async => 'data-cached');
 
       final hookResult = await buildHook(
         () => useQuery<String, Object>(

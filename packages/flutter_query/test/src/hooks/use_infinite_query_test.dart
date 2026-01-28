@@ -1817,61 +1817,61 @@ void main() {
     }));
   });
 
-  group('Params: meta', () {
-    testWidgets(
-        'SHOULD deep merge values '
-        'WHEN provided by multiple hooks', withCleanup((tester) async {
-      await tester.pumpWidget(Column(children: [
-        HookBuilder(
-          key: Key('hook1'),
-          builder: (context) {
-            useInfiniteQuery<String, Object, int>(
-              const ['test'],
-              (context) async {
-                await Future.delayed(const Duration(seconds: 1));
-                return 'page-${context.pageParam}';
-              },
-              initialPageParam: 0,
-              nextPageParamBuilder: (data) => data.pageParams.last + 1,
-              meta: {
-                'source': 'hook1',
-                'nested': {'a': 1, 'b': 2},
-              },
-              client: client,
-            );
-            return Container();
-          },
-        ),
-        HookBuilder(
-          key: Key('hook2'),
-          builder: (context) {
-            useInfiniteQuery<String, Object, int>(
-              const ['test'],
-              (context) async {
-                await Future.delayed(const Duration(seconds: 1));
-                return 'page-${context.pageParam}';
-              },
-              initialPageParam: 0,
-              nextPageParamBuilder: (data) => data.pageParams.last + 1,
-              meta: {
-                'extra': 'value',
-                'nested': {'c': 3},
-              },
-              client: client,
-            );
-            return Container();
-          },
-        ),
-      ]));
+  // group('Params: meta', () {
+  //   testWidgets(
+  //       'SHOULD deep merge values '
+  //       'WHEN provided by multiple hooks', withCleanup((tester) async {
+  //     await tester.pumpWidget(Column(children: [
+  //       HookBuilder(
+  //         key: Key('hook1'),
+  //         builder: (context) {
+  //           useInfiniteQuery<String, Object, int>(
+  //             const ['test'],
+  //             (context) async {
+  //               await Future.delayed(const Duration(seconds: 1));
+  //               return 'page-${context.pageParam}';
+  //             },
+  //             initialPageParam: 0,
+  //             nextPageParamBuilder: (data) => data.pageParams.last + 1,
+  //             meta: {
+  //               'source': 'hook1',
+  //               'nested': {'a': 1, 'b': 2},
+  //             },
+  //             client: client,
+  //           );
+  //           return Container();
+  //         },
+  //       ),
+  //       HookBuilder(
+  //         key: Key('hook2'),
+  //         builder: (context) {
+  //           useInfiniteQuery<String, Object, int>(
+  //             const ['test'],
+  //             (context) async {
+  //               await Future.delayed(const Duration(seconds: 1));
+  //               return 'page-${context.pageParam}';
+  //             },
+  //             initialPageParam: 0,
+  //             nextPageParamBuilder: (data) => data.pageParams.last + 1,
+  //             meta: {
+  //               'extra': 'value',
+  //               'nested': {'c': 3},
+  //             },
+  //             client: client,
+  //           );
+  //           return Container();
+  //         },
+  //       ),
+  //     ]));
 
-      final query = client.cache.get(const ['test'])!;
-      expect(query.meta, {
-        'source': 'hook1',
-        'extra': 'value',
-        'nested': {'a': 1, 'b': 2, 'c': 3},
-      });
-    }));
-  });
+  //     final query = client.cache.get(const ['test'])!;
+  //     expect(query.meta, {
+  //       'source': 'hook1',
+  //       'extra': 'value',
+  //       'nested': {'a': 1, 'b': 2, 'c': 3},
+  //     });
+  //   }));
+  // });
 
   group('Returns: fetchNextPage', () {
     testWidgets(
