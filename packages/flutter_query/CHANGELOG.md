@@ -53,7 +53,15 @@ This release contains breaking changes to improve API consistency and usability.
   await client.refetchQueries(predicate: (state) => state.isActive);
   ```
 
-- **BREAKING**: Predicate callbacks now receive immutable `QueryState` and `MutationState` objects instead of `Query` and `Mutation` instances. `QueryState` now includes `key`, `isActive`, and `meta` properties. `MutationState` now includes a `key` property.
+- **BREAKING**: Predicate callbacks now receive immutable `QueryState` and `MutationState` objects instead of `Query` and `Mutation` instances, with the key passed as a separate first parameter.
+
+  ```dart
+  // Before
+  client.invalidateQueries(predicate: (query) => query.key.first == 'users');
+
+  // After
+  client.invalidateQueries(predicate: (key, state) => key.first == 'users');
+  ```
 
 - **BREAKING**: `MutationFunctionContext.meta` is now a non-nullable `Map<String, dynamic>` (defaults to an empty map when not provided in options).
 
