@@ -543,7 +543,7 @@ void main() {
             return 'success';
           },
         ),
-      );
+      )..onMount();
 
       // Initial state
       expect(
@@ -604,7 +604,7 @@ void main() {
     test(
         'SHOULD NOT trigger duplicate notifications for equal states'
         '', withFakeAsync((async) {
-      final observer = MutationObserver(client, createOptions());
+      final observer = MutationObserver(client, createOptions())..onMount();
       var calls = 0;
 
       observer.subscribe((result) => calls++);

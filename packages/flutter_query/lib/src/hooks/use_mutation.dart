@@ -83,6 +83,12 @@ MutationResult<TData, TError, TVariables, TOnMutateResult>
     [effectiveClient],
   );
 
+  // Mount observer and cleanup on unmount
+  useEffect(() {
+    observer.onMount();
+    return observer.onUnmount;
+  }, [observer]);
+
   // Update options during render
   observer.options =
       MutationOptions<TData, TError, TVariables, TOnMutateResult>(
@@ -106,11 +112,6 @@ MutationResult<TData, TError, TVariables, TOnMutateResult>
       result.value = newResult;
     });
     return unsubscribe;
-  }, [observer]);
-
-  // Cleanup on unmount
-  useEffect(() {
-    return observer.onUnmount;
   }, [observer]);
 
   return result.value;

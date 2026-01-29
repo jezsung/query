@@ -18,14 +18,11 @@ class MutationObserver<TData, TError, TVariables, TOnMutateResult>
   MutationObserver(
     this._client,
     MutationOptions<TData, TError, TVariables, TOnMutateResult> options,
-  ) {
-    this.options = options;
-    _result = _buildResult();
-  }
+  ) : _options = options.withDefaults(_client.defaultMutationOptions);
 
   final QueryClient _client;
-  late MutationOptions<TData, TError, TVariables, TOnMutateResult> _options;
-  late MutationResult<TData, TError, TVariables, TOnMutateResult> _result;
+  MutationOptions<TData, TError, TVariables, TOnMutateResult> _options;
+  MutationResult<TData, TError, TVariables, TOnMutateResult>? _result;
   Mutation<TData, TError, TVariables, TOnMutateResult>? _mutation;
 
   final Set<MutationResultListener<TData, TError, TVariables, TOnMutateResult>>
@@ -33,8 +30,16 @@ class MutationObserver<TData, TError, TVariables, TOnMutateResult>
 
   MutationOptions<TData, TError, TVariables, TOnMutateResult> get options =>
       _options;
-  MutationResult<TData, TError, TVariables, TOnMutateResult> get result =>
-      _result;
+
+  MutationResult<TData, TError, TVariables, TOnMutateResult> get result {
+    if (_result == null) {
+      throw StateError(
+        'Cannot access result before MutationObserver is mounted. '
+        'Call onMount() first.',
+      );
+    }
+    return _result!;
+  }
 
   set options(
     MutationOptions<TData, TError, TVariables, TOnMutateResult> options,
@@ -82,6 +87,10 @@ class MutationObserver<TData, TError, TVariables, TOnMutateResult>
     _mutation?.removeObserver(this);
     _mutation = null;
     result = _buildResult();
+  }
+
+  void onMount() {
+    _result = _buildResult();
   }
 
   void onUnmount() {
