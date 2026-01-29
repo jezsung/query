@@ -15,110 +15,7 @@ void main() {
     client.clear();
   });
 
-  MutationOptions<String, Object, String, void> createOptions({
-    List<Object?>? mutationKey,
-  }) {
-    return MutationOptions<String, Object, String, void>(
-      mutationFn: (variables, context) async => 'result: $variables',
-      mutationKey: mutationKey,
-    );
-  }
-
-  group('Mutation.cached', () {
-    test(
-        'SHOULD create new mutation'
-        '', () {
-      final mutation = Mutation.cached(client, createOptions());
-
-      expect(mutation, isA<Mutation>());
-    });
-
-    test(
-        'SHOULD add mutation to cache'
-        '', () {
-      final mutation = Mutation.cached(client, createOptions());
-
-      expect(cache.getAll(), contains(mutation));
-    });
-
-    test(
-        'SHOULD assign unique mutationId to each mutation'
-        '', () {
-      final mutation1 = Mutation.cached(client, createOptions());
-      final mutation2 = Mutation.cached(client, createOptions());
-      final mutation3 = Mutation.cached(client, createOptions());
-
-      expect(mutation1.mutationId, isNot(equals(mutation2.mutationId)));
-      expect(mutation2.mutationId, isNot(equals(mutation3.mutationId)));
-      expect(mutation3.mutationId, isNot(equals(mutation1.mutationId)));
-    });
-
-    test(
-        'SHOULD create different mutations for same key (no deduplication)'
-        '', () {
-      final mutation1 =
-          Mutation.cached(client, createOptions(mutationKey: const ['key']));
-      final mutation2 =
-          Mutation.cached(client, createOptions(mutationKey: const ['key']));
-
-      expect(mutation1, isNot(same(mutation2)));
-      expect(cache.getAll(), hasLength(2));
-    });
-  });
-
-  group('add', () {
-    test(
-        'SHOULD add mutation to cache'
-        '', () {
-      final mutation = Mutation.cached(client, createOptions());
-      cache.remove(mutation);
-      expect(cache.getAll(), isEmpty);
-
-      cache.add(mutation);
-
-      expect(cache.getAll(), contains(mutation));
-    });
-
-    test(
-        'SHOULD NOT add duplicate mutation instances'
-        '', () {
-      final mutation = Mutation.cached(client, createOptions());
-
-      cache.add(mutation);
-      cache.add(mutation);
-
-      expect(cache.getAll(), hasLength(1));
-    });
-  });
-
-  group('remove', () {
-    test(
-        'SHOULD remove mutation from cache'
-        '', () {
-      final mutation = Mutation.cached(client, createOptions());
-      expect(cache.getAll(), contains(mutation));
-
-      cache.remove(mutation);
-
-      expect(cache.getAll(), isEmpty);
-    });
-
-    // Note: dispose() is called but we can't easily verify it without
-    // adding an isDisposed getter. The important behavior is that remove()
-    // calls dispose() which cancels any pending GC timers.
-
-    test(
-        'SHOULD NOT throw '
-        'WHEN removing already removed mutation', () {
-      final mutation = Mutation.cached(client, createOptions());
-      cache.remove(mutation);
-
-      // Should not throw when removing already removed mutation
-      expect(() => cache.remove(mutation), returnsNormally);
-    });
-  });
-
-  group('getAll', () {
+  group('Method: getAll', () {
     test(
         'SHOULD return empty list '
         'WHEN cache is empty', () {
@@ -130,19 +27,33 @@ void main() {
     test(
         'SHOULD return all mutations in cache'
         '', () {
-      Mutation.cached(client, createOptions(mutationKey: const ['key1']));
-      Mutation.cached(client, createOptions(mutationKey: const ['key2']));
-      Mutation.cached(client, createOptions(mutationKey: const ['key3']));
+      final mutation1 = Mutation<String, Object, String, void>.cached(
+        client,
+        mutationKey: const ['key', 1],
+      );
+      final mutation2 = Mutation<String, Object, String, void>.cached(
+        client,
+        mutationKey: const ['key', 2],
+      );
+      final mutation3 = Mutation<String, Object, String, void>.cached(
+        client,
+        mutationKey: const ['key', 3],
+      );
 
       final mutations = cache.getAll();
 
       expect(mutations, hasLength(3));
+      expect(mutations, contains(mutation1));
+      expect(mutations, contains(mutation2));
+      expect(mutations, contains(mutation3));
     });
 
     test(
         'SHOULD return copy of mutations list'
         '', () {
-      Mutation.cached(client, createOptions());
+      Mutation<String, Object, String, void>.cached(client);
+      Mutation<String, Object, String, void>.cached(client);
+      Mutation<String, Object, String, void>.cached(client);
 
       final mutations1 = cache.getAll();
       final mutations2 = cache.getAll();
@@ -150,50 +61,115 @@ void main() {
       expect(mutations1, isNot(same(mutations2)));
       expect(mutations1.length, equals(mutations2.length));
 
-      var i = 0;
-      while (i < mutations1.length && i < mutations2.length) {
-        final mut1 = mutations1[i];
-        final mut2 = mutations2[i];
-        i++;
-        expect(mut1, same(mut2));
+      for (var i = 0; i < mutations1.length; i++) {
+        expect(mutations1[i], same(mutations2[i]));
       }
     });
   });
 
-  group('clear', () {
+  group('Method: add', () {
+    test(
+        'SHOULD add mutation to cache'
+        '', () {
+      final mutation = Mutation<String, Object, String, void>(client);
+
+      expect(cache.getAll(), isEmpty);
+
+      cache.add(mutation);
+
+      expect(cache.getAll(), contains(mutation));
+    });
+
+    test(
+        'SHOULD NOT add duplicate mutations'
+        '', () {
+      final mutation = Mutation<String, Object, String, void>(client);
+
+      cache.add(mutation);
+      cache.add(mutation);
+
+      expect(cache.getAll(), hasLength(1));
+    });
+  });
+
+  group('Method: remove', () {
+    test(
+        'SHOULD remove mutation from cache'
+        '', () {
+      final mutation = Mutation<String, Object, String, void>.cached(client);
+
+      expect(cache.getAll(), contains(mutation));
+
+      cache.remove(mutation);
+
+      expect(cache.getAll(), isEmpty);
+    });
+
+    test(
+        'SHOULD NOT throw '
+        'WHEN removing already removed mutation', () {
+      final mutation = Mutation<String, Object, String, void>.cached(client);
+
+      cache.remove(mutation);
+
+      expect(
+        () => cache.remove(mutation),
+        returnsNormally,
+      );
+    });
+  });
+
+  group('Method: clear', () {
     test(
         'SHOULD remove all mutations from cache'
         '', () {
-      Mutation.cached(client, createOptions(mutationKey: const ['key1']));
-      Mutation.cached(client, createOptions(mutationKey: const ['key2']));
-      Mutation.cached(client, createOptions(mutationKey: const ['key3']));
+      Mutation<String, Object, String, void>.cached(client);
+      Mutation<String, Object, String, void>.cached(client);
+      Mutation<String, Object, String, void>.cached(client);
+
+      expect(cache.getAll(), hasLength(3));
 
       cache.clear();
 
       expect(cache.getAll(), isEmpty);
     });
-
-    // Note: dispose() is called on all mutations but we can't easily verify
-    // it without adding an isDisposed getter. The important behavior is that
-    // clear() calls dispose() on each mutation which cancels any pending GC timers.
   });
 
-  group('find', () {
+  group('Method: find', () {
     setUp(() {
-      Mutation.cached(client, createOptions(mutationKey: const ['users']));
-      Mutation.cached(client, createOptions(mutationKey: const ['users', '1']));
-      Mutation.cached(client, createOptions(mutationKey: const ['users', '2']));
-      Mutation.cached(client, createOptions(mutationKey: const ['posts']));
-      Mutation.cached(client, createOptions(mutationKey: const ['posts', '1']));
+      Mutation<String, Object, String, void>.cached(
+        client,
+        mutationKey: const ['users'],
+      );
+      Mutation<String, Object, String, void>.cached(
+        client,
+        mutationKey: const ['users', '1'],
+      );
+      Mutation<String, Object, String, void>.cached(
+        client,
+        mutationKey: const ['users', '2'],
+      );
+      Mutation<String, Object, String, void>.cached(
+        client,
+        mutationKey: const ['posts'],
+      );
+      Mutation<String, Object, String, void>.cached(
+        client,
+        mutationKey: const ['posts', '1'],
+      );
+    });
+
+    tearDown(() {
+      client.clear();
     });
 
     test(
-        'SHOULD find mutation by exact key match (default)'
+        'SHOULD find mutation by exact key match'
         '', () {
       final mutation = cache.find(mutationKey: const ['users', '1']);
 
       expect(mutation, isNotNull);
-      expect(mutation!.options.mutationKey, equals(const ['users', '1']));
+      expect(mutation!.mutationKey, equals(const ['users', '1']));
     });
 
     test(
@@ -213,7 +189,7 @@ void main() {
       );
 
       expect(mutation, isNotNull);
-      expect(mutation!.options.mutationKey![0], equals('users'));
+      expect(mutation!.mutationKey![0], equals('users'));
     });
 
     test(
@@ -224,7 +200,7 @@ void main() {
       );
 
       expect(mutation, isNotNull);
-      expect(mutation!.options.mutationKey!.length, equals(2));
+      expect(mutation!.mutationKey!.length, equals(2));
     });
 
     test(
@@ -248,8 +224,8 @@ void main() {
       );
 
       expect(mutation, isNotNull);
-      expect(mutation!.options.mutationKey![0], equals('users'));
-      expect(mutation.options.mutationKey!.length, equals(2));
+      expect(mutation!.mutationKey![0], equals('users'));
+      expect(mutation.mutationKey!.length, equals(2));
     });
 
     test(
@@ -263,13 +239,32 @@ void main() {
     });
   });
 
-  group('findAll', () {
+  group('Method: findAll', () {
     setUp(() {
-      Mutation.cached(client, createOptions(mutationKey: const ['users']));
-      Mutation.cached(client, createOptions(mutationKey: const ['users', '1']));
-      Mutation.cached(client, createOptions(mutationKey: const ['users', '2']));
-      Mutation.cached(client, createOptions(mutationKey: const ['posts']));
-      Mutation.cached(client, createOptions(mutationKey: const ['posts', '1']));
+      Mutation<String, Object, String, void>.cached(
+        client,
+        mutationKey: const ['users'],
+      );
+      Mutation<String, Object, String, void>.cached(
+        client,
+        mutationKey: const ['users', '1'],
+      );
+      Mutation<String, Object, String, void>.cached(
+        client,
+        mutationKey: const ['users', '2'],
+      );
+      Mutation<String, Object, String, void>.cached(
+        client,
+        mutationKey: const ['posts'],
+      );
+      Mutation<String, Object, String, void>.cached(
+        client,
+        mutationKey: const ['posts', '1'],
+      );
+    });
+
+    tearDown(() {
+      client.clear();
     });
 
     test(
@@ -289,7 +284,7 @@ void main() {
       );
 
       expect(mutations, hasLength(1));
-      expect(mutations[0].options.mutationKey, equals(const ['users', '1']));
+      expect(mutations[0].mutationKey, equals(const ['users', '1']));
     });
 
     test(
@@ -313,7 +308,7 @@ void main() {
 
       expect(mutations, hasLength(3));
       for (final mutation in mutations) {
-        expect(mutation.options.mutationKey![0], equals('users'));
+        expect(mutation.mutationKey![0], equals('users'));
       }
     });
 
@@ -337,7 +332,7 @@ void main() {
 
       expect(mutations, hasLength(3));
       for (final mutation in mutations) {
-        expect(mutation.options.mutationKey!.length, equals(2));
+        expect(mutation.mutationKey!.length, equals(2));
       }
     });
 
@@ -374,8 +369,8 @@ void main() {
 
       expect(mutations, hasLength(2));
       for (final mutation in mutations) {
-        expect(mutation.options.mutationKey![0], equals('users'));
-        expect(mutation.options.mutationKey!.length, equals(2));
+        expect(mutation.mutationKey![0], equals('users'));
+        expect(mutation.mutationKey!.length, equals(2));
         expect(mutation.state.status, equals(MutationStatus.idle));
       }
     });

@@ -40,7 +40,6 @@ class MutationObserver<TData, TError, TVariables, TOnMutateResult>
     MutationOptions<TData, TError, TVariables, TOnMutateResult> options,
   ) {
     _options = options.withDefaults(_client.defaultMutationOptions);
-    _mutation?.options = _options;
   }
 
   set result(
@@ -59,10 +58,23 @@ class MutationObserver<TData, TError, TVariables, TOnMutateResult>
   Future<TData> mutate(TVariables variables) async {
     _mutation?.removeObserver(this);
 
-    final mutation = _mutation = Mutation.cached(_client, _options);
+    final mutation = _mutation = Mutation.cached(
+      _client,
+      mutationKey: _options.mutationKey,
+      gcDuration: _options.gcDuration,
+    );
     mutation.addObserver(this);
 
-    return mutation.execute(variables);
+    return mutation.execute(
+      variables,
+      _options.mutationFn,
+      onMutate: _options.onMutate,
+      onSuccess: _options.onSuccess,
+      onError: _options.onError,
+      onSettled: _options.onSettled,
+      retry: _options.retry,
+      meta: _options.meta,
+    );
   }
 
   /// Resets the mutation to its initial idle state.

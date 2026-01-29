@@ -11,16 +11,23 @@ import 'query_options.dart';
 @internal
 mixin GarbageCollectable {
   Timer? _gcTimer;
+  GcDuration? _lastGcDuration;
 
   @protected
   void scheduleGc([GcDuration? duration]) {
     cancelGc();
+    _lastGcDuration = duration;
     switch (duration ?? const GcDuration(minutes: 5)) {
       case final GcDurationDuration duration:
         _gcTimer = Timer(duration, tryRemove);
       case GcDurationInfinity():
         return;
     }
+  }
+
+  @protected
+  void rescheduleGc() {
+    scheduleGc(_lastGcDuration);
   }
 
   @protected

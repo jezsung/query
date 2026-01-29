@@ -8,70 +8,57 @@ import '../../utils.dart';
 void main() {
   late QueryClient client;
   late MutationCache cache;
-  var mutationIdCounter = 0;
 
   setUp(() {
     client = QueryClient();
     cache = client.mutationCache;
-    mutationIdCounter = 0;
   });
 
   tearDown(() {
     client.clear();
   });
 
-  MutationOptions<String, Object, String, String> createOptions({
-    Future<String> Function(String, MutationFunctionContext)? mutationFn,
-    List<Object?>? mutationKey,
-    Map<String, dynamic>? meta,
-    FutureOr<String?> Function(String, MutationFunctionContext)? onMutate,
-    FutureOr<void> Function(String, String, String?, MutationFunctionContext)?
-        onSuccess,
-    FutureOr<void> Function(Object, String, String?, MutationFunctionContext)?
-        onError,
-    FutureOr<void> Function(
-            String?, Object?, String, String?, MutationFunctionContext)?
-        onSettled,
-    Duration? Function(int, Object)? retry,
-    GcDuration? gcDuration,
-  }) {
-    return MutationOptions<String, Object, String, String>(
-      mutationFn:
-          mutationFn ?? (variables, context) async => 'result: $variables',
-      mutationKey: mutationKey,
-      meta: meta,
-      onMutate: onMutate,
-      onSuccess: onSuccess,
-      onError: onError,
-      onSettled: onSettled,
-      retry: retry,
-      gcDuration: gcDuration,
-    );
-  }
+  group('Constructor: cached', () {
+    test(
+        'SHOULD cache mutation'
+        '', () {
+      final mutation = Mutation<String, Object, String, void>.cached(client);
 
-  Mutation<String, Object, String, String> createMutation({
-    MutationOptions<String, Object, String, String>? options,
-  }) {
-    final mutation = Mutation<String, Object, String, String>(
-      client,
-      options ?? createOptions(),
-      mutationIdCounter++,
-    );
-    cache.add(mutation);
-    addTearDown(mutation.dispose);
-    return mutation;
-  }
+      expect(cache.getAll(), contains(mutation));
+    });
 
-  group('Initialization', () {
+    test(
+        'SHOULD assign unique mutationId to each mutation'
+        '', () {
+      final mutation1 = Mutation<String, Object, String, void>.cached(client);
+      final mutation2 = Mutation<String, Object, String, void>.cached(client);
+      final mutation3 = Mutation<String, Object, String, void>.cached(client);
+
+      expect(mutation1.mutationId, isNot(equals(mutation2.mutationId)));
+      expect(mutation2.mutationId, isNot(equals(mutation3.mutationId)));
+      expect(mutation3.mutationId, isNot(equals(mutation1.mutationId)));
+    });
+
+    test(
+        'SHOULD create different mutations for same key (no deduplication)'
+        '', () {
+      final mutation1 = Mutation<String, Object, String, void>.cached(
+        client,
+        mutationKey: const ['key'],
+      );
+      final mutation2 = Mutation<String, Object, String, void>.cached(
+        client,
+        mutationKey: const ['key'],
+      );
+
+      expect(mutation1, isNot(same(mutation2)));
+      expect(cache.getAll(), hasLength(2));
+    });
+
     test(
         'SHOULD use default GC duration of 5 minutes '
-        'WHEN not specified in options', withFakeAsync((async) {
-      final mutation = Mutation.cached(
-        client,
-        MutationOptions(
-          mutationFn: (variables, context) async => 'result: $variables',
-        ),
-      );
+        'WHEN gcDuration == null', withFakeAsync((async) {
+      final mutation = Mutation<String, Object, String, String>.cached(client);
 
       async.elapse(const Duration(minutes: 4, seconds: 59));
       expect(cache.getAll(), contains(mutation));
@@ -81,14 +68,11 @@ void main() {
     }));
 
     test(
-        'SHOULD use custom GC duration '
-        'WHEN provided in options', withFakeAsync((async) {
-      final mutation = Mutation.cached(
+        'SHOULD use provided GC duration '
+        'WHEN gcDuration != null', withFakeAsync((async) {
+      final mutation = Mutation<String, Object, String, String>.cached(
         client,
-        MutationOptions(
-          mutationFn: (variables, context) async => 'result: $variables',
-          gcDuration: const GcDuration(minutes: 3),
-        ),
+        gcDuration: const GcDuration(minutes: 3),
       );
 
       async.elapse(const Duration(minutes: 2, seconds: 59));
@@ -99,712 +83,732 @@ void main() {
     }));
   });
 
-  group('mutationId', () {
+  group('Property: mutationId', () {
     test(
-        'SHOULD return same mutationId passed to constructor'
+        'SHOULD increment by 1 on every instance'
         '', () {
-      final mutation = Mutation(client, createOptions(), 42);
-      addTearDown(mutation.dispose);
+      final mutation1 = Mutation<String, Object, String, void>(client);
+      final mutation2 = Mutation<String, Object, String, void>(client);
+      final mutation3 = Mutation<String, Object, String, void>(client);
+      final mutation4 = Mutation<String, Object, String, void>(client);
+      final mutation5 = Mutation<String, Object, String, void>(client);
 
-      expect(mutation.mutationId, 42);
+      expect(mutation2.mutationId, mutation1.mutationId + 1);
+      expect(mutation3.mutationId, mutation2.mutationId + 1);
+      expect(mutation4.mutationId, mutation3.mutationId + 1);
+      expect(mutation5.mutationId, mutation4.mutationId + 1);
     });
   });
 
-  group('options', () {
+  group('Property: mutationKey', () {
     test(
-        'SHOULD return same options passed to constructor'
+        'SHOULD return same mutationKey passed to constructor'
         '', () {
-      final options = createOptions(mutationKey: const ['test']);
-      final mutation = Mutation(client, options, 42);
-
-      expect(mutation.options, equals(options));
-    });
-
-    test(
-        'SHOULD store new GC duration but NOT reschedule GC '
-        'WHEN options setter is called', withFakeAsync((async) {
-      final mutation = Mutation.cached(
+      final mutation1 = Mutation<String, Object, String, String>(
         client,
-        MutationOptions(
-          mutationFn: (variables, context) async => 'result: $variables',
-          gcDuration: const GcDuration(minutes: 10),
-        ),
+        mutationKey: const ['key', 1],
+      );
+      final mutation2 = Mutation<String, Object, String, String>.cached(
+        client,
+        mutationKey: const ['key', 2],
       );
 
-      // Update options with longer GC duration
-      mutation.options = createOptions(
-        gcDuration: const GcDuration(minutes: 15),
-      );
+      expect(mutation1.mutationKey, const ['key', 1]);
+      expect(mutation2.mutationKey, const ['key', 2]);
+    });
 
-      // Original 10 min timer is still running, mutation removed after 10 min
-      async.elapse(const Duration(minutes: 10));
-      expect(cache.getAll(), isNot(contains(mutation)));
-    }));
+    test(
+        'SHOULD return null '
+        'WHEN not passed to constructor', () {
+      final mutation1 = Mutation<String, Object, String, String>(client);
+      final mutation2 = Mutation<String, Object, String, String>.cached(client);
+
+      expect(mutation1.mutationKey, isNull);
+      expect(mutation2.mutationKey, isNull);
+    });
   });
 
-  group('execute() - Success Path', () {
+  group('Method: execute', () {
     test(
-        'SHOULD transition to pending state '
-        'WHEN execute is called', withFakeAsync((async) {
-      final mutation = createMutation(
-        options: createOptions(mutationFn: (v, c) async => 'success'),
-      );
+        'SHOULD transition state to success'
+        '', withFakeAsync((async) {
+      Object expectedData = Object();
+      Object? capturedData;
 
-      mutation.execute('');
+      final mutation = Mutation<Object, Object, String, String>.cached(client);
+
+      expect(mutation.state.status, MutationStatus.idle);
+      expect(mutation.state.data, isNull);
+      expect(mutation.state.variables, isNull);
+      expect(mutation.state.submittedAt, isNull);
+
+      mutation.execute(
+        'variables',
+        (v, c) async {
+          await Future.delayed(const Duration(seconds: 1));
+          return expectedData;
+        },
+      ).then((data) {
+        capturedData = data;
+      });
 
       expect(mutation.state.status, MutationStatus.pending);
-    }));
-
-    test(
-        'SHOULD set variables in state '
-        'WHEN execute is called', withFakeAsync((async) {
-      final mutation = createMutation();
-
-      mutation.execute('variables');
-
+      expect(mutation.state.data, isNull);
       expect(mutation.state.variables, 'variables');
-    }));
+      expect(mutation.state.submittedAt, clock.now());
 
-    test(
-        'SHOULD set submittedAt to current time '
-        'WHEN execute is called', withFakeAsync((async) {
-      final mutation = createMutation();
-      final now = clock.now();
-
-      mutation.execute('');
-
-      expect(mutation.state.submittedAt, now);
-    }));
-
-    test(
-        'SHOULD transition to success state '
-        'WHEN mutationFn succeeds', withFakeAsync((async) {
-      final mutation = createMutation(
-        options: createOptions(mutationFn: (v, c) async {
-          await Future.delayed(const Duration(seconds: 3));
-          return 'success';
-        }),
-      );
-
-      mutation.execute('');
-      async.elapse(const Duration(seconds: 3));
+      async.elapse(const Duration(seconds: 1));
 
       expect(mutation.state.status, MutationStatus.success);
-      expect(mutation.state.data, 'success');
+      expect(mutation.state.data, same(expectedData));
+      expect(mutation.state.variables, 'variables');
+      expect(mutation.state.submittedAt, clock.secondsAgo(1));
+      expect(capturedData, same(expectedData));
     }));
 
     test(
-        'SHOULD return data from execute '
-        'WHEN mutationFn succeeds', withFakeAsync((async) {
-      final mutation = createMutation(
-        options: createOptions(mutationFn: (v, c) async {
-          await Future.delayed(const Duration(seconds: 3));
-          return 'success';
-        }),
-      );
+        'SHOULD transition state to error'
+        '', withFakeAsync((async) {
+      final expectedError = Exception();
+      Object? capturedError;
 
-      String? capturedData;
-      mutation.execute('').then((data) => capturedData = data);
-      async.elapse(const Duration(seconds: 3));
+      final mutation = Mutation<String, Object, String, String>.cached(client);
 
-      expect(capturedData, 'success');
+      expect(mutation.state.status, MutationStatus.idle);
+      expect(mutation.state.error, isNull);
+      expect(mutation.state.variables, isNull);
+      expect(mutation.state.submittedAt, isNull);
+      expect(mutation.state.failureCount, 0);
+      expect(mutation.state.failureReason, isNull);
+
+      mutation.execute(
+        'variables',
+        (variables, context) async {
+          await Future.delayed(const Duration(seconds: 1));
+          throw expectedError;
+        },
+      ).catchError((error) {
+        capturedError = error;
+        return 'error';
+      });
+
+      expect(mutation.state.status, MutationStatus.pending);
+      expect(mutation.state.error, isNull);
+      expect(mutation.state.variables, 'variables');
+      expect(mutation.state.submittedAt, clock.now());
+      expect(mutation.state.failureCount, 0);
+      expect(mutation.state.failureReason, isNull);
+
+      async.elapse(const Duration(seconds: 1));
+
+      expect(mutation.state.status, MutationStatus.error);
+      expect(mutation.state.error, same(expectedError));
+      expect(mutation.state.variables, 'variables');
+      expect(mutation.state.submittedAt, clock.secondsAgo(1));
+      expect(mutation.state.failureCount, 1);
+      expect(mutation.state.failureReason, same(expectedError));
+      expect(capturedError, same(expectedError));
     }));
 
     test(
-        'SHOULD reset error, failureCount, and failureReason on success '
-        'WHEN previous execution failed', withFakeAsync((async) {
-      var shouldFail = true;
-      final mutation = createMutation(
-        options: createOptions(
-          mutationFn: (v, c) async {
-            await Future.delayed(const Duration(seconds: 3));
-            if (shouldFail) throw Exception();
-            return 'success';
-          },
-        ),
-      );
+        'SHOULD reset error state on success'
+        '', withFakeAsync((async) {
+      final mutation = Mutation<String, Object, String, String>.cached(client);
 
       // First execution fails
-      mutation.execute('').ignore();
-      async.elapse(const Duration(seconds: 3));
+      mutation.execute(
+        'variables',
+        (v, c) async {
+          await Future.delayed(const Duration(seconds: 1));
+          throw Exception();
+        },
+      ).ignore();
+      async.elapse(const Duration(seconds: 1));
 
       expect(mutation.state.error, isA<Exception>());
       expect(mutation.state.failureCount, 1);
       expect(mutation.state.failureReason, isA<Exception>());
 
       // Second execution succeeds
-      shouldFail = false;
-      mutation.execute('');
-      async.elapse(const Duration(seconds: 3));
+      mutation.execute(
+        'variables',
+        (v, c) async {
+          await Future.delayed(const Duration(seconds: 1));
+          return 'data';
+        },
+      );
+      async.elapse(const Duration(seconds: 1));
 
       expect(mutation.state.error, isNull);
       expect(mutation.state.failureCount, 0);
       expect(mutation.state.failureReason, isNull);
     }));
-  });
 
-  group('execute() - Error Path', () {
-    test(
-        'SHOULD transition to error state '
-        'WHEN mutationFn throws', withFakeAsync((async) {
-      final error = Exception();
-      final mutation = createMutation(
-        options: createOptions(
-          mutationFn: (variables, context) async {
-            await Future.delayed(const Duration(seconds: 3));
-            throw error;
-          },
-        ),
-      );
+    group('Parameter: onMutate', () {
+      test(
+          'SHOULD call before mutationFn'
+          '', withFakeAsync((async) {
+        final callOrder = <String>[];
 
-      mutation.execute('').ignore();
-      async.elapse(const Duration(seconds: 3));
+        final mutation = Mutation<String, Object, String, void>.cached(client);
 
-      expect(mutation.state.status, MutationStatus.error);
-      expect(mutation.state.error, same(error));
-    }));
-
-    test(
-        'SHOULD increment failureCount AND set failureReason '
-        'WHEN mutationFn throws', withFakeAsync((async) {
-      final mutation = createMutation(
-        options: createOptions(
-          mutationFn: (variables, context) async {
-            await Future.delayed(const Duration(seconds: 3));
-            throw Exception();
-          },
-        ),
-      );
-
-      mutation.execute('').ignore();
-      async.elapse(const Duration(seconds: 3));
-
-      expect(mutation.state.failureCount, 1);
-      expect(mutation.state.failureReason, isA<Exception>());
-    }));
-
-    test(
-        'SHOULD call onError '
-        'WHEN mutationFn throws', withFakeAsync((async) {
-      int calls = 0;
-      Object? capturedError;
-
-      final mutation = createMutation(
-        options: createOptions(
-          mutationFn: (variables, context) async {
-            await Future.delayed(const Duration(seconds: 3));
-            throw Exception();
-          },
-          onError: (error, variables, onMutateResult, context) {
-            calls++;
-            capturedError = error;
-          },
-        ),
-      );
-
-      mutation.execute('').ignore();
-      async.elapse(const Duration(seconds: 3));
-
-      expect(calls, 1);
-      expect(capturedError, isA<Exception>());
-    }));
-
-    test(
-        'SHOULD propagate error'
-        '', withFakeAsync((async) {
-      final error = Exception();
-      final mutation = createMutation(
-        options: createOptions(
-          mutationFn: (variables, context) async {
-            await Future.delayed(const Duration(seconds: 3));
-            throw error;
-          },
-        ),
-      );
-
-      Object? capturedError;
-      mutation.execute('').then((_) {}).catchError((e) {
-        capturedError = e;
-      });
-      async.elapse(const Duration(seconds: 3));
-
-      expect(capturedError, same(error));
-    }));
-
-    test(
-        'SHOULD pass error to onSettled '
-        'WHEN mutationFn throws', withFakeAsync((async) {
-      final error = Exception();
-      Object? capturedError;
-
-      final mutation = createMutation(
-        options: createOptions(
-          mutationFn: (variables, context) async {
-            await Future.delayed(const Duration(seconds: 3));
-            throw error;
-          },
-          onSettled: (data, error, variables, onMutateResult, context) {
-            capturedError = error;
-          },
-        ),
-      );
-
-      mutation.execute('').ignore();
-      async.elapse(const Duration(seconds: 3));
-
-      expect(capturedError, same(error));
-    }));
-  });
-
-  group('execute() - Retry Logic', () {
-    test(
-        'SHOULD NOT retry by default'
-        '', withFakeAsync((async) {
-      var calls = 0;
-      final mutation = createMutation(
-        options: createOptions(
-          mutationFn: (v, c) async {
-            calls++;
-            await Future.delayed(const Duration(seconds: 3));
-            throw Exception();
-          },
-        ),
-      );
-
-      mutation.execute('').ignore();
-      async.elapse(const Duration(seconds: 3));
-
-      expect(calls, 1);
-
-      async.elapse(const Duration(hours: 24));
-
-      expect(calls, 1);
-    }));
-
-    test(
-        'SHOULD retry with delay '
-        'WHEN retry callback returns Duration', withFakeAsync((async) {
-      var calls = 0;
-      final mutation = createMutation(
-        options: createOptions(
-          mutationFn: (v, c) async {
-            calls++;
-            await Future.delayed(Duration.zero);
-            throw Exception();
-          },
-          retry: (retryCount, error) {
-            return retryCount < 2 ? const Duration(seconds: 1) : null;
-          },
-        ),
-      );
-
-      mutation.execute('test').ignore();
-
-      async.elapse(Duration.zero);
-      expect(calls, 1);
-      expect(mutation.state.status, MutationStatus.pending);
-      expect(mutation.state.failureCount, 1);
-
-      async.elapse(const Duration(seconds: 1));
-      expect(calls, 2);
-      expect(mutation.state.status, MutationStatus.pending);
-      expect(mutation.state.failureCount, 2);
-
-      async.elapse(const Duration(seconds: 1));
-      expect(calls, 3);
-      expect(mutation.state.status, MutationStatus.error);
-      expect(mutation.state.failureCount, 3);
-
-      async.elapse(const Duration(hours: 24));
-      expect(calls, 3);
-      expect(mutation.state.status, MutationStatus.error);
-      expect(mutation.state.failureCount, 3);
-    }));
-
-    test(
-        'SHOULD reset failureCount and failureReason on success '
-        'WHEN succeeds after retries', withFakeAsync((async) {
-      var calls = 0;
-      final error = Exception('temporary error');
-      final mutation = createMutation(
-        options: createOptions(
-          mutationFn: (variables, context) async {
-            calls++;
-            await Future.delayed(Duration.zero);
-            if (calls < 3) throw error;
-            return 'success';
-          },
-          retry: (retryCount, error) {
-            return const Duration(seconds: 1);
-          },
-        ),
-      );
-
-      mutation.execute('test');
-
-      // First attempt fails
-      async.elapse(Duration.zero);
-      expect(calls, 1);
-      expect(mutation.state.status, MutationStatus.pending);
-      expect(mutation.state.failureCount, 1);
-      expect(mutation.state.failureReason, error);
-
-      // Second attempt fails
-      async.elapse(const Duration(seconds: 1));
-      expect(calls, 2);
-      expect(mutation.state.status, MutationStatus.pending);
-      expect(mutation.state.failureCount, 2);
-      expect(mutation.state.failureReason, error);
-
-      // Third attempt succeeds
-      async.elapse(const Duration(seconds: 1));
-      expect(calls, 3);
-      expect(mutation.state.status, MutationStatus.success);
-      expect(mutation.state.data, 'success');
-      expect(mutation.state.failureCount, 0);
-      expect(mutation.state.failureReason, isNull);
-    }));
-  });
-
-  group('execute() - Callbacks', () {
-    test(
-        'SHOULD call callbacks in correct order asynchronously'
-        '', withFakeAsync((async) {
-      final callOrder = <String>[];
-
-      // Success case
-      final mutation1 = createMutation(
-        options: createOptions(
-          mutationFn: (v, c) async {
+        mutation.execute(
+          'variables',
+          (v, c) async {
             await Future.delayed(const Duration(seconds: 1));
             callOrder.add('mutationFn');
-            return 'result';
+            return 'data';
           },
-          onMutate: (v, c) async {
+          onMutate: (variables, context) async {
             await Future.delayed(const Duration(seconds: 1));
             callOrder.add('onMutate');
-            return 'context';
           },
-          onSuccess: (data, v, ctx, c) async {
+        ).ignore();
+
+        async.elapse(const Duration(seconds: 1));
+        expect(callOrder, ['onMutate']);
+
+        async.elapse(const Duration(seconds: 1));
+        expect(callOrder, ['onMutate', 'mutationFn']);
+      }));
+
+      test(
+          'SHOULD receive correct arguments'
+          '', withFakeAsync((async) {
+        String? capturedVariables;
+        MutationFunctionContext? capturedContext;
+
+        final mutation = Mutation<String, Object, String, void>.cached(
+          client,
+          mutationKey: const ['key'],
+        );
+
+        mutation.execute(
+          'variables',
+          (v, c) async {
+            await Future.delayed(const Duration(seconds: 1));
+            return 'data';
+          },
+          onMutate: (variables, context) {
+            capturedVariables = variables;
+            capturedContext = context;
+          },
+          meta: {'key': 'value'},
+        );
+        async.flushMicrotasks();
+
+        expect(capturedVariables, 'variables');
+        expect(capturedContext, isA<MutationFunctionContext>());
+        expect(capturedContext!.mutationKey, const ['key']);
+        expect(capturedContext!.client, same(client));
+        expect(capturedContext!.meta, {'key': 'value'});
+      }));
+
+      test(
+          'SHOULD store returned value in state'
+          '', withFakeAsync((async) {
+        final expectedReturnedValue = Object();
+
+        final mutation =
+            Mutation<String, Object, String, Object>.cached(client);
+
+        mutation.execute(
+          'variables',
+          (v, c) async {
+            await Future.delayed(const Duration(seconds: 1));
+            return 'data';
+          },
+          onMutate: (variables, context) {
+            return expectedReturnedValue;
+          },
+        );
+        async.flushMicrotasks();
+
+        expect(mutation.state.onMutateResult, same(expectedReturnedValue));
+      }));
+    });
+
+    group('Parameter: onSuccess', () {
+      test(
+          'SHOULD call after mutationFn succeeds'
+          '', withFakeAsync((async) {
+        final callOrder = <String>[];
+
+        final mutation =
+            Mutation<String, Object, String, String>.cached(client);
+
+        mutation.execute(
+          'variables',
+          (v, c) async {
+            await Future.delayed(const Duration(seconds: 1));
+            callOrder.add('mutationFn');
+            return 'data';
+          },
+          onSuccess: (data, variables, onMutateResult, context) async {
             await Future.delayed(const Duration(seconds: 1));
             callOrder.add('onSuccess');
           },
-          onSettled: (data, error, v, ctx, c) async {
-            await Future.delayed(const Duration(seconds: 1));
-            callOrder.add('onSettled');
+        );
+
+        async.elapse(const Duration(seconds: 1));
+        expect(callOrder, ['mutationFn']);
+
+        async.elapse(const Duration(seconds: 1));
+        expect(callOrder, ['mutationFn', 'onSuccess']);
+      }));
+
+      test(
+          'SHOULD receive correct arguments'
+          '', withFakeAsync((async) {
+        String? capturedData;
+        String? capturedVariables;
+        String? capturedOnMutateResult;
+        MutationFunctionContext? capturedContext;
+
+        final mutation = Mutation<String, Object, String, String>.cached(
+          client,
+          mutationKey: const ['key'],
+        );
+
+        mutation.execute(
+          'variables',
+          (v, c) async => 'data',
+          meta: {'key': 'value'},
+          onMutate: (v, c) => 'onMutateResult',
+          onSuccess: (data, variables, onMutateResult, context) {
+            capturedData = data;
+            capturedVariables = variables;
+            capturedOnMutateResult = onMutateResult;
+            capturedContext = context;
           },
-        ),
-      );
+        );
+        async.flushMicrotasks();
 
-      mutation1.execute('');
+        expect(capturedData, 'data');
+        expect(capturedVariables, 'variables');
+        expect(capturedOnMutateResult, 'onMutateResult');
+        expect(capturedContext, isA<MutationFunctionContext>());
+        expect(capturedContext!.mutationKey, const ['key']);
+        expect(capturedContext!.client, same(client));
+        expect(capturedContext!.meta, {'key': 'value'});
+      }));
 
-      async.elapse(const Duration(seconds: 1));
-      expect(callOrder, ['onMutate']);
+      test(
+          'SHOULD NOT call '
+          'WHEN mutationFn throws', withFakeAsync((async) {
+        var onSuccessCalled = false;
+        var onErrorCalled = false;
 
-      async.elapse(const Duration(seconds: 1));
-      expect(callOrder, ['onMutate', 'mutationFn']);
+        final mutation = Mutation<String, Object, String, void>.cached(client);
 
-      async.elapse(const Duration(seconds: 1));
-      expect(callOrder, ['onMutate', 'mutationFn', 'onSuccess']);
+        mutation.execute(
+          'variables',
+          (v, c) async {
+            await Future.delayed(const Duration(seconds: 1));
+            throw Exception();
+          },
+          onSuccess: (data, variables, onMutateResult, context) {
+            onSuccessCalled = true;
+          },
+          onError: (data, variables, onMutateResult, context) {
+            onErrorCalled = true;
+          },
+        ).ignore();
+        async.elapse(const Duration(seconds: 1));
 
-      async.elapse(const Duration(seconds: 1));
-      expect(callOrder, ['onMutate', 'mutationFn', 'onSuccess', 'onSettled']);
+        expect(onSuccessCalled, isFalse);
+        expect(onErrorCalled, isTrue);
+      }));
+    });
 
-      callOrder.clear();
+    group('Parameter: onError', () {
+      test(
+          'SHOULD call after mutationFn throws'
+          '', withFakeAsync((async) {
+        final callOrder = <String>[];
 
-      // Error case
-      final mutation2 = createMutation(
-        options: createOptions(
-          mutationFn: (v, c) async {
+        final mutation = Mutation<String, Object, String, void>.cached(client);
+
+        mutation.execute(
+          'variables',
+          (v, c) async {
             await Future.delayed(const Duration(seconds: 1));
             callOrder.add('mutationFn');
             throw Exception();
           },
-          onMutate: (v, c) async {
-            await Future.delayed(const Duration(seconds: 1));
-            callOrder.add('onMutate');
-            return 'context';
-          },
-          onError: (error, v, ctx, c) async {
+          onError: (error, variables, onMutateResult, context) async {
             await Future.delayed(const Duration(seconds: 1));
             callOrder.add('onError');
           },
-          onSettled: (data, error, v, ctx, c) async {
+        ).ignore();
+
+        async.elapse(const Duration(seconds: 1));
+        expect(callOrder, ['mutationFn']);
+
+        async.elapse(const Duration(seconds: 1));
+        expect(callOrder, ['mutationFn', 'onError']);
+      }));
+
+      test(
+          'SHOULD receive correct arguments'
+          '', withFakeAsync((async) {
+        final expectedError = Exception();
+        Object? capturedError;
+        String? capturedVariables;
+        String? capturedOnMutateResult;
+        MutationFunctionContext? capturedContext;
+
+        final mutation = Mutation<String, Object, String, String>.cached(
+          client,
+          mutationKey: const ['key'],
+        );
+
+        mutation
+            .execute(
+              'variables',
+              (v, c) async => throw expectedError,
+              meta: {'key': 'value'},
+              onMutate: (v, c) => 'onMutateResult',
+              onError: (error, variables, onMutateResult, context) {
+                capturedError = error;
+                capturedVariables = variables;
+                capturedOnMutateResult = onMutateResult;
+                capturedContext = context;
+              },
+            )
+            .ignore();
+        async.flushMicrotasks();
+
+        expect(capturedError, same(expectedError));
+        expect(capturedVariables, 'variables');
+        expect(capturedOnMutateResult, 'onMutateResult');
+        expect(capturedContext, isA<MutationFunctionContext>());
+        expect(capturedContext!.mutationKey, const ['key']);
+        expect(capturedContext!.client, same(client));
+        expect(capturedContext!.meta, {'key': 'value'});
+      }));
+
+      test(
+          'SHOULD NOT call '
+          'WHEN mutationFn succeeds', withFakeAsync((async) {
+        var onSuccessCalled = false;
+        var onErrorCalled = false;
+
+        final mutation = Mutation<String, Object, String, void>.cached(client);
+
+        mutation.execute(
+          'variables',
+          (v, c) async {
+            await Future.delayed(const Duration(seconds: 1));
+            return 'data';
+          },
+          onSuccess: (data, variables, onMutateResult, context) {
+            onSuccessCalled = true;
+          },
+          onError: (error, variables, onMutateResult, context) {
+            onErrorCalled = true;
+          },
+        );
+        async.elapse(const Duration(seconds: 1));
+
+        expect(onErrorCalled, isFalse);
+        expect(onSuccessCalled, isTrue);
+      }));
+    });
+
+    group('Parameter: onSettled', () {
+      test(
+          'SHOULD call after onSuccess'
+          '', withFakeAsync((async) {
+        final callOrder = <String>[];
+        final mutation =
+            Mutation<String, Object, String, String>.cached(client);
+
+        mutation.execute(
+          'variables',
+          (v, c) async {
+            await Future.delayed(const Duration(seconds: 1));
+            return 'data';
+          },
+          onSuccess: (data, variables, onMutateResult, context) async {
+            await Future.delayed(const Duration(seconds: 1));
+            callOrder.add('onSuccess');
+          },
+          onSettled: (data, error, variables, onMutateResult, context) async {
             await Future.delayed(const Duration(seconds: 1));
             callOrder.add('onSettled');
           },
-        ),
-      );
+        );
 
-      mutation2.execute('').ignore();
+        async.elapse(const Duration(seconds: 2));
+        expect(callOrder, ['onSuccess']);
 
-      async.elapse(const Duration(seconds: 1));
-      expect(callOrder, ['onMutate']);
+        async.elapse(const Duration(seconds: 1));
+        expect(callOrder, ['onSuccess', 'onSettled']);
+      }));
 
-      async.elapse(const Duration(seconds: 1));
-      expect(callOrder, ['onMutate', 'mutationFn']);
+      test(
+          'SHOULD call after onError'
+          '', withFakeAsync((async) {
+        final callOrder = <String>[];
+        final mutation =
+            Mutation<String, Object, String, String>.cached(client);
 
-      async.elapse(const Duration(seconds: 1));
-      expect(callOrder, ['onMutate', 'mutationFn', 'onError']);
-
-      async.elapse(const Duration(seconds: 1));
-      expect(callOrder, ['onMutate', 'mutationFn', 'onError', 'onSettled']);
-    }));
-
-    test(
-        'SHOULD pass correct arguments to all callbacks'
-        '', withFakeAsync((async) {
-      String? capturedOnMutateVariables;
-      MutationFunctionContext? capturedOnMutateContext;
-      String? capturedOnSuccessData;
-      String? capturedOnSuccessVariables;
-      String? capturedOnSuccessOnMutateResult;
-      MutationFunctionContext? capturedOnSuccessContext;
-      String? capturedOnSettledData;
-      String? capturedOnSettledVariables;
-      String? capturedOnSettledOnMutateResult;
-      MutationFunctionContext? capturedOnSettledContext;
-
-      const testMutationKey = ['users', 'create'];
-      const testMeta = {'source': 'test', 'priority': 1};
-
-      final mutation = createMutation(
-        options: createOptions(
-          mutationKey: testMutationKey,
-          meta: testMeta,
-          mutationFn: (variables, context) async {
-            await Future.delayed(const Duration(seconds: 3));
-            return 'success';
-          },
-          onMutate: (variables, context) {
-            capturedOnMutateVariables = variables;
-            capturedOnMutateContext = context;
-            return 'onMutateResult';
-          },
-          onSuccess: (data, variables, onMutateResult, context) {
-            capturedOnSuccessData = data;
-            capturedOnSuccessVariables = variables;
-            capturedOnSuccessOnMutateResult = onMutateResult;
-            capturedOnSuccessContext = context;
-          },
-          onSettled: (data, error, variables, onMutateResult, context) {
-            capturedOnSettledData = data;
-            capturedOnSettledVariables = variables;
-            capturedOnSettledOnMutateResult = onMutateResult;
-            capturedOnSettledContext = context;
-          },
-        ),
-      );
-
-      mutation.execute('variables');
-      async.elapse(const Duration(seconds: 3));
-
-      // onMutate
-      expect(capturedOnMutateVariables, 'variables');
-      expect(
-        capturedOnMutateContext,
-        MutationFunctionContext(
-          client: client,
-          mutationKey: testMutationKey,
-          meta: testMeta,
-        ),
-      );
-
-      // onSuccess
-      expect(capturedOnSuccessData, 'success');
-      expect(capturedOnSuccessVariables, 'variables');
-      expect(capturedOnSuccessOnMutateResult, 'onMutateResult');
-      expect(
-        capturedOnSuccessContext,
-        MutationFunctionContext(
-          client: client,
-          mutationKey: testMutationKey,
-          meta: testMeta,
-        ),
-      );
-
-      // onSettled
-      expect(capturedOnSettledData, 'success');
-      expect(capturedOnSettledVariables, 'variables');
-      expect(capturedOnSettledOnMutateResult, 'onMutateResult');
-      expect(
-        capturedOnSettledContext,
-        MutationFunctionContext(
-          client: client,
-          mutationKey: testMutationKey,
-          meta: testMeta,
-        ),
-      );
-    }));
-  });
-
-  group('hasObservers', () {
-    test(
-        'SHOULD return false '
-        'WHEN there is no observer', () {
-      final mutation = createMutation();
-
-      expect(mutation.hasObservers, isFalse);
-    });
-
-    test(
-        'SHOULD return true '
-        'AFTER adding observers', () {
-      final mutation = createMutation();
-      final observer = MutationObserver(client, createOptions());
-
-      mutation.addObserver(observer);
-
-      expect(mutation.hasObservers, isTrue);
-    });
-
-    test(
-        'SHOULD return false '
-        'AFTER removing all observers', () {
-      final mutation = createMutation();
-      final observer = MutationObserver(client, createOptions());
-
-      mutation.addObserver(observer);
-      mutation.removeObserver(observer);
-
-      expect(mutation.hasObservers, isFalse);
-    });
-  });
-
-  group('addObserver', () {
-    test(
-        'SHOULD NOT add duplicate observers'
-        '', () {
-      final mutation = createMutation();
-      final observer = MutationObserver(client, createOptions());
-
-      mutation.addObserver(observer);
-      expect(mutation.hasObservers, isTrue);
-      // Remove once - should have no observers
-      mutation.removeObserver(observer);
-
-      expect(mutation.hasObservers, isFalse);
-    });
-
-    test(
-        'SHOULD cancel GC'
-        '', withFakeAsync((async) {
-      final mutation = createMutation(
-        options: createOptions(gcDuration: const GcDuration(minutes: 1)),
-      );
-      final observer = MutationObserver(client, createOptions());
-
-      // GC is scheduled on creation, elapsed some time
-      async.elapse(const Duration(seconds: 30));
-
-      // Add observer - should cancel GC
-      mutation.addObserver(observer);
-
-      // Elapse past original GC time
-      async.elapse(const Duration(minutes: 2));
-
-      // Mutation should still exist because observer is present
-      expect(cache.getAll(), contains(mutation));
-    }));
-  });
-
-  group('removeObserver', () {
-    test(
-        'SHOULD schedule GC'
-        '', withFakeAsync((async) {
-      // GC duration uses max logic with default 5 min, so use default
-      final mutation = createMutation();
-      final observer = MutationObserver(client, createOptions());
-
-      mutation.addObserver(observer);
-
-      // Elapse some time - mutation should exist (GC cancelled when observer added)
-      async.elapse(const Duration(minutes: 6));
-      expect(cache.getAll(), contains(mutation));
-
-      // Remove observer - should schedule GC (5 min default)
-      mutation.removeObserver(observer);
-
-      // Elapse less than GC time
-      async.elapse(const Duration(minutes: 4, seconds: 59));
-      expect(cache.getAll(), contains(mutation));
-
-      // Elapse past GC time (total 5 min since removal)
-      async.elapse(const Duration(seconds: 1));
-      expect(cache.getAll(), isNot(contains(mutation)));
-    }));
-  });
-
-  group('tryRemove', () {
-    test(
-        'SHOULD remove mutation from cache '
-        'WHEN hasObservers == false AND status == MutationStatus.idle', () {
-      final mutation = createMutation();
-
-      expect(cache.getAll(), contains(mutation));
-      expect(mutation.hasObservers, isFalse);
-      expect(mutation.state.status, MutationStatus.idle);
-      mutation.tryRemove();
-
-      expect(cache.getAll(), isNot(contains(mutation)));
-    });
-
-    test(
-        'SHOULD remove mutation from cache '
-        'WHEN hasObservers == false AND status == MutationStatus.idle',
-        withFakeAsync((async) {
-      final mutation = createMutation(
-        options: createOptions(
-          mutationFn: (variables, context) async {
-            await Future.delayed(const Duration(seconds: 3));
-            return 'success';
-          },
-        ),
-      );
-
-      mutation.execute('');
-      async.elapse(const Duration(seconds: 3));
-
-      expect(cache.getAll(), contains(mutation));
-      expect(mutation.hasObservers, isFalse);
-      expect(mutation.state.status, MutationStatus.success);
-      mutation.tryRemove();
-
-      expect(cache.getAll(), isNot(contains(mutation)));
-    }));
-
-    test(
-        'SHOULD remove mutation from cache '
-        'WHEN hasObservers == false AND status == MutationStatus.error',
-        withFakeAsync((async) {
-      final mutation = createMutation(
-        options: createOptions(
-          mutationFn: (variables, context) async {
-            await Future.delayed(const Duration(seconds: 3));
+        mutation.execute(
+          'variables',
+          (v, c) async {
+            await Future.delayed(const Duration(seconds: 1));
             throw Exception();
           },
-        ),
-      );
+          onError: (error, variables, onMutateResult, context) async {
+            await Future.delayed(const Duration(seconds: 1));
+            callOrder.add('onError');
+          },
+          onSettled: (data, error, variables, onMutateResult, context) async {
+            await Future.delayed(const Duration(seconds: 1));
+            callOrder.add('onSettled');
+          },
+        ).ignore();
 
-      mutation.execute('').ignore();
-      async.elapse(const Duration(seconds: 3));
+        async.elapse(const Duration(seconds: 2));
+        expect(callOrder, ['onError']);
+
+        async.elapse(const Duration(seconds: 1));
+        expect(callOrder, ['onError', 'onSettled']);
+      }));
+
+      test(
+          'SHOULD receive correct arguments '
+          'WHEN mutationFn succeeds', withFakeAsync((async) {
+        String? capturedData;
+        Object? capturedError;
+        String? capturedVariables;
+        String? capturedOnMutateResult;
+        MutationFunctionContext? capturedContext;
+
+        final mutation = Mutation<String, Object, String, String>.cached(
+          client,
+          mutationKey: const ['key'],
+        );
+
+        mutation.execute(
+          'variables',
+          (v, c) async => 'data',
+          meta: {'key': 'value'},
+          onMutate: (v, c) => 'onMutateResult',
+          onSettled: (data, error, variables, onMutateResult, context) {
+            capturedData = data;
+            capturedError = error;
+            capturedVariables = variables;
+            capturedOnMutateResult = onMutateResult;
+            capturedContext = context;
+          },
+        );
+        async.flushMicrotasks();
+
+        expect(capturedData, 'data');
+        expect(capturedError, isNull);
+        expect(capturedVariables, 'variables');
+        expect(capturedOnMutateResult, 'onMutateResult');
+        expect(capturedContext, isA<MutationFunctionContext>());
+        expect(capturedContext!.mutationKey, const ['key']);
+        expect(capturedContext!.client, same(client));
+        expect(capturedContext!.meta, {'key': 'value'});
+      }));
+
+      test(
+          'SHOULD receive correct arguments '
+          'WHEN mutationFn throws', withFakeAsync((async) {
+        final expectedError = Exception();
+        String? capturedData;
+        Object? capturedError;
+        String? capturedVariables;
+        String? capturedOnMutateResult;
+        MutationFunctionContext? capturedContext;
+
+        final mutation = Mutation<String, Object, String, String>.cached(
+          client,
+          mutationKey: const ['key'],
+        );
+
+        mutation
+            .execute(
+              'variables',
+              (v, c) async => throw expectedError,
+              meta: {'key': 'value'},
+              onMutate: (v, c) => 'onMutateResult',
+              onSettled: (data, error, variables, onMutateResult, context) {
+                capturedData = data;
+                capturedError = error;
+                capturedVariables = variables;
+                capturedOnMutateResult = onMutateResult;
+                capturedContext = context;
+              },
+            )
+            .ignore();
+        async.flushMicrotasks();
+
+        expect(capturedData, isNull);
+        expect(capturedError, same(expectedError));
+        expect(capturedVariables, 'variables');
+        expect(capturedOnMutateResult, 'onMutateResult');
+        expect(capturedContext, isA<MutationFunctionContext>());
+        expect(capturedContext!.mutationKey, const ['key']);
+        expect(capturedContext!.client, same(client));
+        expect(capturedContext!.meta, {'key': 'value'});
+      }));
+    });
+
+    group('Parameter: retry', () {
+      test(
+          'SHOULD NOT retry '
+          'WHEN retry == null', withFakeAsync((async) {
+        var calls = 0;
+        final mutation =
+            Mutation<String, Object, String, String>.cached(client);
+
+        mutation.execute(
+          'variables',
+          (v, c) async {
+            await Future.delayed(const Duration(seconds: 1));
+            calls++;
+            throw Exception();
+          },
+        ).ignore();
+
+        async.elapse(const Duration(seconds: 1));
+        expect(calls, 1);
+
+        async.elapse(const Duration(days: 365));
+        expect(calls, 1);
+      }));
+
+      test(
+          'SHOULD retry with delay '
+          'WHEN retry returns Duration', withFakeAsync((async) {
+        final mutation =
+            Mutation<String, Object, String, String>.cached(client);
+
+        mutation.execute(
+          'variables',
+          (v, c) async => throw Exception(),
+          retry: (retryCount, error) {
+            if (retryCount < 2) {
+              return const Duration(seconds: 1);
+            }
+            return null;
+          },
+        ).ignore();
+
+        // Initial attempt
+        async.flushMicrotasks();
+        expect(mutation.state.status, MutationStatus.pending);
+        expect(mutation.state.failureCount, 1);
+
+        // First retry
+        async.elapse(const Duration(seconds: 1));
+        expect(mutation.state.status, MutationStatus.pending);
+        expect(mutation.state.failureCount, 2);
+
+        // Second retry - should stop
+        async.elapse(const Duration(seconds: 1));
+        expect(mutation.state.status, MutationStatus.error);
+        expect(mutation.state.failureCount, 3);
+
+        // Should NOT retry further
+        async.elapse(const Duration(days: 365));
+        expect(mutation.state.status, MutationStatus.error);
+        expect(mutation.state.failureCount, 3);
+      }));
+
+      test(
+          'SHOULD stop retrying '
+          'WHEN retry returns null', withFakeAsync((async) {
+        var calls = 0;
+        final mutation =
+            Mutation<String, Object, String, String>.cached(client);
+
+        mutation.execute(
+          'variables',
+          (v, c) async {
+            calls++;
+            throw Exception();
+          },
+          retry: (retryCount, error) => null,
+        ).ignore();
+
+        async.flushMicrotasks();
+        expect(calls, 1);
+
+        async.elapse(const Duration(days: 365));
+        expect(calls, 1);
+      }));
+
+      test(
+          'SHOULD reset failureCount and failureReason '
+          'WHEN succeeds after retries', withFakeAsync((async) {
+        var calls = 0;
+        final error = Exception('temporary');
+        final mutation =
+            Mutation<String, Object, String, String>.cached(client);
+
+        mutation.execute(
+          'variables',
+          (v, c) async {
+            calls++;
+            if (calls < 3) throw error;
+            return 'data';
+          },
+          retry: (retryCount, error) => const Duration(seconds: 1),
+        );
+
+        // First attempt fails
+        async.flushMicrotasks();
+        expect(mutation.state.failureCount, 1);
+        expect(mutation.state.failureReason, error);
+
+        // Second attempt fails
+        async.elapse(const Duration(seconds: 1));
+        expect(mutation.state.failureCount, 2);
+        expect(mutation.state.failureReason, error);
+
+        // Third attempt succeeds
+        async.elapse(const Duration(seconds: 1));
+        expect(mutation.state.status, MutationStatus.success);
+        expect(mutation.state.failureCount, 0);
+        expect(mutation.state.failureReason, isNull);
+      }));
+    });
+  });
+
+  group('Method: tryRemove', () {
+    test(
+        'SHOULD remove mutation from cache'
+        '', () {
+      final mutation = Mutation<String, Object, String, String>.cached(client);
 
       expect(cache.getAll(), contains(mutation));
-      expect(mutation.hasObservers, isFalse);
-      expect(mutation.state.status, MutationStatus.error);
+
       mutation.tryRemove();
 
       expect(cache.getAll(), isNot(contains(mutation)));
-    }));
+    });
 
     test(
         'SHOULD NOT remove mutation '
-        'WHEN hasObservers == true', () {
-      final mutation = createMutation();
-      final observer = MutationObserver(client, createOptions());
-
+        'WHEN mutation has observers', () {
+      final observer = MutationObserver(
+        client,
+        MutationOptions<String, Object, String, String>(
+          mutationFn: (v, c) async => 'data',
+        ),
+      );
+      final mutation = Mutation<String, Object, String, String>.cached(client);
       mutation.addObserver(observer);
+
       expect(mutation.hasObservers, isTrue);
+      expect(cache.getAll(), contains(mutation));
+
       mutation.tryRemove();
 
       expect(cache.getAll(), contains(mutation));
@@ -812,44 +816,40 @@ void main() {
 
     test(
         'SHOULD NOT remove mutation and reschedule GC '
-        'WHEN status == MutationStatus.pending', withFakeAsync((async) {
-      final mutation = createMutation(
-        options: createOptions(
-          mutationFn: (variables, context) async {
-            await Future.delayed(const Duration(seconds: 3));
-            return 'success';
-          },
-        ),
+        'WHEN mutation status is in pending', withFakeAsync((async) {
+      final mutation = Mutation<String, Object, String, String>.cached(
+        client,
+        gcDuration: const GcDuration(minutes: 3),
       );
 
-      mutation.execute('');
+      mutation.execute(
+        'variables',
+        (variables, context) async {
+          await Future.delayed(const Duration(seconds: 1));
+          return 'data';
+        },
+      );
 
       expect(cache.getAll(), contains(mutation));
       expect(mutation.state.status, MutationStatus.pending);
+
       mutation.tryRemove();
 
-      // Should still be in cache because pending
       expect(cache.getAll(), contains(mutation));
 
-      // Complete the mutation
-      async.elapse(const Duration(seconds: 3));
-      expect(mutation.state.status, MutationStatus.success);
-
-      // GC was rescheduled when tryRemove was called during pending
-      // After default 5 min, mutation should be removed
-      final rescheduledAt = clock.now();
-      while (cache.getAll().contains(mutation)) {
-        async.elapse(const Duration(seconds: 10));
-      }
-      expect(clock.now().difference(rescheduledAt), const Duration(minutes: 5));
+      // Should have rescheduled GC
+      async.elapse(const Duration(minutes: 2, seconds: 59));
+      expect(cache.getAll(), contains(mutation));
+      async.elapse(const Duration(seconds: 1));
+      expect(cache.getAll(), isNot(contains(mutation)));
     }));
   });
 
-  group('MutationMatches.matches', () {
+  group('Extension: MutationExt.matches', () {
     test(
         'SHOULD match '
         'WHEN no filters provided', () {
-      final mutation = createMutation();
+      final mutation = Mutation<String, Object, String, String>.cached(client);
 
       expect(mutation.matches(), isTrue);
     });
@@ -857,8 +857,9 @@ void main() {
     test(
         'SHOULD match exact key '
         'WHEN exact == true AND key matches', () {
-      final mutation = createMutation(
-        options: createOptions(mutationKey: const ['users', '1']),
+      final mutation = Mutation<String, Object, String, String>.cached(
+        client,
+        mutationKey: const ['users', '1'],
       );
 
       expect(
@@ -870,8 +871,9 @@ void main() {
     test(
         'SHOULD NOT match '
         'WHEN exact == true AND key differs', () {
-      final mutation = createMutation(
-        options: createOptions(mutationKey: const ['users', '1']),
+      final mutation = Mutation<String, Object, String, String>.cached(
+        client,
+        mutationKey: const ['users', '1'],
       );
 
       expect(
@@ -883,8 +885,9 @@ void main() {
     test(
         'SHOULD match partial key'
         '', () {
-      final mutation = createMutation(
-        options: createOptions(mutationKey: const ['users', '1', 'profile']),
+      final mutation = Mutation<String, Object, String, String>.cached(
+        client,
+        mutationKey: const ['users', '1', 'profile'],
       );
 
       expect(
@@ -896,7 +899,7 @@ void main() {
     test(
         'SHOULD NOT match '
         'WHEN mutation has no key but filter has key', () {
-      final mutation = createMutation();
+      final mutation = Mutation<String, Object, String, String>.cached(client);
 
       expect(
         mutation.matches(mutationKey: const ['users']),
@@ -907,7 +910,7 @@ void main() {
     test(
         'SHOULD match status'
         '', () {
-      final mutation = createMutation();
+      final mutation = Mutation<String, Object, String, String>.cached(client);
 
       expect(
         mutation.matches(status: MutationStatus.idle),
@@ -918,7 +921,7 @@ void main() {
     test(
         'SHOULD NOT match status'
         '', () {
-      final mutation = createMutation();
+      final mutation = Mutation<String, Object, String, String>.cached(client);
 
       expect(
         mutation.matches(status: MutationStatus.pending),
@@ -929,8 +932,9 @@ void main() {
     test(
         'SHOULD match predicate'
         '', () {
-      final mutation = createMutation(
-        options: createOptions(mutationKey: const ['users']),
+      final mutation = Mutation<String, Object, String, String>.cached(
+        client,
+        mutationKey: const ['users'],
       );
 
       expect(
@@ -942,7 +946,7 @@ void main() {
     test(
         'SHOULD NOT match predicate'
         '', () {
-      final mutation = createMutation();
+      final mutation = Mutation<String, Object, String, String>.cached(client);
 
       expect(
         mutation.matches(predicate: (key, state) => key != null),
@@ -953,8 +957,9 @@ void main() {
     test(
         'SHOULD require ALL filters to match (AND logic)'
         '', () {
-      final mutation = createMutation(
-        options: createOptions(mutationKey: const ['users', '1']),
+      final mutation = Mutation<String, Object, String, String>.cached(
+        client,
+        mutationKey: const ['users', '1'],
       );
 
       // All match
@@ -983,8 +988,9 @@ void main() {
     test(
         'SHOULD NOT match partial key '
         'WHEN filter is longer than key', () {
-      final mutation = createMutation(
-        options: createOptions(mutationKey: const ['users']),
+      final mutation = Mutation<String, Object, String, String>.cached(
+        client,
+        mutationKey: const ['users'],
       );
 
       expect(

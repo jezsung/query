@@ -19,10 +19,10 @@ class Mutation<TData, TError, TVariables, TOnMutateResult>
         GarbageCollectable {
   @visibleForTesting
   Mutation(
-    this._client,
-    this.options,
-    this.mutationId,
-  ) : _state = const MutationState() {
+    this._client, {
+    this.mutationKey,
+  })  : mutationId = _client.mutationCache.getNextMutationId(),
+        _state = const MutationState() {
     onAddObserver = (_) {
       cancelGc();
     };
@@ -32,22 +32,22 @@ class Mutation<TData, TError, TVariables, TOnMutateResult>
   }
 
   factory Mutation.cached(
-    QueryClient client,
-    MutationOptions<TData, TError, TVariables, TOnMutateResult> options,
-  ) {
+    QueryClient client, {
+    List<Object?>? mutationKey,
+    GcDuration? gcDuration,
+  }) {
     final mutation = Mutation<TData, TError, TVariables, TOnMutateResult>(
       client,
-      options,
-      client.mutationCache.getNextMutationId(),
+      mutationKey: mutationKey,
     );
     client.mutationCache.add(mutation);
-    mutation.scheduleGc(options.gcDuration);
+    mutation.scheduleGc(gcDuration ?? client.defaultMutationOptions.gcDuration);
     return mutation;
   }
 
   final QueryClient _client;
-  MutationOptions<TData, TError, TVariables, TOnMutateResult> options;
   final int mutationId;
+  final List<Object?>? mutationKey;
   MutationState<TData, TError, TVariables, TOnMutateResult> _state;
 
   Retryer<TData, TError>? _retryer;
@@ -71,16 +71,25 @@ class Mutation<TData, TError, TVariables, TOnMutateResult>
   /// 2. Executes the mutation function
   /// 3. On success: calls onSuccess then onSettled
   /// 4. On error: calls onError then onSettled
-  Future<TData> execute(TVariables variables) async {
+  Future<TData> execute(
+    TVariables variables,
+    MutateFn<TData, TVariables> mutationFn, {
+    MutationOnMutate<TVariables, TOnMutateResult>? onMutate,
+    MutationOnSuccess<TData, TVariables, TOnMutateResult>? onSuccess,
+    MutationOnError<TError, TVariables, TOnMutateResult>? onError,
+    MutationOnSettled<TData, TError, TVariables, TOnMutateResult>? onSettled,
+    RetryResolver<TError>? retry,
+    Map<String, dynamic>? meta,
+  }) async {
     final fnContext = MutationFunctionContext(
       client: _client,
-      meta: options.meta ?? const {},
-      mutationKey: options.mutationKey,
+      meta: meta ?? const {},
+      mutationKey: mutationKey,
     );
 
     _retryer = Retryer<TData, TError>(
-      () => options.mutationFn(variables, fnContext),
-      options.retry ?? retryNever,
+      () => mutationFn(variables, fnContext),
+      retry ?? _client.defaultMutationOptions.retry,
       onFail: (failureCount, error) {
         state = _state.copyWith(
           failureCount: failureCount,
@@ -101,8 +110,8 @@ class Mutation<TData, TError, TVariables, TOnMutateResult>
 
       // Call onMutate callback
       TOnMutateResult? onMutateResult;
-      if (options.onMutate != null) {
-        onMutateResult = await options.onMutate!(variables, fnContext);
+      if (onMutate != null) {
+        onMutateResult = await onMutate(variables, fnContext);
         if (onMutateResult != _state.onMutateResult) {
           state = _state.copyWith(onMutateResult: onMutateResult);
         }
@@ -112,14 +121,13 @@ class Mutation<TData, TError, TVariables, TOnMutateResult>
       final data = await _retryer!.run();
 
       // Call onSuccess callback
-      if (options.onSuccess != null) {
-        await options.onSuccess!(
-            data, variables, _state.onMutateResult, fnContext);
+      if (onSuccess != null) {
+        await onSuccess(data, variables, _state.onMutateResult, fnContext);
       }
 
       // Call onSettled callback
-      if (options.onSettled != null) {
-        await options.onSettled!(
+      if (onSettled != null) {
+        await onSettled(
             data, null, variables, _state.onMutateResult, fnContext);
       }
 
@@ -140,8 +148,8 @@ class Mutation<TData, TError, TVariables, TOnMutateResult>
     } catch (error) {
       try {
         // Call onError callback
-        if (options.onError != null) {
-          await options.onError!(
+        if (onError != null) {
+          await onError(
             error as TError,
             variables,
             _state.onMutateResult,
@@ -150,8 +158,8 @@ class Mutation<TData, TError, TVariables, TOnMutateResult>
         }
 
         // Call onSettled callback
-        if (options.onSettled != null) {
-          await options.onSettled!(
+        if (onSettled != null) {
+          await onSettled(
             null,
             error as TError,
             variables,
@@ -183,7 +191,7 @@ class Mutation<TData, TError, TVariables, TOnMutateResult>
     }
     if (_state.status == MutationStatus.pending) {
       // Don't remove pending mutations, reschedule GC
-      scheduleGc(options.gcDuration ?? GcDuration(minutes: 5));
+      rescheduleGc();
       return;
     }
     _client.mutationCache.remove(this);
@@ -191,14 +199,14 @@ class Mutation<TData, TError, TVariables, TOnMutateResult>
 }
 
 @internal
-extension MutationMatches on Mutation {
+extension MutationExt on Mutation {
   bool matches({
     List<Object?>? mutationKey,
     bool exact = false,
     bool Function(List<Object?>? mutationKey, MutationState state)? predicate,
     MutationStatus? status,
   }) {
-    final key = options.mutationKey;
+    final key = this.mutationKey;
 
     if (mutationKey != null) {
       if (key == null) {
