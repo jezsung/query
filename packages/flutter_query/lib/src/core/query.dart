@@ -167,9 +167,10 @@ class Query<TData, TError>
       queryKey: key.parts,
       client: _client,
       signal: _abortController!.signal,
-      meta: observers
-              .map((observer) => observer.options.meta)
-              .fold(meta, deepMergeMap) ??
+      meta: observers.map((observer) => observer.options.meta).fold(
+                deepMergeMap(_client.defaultQueryOptions.meta, meta),
+                deepMergeMap,
+              ) ??
           const {},
     );
 

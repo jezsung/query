@@ -2,6 +2,8 @@
 
 This release contains breaking changes to improve API consistency and usability.
 
+- Added `meta` property to `DefaultQueryOptions` and `DefaultMutationOptions` for setting default metadata across all queries and mutations. This metadata is deep-merged with query/mutation-specific meta and observer meta.
+
 - **BREAKING**: Simplified `getQueryData<TData>()` and `getInfiniteQueryData<TData, TPageParam>()` signatures by removing the `TError` generic type parameter. The error type is not needed when retrieving cached data.
 
   ```dart

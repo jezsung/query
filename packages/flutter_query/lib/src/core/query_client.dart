@@ -94,6 +94,7 @@ class QueryClient {
     GcDuration? gcDuration,
     TData? seed,
     DateTime? seedUpdatedAt,
+    Map<String, dynamic>? meta,
   }) async {
     final query = Query<TData, TError>.cached(
       this,
@@ -108,6 +109,7 @@ class QueryClient {
         queryFn,
         gcDuration: gcDuration,
         retry: retry ?? defaultQueryOptions.retry ?? retryNever,
+        meta: meta ?? defaultQueryOptions.meta,
       );
     }
 
@@ -129,6 +131,7 @@ class QueryClient {
     GcDuration? gcDuration,
     TData? seed,
     DateTime? seedUpdatedAt,
+    Map<String, dynamic>? meta,
   }) async {
     try {
       await fetchQuery<TData, TError>(
@@ -139,6 +142,7 @@ class QueryClient {
         gcDuration: gcDuration,
         seed: seed,
         seedUpdatedAt: seedUpdatedAt,
+        meta: meta,
       );
     } catch (_) {
       // Silently ignore errors - prefetch is fire-and-forget

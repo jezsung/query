@@ -1,4 +1,5 @@
 import 'query_options.dart';
+import 'utils.dart';
 
 /// Default options applied to all queries in a [QueryClient].
 ///
@@ -25,6 +26,7 @@ class DefaultQueryOptions {
     this.refetchOnResume = RefetchOnResume.stale,
     this.retry,
     this.retryOnMount = true,
+    this.meta,
   });
 
   /// Whether queries are enabled by default.
@@ -68,6 +70,12 @@ class DefaultQueryOptions {
   /// Defaults to `true`.
   final bool retryOnMount;
 
+  /// Arbitrary metadata to attach to queries.
+  ///
+  /// This metadata is accessible in the query function via the context.
+  /// Defaults to `null`.
+  final Map<String, dynamic>? meta;
+
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -79,7 +87,8 @@ class DefaultQueryOptions {
           refetchOnMount == other.refetchOnMount &&
           refetchOnResume == other.refetchOnResume &&
           identical(retry, other.retry) &&
-          retryOnMount == other.retryOnMount;
+          retryOnMount == other.retryOnMount &&
+          deepEq.equals(meta, other.meta);
 
   @override
   int get hashCode => Object.hash(
@@ -91,6 +100,7 @@ class DefaultQueryOptions {
         refetchOnResume,
         identityHashCode(retry),
         retryOnMount,
+        meta,
       );
 
   @override
@@ -102,5 +112,6 @@ class DefaultQueryOptions {
       'refetchOnMount: $refetchOnMount, '
       'refetchOnResume: $refetchOnResume, '
       'retry: $retry, '
-      'retryOnMount: $retryOnMount)';
+      'retryOnMount: $retryOnMount, '
+      'meta: $meta)';
 }

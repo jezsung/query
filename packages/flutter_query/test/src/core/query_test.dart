@@ -410,6 +410,10 @@ void main() {
     test(
         'SHOULD pass deep-merged meta through context to queryFn'
         '', withFakeAsync((async) {
+      client.defaultQueryOptions = DefaultQueryOptions(
+        meta: {'default': 'default'},
+      );
+
       Map<String, dynamic>? capturedMeta;
 
       final query = Query<String, Object>.cached(client, const ['key']);
@@ -426,9 +430,14 @@ void main() {
         return capturedMeta;
       }
 
-      expect(captureMeta(), <String, dynamic>{});
+      expect(captureMeta(), {
+        'default': 'default',
+      });
 
-      expect(captureMeta({'key': 'value'}), {'key': 'value'});
+      expect(captureMeta({'key': 'value'}), {
+        'default': 'default',
+        'key': 'value',
+      });
 
       final observer1 = QueryObserver<String, Object>(
         client,
@@ -450,6 +459,7 @@ void main() {
       async.flushMicrotasks();
 
       expect(capturedMeta, {
+        'default': 'default',
         'observer': 1,
         'extra-1': 'value-1',
         'nested': {
@@ -477,6 +487,7 @@ void main() {
       async.flushMicrotasks();
 
       expect(capturedMeta, {
+        'default': 'default',
         'observer': 2,
         'extra-1': 'value-1',
         'extra-2': 'value-2',
@@ -489,6 +500,7 @@ void main() {
       observer2.onUnmount();
 
       expect(captureMeta(), {
+        'default': 'default',
         'observer': 1,
         'extra-1': 'value-1',
         'nested': {
@@ -498,7 +510,9 @@ void main() {
 
       observer1.onUnmount();
 
-      expect(captureMeta(), <String, dynamic>{});
+      expect(captureMeta(), {
+        'default': 'default',
+      });
     }));
 
     test(

@@ -244,6 +244,114 @@ void main() {
       expect(mutation.state.failureReason, isNull);
     }));
 
+    test(
+        'SHOULD pass deep-merged meta through context to mutationFn'
+        '', withFakeAsync((async) {
+      client.defaultMutationOptions = DefaultMutationOptions(
+        meta: {'default': 'default'},
+      );
+
+      Map<String, dynamic>? capturedMeta;
+
+      final mutation = Mutation<String, Object, String, void>.cached(client);
+
+      Map<String, dynamic>? captureMeta([Map<String, dynamic>? meta]) {
+        mutation.execute(
+          'variables',
+          (variables, context) async {
+            capturedMeta = context.meta;
+            return 'data';
+          },
+          meta: meta,
+        );
+        async.flushMicrotasks();
+        return capturedMeta;
+      }
+
+      expect(captureMeta(), {
+        'default': 'default',
+      });
+
+      expect(captureMeta({'key': 'value'}), {
+        'default': 'default',
+        'key': 'value',
+      });
+
+      // Observer meta should be merged
+      final observer1 = MutationObserver<String, Object, String, void>(
+        client,
+        MutationOptions(
+          mutationFn: (variables, context) async {
+            capturedMeta = context.meta;
+            return 'data';
+          },
+          meta: {
+            'observer': 1,
+            'extra-1': 'value-1',
+            'nested': {
+              'extra-1': 'value-1',
+            },
+          },
+        ),
+      )..onMount();
+      mutation.addObserver(observer1);
+
+      expect(captureMeta(), {
+        'default': 'default',
+        'observer': 1,
+        'extra-1': 'value-1',
+        'nested': {
+          'extra-1': 'value-1',
+        },
+      });
+
+      final observer2 = MutationObserver<String, Object, String, void>(
+        client,
+        MutationOptions(
+          mutationFn: (variables, context) async {
+            capturedMeta = context.meta;
+            return 'data';
+          },
+          meta: {
+            'observer': 2,
+            'extra-2': 'value-2',
+            'nested': {
+              'extra-2': 'value-2',
+            },
+          },
+        ),
+      )..onMount();
+      mutation.addObserver(observer2);
+
+      expect(captureMeta(), {
+        'default': 'default',
+        'observer': 2,
+        'extra-1': 'value-1',
+        'extra-2': 'value-2',
+        'nested': {
+          'extra-1': 'value-1',
+          'extra-2': 'value-2',
+        },
+      });
+
+      mutation.removeObserver(observer2);
+
+      expect(captureMeta(), {
+        'default': 'default',
+        'observer': 1,
+        'extra-1': 'value-1',
+        'nested': {
+          'extra-1': 'value-1',
+        },
+      });
+
+      mutation.removeObserver(observer1);
+
+      expect(captureMeta(), {
+        'default': 'default',
+      });
+    }));
+
     group('Parameter: onMutate', () {
       test(
           'SHOULD call before mutationFn'

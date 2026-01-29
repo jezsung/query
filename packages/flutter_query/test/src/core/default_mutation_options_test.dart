@@ -13,7 +13,8 @@ void main() {
         options.toString(),
         'DefaultMutationOptions('
         'gcDuration: ${const GcDuration(minutes: 5)}, '
-        'retry: <Function>)',
+        'retry: <Function>, '
+        'meta: null)',
       );
     });
 
@@ -23,13 +24,15 @@ void main() {
       final options = DefaultMutationOptions(
         retry: (_, __) => const Duration(seconds: 1),
         gcDuration: const GcDuration(minutes: 10),
+        meta: {'default': 'value'},
       );
 
       expect(
         options.toString(),
         'DefaultMutationOptions('
         'gcDuration: ${const GcDuration(minutes: 10)}, '
-        'retry: <Function>)',
+        'retry: <Function>, '
+        "meta: {default: value})",
       );
     });
   });
