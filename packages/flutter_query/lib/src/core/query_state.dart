@@ -46,7 +46,6 @@ class QueryState<TData, TError> {
     this.failureReason,
     this.isInvalidated = false,
     this.isActive = false,
-    this.meta = const {},
   });
 
   final QueryStatus status;
@@ -61,7 +60,6 @@ class QueryState<TData, TError> {
   final TError? failureReason;
   final bool isInvalidated;
   final bool isActive;
-  final Map<String, dynamic> meta;
 
   bool get hasFetched => dataUpdateCount > 0 || errorUpdateCount > 0;
 
@@ -80,8 +78,7 @@ class QueryState<TData, TError> {
           failureCount == other.failureCount &&
           deepEq.equals(failureReason, other.failureReason) &&
           isInvalidated == other.isInvalidated &&
-          isActive == other.isActive &&
-          deepEq.equals(meta, other.meta);
+          isActive == other.isActive;
 
   @override
   int get hashCode => Object.hash(
@@ -97,7 +94,6 @@ class QueryState<TData, TError> {
         deepEq.hash(failureReason),
         isInvalidated,
         isActive,
-        deepEq.hash(meta),
       );
 
   @override
@@ -113,8 +109,7 @@ class QueryState<TData, TError> {
       'failureCount: $failureCount, '
       'failureReason: $failureReason, '
       'isInvalidated: $isInvalidated, '
-      'isActive: $isActive, '
-      'meta: $meta)';
+      'isActive: $isActive)';
 }
 
 extension QueryStateExt<TData, TError> on QueryState<TData, TError> {
@@ -131,7 +126,6 @@ extension QueryStateExt<TData, TError> on QueryState<TData, TError> {
     TError? failureReason,
     bool? isInvalidated,
     bool? isActive,
-    Map<String, dynamic>? meta,
   }) {
     return QueryState<TData, TError>(
       status: status ?? this.status,
@@ -146,7 +140,6 @@ extension QueryStateExt<TData, TError> on QueryState<TData, TError> {
       failureReason: failureReason ?? this.failureReason,
       isInvalidated: isInvalidated ?? this.isInvalidated,
       isActive: isActive ?? this.isActive,
-      meta: meta ?? this.meta,
     );
   }
 
@@ -170,7 +163,6 @@ extension QueryStateExt<TData, TError> on QueryState<TData, TError> {
       failureReason: failureReason ? null : this.failureReason,
       isInvalidated: isInvalidated,
       isActive: isActive,
-      meta: meta,
     );
   }
 }

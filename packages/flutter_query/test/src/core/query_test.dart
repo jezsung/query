@@ -208,7 +208,6 @@ void main() {
       expect(query.state.failureReason, isNull);
       expect(query.state.isInvalidated, isFalse);
       expect(query.state.isActive, isFalse);
-      expect(query.state.meta, const {});
     }));
 
     test(
