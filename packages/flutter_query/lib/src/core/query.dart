@@ -87,7 +87,7 @@ class Query<TData, TError>
   @protected
   set state(QueryState<TData, TError> newState) {
     if (newState != _currentState) {
-      _currentState = newState.copyWith(isActive: isActive);
+      _currentState = newState;
       notifyObservers(_currentState);
     }
   }
