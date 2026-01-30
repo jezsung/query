@@ -326,7 +326,7 @@ class QueryObserver<TData, TError> with Observer<QueryState<TData, TError>> {
       failureReason: state.failureReason,
       refetch: refetch,
     );
-    return result.copyWithPlaceholder(options.placeholder);
+    return result.withPlaceholder(options.placeholder);
   }
 }
 

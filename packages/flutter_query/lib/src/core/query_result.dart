@@ -181,7 +181,7 @@ extension QueryResultExt<TData, TError> on QueryResult<TData, TError> {
   ///
   /// If [placeholder] is null, or if this result already has data or is not
   /// in a pending state, returns this result unchanged.
-  QueryResult<TData, TError> copyWithPlaceholder(TData? placeholder) {
+  QueryResult<TData, TError> withPlaceholder(TData? placeholder) {
     if (placeholder == null) {
       return this;
     }
