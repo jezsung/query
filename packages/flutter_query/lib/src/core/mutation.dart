@@ -83,11 +83,10 @@ class Mutation<TData, TError, TVariables, TOnMutateResult>
   }) async {
     final fnContext = MutationFunctionContext(
       client: _client,
-      meta: observers.map((observer) => observer.options.meta).fold(
-                deepMergeMap(_client.defaultMutationOptions.meta, meta),
-                deepMergeMap,
-              ) ??
-          const {},
+      meta: [_client.defaultMutationOptions.meta, meta]
+          .followedBy(observers.map((observer) => observer.options.meta))
+          .nonNulls
+          .deepMergeAll(),
       mutationKey: mutationKey,
     );
 

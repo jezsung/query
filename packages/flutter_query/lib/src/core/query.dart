@@ -167,11 +167,10 @@ class Query<TData, TError>
       queryKey: key.parts,
       client: _client,
       signal: _abortController!.signal,
-      meta: observers.map((observer) => observer.options.meta).fold(
-                deepMergeMap(_client.defaultQueryOptions.meta, meta),
-                deepMergeMap,
-              ) ??
-          const {},
+      meta: [_client.defaultQueryOptions.meta, meta]
+          .followedBy(observers.map((observer) => observer.options.meta))
+          .nonNulls
+          .deepMergeAll(),
     );
 
     final retryer = _retryer = Retryer<TData, TError>(
