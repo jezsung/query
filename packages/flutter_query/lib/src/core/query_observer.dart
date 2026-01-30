@@ -131,9 +131,9 @@ class QueryObserver<TData, TError> with Observer<QueryState<TData, TError>> {
       seed: _options.seed,
       seedUpdatedAt: _options.seedUpdatedAt,
     );
-    _query.addObserver(this);
     _initialDataUpdateCount = _query.state.dataUpdateCount;
     _initialErrorUpdateCount = _query.state.errorUpdateCount;
+    _query.addObserver(this);
 
     final newResult = _buildResult(_options, _query.state, optimistic: true);
     _result ??= newResult;

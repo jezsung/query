@@ -25,8 +25,10 @@ class Query<TData, TError>
         _currentState = const QueryState() {
     onAddObserver = (_) {
       cancelGc();
+      state = _currentState.copyWith(isActive: isActive);
     };
     onRemoveObserver = (observer) {
+      state = _currentState.copyWith(isActive: isActive);
       if (observers.isEmpty) {
         scheduleGc(observer.options.gcDuration);
         if (state.fetchStatus == FetchStatus.fetching &&
@@ -84,8 +86,10 @@ class Query<TData, TError>
 
   @protected
   set state(QueryState<TData, TError> newState) {
-    _currentState = newState.copyWith(isActive: isActive);
-    notifyObservers(_currentState);
+    if (newState != _currentState) {
+      _currentState = newState.copyWith(isActive: isActive);
+      notifyObservers(_currentState);
+    }
   }
 
   void setSeed(TData seed, [DateTime? updatedAt]) {
@@ -113,10 +117,6 @@ class Query<TData, TError>
       failureCount: 0,
       failureReason: null,
       isActive: isActive,
-      meta: observers
-              .map((observer) => observer.options.meta)
-              .fold(null, deepMergeMap) ??
-          const {},
     );
   }
 
