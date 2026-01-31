@@ -13,6 +13,7 @@ typedef MutationResultListener<TData, TError, TVariables, TOnMutateResult>
   MutationResult<TData, TError, TVariables, TOnMutateResult> result,
 );
 
+@internal
 class MutationObserver<TData, TError, TVariables, TOnMutateResult>
     with Observer<MutationState<TData, TError, TVariables, TOnMutateResult>> {
   MutationObserver(

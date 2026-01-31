@@ -18,6 +18,12 @@ import 'utils.dart';
 
 part 'infinite_query_observer.dart';
 
+@internal
+typedef QueryResultListener<TData, TError> = void Function(
+  QueryResult<TData, TError> result,
+);
+
+@internal
 class QueryObserver<TData, TError> with Observer<QueryState<TData, TError>> {
   QueryObserver(
     this._client,
@@ -33,7 +39,7 @@ class QueryObserver<TData, TError> with Observer<QueryState<TData, TError>> {
 
   Timer? _refetchIntervalTimer;
 
-  final Set<ResultChangeListener<TData, TError>> _listeners = {};
+  final Set<QueryResultListener<TData, TError>> _listeners = {};
 
   QueryOptions<TData, TError> get options => _options;
 
@@ -183,7 +189,7 @@ class QueryObserver<TData, TError> with Observer<QueryState<TData, TError>> {
     return _buildResult(_options, _query.state);
   }
 
-  void Function() subscribe(ResultChangeListener<TData, TError> listener) {
+  void Function() subscribe(QueryResultListener<TData, TError> listener) {
     _listeners.add(listener);
     return () => _listeners.remove(listener);
   }
@@ -329,8 +335,3 @@ class QueryObserver<TData, TError> with Observer<QueryState<TData, TError>> {
     return result.withPlaceholder(options.placeholder);
   }
 }
-
-@internal
-typedef ResultChangeListener<TData, TError> = void Function(
-  QueryResult<TData, TError> result,
-);
