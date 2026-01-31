@@ -28,7 +28,7 @@ export 'src/core/core.dart'
         // Infinite Query
         InfiniteData,
         FetchDirection,
-        InfiniteQueryObserverOptions,
+        InfiniteQueryOptions,
         InfiniteQueryResult,
         InfiniteQueryFn,
         InfiniteQueryFunctionContext,

@@ -24,7 +24,7 @@ void main() {
       '', withFakeAsync((async) {
     final observer = InfiniteQueryObserver<String, Object, int>(
       client,
-      InfiniteQueryObserverOptions(
+      InfiniteQueryOptions(
         const ['test'],
         (context) async {
           await Future.delayed(const Duration(seconds: 1));
@@ -61,7 +61,7 @@ void main() {
 
     final observer = InfiniteQueryObserver<String, Object, int>(
       client,
-      InfiniteQueryObserverOptions(
+      InfiniteQueryOptions(
         const ['test'],
         (context) async {
           await Future.delayed(const Duration(seconds: 1));
@@ -94,7 +94,7 @@ void main() {
         '', withFakeAsync((async) {
       final observer = InfiniteQueryObserver<String, Object, int>(
         client,
-        InfiniteQueryObserverOptions(
+        InfiniteQueryOptions(
           const ['test'],
           (context) async {
             await Future.delayed(const Duration(seconds: 1));
@@ -138,7 +138,7 @@ void main() {
 
       final observer = InfiniteQueryObserver<String, Object, int>(
         client,
-        InfiniteQueryObserverOptions(
+        InfiniteQueryOptions(
           const ['test'],
           (context) async {
             await Future.delayed(const Duration(seconds: 1));
@@ -192,7 +192,7 @@ void main() {
 
       final observer = InfiniteQueryObserver<String, Object, int>(
         client,
-        InfiniteQueryObserverOptions(
+        InfiniteQueryOptions(
           const ['test'],
           (context) async {
             await Future.delayed(const Duration(seconds: 1));
@@ -222,7 +222,7 @@ void main() {
         '', withFakeAsync((async) {
       final observer = InfiniteQueryObserver<String, Object, int>(
         client,
-        InfiniteQueryObserverOptions(
+        InfiniteQueryOptions(
           const ['test'],
           (context) async {
             await Future.delayed(const Duration(seconds: 1));
@@ -264,7 +264,7 @@ void main() {
 
       final observer = InfiniteQueryObserver<String, Object, int>(
         client,
-        InfiniteQueryObserverOptions(
+        InfiniteQueryOptions(
           const ['test'],
           (context) async {
             await Future.delayed(const Duration(seconds: 1));
@@ -295,7 +295,7 @@ void main() {
         'WHEN throwOnError is false', withFakeAsync((async) {
       final observer = InfiniteQueryObserver<String, Object, int>(
         client,
-        InfiniteQueryObserverOptions(
+        InfiniteQueryOptions(
           const ['test'],
           (context) async {
             await Future.delayed(const Duration(seconds: 1));
@@ -328,7 +328,7 @@ void main() {
         '', withFakeAsync((async) {
       final observer = InfiniteQueryObserver<String, Object, int>(
         client,
-        InfiniteQueryObserverOptions(
+        InfiniteQueryOptions(
           const ['test'],
           (context) async {
             await Future.delayed(const Duration(seconds: 1));
@@ -373,7 +373,7 @@ void main() {
 
       final observer = InfiniteQueryObserver<String, Object, int>(
         client,
-        InfiniteQueryObserverOptions(
+        InfiniteQueryOptions(
           const ['test'],
           (context) async {
             await Future.delayed(const Duration(seconds: 1));
@@ -428,7 +428,7 @@ void main() {
 
       final observer = InfiniteQueryObserver<String, Object, int>(
         client,
-        InfiniteQueryObserverOptions(
+        InfiniteQueryOptions(
           const ['test'],
           (context) async {
             await Future.delayed(const Duration(seconds: 1));
@@ -459,7 +459,7 @@ void main() {
         '', withFakeAsync((async) {
       final observer = InfiniteQueryObserver<String, Object, int>(
         client,
-        InfiniteQueryObserverOptions(
+        InfiniteQueryOptions(
           const ['test'],
           (context) async {
             await Future.delayed(const Duration(seconds: 1));
@@ -502,7 +502,7 @@ void main() {
 
       final observer = InfiniteQueryObserver<String, Object, int>(
         client,
-        InfiniteQueryObserverOptions(
+        InfiniteQueryOptions(
           const ['test'],
           (context) async {
             await Future.delayed(const Duration(seconds: 1));
@@ -534,7 +534,7 @@ void main() {
         'WHEN throwOnError is false', withFakeAsync((async) {
       final observer = InfiniteQueryObserver<String, Object, int>(
         client,
-        InfiniteQueryObserverOptions(
+        InfiniteQueryOptions(
           const ['test'],
           (context) async {
             await Future.delayed(const Duration(seconds: 1));
@@ -570,7 +570,7 @@ void main() {
 
       final observer = InfiniteQueryObserver<String, Object, int>(
         client,
-        InfiniteQueryObserverOptions(
+        InfiniteQueryOptions(
           const ['test'],
           (context) async {
             await Future.delayed(const Duration(seconds: 1));
@@ -632,7 +632,7 @@ void main() {
       var fetches = 0;
       final observer = InfiniteQueryObserver<String, Object, int>(
         client,
-        InfiniteQueryObserverOptions(
+        InfiniteQueryOptions(
           const ['test'],
           (context) async {
             await Future.delayed(const Duration(seconds: 1));
@@ -666,7 +666,7 @@ void main() {
       final expectedError = Exception();
       final observer = InfiniteQueryObserver<String, Object, int>(
         client,
-        InfiniteQueryObserverOptions(
+        InfiniteQueryOptions(
           const ['test'],
           (context) async {
             await Future.delayed(const Duration(seconds: 1));
@@ -703,7 +703,7 @@ void main() {
 
       final observer = InfiniteQueryObserver<String, Object, int>(
         client,
-        InfiniteQueryObserverOptions(
+        InfiniteQueryOptions(
           const ['key1'],
           (context) async {
             await Future.delayed(const Duration(seconds: 1));
@@ -722,7 +722,7 @@ void main() {
       expect(fetchedKeys.last, ['key1']);
 
       // Update to new key
-      observer.options = InfiniteQueryObserverOptions(
+      observer.options = InfiniteQueryOptions(
         const ['key2'],
         (context) async {
           await Future.delayed(const Duration(seconds: 1));
@@ -747,7 +747,7 @@ void main() {
 
       final observer = InfiniteQueryObserver<String, Object, int>(
         client,
-        InfiniteQueryObserverOptions(
+        InfiniteQueryOptions(
           const ['key'],
           (context) async {
             await Future.delayed(const Duration(seconds: 1));
@@ -765,7 +765,7 @@ void main() {
       expect(fetches, 0);
 
       // Enable the query
-      observer.options = InfiniteQueryObserverOptions(
+      observer.options = InfiniteQueryOptions(
         const ['key'],
         (context) async {
           await Future.delayed(const Duration(seconds: 1));
@@ -796,7 +796,7 @@ void main() {
 
       final observer = InfiniteQueryObserver<String, Object, int>(
         client,
-        InfiniteQueryObserverOptions(
+        InfiniteQueryOptions(
           const ['key'],
           queryFn,
           initialPageParam: 0,
@@ -809,7 +809,7 @@ void main() {
       expect(fetches, 1);
 
       // Update with same options
-      observer.options = InfiniteQueryObserverOptions(
+      observer.options = InfiniteQueryOptions(
         const ['key'],
         queryFn,
         initialPageParam: 0,
@@ -829,7 +829,7 @@ void main() {
 
       final observer = InfiniteQueryObserver<String, Object, int>(
         client,
-        InfiniteQueryObserverOptions(
+        InfiniteQueryOptions(
           const ['test'],
           (context) async {
             await Future.delayed(const Duration(seconds: 1));
@@ -858,7 +858,7 @@ void main() {
 
       final observer = InfiniteQueryObserver<String, Object, int>(
         client,
-        InfiniteQueryObserverOptions(
+        InfiniteQueryOptions(
           const ['test'],
           (context) async {
             await Future.delayed(const Duration(seconds: 1));
@@ -894,7 +894,7 @@ void main() {
 
       final observer = InfiniteQueryObserver<String, Object, int>(
         client,
-        InfiniteQueryObserverOptions(
+        InfiniteQueryOptions(
           const ['test'],
           (context) async {
             await Future.delayed(const Duration(seconds: 1));
@@ -928,7 +928,7 @@ void main() {
 
       final observer = InfiniteQueryObserver<String, Object, int>(
         client,
-        InfiniteQueryObserverOptions(
+        InfiniteQueryOptions(
           const ['test'],
           (context) async {
             await Future.delayed(const Duration(seconds: 1));
@@ -956,7 +956,7 @@ void main() {
 
       final observer = InfiniteQueryObserver<String, Object, int>(
         client,
-        InfiniteQueryObserverOptions(
+        InfiniteQueryOptions(
           const ['test'],
           (context) async {
             await Future.delayed(const Duration(seconds: 1));
@@ -980,7 +980,7 @@ void main() {
     }));
   });
 
-  group('InfiniteQueryObserverOptions.queryFn', () {
+  group('InfiniteQueryOptions.queryFn', () {
     test(
         'SHOULD pass correct context '
         'WHEN fetching forward', withFakeAsync((async) {
@@ -988,7 +988,7 @@ void main() {
 
       final observer = InfiniteQueryObserver<String, Object, int>(
         client,
-        InfiniteQueryObserverOptions(
+        InfiniteQueryOptions(
           const ['users', 123],
           (context) async {
             await Future.delayed(const Duration(seconds: 1));
@@ -1039,7 +1039,7 @@ void main() {
 
       final observer = InfiniteQueryObserver<String, Object, int>(
         client,
-        InfiniteQueryObserverOptions(
+        InfiniteQueryOptions(
           const ['users', 123],
           (context) async {
             await Future.delayed(const Duration(seconds: 1));
@@ -1085,7 +1085,7 @@ void main() {
     }));
   });
 
-  group('InfiniteQueryObserverOptions.enabled', () {
+  group('InfiniteQueryOptions.enabled', () {
     test(
         'SHOULD fetch '
         'WHEN enabled is true', withFakeAsync((async) {
@@ -1093,7 +1093,7 @@ void main() {
 
       final observer = InfiniteQueryObserver<String, Object, int>(
         client,
-        InfiniteQueryObserverOptions(
+        InfiniteQueryOptions(
           const ['test'],
           (context) async {
             await Future.delayed(const Duration(seconds: 1));
@@ -1119,7 +1119,7 @@ void main() {
 
       final observer = InfiniteQueryObserver<String, Object, int>(
         client,
-        InfiniteQueryObserverOptions(
+        InfiniteQueryOptions(
           const ['test'],
           (context) async {
             await Future.delayed(const Duration(seconds: 1));
@@ -1145,7 +1145,7 @@ void main() {
 
       final observer = InfiniteQueryObserver<String, Object, int>(
         client,
-        InfiniteQueryObserverOptions(
+        InfiniteQueryOptions(
           const ['test'],
           (context) async {
             await Future.delayed(const Duration(seconds: 1));
@@ -1164,7 +1164,7 @@ void main() {
       expect(fetches, 0);
 
       // Enable the query
-      observer.options = InfiniteQueryObserverOptions(
+      observer.options = InfiniteQueryOptions(
         const ['test'],
         (context) async {
           await Future.delayed(const Duration(seconds: 1));
@@ -1188,7 +1188,7 @@ void main() {
 
       final observer = InfiniteQueryObserver<String, Object, int>(
         client,
-        InfiniteQueryObserverOptions(
+        InfiniteQueryOptions(
           const ['test'],
           (context) async {
             await Future.delayed(const Duration(seconds: 1));
@@ -1208,7 +1208,7 @@ void main() {
       expect(fetches, 1);
 
       // Disable the query - data is stale but should not refetch
-      observer.options = InfiniteQueryObserverOptions(
+      observer.options = InfiniteQueryOptions(
         const ['test'],
         (context) async {
           await Future.delayed(const Duration(seconds: 1));
@@ -1233,7 +1233,7 @@ void main() {
 
       final observer = InfiniteQueryObserver<String, Object, int>(
         client,
-        InfiniteQueryObserverOptions(
+        InfiniteQueryOptions(
           const ['test'],
           (context) async {
             await Future.delayed(const Duration(seconds: 1));
@@ -1251,7 +1251,7 @@ void main() {
       expect(fetches, 1);
 
       // Disable the query
-      observer.options = InfiniteQueryObserverOptions(
+      observer.options = InfiniteQueryOptions(
         const ['test'],
         (context) async {
           await Future.delayed(const Duration(seconds: 1));
@@ -1277,7 +1277,7 @@ void main() {
 
       final observer = InfiniteQueryObserver<String, Object, int>(
         client,
-        InfiniteQueryObserverOptions(
+        InfiniteQueryOptions(
           const ['test'],
           (context) async {
             await Future.delayed(const Duration(seconds: 1));
@@ -1296,7 +1296,7 @@ void main() {
       expect(fetches, 1);
 
       // Disable the query
-      observer.options = InfiniteQueryObserverOptions(
+      observer.options = InfiniteQueryOptions(
         const ['test'],
         (context) async {
           await Future.delayed(const Duration(seconds: 1));
@@ -1323,7 +1323,7 @@ void main() {
 
       final observer = InfiniteQueryObserver<String, Object, int>(
         client,
-        InfiniteQueryObserverOptions(
+        InfiniteQueryOptions(
           const ['test'],
           (context) async {
             await Future.delayed(const Duration(seconds: 1));
@@ -1341,7 +1341,7 @@ void main() {
       expect(fetches, 1);
 
       // Disable the query
-      observer.options = InfiniteQueryObserverOptions(
+      observer.options = InfiniteQueryOptions(
         const ['test'],
         (context) async {
           await Future.delayed(const Duration(seconds: 1));
@@ -1361,13 +1361,13 @@ void main() {
     }));
   });
 
-  group('InfiniteQueryObserverOptions.staleDuration', () {
+  group('InfiniteQueryOptions.staleDuration', () {
     test(
         'SHOULD be stale immediately '
         'WHEN staleDuration == StaleDuration.zero', withFakeAsync((async) {
       final observer = InfiniteQueryObserver<String, Object, int>(
         client,
-        InfiniteQueryObserverOptions(
+        InfiniteQueryOptions(
           const ['test'],
           (context) async {
             await Future.delayed(const Duration(seconds: 1));
@@ -1390,7 +1390,7 @@ void main() {
         'WHEN staleDuration has not elapsed', withFakeAsync((async) {
       final observer = InfiniteQueryObserver<String, Object, int>(
         client,
-        InfiniteQueryObserverOptions(
+        InfiniteQueryOptions(
           const ['test'],
           (context) async {
             await Future.delayed(const Duration(seconds: 1));
@@ -1415,7 +1415,7 @@ void main() {
     test(
         'SHOULD be stale '
         'WHEN staleDuration has elapsed', withFakeAsync((async) {
-      final options = InfiniteQueryObserverOptions<String, Object, int>(
+      final options = InfiniteQueryOptions<String, Object, int>(
         const ['test'],
         (context) async {
           await Future.delayed(const Duration(seconds: 1));
@@ -1446,7 +1446,7 @@ void main() {
         'SHOULD NOT be stale '
         'WHEN staleDuration == StaleDuration.infinity '
         'AND long time has elapsed', withFakeAsync((async) {
-      final options = InfiniteQueryObserverOptions<String, Object, int>(
+      final options = InfiniteQueryOptions<String, Object, int>(
         const ['test'],
         (context) async {
           await Future.delayed(const Duration(seconds: 1));
@@ -1477,7 +1477,7 @@ void main() {
         'SHOULD NOT be stale '
         'WHEN staleDuration == StaleDuration.static '
         'AND long time has elapsed', withFakeAsync((async) {
-      final options = InfiniteQueryObserverOptions<String, Object, int>(
+      final options = InfiniteQueryOptions<String, Object, int>(
         const ['test'],
         (context) async {
           await Future.delayed(const Duration(seconds: 1));
@@ -1508,7 +1508,7 @@ void main() {
         'SHOULD be stale '
         'WHEN staleDuration == StaleDuration.infinity '
         'AND cache is invalidated', withFakeAsync((async) {
-      final options = InfiniteQueryObserverOptions<String, Object, int>(
+      final options = InfiniteQueryOptions<String, Object, int>(
         const ['test'],
         (context) async {
           await Future.delayed(const Duration(seconds: 1));
@@ -1540,7 +1540,7 @@ void main() {
         'SHOULD NOT be stale '
         'WHEN staleDuration == StaleDuration.static '
         'AND cache is invalidated', withFakeAsync((async) {
-      final options = InfiniteQueryObserverOptions<String, Object, int>(
+      final options = InfiniteQueryOptions<String, Object, int>(
         const ['test'],
         (context) async {
           await Future.delayed(const Duration(seconds: 1));
@@ -1569,14 +1569,14 @@ void main() {
     }));
   });
 
-  group('InfiniteQueryObserverOptions.gcDuration', () {
+  group('InfiniteQueryOptions.gcDuration', () {
     test(
         'SHOULD remove query from cache '
         'WHEN gcDuration has elapsed '
         'AND there are no observers', withFakeAsync((async) {
       final observer = InfiniteQueryObserver<String, Object, int>(
         client,
-        InfiniteQueryObserverOptions(
+        InfiniteQueryOptions(
           const ['test'],
           (context) async {
             await Future.delayed(const Duration(seconds: 1));
@@ -1609,7 +1609,7 @@ void main() {
         'SHOULD NOT remove query from cache '
         'WHEN gcDuration has elapsed '
         'AND there are observers', withFakeAsync((async) {
-      final options = InfiniteQueryObserverOptions<String, Object, int>(
+      final options = InfiniteQueryOptions<String, Object, int>(
         const ['test'],
         (context) async {
           await Future.delayed(const Duration(seconds: 1));
@@ -1644,7 +1644,7 @@ void main() {
         'AND there are no observers', withFakeAsync((async) {
       final observer = InfiniteQueryObserver<String, Object, int>(
         client,
-        InfiniteQueryObserverOptions(
+        InfiniteQueryOptions(
           const ['test'],
           (context) async {
             await Future.delayed(const Duration(seconds: 1));
@@ -1675,7 +1675,7 @@ void main() {
         'AND long time has elapsed', withFakeAsync((async) {
       final observer = InfiniteQueryObserver<String, Object, int>(
         client,
-        InfiniteQueryObserverOptions(
+        InfiniteQueryOptions(
           const ['test'],
           (context) async {
             await Future.delayed(const Duration(seconds: 1));
@@ -1699,13 +1699,13 @@ void main() {
     }));
   });
 
-  group('InfiniteQueryObserverOptions.placeholder', () {
+  group('InfiniteQueryOptions.placeholder', () {
     test(
         'SHOULD use placeholder '
         '', withFakeAsync((async) {
       final observer = InfiniteQueryObserver<String, Object, int>(
         client,
-        InfiniteQueryObserverOptions(
+        InfiniteQueryOptions(
           const ['test'],
           (context) async {
             await Future.delayed(const Duration(seconds: 1));
@@ -1728,7 +1728,7 @@ void main() {
         '', withFakeAsync((async) {
       final observer = InfiniteQueryObserver<String, Object, int>(
         client,
-        InfiniteQueryObserverOptions(
+        InfiniteQueryOptions(
           const ['test'],
           (context) async {
             await Future.delayed(const Duration(seconds: 1));
@@ -1749,7 +1749,7 @@ void main() {
         '', withFakeAsync((async) {
       final observer = InfiniteQueryObserver<String, Object, int>(
         client,
-        InfiniteQueryObserverOptions(
+        InfiniteQueryOptions(
           const ['test'],
           (context) async {
             await Future.delayed(const Duration(seconds: 1));
@@ -1774,7 +1774,7 @@ void main() {
     test(
         'SHOULD NOT use placeholder '
         'WHEN data already exists', withFakeAsync((async) {
-      final options = InfiniteQueryObserverOptions<String, Object, int>(
+      final options = InfiniteQueryOptions<String, Object, int>(
         const ['test'],
         (context) async {
           await Future.delayed(const Duration(seconds: 1));
@@ -1804,7 +1804,7 @@ void main() {
         'WHEN provided by another observer', withFakeAsync((async) {
       final observer1 = InfiniteQueryObserver(
         client,
-        InfiniteQueryObserverOptions<String, Object, int>(
+        InfiniteQueryOptions<String, Object, int>(
           const ['test'],
           (context) async {
             await Future.delayed(const Duration(seconds: 1));
@@ -1819,7 +1819,7 @@ void main() {
 
       final observer2 = InfiniteQueryObserver(
         client,
-        InfiniteQueryObserverOptions<String, Object, int>(
+        InfiniteQueryOptions<String, Object, int>(
           const ['test'],
           (context) async {
             await Future.delayed(const Duration(seconds: 1));
@@ -1838,13 +1838,13 @@ void main() {
     }));
   });
 
-  group('InfiniteQueryObserverOptions.refetchOnMount', () {
+  group('InfiniteQueryOptions.refetchOnMount', () {
     test(
         'SHOULD refetch on mount '
         'WHEN refetchOnMount == RefetchOnMount.stale '
         'AND data is stale', withFakeAsync((async) {
       var fetches = 0;
-      final options = InfiniteQueryObserverOptions<String, Object, int>(
+      final options = InfiniteQueryOptions<String, Object, int>(
         const ['test'],
         (context) async {
           await Future.delayed(const Duration(seconds: 1));
@@ -1879,7 +1879,7 @@ void main() {
         'WHEN refetchOnMount == RefetchOnMount.stale '
         'AND data is fresh', withFakeAsync((async) {
       var fetches = 0;
-      final options = InfiniteQueryObserverOptions<String, Object, int>(
+      final options = InfiniteQueryOptions<String, Object, int>(
         const ['test'],
         (context) async {
           await Future.delayed(const Duration(seconds: 1));
@@ -1911,7 +1911,7 @@ void main() {
         'WHEN refetchOnMount == RefetchOnMount.never '
         'AND data is stale', withFakeAsync((async) {
       var fetches = 0;
-      final options = InfiniteQueryObserverOptions<String, Object, int>(
+      final options = InfiniteQueryOptions<String, Object, int>(
         const ['test'],
         (context) async {
           await Future.delayed(const Duration(seconds: 1));
@@ -1946,7 +1946,7 @@ void main() {
         'WHEN refetchOnMount == RefetchOnMount.never '
         'AND data is fresh', withFakeAsync((async) {
       var fetches = 0;
-      final options = InfiniteQueryObserverOptions<String, Object, int>(
+      final options = InfiniteQueryOptions<String, Object, int>(
         const ['test'],
         (context) async {
           await Future.delayed(const Duration(seconds: 1));
@@ -1978,7 +1978,7 @@ void main() {
         'WHEN refetchOnMount == RefetchOnMount.always '
         'AND data is stale', withFakeAsync((async) {
       var fetches = 0;
-      final options = InfiniteQueryObserverOptions<String, Object, int>(
+      final options = InfiniteQueryOptions<String, Object, int>(
         const ['test'],
         (context) async {
           await Future.delayed(const Duration(seconds: 1));
@@ -2013,7 +2013,7 @@ void main() {
         'WHEN refetchOnMount == RefetchOnMount.always '
         'AND data is fresh', withFakeAsync((async) {
       var fetches = 0;
-      final options = InfiniteQueryObserverOptions<String, Object, int>(
+      final options = InfiniteQueryOptions<String, Object, int>(
         const ['test'],
         (context) async {
           await Future.delayed(const Duration(seconds: 1));
@@ -2041,7 +2041,7 @@ void main() {
     }));
   });
 
-  group('InfiniteQueryObserverOptions.refetchOnResume', () {
+  group('InfiniteQueryOptions.refetchOnResume', () {
     test(
         'SHOULD refetch on resume '
         'WHEN refetchOnResume == RefetchOnResume.stale '
@@ -2050,7 +2050,7 @@ void main() {
 
       final observer = InfiniteQueryObserver<String, Object, int>(
         client,
-        InfiniteQueryObserverOptions(
+        InfiniteQueryOptions(
           const ['test'],
           (context) async {
             await Future.delayed(const Duration(seconds: 1));
@@ -2086,7 +2086,7 @@ void main() {
 
       final observer = InfiniteQueryObserver<String, Object, int>(
         client,
-        InfiniteQueryObserverOptions(
+        InfiniteQueryOptions(
           const ['test'],
           (context) async {
             await Future.delayed(const Duration(seconds: 1));
@@ -2119,7 +2119,7 @@ void main() {
 
       final observer = InfiniteQueryObserver<String, Object, int>(
         client,
-        InfiniteQueryObserverOptions(
+        InfiniteQueryOptions(
           const ['test'],
           (context) async {
             await Future.delayed(const Duration(seconds: 1));
@@ -2155,7 +2155,7 @@ void main() {
 
       final observer = InfiniteQueryObserver<String, Object, int>(
         client,
-        InfiniteQueryObserverOptions(
+        InfiniteQueryOptions(
           const ['test'],
           (context) async {
             await Future.delayed(const Duration(seconds: 1));
@@ -2188,7 +2188,7 @@ void main() {
 
       final observer = InfiniteQueryObserver<String, Object, int>(
         client,
-        InfiniteQueryObserverOptions(
+        InfiniteQueryOptions(
           const ['test'],
           (context) async {
             await Future.delayed(const Duration(seconds: 1));
@@ -2224,7 +2224,7 @@ void main() {
 
       final observer = InfiniteQueryObserver<String, Object, int>(
         client,
-        InfiniteQueryObserverOptions(
+        InfiniteQueryOptions(
           const ['test'],
           (context) async {
             await Future.delayed(const Duration(seconds: 1));
@@ -2250,7 +2250,7 @@ void main() {
     }));
   });
 
-  group('InfiniteQueryObserverOptions.refetchInterval', () {
+  group('InfiniteQueryOptions.refetchInterval', () {
     test(
         'SHOULD refetch at intervals'
         '', withFakeAsync((async) {
@@ -2259,7 +2259,7 @@ void main() {
 
       final observer = InfiniteQueryObserver<String, Object, int>(
         client,
-        InfiniteQueryObserverOptions(
+        InfiniteQueryOptions(
           const ['test'],
           (context) async {
             await Future.delayed(const Duration(seconds: 1));
@@ -2289,7 +2289,7 @@ void main() {
     }));
   });
 
-  group('InfiniteQueryObserverOptions.retry', () {
+  group('InfiniteQueryOptions.retry', () {
     test(
         'SHOULD retry on failure '
         'WHEN retry returns Duration', withFakeAsync((async) {
@@ -2297,7 +2297,7 @@ void main() {
 
       final observer = InfiniteQueryObserver<String, Object, int>(
         client,
-        InfiniteQueryObserverOptions(
+        InfiniteQueryOptions(
           const ['test'],
           (context) async {
             attempts++;
@@ -2340,7 +2340,7 @@ void main() {
 
       final observer = InfiniteQueryObserver<String, Object, int>(
         client,
-        InfiniteQueryObserverOptions(
+        InfiniteQueryOptions(
           const ['test'],
           (context) async {
             attempts++;
@@ -2370,7 +2370,7 @@ void main() {
 
       final observer = InfiniteQueryObserver<String, Object, int>(
         client,
-        InfiniteQueryObserverOptions(
+        InfiniteQueryOptions(
           const ['test'],
           (context) async {
             attempts++;
@@ -2405,13 +2405,13 @@ void main() {
     }));
   });
 
-  group('InfiniteQueryObserverOptions.retryOnMount', () {
+  group('InfiniteQueryOptions.retryOnMount', () {
     test(
         'SHOULD retry on mount '
         'WHEN retryOnMount == true '
         'AND query is in error state', withFakeAsync((async) {
       var fetches = 0;
-      final options = InfiniteQueryObserverOptions<String, Object, int>(
+      final options = InfiniteQueryOptions<String, Object, int>(
         const ['test'],
         (context) async {
           await Future.delayed(const Duration(seconds: 1));
@@ -2453,7 +2453,7 @@ void main() {
         'WHEN retryOnMount == false '
         'AND query is in error state', withFakeAsync((async) {
       var fetches = 0;
-      final options = InfiniteQueryObserverOptions<String, Object, int>(
+      final options = InfiniteQueryOptions<String, Object, int>(
         const ['test'],
         (context) async {
           await Future.delayed(const Duration(seconds: 1));
@@ -2496,7 +2496,7 @@ void main() {
       // Observer with retryOnMount: false but no existing query data
       final observer = InfiniteQueryObserver<String, Object, int>(
         client,
-        InfiniteQueryObserverOptions(
+        InfiniteQueryOptions(
           const ['test'],
           (context) async {
             await Future.delayed(const Duration(seconds: 1));
@@ -2517,13 +2517,13 @@ void main() {
     }));
   });
 
-  group('InfiniteQueryObserverOptions.seed', () {
+  group('InfiniteQueryOptions.seed', () {
     test(
         'SHOULD use seed for data'
         '', withFakeAsync((async) {
       final observer = InfiniteQueryObserver<String, Object, int>(
         client,
-        InfiniteQueryObserverOptions(
+        InfiniteQueryOptions(
           const ['test'],
           (context) async {
             await Future.delayed(const Duration(seconds: 1));
@@ -2549,7 +2549,7 @@ void main() {
         '', withFakeAsync((async) {
       final observer = InfiniteQueryObserver<String, Object, int>(
         client,
-        InfiniteQueryObserverOptions(
+        InfiniteQueryOptions(
           const ['test'],
           (context) async {
             await Future.delayed(const Duration(seconds: 1));
@@ -2573,7 +2573,7 @@ void main() {
         '', withFakeAsync((async) {
       final observer = InfiniteQueryObserver<String, Object, int>(
         client,
-        InfiniteQueryObserverOptions(
+        InfiniteQueryOptions(
           const ['test'],
           (context) async {
             await Future.delayed(const Duration(seconds: 1));
@@ -2596,7 +2596,7 @@ void main() {
         '', withFakeAsync((async) {
       final observer = InfiniteQueryObserver<String, Object, int>(
         client,
-        InfiniteQueryObserverOptions(
+        InfiniteQueryOptions(
           const ['test'],
           (context) async {
             await Future.delayed(const Duration(seconds: 1));
@@ -2618,13 +2618,13 @@ void main() {
     }));
   });
 
-  group('InfiniteQueryObserverOptions.seedUpdatedAt', () {
+  group('InfiniteQueryOptions.seedUpdatedAt', () {
     test(
         'SHOULD use current time '
         'WHEN seedUpdatedAt is not provided', withFakeAsync((async) {
       final observer = InfiniteQueryObserver<String, Object, int>(
         client,
-        InfiniteQueryObserverOptions(
+        InfiniteQueryOptions(
           const ['test'],
           (context) async {
             await Future.delayed(const Duration(seconds: 1));
@@ -2646,7 +2646,7 @@ void main() {
         withFakeAsync((async) {
       final observer = InfiniteQueryObserver<String, Object, int>(
         client,
-        InfiniteQueryObserverOptions(
+        InfiniteQueryOptions(
           const ['test'],
           (context) async {
             await Future.delayed(const Duration(seconds: 1));
@@ -2669,7 +2669,7 @@ void main() {
         'WHEN seedUpdatedAt is within staleDuration', withFakeAsync((async) {
       final observer = InfiniteQueryObserver<String, Object, int>(
         client,
-        InfiniteQueryObserverOptions(
+        InfiniteQueryOptions(
           const ['test'],
           (context) async {
             await Future.delayed(const Duration(seconds: 1));
@@ -2690,7 +2690,7 @@ void main() {
     test(
         'SHOULD extend freshness period '
         'WHEN seedUpdatedAt is set to future DateTime', withFakeAsync((async) {
-      final options = InfiniteQueryObserverOptions<String, Object, int>(
+      final options = InfiniteQueryOptions<String, Object, int>(
         const ['test'],
         (context) async {
           await Future.delayed(const Duration(seconds: 1));
@@ -2723,7 +2723,7 @@ void main() {
     }));
   });
 
-  group('InfiniteQueryObserverOptions.meta', () {
+  group('InfiniteQueryOptions.meta', () {
     test(
         'SHOULD deep merge values'
         'WHEN provided by multiple observers', withFakeAsync((async) {
@@ -2731,7 +2731,7 @@ void main() {
 
       final observer1 = InfiniteQueryObserver<String, Object, int>(
         client,
-        InfiniteQueryObserverOptions(
+        InfiniteQueryOptions(
           const ['key'],
           (context) async {
             await Future.delayed(const Duration(seconds: 1));
@@ -2755,7 +2755,7 @@ void main() {
 
       final observer2 = InfiniteQueryObserver<String, Object, int>(
         client,
-        InfiniteQueryObserverOptions(
+        InfiniteQueryOptions(
           const ['key'],
           (context) async {
             await Future.delayed(const Duration(seconds: 1));
@@ -2821,7 +2821,7 @@ void main() {
         '', withFakeAsync((async) {
       final observer = InfiniteQueryObserver<String, Object, int>(
         client,
-        InfiniteQueryObserverOptions(
+        InfiniteQueryOptions(
           const ['test'],
           (context) async {
             throw Exception();
@@ -2860,7 +2860,7 @@ void main() {
 
       final observer = InfiniteQueryObserver<String, Object, int>(
         client,
-        InfiniteQueryObserverOptions(
+        InfiniteQueryOptions(
           const ['test'],
           (context) async {
             attempts++;
@@ -2901,7 +2901,7 @@ void main() {
 
       final observer = InfiniteQueryObserver<String, Object, int>(
         client,
-        InfiniteQueryObserverOptions(
+        InfiniteQueryOptions(
           const ['test'],
           (context) async {
             fetchCount++;
@@ -2950,7 +2950,7 @@ void main() {
         'WHEN data has been fetched at least once', withFakeAsync((async) {
       final observer = InfiniteQueryObserver<String, Object, int>(
         client,
-        InfiniteQueryObserverOptions(
+        InfiniteQueryOptions(
           const ['test'],
           (context) async {
             await Future.delayed(const Duration(seconds: 1));
@@ -2974,7 +2974,7 @@ void main() {
         'WHEN error has been thrown at least once', withFakeAsync((async) {
       final observer = InfiniteQueryObserver<String, Object, int>(
         client,
-        InfiniteQueryObserverOptions(
+        InfiniteQueryOptions(
           const ['test'],
           (context) async {
             await Future.delayed(const Duration(seconds: 1));
@@ -3000,7 +3000,7 @@ void main() {
         'WHEN refetching', withFakeAsync((async) {
       final observer = InfiniteQueryObserver<String, Object, int>(
         client,
-        InfiniteQueryObserverOptions(
+        InfiniteQueryOptions(
           const ['test'],
           (context) async {
             await Future.delayed(const Duration(seconds: 1));
@@ -3026,7 +3026,7 @@ void main() {
         'WHEN fetching initial page', withFakeAsync((async) {
       final observer = InfiniteQueryObserver<String, Object, int>(
         client,
-        InfiniteQueryObserverOptions(
+        InfiniteQueryOptions(
           const ['test'],
           (context) async {
             await Future.delayed(const Duration(seconds: 1));
@@ -3046,7 +3046,7 @@ void main() {
         'WHEN not fetching', withFakeAsync((async) {
       final observer = InfiniteQueryObserver<String, Object, int>(
         client,
-        InfiniteQueryObserverOptions(
+        InfiniteQueryOptions(
           const ['test'],
           (context) async {
             await Future.delayed(const Duration(seconds: 1));
@@ -3068,7 +3068,7 @@ void main() {
         'WHEN fetchNextPage is in progress', withFakeAsync((async) {
       final observer = InfiniteQueryObserver<String, Object, int>(
         client,
-        InfiniteQueryObserverOptions(
+        InfiniteQueryOptions(
           const ['test'],
           (context) async {
             await Future.delayed(const Duration(seconds: 1));
@@ -3092,7 +3092,7 @@ void main() {
         'WHEN fetchPreviousPage is in progress', withFakeAsync((async) {
       final observer = InfiniteQueryObserver<String, Object, int>(
         client,
-        InfiniteQueryObserverOptions(
+        InfiniteQueryOptions(
           const ['test'],
           (context) async {
             await Future.delayed(const Duration(seconds: 1));
@@ -3120,7 +3120,7 @@ void main() {
       // Case 1: Before fetch completes
       final observer1 = InfiniteQueryObserver<String, Object, int>(
         client,
-        InfiniteQueryObserverOptions(
+        InfiniteQueryOptions(
           const ['test1'],
           (context) async {
             await Future.delayed(const Duration(seconds: 1));
@@ -3138,7 +3138,7 @@ void main() {
       // Case 2: After initial fetch failed
       final observer2 = InfiniteQueryObserver<String, Object, int>(
         client,
-        InfiniteQueryObserverOptions(
+        InfiniteQueryOptions(
           const ['test2'],
           (context) async {
             await Future.delayed(const Duration(seconds: 1));
@@ -3160,7 +3160,7 @@ void main() {
         'WHEN nextPageParamBuilder returns null', withFakeAsync((async) {
       final observer = InfiniteQueryObserver<String, Object, int>(
         client,
-        InfiniteQueryObserverOptions(
+        InfiniteQueryOptions(
           const ['test'],
           (context) async {
             await Future.delayed(const Duration(seconds: 1));
@@ -3183,7 +3183,7 @@ void main() {
         'WHEN nextPageParamBuilder returns non-null', withFakeAsync((async) {
       final observer = InfiniteQueryObserver<String, Object, int>(
         client,
-        InfiniteQueryObserverOptions(
+        InfiniteQueryOptions(
           const ['test'],
           (context) async {
             await Future.delayed(const Duration(seconds: 1));
@@ -3206,7 +3206,7 @@ void main() {
         '', withFakeAsync((async) {
       final observer = InfiniteQueryObserver<String, Object, int>(
         client,
-        InfiniteQueryObserverOptions(
+        InfiniteQueryOptions(
           const ['test'],
           (context) async {
             await Future.delayed(const Duration(seconds: 1));
@@ -3242,7 +3242,7 @@ void main() {
       // Case 1: Before fetch completes
       final observer1 = InfiniteQueryObserver<String, Object, int>(
         client,
-        InfiniteQueryObserverOptions(
+        InfiniteQueryOptions(
           const ['test1'],
           (context) async {
             await Future.delayed(const Duration(seconds: 1));
@@ -3261,7 +3261,7 @@ void main() {
       // Case 2: After initial fetch failed
       final observer2 = InfiniteQueryObserver<String, Object, int>(
         client,
-        InfiniteQueryObserverOptions(
+        InfiniteQueryOptions(
           const ['test2'],
           (context) async {
             await Future.delayed(const Duration(seconds: 1));
@@ -3285,7 +3285,7 @@ void main() {
         'WHEN prevPageParamBuilder is not provided', withFakeAsync((async) {
       final observer = InfiniteQueryObserver<String, Object, int>(
         client,
-        InfiniteQueryObserverOptions(
+        InfiniteQueryOptions(
           const ['test'],
           (context) async {
             await Future.delayed(const Duration(seconds: 1));
@@ -3309,7 +3309,7 @@ void main() {
         'WHEN prevPageParamBuilder returns null', withFakeAsync((async) {
       final observer = InfiniteQueryObserver<String, Object, int>(
         client,
-        InfiniteQueryObserverOptions(
+        InfiniteQueryOptions(
           const ['test'],
           (context) async {
             await Future.delayed(const Duration(seconds: 1));
@@ -3333,7 +3333,7 @@ void main() {
         'WHEN prevPageParamBuilder returns non-null', withFakeAsync((async) {
       final observer = InfiniteQueryObserver<String, Object, int>(
         client,
-        InfiniteQueryObserverOptions(
+        InfiniteQueryOptions(
           const ['test'],
           (context) async {
             await Future.delayed(const Duration(seconds: 1));
@@ -3357,7 +3357,7 @@ void main() {
         '', withFakeAsync((async) {
       final observer = InfiniteQueryObserver<String, Object, int>(
         client,
-        InfiniteQueryObserverOptions(
+        InfiniteQueryOptions(
           const ['test'],
           (context) async {
             await Future.delayed(const Duration(seconds: 1));
@@ -3393,7 +3393,7 @@ void main() {
         'WHEN not fetching', withFakeAsync((async) {
       final observer = InfiniteQueryObserver<String, Object, int>(
         client,
-        InfiniteQueryObserverOptions(
+        InfiniteQueryOptions(
           const ['test'],
           (context) async {
             await Future.delayed(const Duration(seconds: 1));
@@ -3416,7 +3416,7 @@ void main() {
         'WHEN fetching initial page', withFakeAsync((async) {
       final observer = InfiniteQueryObserver<String, Object, int>(
         client,
-        InfiniteQueryObserverOptions(
+        InfiniteQueryOptions(
           const ['test'],
           (context) async {
             await Future.delayed(const Duration(seconds: 1));
@@ -3437,7 +3437,7 @@ void main() {
         'WHEN fetchNextPage is in progress', withFakeAsync((async) {
       final observer = InfiniteQueryObserver<String, Object, int>(
         client,
-        InfiniteQueryObserverOptions(
+        InfiniteQueryOptions(
           const ['test'],
           (context) async {
             await Future.delayed(const Duration(seconds: 1));
@@ -3462,7 +3462,7 @@ void main() {
         'WHEN fetchPreviousPage is in progress', withFakeAsync((async) {
       final observer = InfiniteQueryObserver<String, Object, int>(
         client,
-        InfiniteQueryObserverOptions(
+        InfiniteQueryOptions(
           const ['test'],
           (context) async {
             await Future.delayed(const Duration(seconds: 1));
@@ -3488,7 +3488,7 @@ void main() {
         'WHEN refetching', withFakeAsync((async) {
       final observer = InfiniteQueryObserver<String, Object, int>(
         client,
-        InfiniteQueryObserverOptions(
+        InfiniteQueryOptions(
           const ['test'],
           (context) async {
             await Future.delayed(const Duration(seconds: 1));
@@ -3516,7 +3516,7 @@ void main() {
         'WHEN not fetching', withFakeAsync((async) {
       final observer = InfiniteQueryObserver<String, Object, int>(
         client,
-        InfiniteQueryObserverOptions(
+        InfiniteQueryOptions(
           const ['test'],
           (context) async {
             await Future.delayed(const Duration(seconds: 1));
@@ -3540,7 +3540,7 @@ void main() {
         'WHEN fetching initial page', withFakeAsync((async) {
       final observer = InfiniteQueryObserver<String, Object, int>(
         client,
-        InfiniteQueryObserverOptions(
+        InfiniteQueryOptions(
           const ['test'],
           (context) async {
             await Future.delayed(const Duration(seconds: 1));
@@ -3562,7 +3562,7 @@ void main() {
         'WHEN fetchNextPage is in progress', withFakeAsync((async) {
       final observer = InfiniteQueryObserver<String, Object, int>(
         client,
-        InfiniteQueryObserverOptions(
+        InfiniteQueryOptions(
           const ['test'],
           (context) async {
             await Future.delayed(const Duration(seconds: 1));
@@ -3588,7 +3588,7 @@ void main() {
         'WHEN fetchPreviousPage is in progress', withFakeAsync((async) {
       final observer = InfiniteQueryObserver<String, Object, int>(
         client,
-        InfiniteQueryObserverOptions(
+        InfiniteQueryOptions(
           const ['test'],
           (context) async {
             await Future.delayed(const Duration(seconds: 1));
@@ -3614,7 +3614,7 @@ void main() {
         'WHEN refetching', withFakeAsync((async) {
       final observer = InfiniteQueryObserver<String, Object, int>(
         client,
-        InfiniteQueryObserverOptions(
+        InfiniteQueryOptions(
           const ['test'],
           (context) async {
             await Future.delayed(const Duration(seconds: 1));

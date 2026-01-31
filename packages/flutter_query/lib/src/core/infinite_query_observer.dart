@@ -55,7 +55,7 @@ typedef InfiniteResultChangeListener<TData, TError, TPageParam> = void Function(
 class InfiniteQueryObserver<TData, TError, TPageParam> {
   InfiniteQueryObserver(
     this._client,
-    InfiniteQueryObserverOptions<TData, TError, TPageParam> options,
+    InfiniteQueryOptions<TData, TError, TPageParam> options,
   ) {
     _options = options.withDefaults(_client.defaultQueryOptions);
     _inner = QueryObserver<InfiniteData<TData, TPageParam>, TError>(
@@ -65,7 +65,7 @@ class InfiniteQueryObserver<TData, TError, TPageParam> {
   }
 
   final QueryClient _client;
-  late InfiniteQueryObserverOptions<TData, TError, TPageParam> _options;
+  late InfiniteQueryOptions<TData, TError, TPageParam> _options;
   late final QueryObserver<InfiniteData<TData, TPageParam>, TError> _inner;
   FetchDirection? _fetchDirection;
 
@@ -202,7 +202,7 @@ class InfiniteQueryObserver<TData, TError, TPageParam> {
     );
   }
 
-  set options(InfiniteQueryObserverOptions<TData, TError, TPageParam> value) {
+  set options(InfiniteQueryOptions<TData, TError, TPageParam> value) {
     final newOptions = value.withDefaults(_client.defaultQueryOptions);
     _options = newOptions;
     _inner.options = queryObserverOptions;

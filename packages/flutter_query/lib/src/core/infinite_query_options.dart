@@ -32,8 +32,8 @@ typedef PrevPageParamBuilder<TData, TPageParam> = TPageParam? Function(
   InfiniteData<TData, TPageParam> data,
 );
 
-class InfiniteQueryObserverOptions<TData, TError, TPageParam> {
-  InfiniteQueryObserverOptions(
+class InfiniteQueryOptions<TData, TError, TPageParam> {
+  InfiniteQueryOptions(
     List<Object?> queryKey,
     this.queryFn, {
     required this.initialPageParam,
@@ -76,7 +76,7 @@ class InfiniteQueryObserverOptions<TData, TError, TPageParam> {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      other is InfiniteQueryObserverOptions<TData, TError, TPageParam> &&
+      other is InfiniteQueryOptions<TData, TError, TPageParam> &&
           queryKey == other.queryKey &&
           identical(queryFn, other.queryFn) &&
           deepEq.equals(initialPageParam, other.initialPageParam) &&
@@ -119,7 +119,7 @@ class InfiniteQueryObserverOptions<TData, TError, TPageParam> {
       );
 
   @override
-  String toString() => 'InfiniteQueryObserverOptions('
+  String toString() => 'InfiniteQueryOptions('
       'queryKey: $queryKey, '
       'initialPageParam: $initialPageParam, '
       'maxPages: $maxPages, '
@@ -136,12 +136,12 @@ class InfiniteQueryObserverOptions<TData, TError, TPageParam> {
       'meta: $meta)';
 }
 
-extension InfiniteQueryObserverOptionsExt<TData, TError, TPageParam>
-    on InfiniteQueryObserverOptions<TData, TError, TPageParam> {
-  InfiniteQueryObserverOptions<TData, TError, TPageParam> withDefaults(
+extension InfiniteQueryOptionsExt<TData, TError, TPageParam>
+    on InfiniteQueryOptions<TData, TError, TPageParam> {
+  InfiniteQueryOptions<TData, TError, TPageParam> withDefaults(
     DefaultQueryOptions defaults,
   ) {
-    return InfiniteQueryObserverOptions<TData, TError, TPageParam>(
+    return InfiniteQueryOptions<TData, TError, TPageParam>(
       queryKey.parts,
       queryFn,
       initialPageParam: initialPageParam,

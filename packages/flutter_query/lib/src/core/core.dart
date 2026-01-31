@@ -3,7 +3,7 @@ export 'default_mutation_options.dart';
 export 'default_query_options.dart';
 export 'garbage_collectable.dart';
 export 'infinite_query_function_context.dart';
-export 'infinite_query_observer_options.dart';
+export 'infinite_query_options.dart';
 export 'infinite_query_result.dart';
 export 'mutation.dart';
 export 'mutation_cache.dart';
