@@ -2,11 +2,15 @@ import 'package:collection/collection.dart';
 import 'package:meta/meta.dart';
 
 import 'query.dart';
+import 'query_cache_event.dart';
 import 'query_key.dart';
 import 'query_state.dart';
+import 'subscribable.dart';
+
+typedef QueryCacheListener = void Function(QueryCacheEvent event);
 
 @internal
-class QueryCache {
+class QueryCache with Subscribable<QueryCacheListener> {
   final Map<QueryKey, Query> _queries = {};
 
   Query<TData, TError>? get<TData, TError>(List<Object?> queryKey) {
@@ -20,6 +24,7 @@ class QueryCache {
 
   void add(Query query) {
     _queries[query.key] = query;
+    dispatch(QueryAddedEvent(query));
   }
 
   void remove(Query query) {
@@ -30,21 +35,28 @@ class QueryCache {
     if (cachedQuery == query) {
       query.dispose();
       _queries.remove(key);
+      dispatch(QueryRemovedEvent(query));
     }
   }
 
   void removeByKey(List<Object?> queryKey) {
     final key = QueryKey(queryKey);
     final query = _queries[key];
-    query?.dispose();
-    _queries.remove(key);
+    if (query != null) {
+      query.dispose();
+      _queries.remove(key);
+      dispatch(QueryRemovedEvent(query));
+    }
   }
 
   void clear() {
-    for (final query in _queries.values) {
-      query.dispose();
-    }
+    if (_queries.isEmpty) return;
+    final queriesToRemove = _queries.values.toList();
     _queries.clear();
+    for (final query in queriesToRemove) {
+      query.dispose();
+      dispatch(QueryRemovedEvent(query));
+    }
   }
 
   Query<TData, TError>? find<TData, TError>(
@@ -78,5 +90,9 @@ class QueryCache {
       }
       return true;
     }).toList();
+  }
+
+  void dispatch(QueryCacheEvent event) {
+    notify((listener) => listener(event));
   }
 }

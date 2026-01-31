@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:flutter_query/src/core/core.dart';
+import '../../utils.dart';
 
 void main() {
   late QueryClient client;
@@ -385,6 +386,148 @@ void main() {
       );
 
       expect(mutations, isEmpty);
+    });
+  });
+
+  group('Method: subscribe', () {
+    test(
+        'SHOULD receive MutationAddedEvent '
+        'WHEN mutation is added', () {
+      final events = <MutationCacheEvent>[];
+      cache.subscribe(events.add);
+
+      final mutation1 = Mutation<String, Object, String, void>(client);
+      final mutation2 = Mutation<String, Object, String, void>(client);
+      final mutation3 = Mutation<String, Object, String, void>(client);
+      cache
+        ..add(mutation1)
+        ..add(mutation2)
+        ..add(mutation3);
+
+      expect(events, hasLength(3));
+      expect(events, everyElement(isA<MutationAddedEvent>()));
+      expect(
+        events.map((e) => (e as MutationAddedEvent).mutation),
+        orderedEquals([same(mutation1), same(mutation2), same(mutation3)]),
+      );
+    });
+
+    test(
+        'SHOULD receive MutationRemovedEvent '
+        'WHEN mutation is removed via remove()', () {
+      final mutation = Mutation<String, Object, String, void>.cached(client);
+      final events = <MutationCacheEvent>[];
+
+      cache.subscribe(events.add);
+      cache.remove(mutation);
+
+      expect(events, hasLength(1));
+      expect(events[0], isA<MutationRemovedEvent>());
+      expect((events[0] as MutationRemovedEvent).mutation, same(mutation));
+    });
+
+    test(
+        'SHOULD receive MutationRemovedEvent '
+        'WHEN mutation is removed via clear()', () {
+      final mutation1 = Mutation<String, Object, String, void>.cached(client);
+      final mutation2 = Mutation<String, Object, String, void>.cached(client);
+      final mutation3 = Mutation<String, Object, String, void>.cached(client);
+      final events = <MutationCacheEvent>[];
+
+      cache.subscribe(events.add);
+      cache.clear();
+
+      expect(events, hasLength(3));
+      expect(events, everyElement(isA<MutationRemovedEvent>()));
+      expect(
+        events.map((e) => (e as MutationRemovedEvent).mutation),
+        containsAll([mutation1, mutation2, mutation3]),
+      );
+    });
+
+    test(
+        'SHOULD NOT receive MutationRemovedEvent '
+        'WHEN removing non-existent mutation', () {
+      final mutation = Mutation<String, Object, String, void>(client);
+      final events = <MutationCacheEvent>[];
+
+      cache.subscribe(events.add);
+      cache.remove(mutation);
+
+      expect(events, isEmpty);
+    });
+
+    test(
+        'SHOULD NOT receive MutationRemovedEvent '
+        'WHEN clear() called on empty cache', () {
+      final events = <MutationCacheEvent>[];
+
+      cache.subscribe(events.add);
+      cache.clear();
+
+      expect(events, isEmpty);
+    });
+
+    test(
+        'SHOULD receive MutationUpdatedEvent '
+        'WHEN mutation state changes via execute()', withFakeAsync((async) {
+      final mutation = Mutation<String, Object, String, void>.cached(client);
+      final events = <MutationCacheEvent>[];
+
+      cache.subscribe(events.add);
+      mutation.execute(
+        'variables',
+        (variables, context) async {
+          await Future.delayed(const Duration(seconds: 1));
+          return 'data';
+        },
+      );
+
+      var event = events[0] as MutationUpdatedEvent;
+      expect(event.mutation, same(mutation));
+      expect(event.mutation.state.status, MutationStatus.pending);
+
+      async.elapse(const Duration(seconds: 1));
+
+      event = events[1] as MutationUpdatedEvent;
+      expect(event.mutation, same(mutation));
+      expect(event.mutation.state.status, MutationStatus.success);
+      expect(event.mutation.state.data, 'data');
+    }));
+
+    test(
+        'SHOULD return unsubscribe function that removes listener'
+        '', () {
+      final events = <MutationCacheEvent>[];
+      final unsubscribe = cache.subscribe(events.add);
+
+      Mutation<String, Object, String, void>.cached(client);
+      expect(events, hasLength(1));
+
+      unsubscribe();
+
+      Mutation<String, Object, String, void>.cached(client);
+      expect(events, hasLength(1)); // No new events
+    });
+
+    test(
+        'SHOULD support multiple listeners'
+        '', () {
+      final events1 = <MutationCacheEvent>[];
+      final events2 = <MutationCacheEvent>[];
+      final events3 = <MutationCacheEvent>[];
+
+      cache.subscribe(events1.add);
+      cache.subscribe(events2.add);
+      cache.subscribe(events3.add);
+      Mutation<String, Object, String, void>.cached(client);
+
+      expect(events1, hasLength(1));
+      expect(events2, hasLength(1));
+      expect(events3, hasLength(1));
+      expect(events1[0], same(events2[0]));
+      expect(events2[0], same(events3[0]));
+      expect(events3[0], same(events1[0]));
     });
   });
 }

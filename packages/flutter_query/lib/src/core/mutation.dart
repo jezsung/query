@@ -2,6 +2,7 @@ import 'package:clock/clock.dart';
 import 'package:meta/meta.dart';
 
 import 'garbage_collectable.dart';
+import 'mutation_cache_event.dart';
 import 'mutation_function_context.dart';
 import 'mutation_observer.dart';
 import 'mutation_options.dart';
@@ -23,7 +24,7 @@ class Mutation<TData, TError, TVariables, TOnMutateResult>
     this.mutationKey,
   })  : mutationId = _client.mutationCache.getNextMutationId(),
         _state = const MutationState() {
-    onAddObserver = (_) {
+    onAddObserver = (observer) {
       cancelGc();
     };
     onRemoveObserver = (observer) {
@@ -61,6 +62,7 @@ class Mutation<TData, TError, TVariables, TOnMutateResult>
     if (newState != _state) {
       _state = newState;
       notifyObservers(newState);
+      _client.mutationCache.dispatch(MutationUpdatedEvent(this));
     }
   }
 

@@ -1,6 +1,10 @@
-## 0.6.0 (2025-01-26)
+## 0.6.0 (2025-01-31)
 
 This release contains breaking changes to improve API consistency and usability.
+
+- Added `useIsFetching` hook that returns the count of queries currently fetching.
+
+- Added `useIsMutating` hook that returns the count of mutations currently pending.
 
 - Added `meta` property to `DefaultQueryOptions` and `DefaultMutationOptions` for setting default metadata across all queries and mutations. This metadata is deep-merged with query/mutation-specific meta and observer meta.
 

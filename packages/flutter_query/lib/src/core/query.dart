@@ -6,6 +6,7 @@ import 'package:meta/meta.dart';
 import 'abort_signal.dart';
 import 'garbage_collectable.dart';
 import 'observable.dart';
+import 'query_cache_event.dart';
 import 'query_client.dart';
 import 'query_function_context.dart';
 import 'query_key.dart';
@@ -23,7 +24,7 @@ class Query<TData, TError>
   Query(this._client, this._queryKey)
       : _initialState = const QueryState(),
         _currentState = const QueryState() {
-    onAddObserver = (_) {
+    onAddObserver = (observer) {
       cancelGc();
       state = _currentState.copyWith(isActive: isActive);
     };
@@ -89,6 +90,7 @@ class Query<TData, TError>
     if (newState != _currentState) {
       _currentState = newState;
       notifyObservers(_currentState);
+      _client.cache.dispatch(QueryUpdatedEvent(this));
     }
   }
 

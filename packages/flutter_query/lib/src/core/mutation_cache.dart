@@ -2,10 +2,14 @@ import 'package:collection/collection.dart';
 import 'package:meta/meta.dart';
 
 import 'mutation.dart';
+import 'mutation_cache_event.dart';
 import 'mutation_state.dart';
+import 'subscribable.dart';
+
+typedef MutationCacheListener = void Function(MutationCacheEvent event);
 
 @internal
-class MutationCache {
+class MutationCache with Subscribable<MutationCacheListener> {
   final Set<Mutation> _mutations = {};
   int _mutationIdCounter = 0;
 
@@ -18,18 +22,24 @@ class MutationCache {
 
   void add(Mutation mutation) {
     _mutations.add(mutation);
+    dispatch(MutationAddedEvent(mutation));
   }
 
   void remove(Mutation mutation) {
-    mutation.dispose();
-    _mutations.remove(mutation);
+    if (_mutations.remove(mutation)) {
+      mutation.dispose();
+      dispatch(MutationRemovedEvent(mutation));
+    }
   }
 
   void clear() {
-    for (final mutation in _mutations) {
-      mutation.dispose();
-    }
+    if (_mutations.isEmpty) return;
+    final mutationsToRemove = _mutations.toList();
     _mutations.clear();
+    for (final mutation in mutationsToRemove) {
+      mutation.dispose();
+      dispatch(MutationRemovedEvent(mutation));
+    }
   }
 
   Mutation? find({
@@ -60,5 +70,9 @@ class MutationCache {
               status: status,
             ))
         .toList();
+  }
+
+  void dispatch(MutationCacheEvent event) {
+    notify((listener) => listener(event));
   }
 }

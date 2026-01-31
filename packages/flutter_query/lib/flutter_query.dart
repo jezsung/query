@@ -53,6 +53,12 @@ export 'src/core/core.dart'
         AbortedException;
 
 export 'src/hooks/hooks.dart'
-    show useQueryClient, useQuery, useMutation, useInfiniteQuery;
+    show
+        useQueryClient,
+        useQuery,
+        useMutation,
+        useInfiniteQuery,
+        useIsFetching,
+        useIsMutating;
 
 export 'src/widgets/widgets.dart' show QueryClientProvider;

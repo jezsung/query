@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:flutter_query/src/core/core.dart';
+import '../../utils.dart';
 
 void main() {
   late QueryClient client;
@@ -344,6 +345,173 @@ void main() {
       );
 
       expect(queries, isEmpty);
+    });
+  });
+
+  group('Method: subscribe', () {
+    test(
+        'SHOULD receive QueryAddedEvent '
+        'WHEN query is added', () {
+      final events = <QueryCacheEvent>[];
+      cache.subscribe(events.add);
+
+      final query1 = Query<String, Object>(client, const ['key', 1]);
+      final query2 = Query<String, Object>(client, const ['key', 2]);
+      final query3 = Query<String, Object>(client, const ['key', 3]);
+      cache
+        ..add(query1)
+        ..add(query2)
+        ..add(query3);
+
+      expect(events, hasLength(3));
+      expect(events, everyElement(isA<QueryAddedEvent>()));
+      expect(
+        events.map((e) => (e as QueryAddedEvent).query),
+        orderedEquals([same(query1), same(query2), same(query3)]),
+      );
+    });
+
+    test(
+        'SHOULD receive QueryRemovedEvent '
+        'WHEN query is removed via remove()', () {
+      final query = Query<String, Object>.cached(client, const ['key']);
+      final events = <QueryCacheEvent>[];
+
+      cache.subscribe(events.add);
+      cache.remove(query);
+
+      expect(events, hasLength(1));
+      expect(events[0], isA<QueryRemovedEvent>());
+      expect((events[0] as QueryRemovedEvent).query, same(query));
+    });
+
+    test(
+        'SHOULD receive QueryRemovedEvent '
+        'WHEN query is removed via removeByKey()', () {
+      final query = Query<String, Object>.cached(client, const ['key']);
+      final events = <QueryCacheEvent>[];
+
+      cache.subscribe(events.add);
+      cache.removeByKey(const ['key']);
+
+      expect(events, hasLength(1));
+      expect(events[0], isA<QueryRemovedEvent>());
+      expect((events[0] as QueryRemovedEvent).query, same(query));
+    });
+
+    test(
+        'SHOULD receive QueryRemovedEvent '
+        'WHEN query is removed via clear()', () {
+      final query1 = Query<String, Object>.cached(client, const ['key', 1]);
+      final query2 = Query<String, Object>.cached(client, const ['key', 2]);
+      final query3 = Query<String, Object>.cached(client, const ['key', 3]);
+      final events = <QueryCacheEvent>[];
+
+      cache.subscribe(events.add);
+      cache.clear();
+
+      expect(events, hasLength(3));
+      expect(events, everyElement(isA<QueryRemovedEvent>()));
+      expect(
+        events.map((e) => (e as QueryRemovedEvent).query),
+        containsAll([query1, query2, query3]),
+      );
+    });
+
+    test(
+        'SHOULD NOT receive QueryRemovedEvent '
+        'WHEN removing non-existent query', () {
+      final query = Query<String, Object>(client, const ['key']);
+      final events = <QueryCacheEvent>[];
+
+      cache.subscribe(events.add);
+      cache.remove(query);
+
+      expect(events, isEmpty);
+    });
+
+    test(
+        'SHOULD NOT receive QueryRemovedEvent '
+        'WHEN clear() called on empty cache', () {
+      final events = <QueryCacheEvent>[];
+
+      cache.subscribe(events.add);
+      cache.clear();
+
+      expect(events, isEmpty);
+    });
+
+    test(
+        'SHOULD receive QueryUpdatedEvent '
+        'WHEN query state changes via setData()', () {
+      final query = Query<String, Object>.cached(client, const ['key']);
+      final events = <QueryCacheEvent>[];
+
+      cache.subscribe(events.add);
+      query.setData('data');
+
+      expect(events, hasLength(1));
+      expect(events, everyElement(isA<QueryUpdatedEvent>()));
+      expect((events[0] as QueryUpdatedEvent).query, same(query));
+    });
+
+    test(
+        'SHOULD receive QueryUpdatedEvent '
+        'WHEN query state changes via fetch()', withFakeAsync((async) {
+      final query = Query<String, Object>.cached(client, const ['key']);
+      final events = <QueryCacheEvent>[];
+
+      cache.subscribe(events.add);
+      query.fetch((context) async {
+        await Future.delayed(const Duration(seconds: 1));
+        return 'data';
+      });
+
+      var event = events[0] as QueryUpdatedEvent;
+      expect(event.query, same(query));
+      expect(event.query.state.fetchStatus, FetchStatus.fetching);
+
+      async.elapse(const Duration(seconds: 1));
+
+      event = events[1] as QueryUpdatedEvent;
+      expect(event.query, same(query));
+      expect(event.query.state.fetchStatus, FetchStatus.idle);
+      expect(event.query.state.data, 'data');
+    }));
+
+    test(
+        'SHOULD return unsubscribe function that removes listener'
+        '', () {
+      final events = <QueryCacheEvent>[];
+      final unsubscribe = cache.subscribe(events.add);
+
+      Query<String, Object>.cached(client, const ['key', 1]);
+      expect(events, hasLength(1));
+
+      unsubscribe();
+
+      Query<String, Object>.cached(client, const ['key', 2]);
+      expect(events, hasLength(1)); // No new events
+    });
+
+    test(
+        'SHOULD support multiple listeners'
+        '', () {
+      final events1 = <QueryCacheEvent>[];
+      final events2 = <QueryCacheEvent>[];
+      final events3 = <QueryCacheEvent>[];
+
+      cache.subscribe(events1.add);
+      cache.subscribe(events2.add);
+      cache.subscribe(events3.add);
+      Query<String, Object>.cached(client, const ['key']);
+
+      expect(events1, hasLength(1));
+      expect(events2, hasLength(1));
+      expect(events3, hasLength(1));
+      expect(events1[0], same(events2[0]));
+      expect(events2[0], same(events3[0]));
+      expect(events3[0], same(events1[0]));
     });
   });
 }

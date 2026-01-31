@@ -5,6 +5,7 @@ import 'default_query_options.dart';
 import 'infinite_query_function_context.dart';
 import 'infinite_query_observer_options.dart';
 import 'mutation_cache.dart';
+import 'mutation_state.dart';
 import 'query.dart';
 import 'query_cache.dart';
 import 'query_function_context.dart';
@@ -614,5 +615,75 @@ class QueryClient {
     );
 
     await Future.wait(futures);
+  }
+
+  /// Returns the count of queries currently fetching.
+  ///
+  /// Use this to determine if any queries are in a fetching state, useful for
+  /// showing global loading indicators.
+  ///
+  /// The [queryKey] filters which queries to count. When [exact] is false
+  /// (default), all queries whose keys start with [queryKey] are included.
+  /// When true, only queries with an exactly matching key are counted.
+  ///
+  /// The [predicate] function provides additional filtering based on query key
+  /// and state. Only queries for which it returns true are counted.
+  ///
+  /// ```dart
+  /// // Count all fetching queries
+  /// final count = client.isFetching();
+  ///
+  /// // Count fetching queries with a specific key prefix
+  /// final usersFetching = client.isFetching(queryKey: ['users']);
+  /// ```
+  int isFetching({
+    List<Object?>? queryKey,
+    bool exact = false,
+    bool Function(List<Object?> queryKey, QueryState state)? predicate,
+  }) {
+    return _cache
+        .findAll(
+          queryKey: queryKey,
+          exact: exact,
+          predicate: (key, state) {
+            if (state.fetchStatus != FetchStatus.fetching) return false;
+            return predicate == null || predicate(key, state);
+          },
+        )
+        .length;
+  }
+
+  /// Returns the count of mutations currently pending.
+  ///
+  /// Use this to determine if any mutations are in progress, useful for showing
+  /// global saving or loading indicators.
+  ///
+  /// The [mutationKey] filters which mutations to count. When [exact] is false
+  /// (default), all mutations whose keys start with [mutationKey] are included.
+  /// When true, only mutations with an exactly matching key are counted.
+  ///
+  /// The [predicate] function provides additional filtering based on mutation
+  /// key and state. Only mutations for which it returns true are counted.
+  ///
+  /// ```dart
+  /// // Count all pending mutations
+  /// final count = client.isMutating();
+  ///
+  /// // Count pending mutations with a specific key prefix
+  /// final savingUsers = client.isMutating(mutationKey: ['users']);
+  /// ```
+  int isMutating({
+    List<Object?>? mutationKey,
+    bool exact = false,
+    bool Function(List<Object?>? mutationKey, MutationState state)? predicate,
+  }) {
+    return _mutationCache
+        .findAll(
+          mutationKey: mutationKey,
+          exact: exact,
+          status: MutationStatus.pending,
+          predicate: predicate,
+        )
+        .length;
   }
 }

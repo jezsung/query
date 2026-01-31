@@ -44,7 +44,8 @@ class MutationObserver<TData, TError, TVariables, TOnMutateResult>
   set options(
     MutationOptions<TData, TError, TVariables, TOnMutateResult> options,
   ) {
-    _options = options.withDefaults(_client.defaultMutationOptions);
+    final newOptions = options.withDefaults(_client.defaultMutationOptions);
+    _options = newOptions;
   }
 
   set result(
