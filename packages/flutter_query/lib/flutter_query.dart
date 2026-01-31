@@ -44,6 +44,7 @@ export 'src/core/core.dart'
         GcDuration,
         RefetchOnMount,
         RefetchOnResume,
+        RefetchOnReconnect,
         RetryResolver,
 
         // Cancellation

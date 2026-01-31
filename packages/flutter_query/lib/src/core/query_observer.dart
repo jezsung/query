@@ -152,16 +152,22 @@ class QueryObserver<TData, TError> with Observer<QueryState<TData, TError>> {
     _startRefetchInterval();
   }
 
+  void onUnmount() {
+    _listeners.clear();
+    _cancelRefetchInterval();
+    _query.removeObserver(this);
+  }
+
   void onResume() {
     if (_shouldFetchOnResume(_options, _query.state)) {
       _fetch().ignore();
     }
   }
 
-  void onUnmount() {
-    _listeners.clear();
-    _cancelRefetchInterval();
-    _query.removeObserver(this);
+  void onReconnect() {
+    if (_shouldFetchOnReconnect(_options, _query.state)) {
+      refetch(cancelRefetch: false).ignore();
+    }
   }
 
   @override
@@ -302,6 +308,45 @@ class QueryObserver<TData, TError> with Observer<QueryState<TData, TError>> {
       case RefetchOnResume.never:
         return false;
       case RefetchOnResume.always:
+        return true;
+    }
+  }
+
+  bool _shouldFetchOnReconnect(
+    final QueryOptions<TData, TError> options,
+    final QueryState<TData, TError> state,
+  ) {
+    final enabled = options.enabled ?? true;
+    final staleDuration = options.staleDuration ?? StaleDuration.zero;
+    final refetchOnReconnect =
+        options.refetchOnReconnect ?? RefetchOnReconnect.stale;
+
+    if (!enabled) {
+      return false;
+    }
+    if (staleDuration == StaleDuration.static) {
+      return false;
+    }
+    switch (refetchOnReconnect) {
+      case RefetchOnReconnect.stale:
+        if (state.data == null || state.dataUpdatedAt == null) {
+          return true;
+        }
+        switch (staleDuration) {
+          case StaleDurationValue():
+            if (state.isInvalidated) {
+              return true;
+            }
+            final age = clock.now().difference(state.dataUpdatedAt!);
+            return age >= staleDuration;
+          case StaleDurationInfinity():
+            return state.isInvalidated;
+          case StaleDurationStatic():
+            return false;
+        }
+      case RefetchOnReconnect.never:
+        return false;
+      case RefetchOnReconnect.always:
         return true;
     }
   }

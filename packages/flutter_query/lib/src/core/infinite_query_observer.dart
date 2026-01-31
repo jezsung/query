@@ -194,6 +194,7 @@ class InfiniteQueryObserver<TData, TError, TPageParam> {
       refetchInterval: _options.refetchInterval,
       refetchOnMount: _options.refetchOnMount,
       refetchOnResume: _options.refetchOnResume,
+      refetchOnReconnect: _options.refetchOnReconnect,
       retry: _options.retry,
       retryOnMount: _options.retryOnMount,
       seed: _options.seed,

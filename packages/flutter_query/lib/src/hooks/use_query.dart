@@ -45,6 +45,11 @@ import 'use_query_client.dart';
 ///   background. Can be [RefetchOnResume.stale] (default),
 ///   [RefetchOnResume.always], or [RefetchOnResume.never].
 ///
+/// - [refetchOnReconnect]: Controls refetch behavior when network connectivity
+///   is restored. Can be [RefetchOnReconnect.stale] (default),
+///   [RefetchOnReconnect.always], or [RefetchOnReconnect.never]. Requires
+///   [connectivityChanges] to be provided to [QueryClient].
+///
 /// - [refetchInterval]: Automatically refetch at the specified interval while
 ///   this hook is mounted.
 ///
@@ -82,6 +87,7 @@ QueryResult<TData, TError> useQuery<TData, TError>(
   TData? placeholder,
   RefetchOnMount? refetchOnMount,
   RefetchOnResume? refetchOnResume,
+  RefetchOnReconnect? refetchOnReconnect,
   Duration? refetchInterval,
   RetryResolver<TError>? retry,
   bool? retryOnMount,
@@ -107,6 +113,7 @@ QueryResult<TData, TError> useQuery<TData, TError>(
         refetchInterval: refetchInterval,
         refetchOnMount: refetchOnMount,
         refetchOnResume: refetchOnResume,
+        refetchOnReconnect: refetchOnReconnect,
         retry: retry,
         retryOnMount: retryOnMount,
         seed: seed,
@@ -140,6 +147,7 @@ QueryResult<TData, TError> useQuery<TData, TError>(
     refetchInterval: refetchInterval,
     refetchOnMount: refetchOnMount,
     refetchOnResume: refetchOnResume,
+    refetchOnReconnect: refetchOnReconnect,
     retry: retry,
     retryOnMount: retryOnMount,
     seed: seed,

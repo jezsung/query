@@ -30,13 +30,43 @@ import 'utils.dart';
 /// ```
 class QueryClient {
   /// Creates a client with optional default options for queries and mutations.
+  ///
+  /// The [connectivityChanges] stream enables automatic refetching when network
+  /// connectivity is restored. The stream should emit `true` when online and
+  /// `false` when offline. If not provided, the [refetchOnReconnect] option
+  /// has no effect.
+  ///
+  /// The stream should emit the current connectivity state immediately upon
+  /// subscription. This ensures that if the app starts offline, the transition
+  /// to online will correctly trigger a reconnect. Most connectivity packages
+  /// (like `connectivity_plus`) emit the current state on subscribe by default.
+  ///
+  /// Example using connectivity_plus:
+  /// ```dart
+  /// final client = QueryClient(
+  ///   connectivityChanges: Connectivity().onConnectivityChanged.map(
+  ///     (results) => !results.contains(ConnectivityResult.none),
+  ///   ),
+  /// );
+  /// ```
   QueryClient({
     this.defaultQueryOptions = const DefaultQueryOptions(),
     this.defaultMutationOptions = const DefaultMutationOptions(),
-  });
+    Stream<bool>? connectivityChanges,
+  }) {
+    connectivityChanges?.listen((isOnline) {
+      if (!_wasOnline && isOnline) {
+        for (final observer in _cache.getAll().expand((q) => q.observers)) {
+          observer.onReconnect();
+        }
+      }
+      _wasOnline = isOnline;
+    });
+  }
 
   final QueryCache _cache = QueryCache();
   final MutationCache _mutationCache = MutationCache();
+  bool _wasOnline = true;
 
   /// The default options applied to all new queries.
   ///

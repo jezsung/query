@@ -24,6 +24,7 @@ class DefaultQueryOptions {
     this.refetchInterval,
     this.refetchOnMount = RefetchOnMount.stale,
     this.refetchOnResume = RefetchOnResume.stale,
+    this.refetchOnReconnect = RefetchOnReconnect.stale,
     this.retry,
     this.retryOnMount = true,
     this.meta,
@@ -60,6 +61,14 @@ class DefaultQueryOptions {
   /// Defaults to [RefetchOnResume.stale].
   final RefetchOnResume refetchOnResume;
 
+  /// Whether to refetch when network connectivity is restored.
+  ///
+  /// Defaults to [RefetchOnReconnect.stale].
+  ///
+  /// Note: Requires [connectivityChanges] to be provided to [QueryClient].
+  /// If not provided, this option has no effect.
+  final RefetchOnReconnect refetchOnReconnect;
+
   /// Retry behavior for failed queries.
   ///
   /// When `null`, uses the query's own retry configuration. Defaults to `null`.
@@ -86,6 +95,7 @@ class DefaultQueryOptions {
           refetchInterval == other.refetchInterval &&
           refetchOnMount == other.refetchOnMount &&
           refetchOnResume == other.refetchOnResume &&
+          refetchOnReconnect == other.refetchOnReconnect &&
           identical(retry, other.retry) &&
           retryOnMount == other.retryOnMount &&
           deepEq.equals(meta, other.meta);
@@ -98,6 +108,7 @@ class DefaultQueryOptions {
         refetchInterval,
         refetchOnMount,
         refetchOnResume,
+        refetchOnReconnect,
         identityHashCode(retry),
         retryOnMount,
         meta,
@@ -111,6 +122,7 @@ class DefaultQueryOptions {
       'refetchInterval: $refetchInterval, '
       'refetchOnMount: $refetchOnMount, '
       'refetchOnResume: $refetchOnResume, '
+      'refetchOnReconnect: $refetchOnReconnect, '
       'retry: $retry, '
       'retryOnMount: $retryOnMount, '
       'meta: $meta)';

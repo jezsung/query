@@ -46,6 +46,7 @@ class InfiniteQueryOptions<TData, TError, TPageParam> {
     this.placeholder,
     this.refetchOnMount,
     this.refetchOnResume,
+    this.refetchOnReconnect,
     this.refetchInterval,
     this.retry,
     this.retryOnMount,
@@ -66,6 +67,7 @@ class InfiniteQueryOptions<TData, TError, TPageParam> {
   final InfiniteData<TData, TPageParam>? placeholder;
   final RefetchOnMount? refetchOnMount;
   final RefetchOnResume? refetchOnResume;
+  final RefetchOnReconnect? refetchOnReconnect;
   final Duration? refetchInterval;
   final RetryResolver<TError>? retry;
   final bool? retryOnMount;
@@ -89,6 +91,7 @@ class InfiniteQueryOptions<TData, TError, TPageParam> {
           deepEq.equals(placeholder, other.placeholder) &&
           refetchOnMount == other.refetchOnMount &&
           refetchOnResume == other.refetchOnResume &&
+          refetchOnReconnect == other.refetchOnReconnect &&
           refetchInterval == other.refetchInterval &&
           identical(retry, other.retry) &&
           retryOnMount == other.retryOnMount &&
@@ -110,6 +113,7 @@ class InfiniteQueryOptions<TData, TError, TPageParam> {
         deepEq.hash(placeholder),
         refetchOnMount,
         refetchOnResume,
+        refetchOnReconnect,
         refetchInterval,
         identityHashCode(retry),
         retryOnMount,
@@ -129,6 +133,7 @@ class InfiniteQueryOptions<TData, TError, TPageParam> {
       'placeholder: $placeholder, '
       'refetchOnMount: $refetchOnMount, '
       'refetchOnResume: $refetchOnResume, '
+      'refetchOnReconnect: $refetchOnReconnect, '
       'refetchInterval: $refetchInterval, '
       'retryOnMount: $retryOnMount, '
       'seed: $seed, '
@@ -154,6 +159,7 @@ extension InfiniteQueryOptionsExt<TData, TError, TPageParam>
       placeholder: placeholder,
       refetchOnMount: refetchOnMount ?? defaults.refetchOnMount,
       refetchOnResume: refetchOnResume ?? defaults.refetchOnResume,
+      refetchOnReconnect: refetchOnReconnect ?? defaults.refetchOnReconnect,
       refetchInterval: refetchInterval ?? defaults.refetchInterval,
       retry: retry ?? defaults.retry as RetryResolver<TError>?,
       retryOnMount: retryOnMount ?? defaults.retryOnMount,

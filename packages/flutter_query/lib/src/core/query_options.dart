@@ -21,6 +21,7 @@ class QueryOptions<TData, TError> {
     this.placeholder,
     this.refetchOnMount,
     this.refetchOnResume,
+    this.refetchOnReconnect,
     this.refetchInterval,
     this.retryOnMount,
   }) : key = QueryKey(queryKey);
@@ -37,6 +38,7 @@ class QueryOptions<TData, TError> {
   final TData? placeholder;
   final RefetchOnMount? refetchOnMount;
   final RefetchOnResume? refetchOnResume;
+  final RefetchOnReconnect? refetchOnReconnect;
   final Duration? refetchInterval;
   final bool? retryOnMount;
 
@@ -57,6 +59,7 @@ class QueryOptions<TData, TError> {
           refetchInterval == other.refetchInterval &&
           refetchOnMount == other.refetchOnMount &&
           refetchOnResume == other.refetchOnResume &&
+          refetchOnReconnect == other.refetchOnReconnect &&
           retryOnMount == other.retryOnMount;
 
   @override
@@ -74,6 +77,7 @@ class QueryOptions<TData, TError> {
         refetchInterval,
         refetchOnMount,
         refetchOnResume,
+        refetchOnReconnect,
         retryOnMount,
       );
 
@@ -86,6 +90,7 @@ class QueryOptions<TData, TError> {
       'placeholder: $placeholder, '
       'refetchOnMount: $refetchOnMount, '
       'refetchOnResume: $refetchOnResume, '
+      'refetchOnReconnect: $refetchOnReconnect, '
       'refetchInterval: $refetchInterval, '
       'retryOnMount: $retryOnMount, '
       'seed: $seed, '
@@ -111,6 +116,7 @@ extension QueryOptionsExt<TData, TError> on QueryOptions<TData, TError> {
       refetchInterval: refetchInterval ?? defaults.refetchInterval,
       refetchOnMount: refetchOnMount ?? defaults.refetchOnMount,
       refetchOnResume: refetchOnResume ?? defaults.refetchOnResume,
+      refetchOnReconnect: refetchOnReconnect ?? defaults.refetchOnReconnect,
       retryOnMount: retryOnMount ?? defaults.retryOnMount,
     );
   }
@@ -351,6 +357,33 @@ enum RefetchOnResume {
   /// Queries will refetch when the app resumes, even if their data is still
   /// fresh. Useful for data that may have changed while the app was in the
   /// background.
+  always,
+}
+
+/// Controls refetch behavior when network connectivity is restored.
+///
+/// Determines whether queries should be refetched when the device
+/// reconnects to the network after being offline.
+///
+/// Note: Requires [connectivityChanges] to be provided to [QueryClient].
+/// If not provided, this option has no effect.
+enum RefetchOnReconnect {
+  /// Refetch only if the cached data is stale.
+  ///
+  /// The query refetches only when the data is stale, respecting the configured
+  /// stale duration option.
+  stale,
+
+  /// Never refetch on reconnect.
+  ///
+  /// Queries will not refetch when connectivity is restored, regardless of
+  /// staleness. Useful for data that doesn't depend on network freshness.
+  never,
+
+  /// Always refetch on reconnect.
+  ///
+  /// Queries will refetch when connectivity is restored, even if their data
+  /// is still fresh. Useful for data that may have changed while offline.
   always,
 }
 

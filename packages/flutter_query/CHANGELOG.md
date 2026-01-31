@@ -1,10 +1,12 @@
-## 0.6.0 (2025-01-31)
+## 0.6.0 (2025-02-01)
 
 This release contains breaking changes to improve API consistency and usability.
 
 - Added `useIsFetching` hook that returns the count of queries currently fetching.
 
 - Added `useIsMutating` hook that returns the count of mutations currently pending.
+
+- Added `refetchOnReconnect` option to `useQuery` and `useInfiniteQuery` for controlling refetch behavior when network connectivity is restored. Requires passing a `connectivityChanges` stream to `QueryClient`.
 
 - Added `meta` property to `DefaultQueryOptions` and `DefaultMutationOptions` for setting default metadata across all queries and mutations. This metadata is deep-merged with query/mutation-specific meta and observer meta.
 

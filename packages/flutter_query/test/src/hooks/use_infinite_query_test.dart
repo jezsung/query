@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import 'package:flutter_hooks/flutter_hooks.dart';
@@ -1345,6 +1347,268 @@ void main() {
 
       await tester.pump(const Duration(seconds: 1));
       expect(fetches, 2);
+    }));
+  });
+
+  group('Parameter: refetchOnReconnect', () {
+    testWidgets(
+        'SHOULD refetch stale data '
+        'WHEN refetchOnReconnect == RefetchOnReconnect.stale',
+        withCleanup((tester) async {
+      final connectivityController = StreamController<bool>();
+      addTearDown(connectivityController.close);
+
+      final reconnectClient = QueryClient(
+        connectivityChanges: connectivityController.stream,
+      );
+      addTearDown(reconnectClient.clear);
+
+      var fetches = 0;
+      final hook = await buildHook(
+        () => useInfiniteQuery<String, Object, int>(
+          const ['test'],
+          (context) async {
+            await Future.delayed(const Duration(seconds: 1));
+            fetches++;
+            return 'page-${context.pageParam}';
+          },
+          initialPageParam: 0,
+          nextPageParamBuilder: (data) => data.pageParams.last + 1,
+          staleDuration: StaleDuration.zero,
+          refetchOnReconnect: RefetchOnReconnect.stale,
+          client: reconnectClient,
+        ),
+      );
+
+      // Emit initial online state
+      connectivityController.add(true);
+      await tester.pump(const Duration(seconds: 1));
+
+      expect(hook.current.data?.pages, ['page-0']);
+      expect(hook.current.isStale, isTrue);
+      expect(fetches, 1);
+
+      // Go offline then back online - should trigger reconnect
+      connectivityController.add(false);
+      connectivityController.add(true);
+      await tester.pumpAndSettle();
+
+      expect(hook.current.fetchStatus, FetchStatus.fetching);
+
+      await tester.pump(const Duration(seconds: 1));
+
+      expect(hook.current.fetchStatus, FetchStatus.idle);
+      expect(hook.current.data?.pages, ['page-0']);
+      expect(fetches, 2);
+    }));
+
+    testWidgets(
+        'SHOULD NOT refetch fresh data '
+        'WHEN refetchOnReconnect == RefetchOnReconnect.stale',
+        withCleanup((tester) async {
+      final connectivityController = StreamController<bool>();
+      addTearDown(connectivityController.close);
+
+      final reconnectClient = QueryClient(
+        connectivityChanges: connectivityController.stream,
+      );
+      addTearDown(reconnectClient.clear);
+
+      var fetches = 0;
+      final hook = await buildHook(
+        () => useInfiniteQuery<String, Object, int>(
+          const ['test'],
+          (context) async {
+            await Future.delayed(const Duration(seconds: 1));
+            fetches++;
+            return 'page-${context.pageParam}';
+          },
+          initialPageParam: 0,
+          nextPageParamBuilder: (data) => data.pageParams.last + 1,
+          staleDuration: StaleDuration.infinity,
+          refetchOnReconnect: RefetchOnReconnect.stale,
+          client: reconnectClient,
+        ),
+      );
+
+      // Emit initial online state and process stream event
+      connectivityController.add(true);
+      await tester.pump(const Duration(seconds: 1));
+
+      expect(hook.current.data?.pages, ['page-0']);
+      expect(hook.current.isStale, isFalse);
+      expect(fetches, 1);
+
+      // Go offline and go back online - should not trigger reconnect
+      connectivityController.add(false);
+      connectivityController.add(true);
+      await tester.pumpAndSettle();
+
+      expect(hook.current.fetchStatus, FetchStatus.idle);
+
+      await tester.pump(const Duration(seconds: 1));
+
+      expect(hook.current.fetchStatus, FetchStatus.idle);
+      expect(hook.current.data?.pages, ['page-0']);
+      expect(fetches, 1);
+    }));
+
+    testWidgets(
+        'SHOULD NOT refetch stale data '
+        'WHEN refetchOnReconnect == RefetchOnReconnect.never',
+        withCleanup((tester) async {
+      final connectivityController = StreamController<bool>();
+      addTearDown(connectivityController.close);
+
+      final reconnectClient = QueryClient(
+        connectivityChanges: connectivityController.stream,
+      );
+      addTearDown(reconnectClient.clear);
+
+      var fetches = 0;
+      final hook = await buildHook(
+        () => useInfiniteQuery<String, Object, int>(
+          const ['test'],
+          (context) async {
+            await Future.delayed(const Duration(seconds: 1));
+            fetches++;
+            return 'page-${context.pageParam}';
+          },
+          initialPageParam: 0,
+          nextPageParamBuilder: (data) => data.pageParams.last + 1,
+          staleDuration: StaleDuration.zero,
+          refetchOnReconnect: RefetchOnReconnect.never,
+          client: reconnectClient,
+        ),
+      );
+
+      // Emit initial online state and process stream event
+      connectivityController.add(true);
+      await tester.pump(const Duration(seconds: 1));
+
+      expect(hook.current.data?.pages, ['page-0']);
+      expect(hook.current.isStale, isTrue);
+      expect(fetches, 1);
+
+      // Go offline and go back online - should NOT trigger reconnect since never
+      connectivityController.add(false);
+      connectivityController.add(true);
+      await tester.pumpAndSettle();
+
+      expect(hook.current.fetchStatus, FetchStatus.idle);
+      expect(hook.current.data?.pages, ['page-0']);
+      expect(fetches, 1);
+
+      await tester.pump(const Duration(seconds: 1));
+
+      expect(hook.current.fetchStatus, FetchStatus.idle);
+      expect(hook.current.data?.pages, ['page-0']);
+      expect(fetches, 1);
+    }));
+
+    testWidgets(
+        'SHOULD refetch fresh data '
+        'WHEN refetchOnReconnect == RefetchOnReconnect.always',
+        withCleanup((tester) async {
+      final connectivityController = StreamController<bool>();
+      addTearDown(connectivityController.close);
+
+      final reconnectClient = QueryClient(
+        connectivityChanges: connectivityController.stream,
+      );
+      addTearDown(reconnectClient.clear);
+
+      var fetches = 0;
+      final hook = await buildHook(
+        () => useInfiniteQuery<String, Object, int>(
+          const ['test'],
+          (context) async {
+            fetches++;
+            await Future.delayed(const Duration(seconds: 1));
+            return 'page-${context.pageParam}';
+          },
+          initialPageParam: 0,
+          nextPageParamBuilder: (data) => data.pageParams.last + 1,
+          staleDuration: StaleDuration.infinity,
+          refetchOnReconnect: RefetchOnReconnect.always,
+          client: reconnectClient,
+        ),
+      );
+
+      // Emit initial online state and process stream event
+      connectivityController.add(true);
+      await tester.pump(const Duration(seconds: 1));
+
+      expect(hook.current.data?.pages, ['page-0']);
+      expect(hook.current.isStale, isFalse);
+      expect(fetches, 1);
+
+      // Go offline and go back online - should trigger reconnect even when fresh
+      connectivityController.add(false);
+      connectivityController.add(true);
+      await tester.pumpAndSettle();
+
+      expect(hook.current.fetchStatus, FetchStatus.fetching);
+
+      await tester.pump(const Duration(seconds: 1));
+
+      expect(hook.current.fetchStatus, FetchStatus.idle);
+      expect(hook.current.data?.pages, ['page-0']);
+      expect(fetches, 2);
+    }));
+
+    testWidgets(
+        'SHOULD NOT refetch '
+        'WHEN refetchOnReconnect == RefetchOnReconnect.always '
+        'AND staleDuration == StaleDuration.static',
+        withCleanup((tester) async {
+      final connectivityController = StreamController<bool>();
+      addTearDown(connectivityController.close);
+
+      final reconnectClient = QueryClient(
+        connectivityChanges: connectivityController.stream,
+      );
+      addTearDown(reconnectClient.clear);
+
+      var fetches = 0;
+      final hook = await buildHook(
+        () => useInfiniteQuery<String, Object, int>(
+          const ['test'],
+          (context) async {
+            fetches++;
+            await Future.delayed(const Duration(seconds: 1));
+            return 'page-${context.pageParam}';
+          },
+          initialPageParam: 0,
+          nextPageParamBuilder: (data) => data.pageParams.last + 1,
+          staleDuration: StaleDuration.static,
+          refetchOnReconnect: RefetchOnReconnect.always,
+          client: reconnectClient,
+        ),
+      );
+
+      // Emit initial online state and process stream event
+      connectivityController.add(true);
+      await tester.pumpAndSettle(const Duration(seconds: 1));
+
+      expect(hook.current.data?.pages, ['page-0']);
+      expect(hook.current.isStale, isFalse);
+      expect(fetches, 1);
+
+      // Go offline and go back online - should NOT trigger reconnect since static
+      connectivityController.add(false);
+      connectivityController.add(true);
+      await tester.pumpAndSettle();
+
+      expect(hook.current.fetchStatus, FetchStatus.idle);
+      expect(hook.current.data?.pages, ['page-0']);
+      expect(fetches, 1);
+
+      await tester.pump(const Duration(seconds: 1));
+
+      expect(hook.current.fetchStatus, FetchStatus.idle);
+      expect(hook.current.data?.pages, ['page-0']);
+      expect(fetches, 1);
     }));
   });
 
