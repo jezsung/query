@@ -1,0 +1,14 @@
+{
+  "folders": [
+    {
+      "path": ".",
+    },
+    {
+      "path": "packages/flutter_query",
+    },
+    {
+      "path": "docs",
+    },
+  ],
+  "settings": {},
+}
