@@ -12,6 +12,7 @@ void main() {
       expect(
         options.toString(),
         'DefaultMutationOptions('
+        'networkMode: NetworkMode.online, '
         'gcDuration: ${const GcDuration(minutes: 5)}, '
         'retry: <Function>, '
         'meta: null)',
@@ -30,6 +31,7 @@ void main() {
       expect(
         options.toString(),
         'DefaultMutationOptions('
+        'networkMode: NetworkMode.online, '
         'gcDuration: ${const GcDuration(minutes: 10)}, '
         'retry: <Function>, '
         "meta: {default: value})",

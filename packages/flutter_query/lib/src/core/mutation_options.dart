@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'default_mutation_options.dart';
 import 'mutation_function_context.dart';
+import 'network_mode.dart';
 import 'query_options.dart';
 
 class MutationOptions<TData, TError, TVariables, TOnMutateResult> {
@@ -12,6 +13,7 @@ class MutationOptions<TData, TError, TVariables, TOnMutateResult> {
     this.onError,
     this.onSettled,
     this.mutationKey,
+    this.networkMode,
     this.gcDuration,
     this.retry,
     this.meta,
@@ -24,6 +26,7 @@ class MutationOptions<TData, TError, TVariables, TOnMutateResult> {
   final MutationOnSettled<TData, TError, TVariables, TOnMutateResult>?
       onSettled;
   final List<Object?>? mutationKey;
+  final NetworkMode? networkMode;
   final GcDuration? gcDuration;
   final RetryResolver<TError>? retry;
   final Map<String, dynamic>? meta;
@@ -35,6 +38,7 @@ class MutationOptions<TData, TError, TVariables, TOnMutateResult> {
       'onError: ${onError != null ? '<Function>' : 'null'}, '
       'onSettled: ${onSettled != null ? '<Function>' : 'null'}, '
       'mutationKey: $mutationKey, '
+      'networkMode: $networkMode, '
       'gcDuration: $gcDuration, '
       'retry: ${retry != null ? '<Function>' : 'null'}, '
       'meta: $meta)';
@@ -115,6 +119,7 @@ extension MutationOptionsExt<TData, TError, TVariables, TOnMutateResult>
       onError: onError,
       onSettled: onSettled,
       mutationKey: mutationKey,
+      networkMode: networkMode ?? defaults.networkMode,
       gcDuration: gcDuration ?? defaults.gcDuration,
       retry: retry ?? defaults.retry as RetryResolver<TError>?,
       meta: meta,

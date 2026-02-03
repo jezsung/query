@@ -33,11 +33,15 @@ import 'use_query_client.dart';
 /// - [mutationKey]: An optional key to identify this mutation in the cache.
 ///   Unlike query keys, mutation keys are not used for deduplication.
 ///
+/// - [networkMode]: The network connectivity mode for this mutation. Has no
+///   effect unless [connectivityChanges] is provided to [QueryClient]. See
+///   [NetworkMode] for options. Defaults to [NetworkMode.online].
+///
+/// - [gcDuration]: How long mutation data remains in cache after completion.
+///
 /// - [retry]: A callback that controls retry behavior on failure. Returns a
 ///   [Duration] to retry after waiting, or `null` to stop retrying. Defaults
 ///   to no retries.
-///
-/// - [gcDuration]: How long mutation data remains in cache after completion.
 ///   Defaults to 5 minutes.
 ///
 /// - [meta]: A map of arbitrary metadata attached to this mutation.
@@ -57,6 +61,7 @@ MutationResult<TData, TError, TVariables, TOnMutateResult>
   MutationOnError<TError, TVariables, TOnMutateResult>? onError,
   MutationOnSettled<TData, TError, TVariables, TOnMutateResult>? onSettled,
   List<Object?>? mutationKey,
+  NetworkMode? networkMode,
   GcDuration? gcDuration,
   RetryResolver<TError>? retry,
   Map<String, dynamic>? meta,
@@ -71,6 +76,7 @@ MutationResult<TData, TError, TVariables, TOnMutateResult>
       MutationOptions<TData, TError, TVariables, TOnMutateResult>(
         mutationFn: mutationFn,
         mutationKey: mutationKey,
+        networkMode: networkMode,
         meta: meta,
         onMutate: onMutate,
         onSuccess: onSuccess,
@@ -94,6 +100,7 @@ MutationResult<TData, TError, TVariables, TOnMutateResult>
       MutationOptions<TData, TError, TVariables, TOnMutateResult>(
     mutationFn: mutationFn,
     mutationKey: mutationKey,
+    networkMode: networkMode,
     meta: meta,
     onMutate: onMutate,
     onSuccess: onSuccess,

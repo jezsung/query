@@ -16,7 +16,8 @@ void main() {
         failureCount: 0,
         failureReason: null,
         isPaused: false,
-        mutate: (_) async => '',
+        mutate: (_) {},
+        mutateAsync: (_) async => '',
         reset: () {},
       );
 
@@ -32,6 +33,7 @@ void main() {
         'failureReason: null, '
         'isPaused: false, '
         'mutate: <Function>, '
+        'mutateAsync: <Function>, '
         'reset: <Function>)',
       );
     });
@@ -50,7 +52,8 @@ void main() {
         failureCount: 2,
         failureReason: error,
         isPaused: true,
-        mutate: (_) async => '',
+        mutate: (_) {},
+        mutateAsync: (_) async => '',
         reset: () {},
       );
 
@@ -66,6 +69,7 @@ void main() {
         'failureReason: $error, '
         'isPaused: true, '
         'mutate: <Function>, '
+        'mutateAsync: <Function>, '
         'reset: <Function>)',
       );
     });

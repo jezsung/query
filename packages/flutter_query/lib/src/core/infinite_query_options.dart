@@ -1,5 +1,6 @@
 import 'default_query_options.dart';
 import 'infinite_query_function_context.dart';
+import 'network_mode.dart';
 import 'query_key.dart';
 import 'query_observer.dart';
 import 'query_options.dart';
@@ -41,6 +42,7 @@ class InfiniteQueryOptions<TData, TError, TPageParam> {
     this.prevPageParamBuilder,
     this.maxPages,
     this.enabled,
+    this.networkMode,
     this.staleDuration,
     this.gcDuration,
     this.placeholder,
@@ -62,6 +64,7 @@ class InfiniteQueryOptions<TData, TError, TPageParam> {
   final PrevPageParamBuilder<TData, TPageParam>? prevPageParamBuilder;
   final int? maxPages;
   final bool? enabled;
+  final NetworkMode? networkMode;
   final StaleDuration? staleDuration;
   final GcDuration? gcDuration;
   final InfiniteData<TData, TPageParam>? placeholder;
@@ -86,6 +89,7 @@ class InfiniteQueryOptions<TData, TError, TPageParam> {
           identical(prevPageParamBuilder, other.prevPageParamBuilder) &&
           maxPages == other.maxPages &&
           enabled == other.enabled &&
+          networkMode == other.networkMode &&
           staleDuration == other.staleDuration &&
           gcDuration == other.gcDuration &&
           deepEq.equals(placeholder, other.placeholder) &&
@@ -108,6 +112,7 @@ class InfiniteQueryOptions<TData, TError, TPageParam> {
         identityHashCode(prevPageParamBuilder),
         maxPages,
         enabled,
+        networkMode,
         staleDuration,
         gcDuration,
         deepEq.hash(placeholder),
@@ -128,6 +133,7 @@ class InfiniteQueryOptions<TData, TError, TPageParam> {
       'initialPageParam: $initialPageParam, '
       'maxPages: $maxPages, '
       'enabled: $enabled, '
+      'networkMode: $networkMode, '
       'staleDuration: $staleDuration, '
       'gcDuration: $gcDuration, '
       'placeholder: $placeholder, '
@@ -154,6 +160,7 @@ extension InfiniteQueryOptionsExt<TData, TError, TPageParam>
       prevPageParamBuilder: prevPageParamBuilder,
       maxPages: maxPages,
       enabled: enabled ?? defaults.enabled,
+      networkMode: networkMode ?? defaults.networkMode,
       staleDuration: staleDuration ?? defaults.staleDuration,
       gcDuration: gcDuration ?? defaults.gcDuration,
       placeholder: placeholder,

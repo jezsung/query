@@ -87,10 +87,9 @@ class AbortSignal {
   }
 }
 
-/// An exception indicating a query was aborted.
+/// An exception indicating a query or mutation was aborted.
 ///
-/// Thrown by [AbortSignal.throwIfAborted] when the signal has been aborted,
-/// and by the [Retryer] when it detects an abort during retry attempts.
+/// Thrown by [AbortSignal.throwIfAborted] when the signal has been aborted.
 class AbortedException implements Exception {
   /// Creates an exception indicating a query was aborted.
   const AbortedException({

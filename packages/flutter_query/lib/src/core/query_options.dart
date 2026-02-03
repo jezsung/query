@@ -1,4 +1,5 @@
 import 'default_query_options.dart';
+import 'network_mode.dart';
 import 'query_function_context.dart';
 import 'query_key.dart';
 import 'utils.dart';
@@ -12,6 +13,7 @@ class QueryOptions<TData, TError> {
     List<Object?> queryKey,
     this.queryFn, {
     this.retry,
+    this.networkMode,
     this.gcDuration,
     this.seed,
     this.seedUpdatedAt,
@@ -29,6 +31,7 @@ class QueryOptions<TData, TError> {
   final QueryKey key;
   final QueryFn<TData> queryFn;
   final RetryResolver<TError>? retry;
+  final NetworkMode? networkMode;
   final GcDuration? gcDuration;
   final TData? seed;
   final DateTime? seedUpdatedAt;
@@ -49,6 +52,7 @@ class QueryOptions<TData, TError> {
           key == other.key &&
           identical(queryFn, other.queryFn) &&
           gcDuration == other.gcDuration &&
+          networkMode == other.networkMode &&
           deepEq.equals(meta, other.meta) &&
           identical(retry, other.retry) &&
           deepEq.equals(seed, other.seed) &&
@@ -67,6 +71,7 @@ class QueryOptions<TData, TError> {
         key,
         identityHashCode(queryFn),
         gcDuration,
+        networkMode,
         deepEq.hash(meta),
         identityHashCode(retry),
         deepEq.hash(seed),
@@ -85,6 +90,7 @@ class QueryOptions<TData, TError> {
   String toString() => 'QueryOptions('
       'key: $key, '
       'enabled: $enabled, '
+      'networkMode: $networkMode, '
       'staleDuration: $staleDuration, '
       'gcDuration: $gcDuration, '
       'placeholder: $placeholder, '
@@ -106,6 +112,7 @@ extension QueryOptionsExt<TData, TError> on QueryOptions<TData, TError> {
       key.parts,
       queryFn,
       gcDuration: gcDuration ?? defaults.gcDuration,
+      networkMode: networkMode ?? defaults.networkMode,
       meta: meta,
       retry: retry ?? defaults.retry as RetryResolver<TError>?,
       seed: seed,

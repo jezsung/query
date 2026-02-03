@@ -1,3 +1,4 @@
+import 'network_mode.dart';
 import 'query_options.dart';
 import 'utils.dart';
 
@@ -20,10 +21,20 @@ import 'utils.dart';
 /// ```
 class DefaultMutationOptions {
   const DefaultMutationOptions({
+    this.networkMode = NetworkMode.online,
     this.gcDuration = const GcDuration(minutes: 5),
     this.retry = retryNever,
     this.meta,
   });
+
+  /// The network connectivity mode for mutations.
+  ///
+  /// - [NetworkMode.online]: Mutations pause when offline and resume when online
+  /// - [NetworkMode.always]: Mutations execute regardless of network state
+  /// - [NetworkMode.offlineFirst]: First execution runs immediately, retries pause
+  ///
+  /// Defaults to [NetworkMode.online].
+  final NetworkMode networkMode;
 
   /// How long completed mutation data remains in memory before garbage
   /// collection.
@@ -46,12 +57,14 @@ class DefaultMutationOptions {
   bool operator ==(Object other) =>
       identical(this, other) ||
       other is DefaultMutationOptions &&
+          networkMode == other.networkMode &&
           gcDuration == other.gcDuration &&
           identical(retry, other.retry) &&
           deepEq.equals(meta, other.meta);
 
   @override
   int get hashCode => Object.hash(
+        networkMode,
         gcDuration,
         identityHashCode(retry),
         meta,
@@ -59,6 +72,7 @@ class DefaultMutationOptions {
 
   @override
   String toString() => 'DefaultMutationOptions('
+      'networkMode: $networkMode, '
       'gcDuration: $gcDuration, '
       'retry: <Function>, '
       'meta: $meta)';

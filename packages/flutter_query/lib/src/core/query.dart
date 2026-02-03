@@ -5,6 +5,7 @@ import 'package:meta/meta.dart';
 
 import 'abort_signal.dart';
 import 'garbage_collectable.dart';
+import 'network_mode.dart';
 import 'observable.dart';
 import 'query_cache_event.dart';
 import 'query_client.dart';
@@ -13,7 +14,7 @@ import 'query_key.dart';
 import 'query_observer.dart';
 import 'query_options.dart';
 import 'query_state.dart';
-import 'retryer.dart';
+import 'retry_controller.dart';
 import 'utils.dart';
 
 class Query<TData, TError>
@@ -67,9 +68,10 @@ class Query<TData, TError>
   QueryState<TData, TError> _initialState;
   QueryState<TData, TError> _currentState;
 
-  Retryer<TData, TError>? _retryer;
+  RetryController<TData, TError>? _retryController;
   AbortController? _abortController;
   QueryState<TData, TError>? _revertState;
+  NetworkMode? _currentNetworkMode;
 
   QueryKey get key => QueryKey(_queryKey);
 
@@ -142,30 +144,39 @@ class Query<TData, TError>
 
   Future<TData> fetch(
     QueryFn<TData> queryFn, {
+    NetworkMode? networkMode,
     GcDuration? gcDuration,
     RetryResolver<TError>? retry,
     Map<String, dynamic>? meta,
     bool cancelRefetch = false,
   }) async {
-    if (state.fetchStatus == FetchStatus.fetching && _retryer != null) {
+    if (state.fetchStatus != FetchStatus.idle && _retryController != null) {
       if (cancelRefetch && state.data != null) {
         unawaited(cancel(silent: true));
       } else {
-        return _retryer!.future;
+        return _retryController!.future;
       }
     }
+
+    _currentNetworkMode =
+        networkMode ?? _client.defaultQueryOptions.networkMode;
 
     _revertState = state;
     _abortController = AbortController();
 
+    // Determine if we should start paused based on network mode and online state
+    final shouldStartPaused = !canFetch(_currentNetworkMode!, _client.isOnline);
+    final initialFetchStatus =
+        shouldStartPaused ? FetchStatus.paused : FetchStatus.fetching;
+
     state = state
         .copyWith(
-          fetchStatus: FetchStatus.fetching,
+          fetchStatus: initialFetchStatus,
           failureCount: 0,
         )
         .copyWithNull(failureReason: true);
 
-    final context = QueryFunctionContext(
+    final fnContext = QueryFunctionContext(
       queryKey: key.parts,
       client: _client,
       signal: _abortController!.signal,
@@ -175,19 +186,40 @@ class Query<TData, TError>
           .deepMergeAll(),
     );
 
-    final retryer = _retryer = Retryer<TData, TError>(
-      () => queryFn(context),
-      retry ?? _client.defaultQueryOptions.retry ?? retryExponentialBackoff,
-      onFail: (failureCount, error) {
+    _retryController = RetryController<TData, TError>(
+      () => queryFn(fnContext),
+      retry:
+          retry ?? _client.defaultQueryOptions.retry ?? retryExponentialBackoff,
+      onError: (failureCount, error) {
+        // Check if we should abort (query was cancelled)
+        if (_abortController == null || _abortController!.signal.isAborted) {
+          _retryController?.cancel(
+            error: AbortedException(revert: false, silent: true),
+          );
+          return;
+        }
+
+        // Check if we should pause (network unavailable)
+        if (!canContinue(_currentNetworkMode!, _client.isOnline)) {
+          _retryController?.pause();
+        }
+
         state = state.copyWith(
           failureCount: failureCount,
           failureReason: error,
         );
       },
+      onPause: () {
+        state = state.copyWith(fetchStatus: FetchStatus.paused);
+      },
+      onResume: () {
+        state = state.copyWith(fetchStatus: FetchStatus.fetching);
+      },
     );
+    final retryController = _retryController!;
 
     try {
-      final data = await retryer.run();
+      final data = await retryController.start(paused: shouldStartPaused);
 
       state = QueryState<TData, TError>(
         status: QueryStatus.success,
@@ -208,8 +240,8 @@ class Query<TData, TError>
       // Silent cancellation suppresses errors
       if (e.silent) {
         // Check if a new fetch started (cancelRefetch case)
-        if (_retryer != retryer) {
-          return _retryer!.future;
+        if (_retryController != retryController) {
+          return _retryController!.future;
         }
         // External silent cancel - return existing data or never-completing future
         state = state.copyWith(fetchStatus: FetchStatus.idle);
@@ -246,6 +278,7 @@ class Query<TData, TError>
     } finally {
       _abortController = null;
       _revertState = null;
+      _currentNetworkMode = null;
       scheduleGc(gcDuration ?? observers.lastOrNull?.options.gcDuration);
     }
   }
@@ -259,11 +292,13 @@ class Query<TData, TError>
   Future<void> cancel({bool revert = true, bool silent = false}) async {
     _abortController?.abort(revert: revert, silent: silent);
 
-    final retryer = _retryer;
-    if (retryer == null) return;
+    final retryController = _retryController;
+    if (retryController == null) return;
 
-    retryer.cancel(error: AbortedException(revert: revert, silent: silent));
-    await retryer.future.then((_) {}).catchError((_) {}) ?? Future.value();
+    retryController.cancel(
+        error: AbortedException(revert: revert, silent: silent));
+    await retryController.future.then((_) {}).catchError((_) {}) ??
+        Future.value();
   }
 
   void reset() {
@@ -289,6 +324,38 @@ class Query<TData, TError>
   void tryRemove() {
     if (!hasObservers && state.fetchStatus == FetchStatus.idle) {
       _client.cache.remove(this);
+    }
+  }
+
+  /// Called when network connectivity is lost.
+  ///
+  /// Pauses the query if the network mode requires connectivity.
+  void onOffline() {
+    final retryController = _retryController;
+    if (retryController == null ||
+        retryController.isPaused ||
+        retryController.isCancelled) {
+      return;
+    }
+
+    // Check if we should pause based on network mode
+    if (_currentNetworkMode != null &&
+        !canContinue(_currentNetworkMode!, _client.isOnline)) {
+      retryController.pause();
+    }
+  }
+
+  /// Called when network connectivity is restored.
+  ///
+  /// Resumes the query if it was paused due to network unavailability.
+  void onOnline() {
+    final retryController = _retryController;
+    if (retryController == null || !retryController.isPaused) return;
+
+    // Check if we can actually continue based on network mode
+    if (_currentNetworkMode != null &&
+        canContinue(_currentNetworkMode!, _client.isOnline)) {
+      retryController.resume();
     }
   }
 }

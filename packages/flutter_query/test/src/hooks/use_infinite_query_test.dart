@@ -3140,4 +3140,398 @@ void main() {
       );
     }));
   });
+
+  group('Parameter: networkMode', () {
+    late StreamController<bool> connectivityController;
+
+    setUp(() {
+      connectivityController = StreamController<bool>();
+      client = QueryClient(
+        connectivityChanges: connectivityController.stream,
+      );
+    });
+
+    tearDown(() {
+      client.clear();
+      connectivityController.close();
+    });
+
+    group('== NetworkMode.online', () {
+      // Pauses when offline, resumes when online
+
+      testWidgets(
+          'SHOULD fetch normally online'
+          '', withCleanup((tester) async {
+        // Start online
+        connectivityController.add(true);
+
+        final hook = await buildHook(
+          () => useInfiniteQuery<String, Object, int>(
+            const ['key'],
+            (_) async {
+              await Future.delayed(const Duration(seconds: 1));
+              return 'page-0';
+            },
+            initialPageParam: 0,
+            nextPageParamBuilder: (data) => data.pageParams.last + 1,
+            networkMode: NetworkMode.online,
+            client: client,
+          ),
+        );
+
+        expect(hook.current.fetchStatus, FetchStatus.fetching);
+        expect(hook.current.isPaused, isFalse);
+
+        await tester.pump(const Duration(seconds: 1));
+        expect(hook.current.status, QueryStatus.success);
+        expect(hook.current.data?.pages, ['page-0']);
+      }));
+
+      testWidgets(
+          'SHOULD pause offline, then resume on going online'
+          '', withCleanup((tester) async {
+        // Start offline
+        connectivityController.add(false);
+
+        final hook = await buildHook(
+          () => useInfiniteQuery<String, Object, int>(
+            const ['key'],
+            (_) async {
+              await Future.delayed(const Duration(seconds: 1));
+              return 'page-0';
+            },
+            initialPageParam: 0,
+            nextPageParamBuilder: (data) => data.pageParams.last + 1,
+            networkMode: NetworkMode.online,
+            client: client,
+          ),
+        );
+
+        expect(hook.current.fetchStatus, FetchStatus.paused);
+        expect(hook.current.isPaused, isTrue);
+
+        // Should be kept paused
+        await tester.pump(const Duration(days: 365));
+        expect(hook.current.fetchStatus, FetchStatus.paused);
+        expect(hook.current.isPaused, isTrue);
+
+        // Go online
+        connectivityController.add(true);
+        await tester.pump();
+        await tester.pump();
+        expect(hook.current.fetchStatus, FetchStatus.fetching);
+        expect(hook.current.isPaused, isFalse);
+
+        await tester.pump(const Duration(seconds: 1));
+        expect(hook.current.status, QueryStatus.success);
+        expect(hook.current.data?.pages, ['page-0']);
+      }));
+
+      testWidgets(
+          'SHOULD pause retries on going offline, then resume on going online'
+          '', withCleanup((tester) async {
+        // Start online
+        connectivityController.add(true);
+
+        var queryFnCount = 0;
+        final hook = await buildHook(
+          () => useInfiniteQuery<String, Object, int>(
+            const ['key'],
+            (_) async {
+              queryFnCount++;
+              throw Exception();
+            },
+            initialPageParam: 0,
+            nextPageParamBuilder: (data) => data.pageParams.last + 1,
+            networkMode: NetworkMode.online,
+            retry: (retryCount, _) {
+              if (retryCount < 3) {
+                return const Duration(seconds: 1);
+              }
+              return null;
+            },
+            client: client,
+          ),
+        );
+
+        expect(hook.current.isPaused, isFalse);
+        expect(queryFnCount, 1);
+
+        // Go offline
+        connectivityController.add(false);
+        await tester.pump();
+        await tester.pump();
+        expect(hook.current.isPaused, isTrue);
+        expect(queryFnCount, 1);
+
+        // Go online
+        connectivityController.add(true);
+        await tester.pump();
+        await tester.pump();
+        expect(hook.current.isPaused, isFalse);
+        expect(queryFnCount, 2);
+
+        // Wait for remaining retries to complete
+        await tester.pump(const Duration(seconds: 1));
+        expect(queryFnCount, 3);
+        await tester.pump(const Duration(seconds: 1));
+        expect(queryFnCount, 4);
+        expect(hook.current.status, QueryStatus.error);
+      }));
+    });
+
+    group('== NetworkMode.always', () {
+      // Never pauses, ignores network state
+
+      testWidgets(
+          'SHOULD fetch normally online'
+          '', withCleanup((tester) async {
+        // Start online
+        connectivityController.add(true);
+
+        final hook = await buildHook(
+          () => useInfiniteQuery<String, Object, int>(
+            const ['key'],
+            (_) async {
+              await Future.delayed(const Duration(seconds: 1));
+              return 'page-0';
+            },
+            initialPageParam: 0,
+            nextPageParamBuilder: (data) => data.pageParams.last + 1,
+            networkMode: NetworkMode.always,
+            client: client,
+          ),
+        );
+
+        expect(hook.current.fetchStatus, FetchStatus.fetching);
+        expect(hook.current.isPaused, isFalse);
+
+        await tester.pump(const Duration(seconds: 1));
+        expect(hook.current.status, QueryStatus.success);
+        expect(hook.current.data?.pages, ['page-0']);
+      }));
+
+      testWidgets(
+          'SHOULD fetch normally offline'
+          '', withCleanup((tester) async {
+        // Start offline
+        connectivityController.add(false);
+
+        final hook = await buildHook(
+          () => useInfiniteQuery<String, Object, int>(
+            const ['key'],
+            (_) async {
+              await Future.delayed(const Duration(seconds: 1));
+              return 'page-0';
+            },
+            initialPageParam: 0,
+            nextPageParamBuilder: (data) => data.pageParams.last + 1,
+            networkMode: NetworkMode.always,
+            client: client,
+          ),
+        );
+
+        expect(hook.current.fetchStatus, FetchStatus.fetching);
+        expect(hook.current.isPaused, isFalse);
+
+        await tester.pump(const Duration(seconds: 1));
+        expect(hook.current.status, QueryStatus.success);
+        expect(hook.current.data?.pages, ['page-0']);
+      }));
+
+      testWidgets(
+          'SHOULD NOT pause on going offline'
+          '', withCleanup((tester) async {
+        // Start online
+        connectivityController.add(true);
+
+        final hook = await buildHook(
+          () => useInfiniteQuery<String, Object, int>(
+            const ['key'],
+            (_) async {
+              await Future.delayed(const Duration(seconds: 1));
+              return 'page-0';
+            },
+            initialPageParam: 0,
+            nextPageParamBuilder: (data) => data.pageParams.last + 1,
+            networkMode: NetworkMode.always,
+            client: client,
+          ),
+        );
+
+        expect(hook.current.fetchStatus, FetchStatus.fetching);
+        expect(hook.current.isPaused, isFalse);
+
+        // Go offline
+        connectivityController.add(false);
+        await tester.pump();
+        await tester.pump();
+        expect(hook.current.fetchStatus, FetchStatus.fetching);
+        expect(hook.current.isPaused, isFalse);
+
+        await tester.pump(const Duration(seconds: 1));
+        expect(hook.current.status, QueryStatus.success);
+        expect(hook.current.data?.pages, ['page-0']);
+      }));
+
+      testWidgets(
+          'SHOULD NOT pause retries on going offline'
+          '', withCleanup((tester) async {
+        // Start online
+        connectivityController.add(true);
+
+        var queryFnCount = 0;
+        final hook = await buildHook(
+          () => useInfiniteQuery<String, Object, int>(
+            const ['key'],
+            (_) async {
+              queryFnCount++;
+              throw Exception();
+            },
+            initialPageParam: 0,
+            nextPageParamBuilder: (data) => data.pageParams.last + 1,
+            networkMode: NetworkMode.always,
+            retry: (retryCount, _) {
+              if (retryCount < 3) {
+                return const Duration(seconds: 1);
+              }
+              return null;
+            },
+            client: client,
+          ),
+        );
+
+        expect(hook.current.isPaused, isFalse);
+        expect(queryFnCount, 1);
+
+        // Go offline
+        connectivityController.add(false);
+        await tester.pump();
+        await tester.pump();
+        expect(hook.current.isPaused, isFalse);
+        expect(queryFnCount, 1);
+
+        // Should continue retrying
+        await tester.pump(const Duration(seconds: 1));
+        expect(queryFnCount, 2);
+        await tester.pump(const Duration(seconds: 1));
+        expect(queryFnCount, 3);
+        await tester.pump(const Duration(seconds: 1));
+        expect(queryFnCount, 4);
+        expect(hook.current.status, QueryStatus.error);
+      }));
+    });
+
+    group('== NetworkMode.offlineFirst', () {
+      // Always runs first execution, pauses retries offline
+
+      testWidgets(
+          'SHOULD execute initial fetch normally online'
+          '', withCleanup((tester) async {
+        // Start online
+        connectivityController.add(true);
+
+        final hook = await buildHook(
+          () => useInfiniteQuery<String, Object, int>(
+            const ['key'],
+            (_) async {
+              await Future.delayed(const Duration(seconds: 1));
+              return 'page-0';
+            },
+            initialPageParam: 0,
+            nextPageParamBuilder: (data) => data.pageParams.last + 1,
+            networkMode: NetworkMode.offlineFirst,
+            client: client,
+          ),
+        );
+
+        expect(hook.current.fetchStatus, FetchStatus.fetching);
+        expect(hook.current.isPaused, isFalse);
+
+        await tester.pump(const Duration(seconds: 1));
+        expect(hook.current.status, QueryStatus.success);
+        expect(hook.current.data?.pages, ['page-0']);
+      }));
+
+      testWidgets(
+          'SHOULD execute initial fetch normally offline'
+          '', withCleanup((tester) async {
+        // Start offline
+        connectivityController.add(false);
+
+        final hook = await buildHook(
+          () => useInfiniteQuery<String, Object, int>(
+            const ['key'],
+            (_) async {
+              await Future.delayed(const Duration(seconds: 1));
+              return 'page-0';
+            },
+            initialPageParam: 0,
+            nextPageParamBuilder: (data) => data.pageParams.last + 1,
+            networkMode: NetworkMode.offlineFirst,
+            client: client,
+          ),
+        );
+
+        expect(hook.current.fetchStatus, FetchStatus.fetching);
+        expect(hook.current.isPaused, isFalse);
+
+        await tester.pump(const Duration(seconds: 1));
+        expect(hook.current.status, QueryStatus.success);
+        expect(hook.current.data?.pages, ['page-0']);
+      }));
+
+      testWidgets(
+          'SHOULD pause retries offline, then resume on going online'
+          '', withCleanup((tester) async {
+        // Start offline
+        connectivityController.add(false);
+
+        var queryFnCount = 0;
+        final hook = await buildHook(
+          () => useInfiniteQuery<String, Object, int>(
+            const ['key'],
+            (_) async {
+              queryFnCount++;
+              throw Exception();
+            },
+            initialPageParam: 0,
+            nextPageParamBuilder: (data) => data.pageParams.last + 1,
+            networkMode: NetworkMode.offlineFirst,
+            retry: (retryCount, _) {
+              if (retryCount < 3) {
+                return const Duration(seconds: 1);
+              }
+              return null;
+            },
+            client: client,
+          ),
+        );
+
+        await tester.pump();
+        expect(hook.current.isPaused, isTrue);
+        expect(hook.current.failureCount, 1);
+        expect(queryFnCount, 1);
+
+        // Should NOT retry when paused
+        await tester.pump(const Duration(days: 365));
+        expect(hook.current.isPaused, isTrue);
+        expect(queryFnCount, 1);
+
+        // Go online
+        connectivityController.add(true);
+        await tester.pump();
+        await tester.pump();
+        expect(hook.current.isPaused, isFalse);
+        expect(queryFnCount, 2);
+
+        // Should continue retrying
+        await tester.pump(const Duration(seconds: 1));
+        expect(queryFnCount, 3);
+        await tester.pump(const Duration(seconds: 1));
+        expect(queryFnCount, 4);
+        expect(hook.current.status, QueryStatus.error);
+      }));
+    });
+  });
 }

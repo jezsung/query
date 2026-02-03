@@ -62,7 +62,20 @@ class MutationObserver<TData, TError, TVariables, TOnMutateResult>
   }
 
   /// Executes the mutation with the given [variables].
-  Future<TData> mutate(TVariables variables) async {
+  ///
+  /// This is a fire-and-forget function. It does not return the mutation
+  /// result and will not throw if the mutation fails. Use [mutateAsync]
+  /// if you need to await the result or handle errors directly.
+  void mutate(TVariables variables) {
+    // ignore() swallows the error, matching TanStack Query's behavior
+    mutateAsync(variables).ignore();
+  }
+
+  /// Executes the mutation with the given [variables] and returns the result.
+  ///
+  /// Returns a [Future] that completes with the mutation result data.
+  /// The future will reject if the mutation fails.
+  Future<TData> mutateAsync(TVariables variables) async {
     _mutation?.removeObserver(this);
 
     final mutation = _mutation = Mutation.cached(
@@ -80,6 +93,7 @@ class MutationObserver<TData, TError, TVariables, TOnMutateResult>
       onError: _options.onError,
       onSettled: _options.onSettled,
       retry: _options.retry,
+      networkMode: _options.networkMode,
       meta: _options.meta,
     );
   }
@@ -127,6 +141,7 @@ class MutationObserver<TData, TError, TVariables, TOnMutateResult>
       failureReason: state?.failureReason,
       isPaused: state?.isPaused ?? false,
       mutate: mutate,
+      mutateAsync: mutateAsync,
       reset: reset,
     );
   }

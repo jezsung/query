@@ -7,10 +7,11 @@ import 'mutation_function_context.dart';
 import 'mutation_observer.dart';
 import 'mutation_options.dart';
 import 'mutation_state.dart';
+import 'network_mode.dart';
 import 'observable.dart';
 import 'query_client.dart';
 import 'query_options.dart';
-import 'retryer.dart';
+import 'retry_controller.dart';
 import 'utils.dart';
 
 class Mutation<TData, TError, TVariables, TOnMutateResult>
@@ -51,7 +52,8 @@ class Mutation<TData, TError, TVariables, TOnMutateResult>
   final List<Object?>? mutationKey;
   MutationState<TData, TError, TVariables, TOnMutateResult> _state;
 
-  Retryer<TData, TError>? _retryer;
+  RetryController<TData, TError>? _retryController;
+  NetworkMode? _currentNetworkMode;
 
   MutationState<TData, TError, TVariables, TOnMutateResult> get state => _state;
 
@@ -81,8 +83,12 @@ class Mutation<TData, TError, TVariables, TOnMutateResult>
     MutationOnError<TError, TVariables, TOnMutateResult>? onError,
     MutationOnSettled<TData, TError, TVariables, TOnMutateResult>? onSettled,
     RetryResolver<TError>? retry,
+    NetworkMode? networkMode,
     Map<String, dynamic>? meta,
   }) async {
+    _currentNetworkMode =
+        networkMode ?? _client.defaultMutationOptions.networkMode;
+
     final fnContext = MutationFunctionContext(
       client: _client,
       meta: [_client.defaultMutationOptions.meta, meta]
@@ -92,16 +98,31 @@ class Mutation<TData, TError, TVariables, TOnMutateResult>
       mutationKey: mutationKey,
     );
 
-    _retryer = Retryer<TData, TError>(
+    // Determine initial paused state based on network mode and online state
+    final initialIsPaused = !canFetch(_currentNetworkMode!, _client.isOnline);
+
+    _retryController = RetryController<TData, TError>(
       () => mutationFn(variables, fnContext),
-      retry ?? _client.defaultMutationOptions.retry,
-      onFail: (failureCount, error) {
+      retry: retry ?? _client.defaultMutationOptions.retry,
+      onError: (failureCount, error) {
+        // Check if we should pause (network unavailable)
+        if (!canContinue(_currentNetworkMode!, _client.isOnline)) {
+          _retryController?.pause();
+        }
+
         state = _state.copyWith(
           failureCount: failureCount,
           failureReason: error,
         );
       },
+      onPause: () {
+        state = _state.copyWith(isPaused: true);
+      },
+      onResume: () {
+        state = _state.copyWith(isPaused: false);
+      },
     );
+    final retryController = _retryController!;
 
     try {
       // Dispatch pending state
@@ -110,7 +131,7 @@ class Mutation<TData, TError, TVariables, TOnMutateResult>
         variables: variables,
         submittedAt: clock.now(),
         failureCount: 0,
-        isPaused: false,
+        isPaused: initialIsPaused,
       );
 
       // Call onMutate callback
@@ -123,7 +144,7 @@ class Mutation<TData, TError, TVariables, TOnMutateResult>
       }
 
       // Execute the mutation
-      final data = await _retryer!.run();
+      final data = await retryController.start(paused: initialIsPaused);
 
       // Call onSuccess callback
       if (onSuccess != null) {
@@ -186,6 +207,8 @@ class Mutation<TData, TError, TVariables, TOnMutateResult>
             )
             .copyWithNull(data: true);
       }
+    } finally {
+      _currentNetworkMode = null;
     }
   }
 
@@ -200,6 +223,38 @@ class Mutation<TData, TError, TVariables, TOnMutateResult>
       return;
     }
     _client.mutationCache.remove(this);
+  }
+
+  /// Called when network connectivity is lost.
+  ///
+  /// Pauses the mutation if the network mode requires connectivity.
+  void onOffline() {
+    final retryController = _retryController;
+    if (retryController == null ||
+        retryController.isPaused ||
+        retryController.isCancelled) {
+      return;
+    }
+
+    // Check if we should pause based on network mode
+    if (_currentNetworkMode != null &&
+        !canContinue(_currentNetworkMode!, _client.isOnline)) {
+      retryController.pause();
+    }
+  }
+
+  /// Called when network connectivity is restored.
+  ///
+  /// Resumes the mutation if it was paused due to network unavailability.
+  void onOnline() {
+    final retryController = _retryController;
+    if (retryController == null || !retryController.isPaused) return;
+
+    // Check if we can actually continue based on network mode
+    if (_currentNetworkMode != null &&
+        canContinue(_currentNetworkMode!, _client.isOnline)) {
+      retryController.resume();
+    }
   }
 }
 

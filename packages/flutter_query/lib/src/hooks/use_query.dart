@@ -26,6 +26,12 @@ import 'use_query_client.dart';
 /// - [enabled]: Whether the query should execute. Defaults to `true`. Set to
 ///   `false` to disable automatic fetching.
 ///
+/// - [networkMode]: The network connectivity mode for this query. Has no
+///   effect unless [connectivityChanges] is provided to [QueryClient]. Can be
+///   [NetworkMode.online] (default, pauses when offline), [NetworkMode.always]
+///   (ignores network state), or [NetworkMode.offlineFirst] (first fetch runs
+///   immediately, retries pause when offline).
+///
 /// - [staleDuration]: How long data remains fresh before becoming stale.
 ///   Stale data may be refetched on the next access. Defaults to zero (data is
 ///   immediately stale).
@@ -82,6 +88,7 @@ QueryResult<TData, TError> useQuery<TData, TError>(
   List<Object?> queryKey,
   QueryFn<TData> queryFn, {
   bool? enabled,
+  NetworkMode? networkMode,
   StaleDuration? staleDuration,
   GcDuration? gcDuration,
   TData? placeholder,
@@ -109,6 +116,7 @@ QueryResult<TData, TError> useQuery<TData, TError>(
         staleDuration: staleDuration,
         gcDuration: gcDuration,
         meta: meta,
+        networkMode: networkMode,
         placeholder: placeholder,
         refetchInterval: refetchInterval,
         refetchOnMount: refetchOnMount,
@@ -143,6 +151,7 @@ QueryResult<TData, TError> useQuery<TData, TError>(
     staleDuration: staleDuration,
     gcDuration: gcDuration,
     meta: meta,
+    networkMode: networkMode,
     placeholder: placeholder,
     refetchInterval: refetchInterval,
     refetchOnMount: refetchOnMount,

@@ -40,6 +40,7 @@ export 'src/core/core.dart'
         DefaultMutationOptions,
 
         // Configuration
+        NetworkMode,
         StaleDuration,
         GcDuration,
         RefetchOnMount,

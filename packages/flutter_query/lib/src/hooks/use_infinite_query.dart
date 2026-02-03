@@ -41,6 +41,13 @@ import 'use_query_client.dart';
 /// - [enabled]: Whether the query should execute. Defaults to `true`. Set to
 ///   `false` to disable automatic fetching.
 ///
+/// - [networkMode]: The network connectivity mode for this query. Has no
+///   effect unless [connectivityChanges] is provided to [QueryClient].
+///   - [NetworkMode.online] (default): Pauses when offline, resumes when online
+///   - [NetworkMode.always]: Never pauses, ignores network state
+///   - [NetworkMode.offlineFirst]: First fetch runs regardless of network,
+///     retries pause when offline
+///
 /// - [staleDuration]: How long data remains fresh before becoming stale.
 ///   Stale data may be refetched on the next access. Defaults to zero (data is
 ///   immediately stale).
@@ -101,6 +108,7 @@ InfiniteQueryResult<TData, TError, TPageParam>
   PrevPageParamBuilder<TData, TPageParam>? prevPageParamBuilder,
   int? maxPages,
   bool? enabled,
+  NetworkMode? networkMode,
   StaleDuration? staleDuration,
   GcDuration? gcDuration,
   InfiniteData<TData, TPageParam>? placeholder,
@@ -129,6 +137,7 @@ InfiniteQueryResult<TData, TError, TPageParam>
         prevPageParamBuilder: prevPageParamBuilder,
         maxPages: maxPages,
         enabled: enabled,
+        networkMode: networkMode,
         staleDuration: staleDuration,
         gcDuration: gcDuration,
         placeholder: placeholder,
@@ -167,6 +176,7 @@ InfiniteQueryResult<TData, TError, TPageParam>
     prevPageParamBuilder: prevPageParamBuilder,
     maxPages: maxPages,
     enabled: enabled,
+    networkMode: networkMode,
     staleDuration: staleDuration,
     gcDuration: gcDuration,
     placeholder: placeholder,

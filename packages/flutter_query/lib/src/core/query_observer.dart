@@ -166,7 +166,7 @@ class QueryObserver<TData, TError> with Observer<QueryState<TData, TError>> {
 
   void onReconnect() {
     if (_shouldFetchOnReconnect(_options, _query.state)) {
-      refetch(cancelRefetch: false).ignore();
+      _fetch().ignore();
     }
   }
 
@@ -205,6 +205,7 @@ class QueryObserver<TData, TError> with Observer<QueryState<TData, TError>> {
       _options.queryFn,
       gcDuration: _options.gcDuration,
       retry: _options.retry,
+      networkMode: _options.networkMode,
       meta: _options.meta,
       cancelRefetch: cancelRefetch,
     );

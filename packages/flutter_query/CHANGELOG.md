@@ -1,10 +1,37 @@
-## 0.6.0 (2025-02-01)
+## 0.6.0 (2025-02-03)
 
 This release contains breaking changes to improve API consistency and usability.
+
+- Added `networkMode` option to `useQuery`, `useInfiniteQuery`, and `useMutation` for controlling behavior based on network connectivity. Requires passing a `connectivityChanges` stream to `QueryClient`.
+  - `NetworkMode.online` (default): Pauses when offline, resumes when online
+  - `NetworkMode.always`: Never pauses, ignores network state
+  - `NetworkMode.offlineFirst`: First execution runs regardless of network, retries pause when offline
 
 - Added `useIsFetching` hook that returns the count of queries currently fetching.
 
 - Added `useIsMutating` hook that returns the count of mutations currently pending.
+
+- **BREAKING**: The `mutate` function returned by `useMutation` is now fire-and-forget. It returns `void` and does not throw errors. Use `mutateAsync` to await the result or handle errors directly.
+
+  ```dart
+  // Before
+  final result = useMutation(...);
+  try {
+    final data = await result.mutate(variables);
+  } catch (e) {
+    // handle error
+  }
+
+  // After (fire-and-forget)
+  result.mutate(variables); // returns void, errors handled via onError callback
+
+  // After (async with error handling)
+  try {
+    final data = await result.mutateAsync(variables);
+  } catch (e) {
+    // handle error
+  }
+  ```
 
 - Added `refetchOnReconnect` option to `useQuery` and `useInfiniteQuery` for controlling refetch behavior when network connectivity is restored. Requires passing a `connectivityChanges` stream to `QueryClient`.
 

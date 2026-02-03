@@ -188,6 +188,7 @@ class InfiniteQueryObserver<TData, TError, TPageParam> {
         return result;
       },
       enabled: _options.enabled,
+      networkMode: _options.networkMode,
       gcDuration: _options.gcDuration,
       meta: _options.meta,
       placeholder: _options.placeholder,

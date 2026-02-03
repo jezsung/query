@@ -1,10 +1,21 @@
 import 'mutation_state.dart';
 import 'utils.dart';
 
-/// Signature for a function that executes a mutation with the given variables.
+/// Signature for a synchronous fire-and-forget mutation function.
 ///
-/// Returns a [Future] that completes with the mutation result data.
-typedef Mutate<TData, TVariables> = Future<TData> Function(
+/// This function executes the mutation but returns immediately without waiting
+/// for completion. It does not throw errors; handle errors via callbacks or
+/// by checking the [MutationResult.error] property.
+///
+/// Use [MutateAsync] to await the result or catch errors directly.
+typedef Mutate<TVariables> = void Function(TVariables variables);
+
+/// Signature for an asynchronous mutation function that returns a result.
+///
+/// Returns a [Future] that completes with the mutation data on success.
+/// Throws an error if the mutation fails, which can be caught with try/catch
+/// or `.catchError()`.
+typedef MutateAsync<TData, TVariables> = Future<TData> Function(
   TVariables variables,
 );
 
@@ -33,6 +44,7 @@ class MutationResult<TData, TError, TVariables, TOnMutateResult> {
     required this.failureReason,
     required this.isPaused,
     required this.mutate,
+    required this.mutateAsync,
     required this.reset,
   });
 
@@ -64,8 +76,22 @@ class MutationResult<TData, TError, TVariables, TOnMutateResult> {
   /// Whether the mutation is paused.
   final bool isPaused;
 
-  /// Executes the mutation with the given variables.
-  final Mutate<TData, TVariables> mutate;
+  /// A fire-and-forget function that executes the mutation.
+  ///
+  /// Returns immediately without waiting for completion. Does not throw errors;
+  /// handle errors via the `onError` callback or by checking [error] after the
+  /// mutation completes.
+  ///
+  /// Use [mutateAsync] to await the result or catch errors directly.
+  final Mutate<TVariables> mutate;
+
+  /// A function that executes the mutation and returns a [Future] with the
+  /// result.
+  ///
+  /// Unlike [mutate], this allows awaiting the mutation result. Throws an error
+  /// if the mutation fails, which can be caught with try/catch or
+  /// `.catchError()`.
+  final MutateAsync<TData, TVariables> mutateAsync;
 
   /// Resets the mutation to its initial idle state.
   final Reset reset;
@@ -118,5 +144,6 @@ class MutationResult<TData, TError, TVariables, TOnMutateResult> {
       'failureReason: $failureReason, '
       'isPaused: $isPaused, '
       'mutate: <Function>, '
+      'mutateAsync: <Function>, '
       'reset: <Function>)';
 }

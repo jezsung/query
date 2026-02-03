@@ -1,3 +1,4 @@
+import 'network_mode.dart';
 import 'query_options.dart';
 import 'utils.dart';
 
@@ -19,6 +20,7 @@ import 'utils.dart';
 class DefaultQueryOptions {
   const DefaultQueryOptions({
     this.enabled = true,
+    this.networkMode = NetworkMode.online,
     this.staleDuration = StaleDuration.zero,
     this.gcDuration = const GcDuration(minutes: 5),
     this.refetchInterval,
@@ -35,6 +37,15 @@ class DefaultQueryOptions {
   /// When `false`, queries will not automatically fetch data.
   /// Defaults to `true`.
   final bool enabled;
+
+  /// The network connectivity mode for queries.
+  ///
+  /// - [NetworkMode.online]: Queries pause when offline and resume when online
+  /// - [NetworkMode.always]: Queries execute regardless of network state
+  /// - [NetworkMode.offlineFirst]: First fetch runs immediately, retries pause
+  ///
+  /// Defaults to [NetworkMode.online].
+  final NetworkMode networkMode;
 
   /// How long query data is considered fresh before becoming stale.
   ///
@@ -90,6 +101,7 @@ class DefaultQueryOptions {
       identical(this, other) ||
       other is DefaultQueryOptions &&
           enabled == other.enabled &&
+          networkMode == other.networkMode &&
           staleDuration == other.staleDuration &&
           gcDuration == other.gcDuration &&
           refetchInterval == other.refetchInterval &&
@@ -103,6 +115,7 @@ class DefaultQueryOptions {
   @override
   int get hashCode => Object.hash(
         enabled,
+        networkMode,
         staleDuration,
         gcDuration,
         refetchInterval,
@@ -117,6 +130,7 @@ class DefaultQueryOptions {
   @override
   String toString() => 'DefaultQueryOptions('
       'enabled: $enabled, '
+      'networkMode: $networkMode, '
       'staleDuration: $staleDuration, '
       'gcDuration: $gcDuration, '
       'refetchInterval: $refetchInterval, '

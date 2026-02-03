@@ -167,7 +167,7 @@ void main() {
         createOptions(mutationFn: (v, c) async => throw error),
       );
 
-      observer.mutate('').ignore();
+      observer.mutateAsync('').ignore();
 
       expect(observer.result.isPending, true);
 
@@ -212,7 +212,7 @@ void main() {
       );
       String? resolvedData;
 
-      observer.mutate('').then((data) => resolvedData = data);
+      observer.mutateAsync('').then((data) => resolvedData = data);
 
       expect(resolvedData, isNull);
 
@@ -231,7 +231,7 @@ void main() {
       );
       Object? caughtError;
 
-      observer.mutate('').then((_) {}).catchError((e) {
+      observer.mutateAsync('').then((_) {}).catchError((e) {
         caughtError = e;
       });
 
@@ -558,6 +558,7 @@ void main() {
           failureReason: null,
           isPaused: false,
           mutate: observer.mutate,
+          mutateAsync: observer.mutateAsync,
           reset: observer.reset,
         ),
       );
@@ -577,6 +578,7 @@ void main() {
           failureReason: null,
           isPaused: false,
           mutate: observer.mutate,
+          mutateAsync: observer.mutateAsync,
           reset: observer.reset,
         ),
       );
@@ -596,6 +598,7 @@ void main() {
           failureReason: null,
           isPaused: false,
           mutate: observer.mutate,
+          mutateAsync: observer.mutateAsync,
           reset: observer.reset,
         ),
       );
@@ -676,7 +679,7 @@ void main() {
         ),
       );
 
-      observer.mutate('').ignore();
+      observer.mutateAsync('').ignore();
 
       expect(observer.result.isPending, isTrue);
 
@@ -708,7 +711,7 @@ void main() {
         ),
       );
 
-      observer.mutate('').then((_) {}).catchError((e) {
+      observer.mutateAsync('').then((_) {}).catchError((e) {
         caughtError = e;
       });
 
@@ -800,7 +803,7 @@ void main() {
         ),
       );
 
-      observer.mutate('').ignore();
+      observer.mutateAsync('').ignore();
 
       async.elapse(const Duration(seconds: 3));
 
@@ -908,7 +911,7 @@ void main() {
         ),
       );
 
-      observer.mutate('').ignore();
+      observer.mutateAsync('').ignore();
 
       async.elapse(const Duration(seconds: 3));
 
@@ -948,7 +951,7 @@ void main() {
         ),
       );
 
-      observer.mutate('variables').ignore();
+      observer.mutateAsync('variables').ignore();
 
       expect(calls, 0);
 
@@ -1017,7 +1020,7 @@ void main() {
         ),
       );
 
-      observer.mutate('').ignore();
+      observer.mutateAsync('').ignore();
 
       async.elapse(const Duration(seconds: 3));
 
@@ -1117,7 +1120,7 @@ void main() {
         ),
       );
 
-      observer.mutate('variables').ignore();
+      observer.mutateAsync('variables').ignore();
 
       expect(calls, 0);
 
@@ -1215,7 +1218,7 @@ void main() {
         ),
       );
 
-      observer2.mutate('').ignore();
+      observer2.mutateAsync('').ignore();
 
       async.elapse(const Duration(seconds: 1));
       expect(callOrder, ['onMutate']);
@@ -1248,7 +1251,7 @@ void main() {
         ),
       );
 
-      observer.mutate('').ignore();
+      observer.mutateAsync('').ignore();
 
       async.elapse(const Duration(seconds: 3));
 
@@ -1282,7 +1285,7 @@ void main() {
         ),
       );
 
-      observer.mutate('').ignore();
+      observer.mutateAsync('').ignore();
 
       async.elapse(Duration.zero);
 
@@ -1386,7 +1389,7 @@ void main() {
         ),
       );
 
-      observer.mutate('').ignore();
+      observer.mutateAsync('').ignore();
       async.elapse(Duration.zero);
 
       expect(calls, 1);

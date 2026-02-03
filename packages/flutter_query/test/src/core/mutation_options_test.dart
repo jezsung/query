@@ -19,6 +19,7 @@ void main() {
         'onError: null, '
         'onSettled: null, '
         'mutationKey: null, '
+        'networkMode: null, '
         'gcDuration: null, '
         'retry: null, '
         'meta: null)',
@@ -50,6 +51,7 @@ void main() {
         'onError: <Function>, '
         'onSettled: <Function>, '
         'mutationKey: [users, update], '
+        'networkMode: null, '
         'gcDuration: $gcDuration, '
         'retry: <Function>, '
         'meta: {priority: high})',

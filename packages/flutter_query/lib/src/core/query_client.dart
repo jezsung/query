@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:meta/meta.dart';
 
 import 'default_mutation_options.dart';
@@ -14,6 +16,8 @@ import 'query_options.dart';
 import 'query_state.dart';
 import 'utils.dart';
 
+/// The central hub for managing cached queries and mutations.
+///
 /// Provides imperative methods to fetch, prefetch, invalidate, and update
 /// cached data with configurable defaults.
 ///
@@ -54,19 +58,43 @@ class QueryClient {
     this.defaultMutationOptions = const DefaultMutationOptions(),
     Stream<bool>? connectivityChanges,
   }) {
-    connectivityChanges?.listen((isOnline) {
-      if (!_wasOnline && isOnline) {
+    connectivityChanges?.listen((online) {
+      final wasOnline = _isOnline;
+      _isOnline = online;
+
+      final wentOffline = wasOnline && !online;
+      final wentOnline = !wasOnline && online;
+
+      if (wentOffline) {
+        for (final query in _cache.getAll()) {
+          query.onOffline();
+        }
+        for (final mutation in _mutationCache.getAll()) {
+          mutation.onOffline();
+        }
+      }
+      if (wentOnline) {
+        for (final query in _cache.getAll()) {
+          query.onOnline();
+        }
+        for (final mutation in _mutationCache.getAll()) {
+          mutation.onOnline();
+        }
+        // Notify observers for refetchOnReconnect
         for (final observer in _cache.getAll().expand((q) => q.observers)) {
           observer.onReconnect();
         }
       }
-      _wasOnline = isOnline;
     });
   }
 
   final QueryCache _cache = QueryCache();
   final MutationCache _mutationCache = MutationCache();
-  bool _wasOnline = true;
+
+  bool _isOnline = true;
+
+  @internal
+  bool get isOnline => _isOnline;
 
   /// The default options applied to all new queries.
   ///
