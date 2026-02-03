@@ -39,6 +39,16 @@ Visit **[flutterquery.com](https://flutterquery.com)** for comprehensive documen
 - [Overview](https://flutterquery.com/docs/overview)
 - [Quick Start](https://flutterquery.com/docs/quick-start)
 
+## Supported Hooks
+
+- [useQuery](https://pub.dev/documentation/flutter_query/latest/flutter_query/useQuery.html)
+- [useMutation](https://pub.dev/documentation/flutter_query/latest/flutter_query/useMutation.html)
+- [useInfiniteQuery](https://pub.dev/documentation/flutter_query/latest/flutter_query/useInfiniteQuery.html)
+- [useQueryClient](https://pub.dev/documentation/flutter_query/latest/flutter_query/useQueryClient.html)
+- [useIsFetching](https://pub.dev/documentation/flutter_query/latest/flutter_query/useIsFetching.html)
+- [useIsMutating](https://pub.dev/documentation/flutter_query/latest/flutter_query/useIsMutating.html)
+- [useMutationState](https://pub.dev/documentation/flutter_query/latest/flutter_query/useMutationState.html)
+
 ## Platform Support
 
 | Android | iOS | macOS | Web | Linux | Windows |
