@@ -17,6 +17,7 @@ export 'src/core/core.dart'
         MutationStatus,
         MutationOptions,
         MutationResult,
+        MutateFn,
         MutationFunctionContext,
         MutationOnMutate,
         MutationOnSuccess,
