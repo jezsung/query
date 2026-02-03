@@ -15,20 +15,20 @@ class QueryOptions<TData, TError> {
   QueryOptions(
     this.queryKey,
     this.queryFn, {
-    this.retry,
-    this.networkMode,
-    this.gcDuration,
-    this.seed,
-    this.seedUpdatedAt,
-    this.meta,
     this.enabled,
+    this.networkMode,
     this.staleDuration,
+    this.gcDuration,
     this.placeholder,
     this.refetchOnMount,
     this.refetchOnResume,
     this.refetchOnReconnect,
     this.refetchInterval,
+    this.retry,
     this.retryOnMount,
+    this.seed,
+    this.seedUpdatedAt,
+    this.meta,
   });
 
   /// The key that uniquely identifies this query.
@@ -37,29 +37,17 @@ class QueryOptions<TData, TError> {
   /// The function that fetches data for this query.
   final QueryFn<TData> queryFn;
 
-  /// Retry behavior for failed fetches.
-  final RetryResolver<TError>? retry;
+  /// Whether this query is enabled.
+  final bool? enabled;
 
   /// The network connectivity mode for this query.
   final NetworkMode? networkMode;
 
-  /// How long unused data remains in cache before garbage collection.
-  final GcDuration? gcDuration;
-
-  /// Initial data to populate the cache before the first fetch.
-  final TData? seed;
-
-  /// The timestamp when the seed data was last updated.
-  final DateTime? seedUpdatedAt;
-
-  /// Arbitrary metadata associated with this query.
-  final Map<String, dynamic>? meta;
-
-  /// Whether this query is enabled.
-  final bool? enabled;
-
   /// How long data is considered fresh before becoming stale.
   final StaleDuration? staleDuration;
+
+  /// How long unused data remains in cache before garbage collection.
+  final GcDuration? gcDuration;
 
   /// Placeholder data shown while the query is loading.
   final TData? placeholder;
@@ -76,8 +64,20 @@ class QueryOptions<TData, TError> {
   /// Interval at which to automatically refetch.
   final Duration? refetchInterval;
 
+  /// Retry behavior for failed fetches.
+  final RetryResolver<TError>? retry;
+
   /// Whether to retry a failed query when a new observer mounts.
   final bool? retryOnMount;
+
+  /// Initial data to populate the cache before the first fetch.
+  final TData? seed;
+
+  /// The timestamp when the seed data was last updated.
+  final DateTime? seedUpdatedAt;
+
+  /// Arbitrary metadata associated with this query.
+  final Map<String, dynamic>? meta;
 
   /// The internal QueryKey object for comparison.
   @internal
@@ -89,39 +89,39 @@ class QueryOptions<TData, TError> {
       other is QueryOptions<TData, TError> &&
           key == other.key &&
           identical(queryFn, other.queryFn) &&
-          gcDuration == other.gcDuration &&
-          networkMode == other.networkMode &&
-          deepEq.equals(meta, other.meta) &&
-          identical(retry, other.retry) &&
-          deepEq.equals(seed, other.seed) &&
-          seedUpdatedAt == other.seedUpdatedAt &&
           enabled == other.enabled &&
+          networkMode == other.networkMode &&
           staleDuration == other.staleDuration &&
+          gcDuration == other.gcDuration &&
           deepEq.equals(placeholder, other.placeholder) &&
-          refetchInterval == other.refetchInterval &&
           refetchOnMount == other.refetchOnMount &&
           refetchOnResume == other.refetchOnResume &&
           refetchOnReconnect == other.refetchOnReconnect &&
-          retryOnMount == other.retryOnMount;
+          refetchInterval == other.refetchInterval &&
+          identical(retry, other.retry) &&
+          retryOnMount == other.retryOnMount &&
+          deepEq.equals(seed, other.seed) &&
+          seedUpdatedAt == other.seedUpdatedAt &&
+          deepEq.equals(meta, other.meta);
 
   @override
   int get hashCode => Object.hash(
         key,
         identityHashCode(queryFn),
-        gcDuration,
-        networkMode,
-        deepEq.hash(meta),
-        identityHashCode(retry),
-        deepEq.hash(seed),
-        seedUpdatedAt,
         enabled,
+        networkMode,
         staleDuration,
+        gcDuration,
         deepEq.hash(placeholder),
-        refetchInterval,
         refetchOnMount,
         refetchOnResume,
         refetchOnReconnect,
+        refetchInterval,
+        identityHashCode(retry),
         retryOnMount,
+        deepEq.hash(seed),
+        seedUpdatedAt,
+        deepEq.hash(meta),
       );
 
   @override
@@ -136,6 +136,7 @@ class QueryOptions<TData, TError> {
       'refetchOnResume: $refetchOnResume, '
       'refetchOnReconnect: $refetchOnReconnect, '
       'refetchInterval: $refetchInterval, '
+      'retry: $retry, '
       'retryOnMount: $retryOnMount, '
       'seed: $seed, '
       'seedUpdatedAt: $seedUpdatedAt, '
@@ -151,20 +152,20 @@ extension QueryOptionsExt<TData, TError> on QueryOptions<TData, TError> {
     return QueryOptions<TData, TError>(
       queryKey,
       queryFn,
-      gcDuration: gcDuration ?? defaults.gcDuration,
-      networkMode: networkMode ?? defaults.networkMode,
-      meta: meta,
-      retry: retry ?? defaults.retry as RetryResolver<TError>?,
-      seed: seed,
-      seedUpdatedAt: seedUpdatedAt,
       enabled: enabled ?? defaults.enabled,
+      networkMode: networkMode ?? defaults.networkMode,
       staleDuration: staleDuration ?? defaults.staleDuration,
+      gcDuration: gcDuration ?? defaults.gcDuration,
       placeholder: placeholder,
-      refetchInterval: refetchInterval ?? defaults.refetchInterval,
       refetchOnMount: refetchOnMount ?? defaults.refetchOnMount,
       refetchOnResume: refetchOnResume ?? defaults.refetchOnResume,
       refetchOnReconnect: refetchOnReconnect ?? defaults.refetchOnReconnect,
+      refetchInterval: refetchInterval ?? defaults.refetchInterval,
+      retry: retry ?? defaults.retry as RetryResolver<TError>?,
       retryOnMount: retryOnMount ?? defaults.retryOnMount,
+      seed: seed,
+      seedUpdatedAt: seedUpdatedAt,
+      meta: meta,
     );
   }
 }
