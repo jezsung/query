@@ -13,7 +13,7 @@ import 'utils.dart';
 class QueryOptions<TData, TError> {
   /// Creates query options.
   QueryOptions(
-    List<Object?> queryKey,
+    this.queryKey,
     this.queryFn, {
     this.retry,
     this.networkMode,
@@ -29,10 +29,10 @@ class QueryOptions<TData, TError> {
     this.refetchOnReconnect,
     this.refetchInterval,
     this.retryOnMount,
-  }) : key = QueryKey(queryKey);
+  });
 
   /// The key that uniquely identifies this query.
-  final QueryKey key;
+  final List<Object?> queryKey;
 
   /// The function that fetches data for this query.
   final QueryFn<TData> queryFn;
@@ -79,6 +79,10 @@ class QueryOptions<TData, TError> {
   /// Whether to retry a failed query when a new observer mounts.
   final bool? retryOnMount;
 
+  /// The internal QueryKey object for comparison.
+  @internal
+  QueryKey get key => QueryKey(queryKey);
+
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -122,7 +126,7 @@ class QueryOptions<TData, TError> {
 
   @override
   String toString() => 'QueryOptions('
-      'key: $key, '
+      'queryKey: $queryKey, '
       'enabled: $enabled, '
       'networkMode: $networkMode, '
       'staleDuration: $staleDuration, '
@@ -145,7 +149,7 @@ extension QueryOptionsExt<TData, TError> on QueryOptions<TData, TError> {
     DefaultQueryOptions defaults,
   ) {
     return QueryOptions<TData, TError>(
-      key.parts,
+      queryKey,
       queryFn,
       gcDuration: gcDuration ?? defaults.gcDuration,
       networkMode: networkMode ?? defaults.networkMode,

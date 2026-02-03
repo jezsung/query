@@ -132,7 +132,7 @@ class QueryObserver<TData, TError> with Observer<QueryState<TData, TError>> {
   void onMount() {
     _query = Query.cached(
       _client,
-      _options.key.parts,
+      _options.queryKey,
       gcDuration: _options.gcDuration,
       seed: _options.seed,
       seedUpdatedAt: _options.seedUpdatedAt,

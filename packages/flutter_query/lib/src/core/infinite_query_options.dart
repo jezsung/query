@@ -42,7 +42,7 @@ typedef PrevPageParamBuilder<TData, TPageParam> = TPageParam? Function(
 class InfiniteQueryOptions<TData, TError, TPageParam> {
   /// Creates options for an infinite query.
   InfiniteQueryOptions(
-    List<Object?> queryKey,
+    this.queryKey,
     this.queryFn, {
     required this.initialPageParam,
     required this.nextPageParamBuilder,
@@ -62,10 +62,10 @@ class InfiniteQueryOptions<TData, TError, TPageParam> {
     this.seed,
     this.seedUpdatedAt,
     this.meta,
-  }) : queryKey = QueryKey(queryKey);
+  });
 
   /// The key that uniquely identifies this query.
-  final QueryKey queryKey;
+  final List<Object?> queryKey;
 
   /// The function that fetches a page of data.
   final InfiniteQueryFn<TData, TPageParam> queryFn;
@@ -124,11 +124,15 @@ class InfiniteQueryOptions<TData, TError, TPageParam> {
   /// Arbitrary metadata associated with this query.
   final Map<String, dynamic>? meta;
 
+  /// The internal QueryKey object for comparison.
+  @internal
+  QueryKey get key => QueryKey(queryKey);
+
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       other is InfiniteQueryOptions<TData, TError, TPageParam> &&
-          queryKey == other.queryKey &&
+          key == other.key &&
           identical(queryFn, other.queryFn) &&
           deepEq.equals(initialPageParam, other.initialPageParam) &&
           identical(nextPageParamBuilder, other.nextPageParamBuilder) &&
@@ -151,7 +155,7 @@ class InfiniteQueryOptions<TData, TError, TPageParam> {
 
   @override
   int get hashCode => Object.hash(
-        queryKey,
+        key,
         identityHashCode(queryFn),
         deepEq.hash(initialPageParam),
         identityHashCode(nextPageParamBuilder),
@@ -200,7 +204,7 @@ extension InfiniteQueryOptionsExt<TData, TError, TPageParam>
     DefaultQueryOptions defaults,
   ) {
     return InfiniteQueryOptions<TData, TError, TPageParam>(
-      queryKey.parts,
+      queryKey,
       queryFn,
       initialPageParam: initialPageParam,
       nextPageParamBuilder: nextPageParamBuilder,
