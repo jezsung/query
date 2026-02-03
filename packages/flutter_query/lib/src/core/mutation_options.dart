@@ -6,6 +6,7 @@ import 'default_mutation_options.dart';
 import 'mutation_function_context.dart';
 import 'network_mode.dart';
 import 'query_options.dart';
+import 'utils.dart';
 
 /// Options for configuring a mutation.
 ///
@@ -56,6 +57,35 @@ class MutationOptions<TData, TError, TVariables, TOnMutateResult> {
 
   /// Arbitrary metadata associated with this mutation.
   final Map<String, dynamic>? meta;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is MutationOptions<TData, TError, TVariables, TOnMutateResult> &&
+          identical(mutationFn, other.mutationFn) &&
+          identical(onMutate, other.onMutate) &&
+          identical(onSuccess, other.onSuccess) &&
+          identical(onError, other.onError) &&
+          identical(onSettled, other.onSettled) &&
+          deepEq.equals(mutationKey, other.mutationKey) &&
+          networkMode == other.networkMode &&
+          gcDuration == other.gcDuration &&
+          identical(retry, other.retry) &&
+          deepEq.equals(meta, other.meta);
+
+  @override
+  int get hashCode => Object.hash(
+        identityHashCode(mutationFn),
+        identityHashCode(onMutate),
+        identityHashCode(onSuccess),
+        identityHashCode(onError),
+        identityHashCode(onSettled),
+        deepEq.hash(mutationKey),
+        networkMode,
+        gcDuration,
+        identityHashCode(retry),
+        deepEq.hash(meta),
+      );
 
   @override
   String toString() => 'MutationOptions('
