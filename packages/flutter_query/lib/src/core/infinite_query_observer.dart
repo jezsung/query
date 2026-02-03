@@ -2,11 +2,13 @@ part of 'query_observer.dart';
 
 /// Data structure for infinite queries containing pages and their params.
 class InfiniteData<TData, TPageParam> {
+  /// Creates an infinite data container with the given pages and page params.
   const InfiniteData(
     this.pages,
     this.pageParams,
   );
 
+  /// Creates an empty infinite data container with no pages.
   const InfiniteData.empty()
       : pages = const [],
         pageParams = const [];

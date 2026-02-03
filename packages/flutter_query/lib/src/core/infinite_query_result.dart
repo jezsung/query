@@ -52,6 +52,7 @@ typedef FetchPreviousPage<TData, TError, TPageParam>
 /// - [TError]: The type of error that may occur during fetching.
 /// - [TPageParam]: The type of the page parameter used for pagination.
 class InfiniteQueryResult<TData, TError, TPageParam> {
+  /// Creates an infinite query result.
   const InfiniteQueryResult({
     required this.status,
     required this.fetchStatus,

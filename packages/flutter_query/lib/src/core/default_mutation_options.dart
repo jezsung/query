@@ -20,6 +20,7 @@ import 'utils.dart';
 /// );
 /// ```
 class DefaultMutationOptions {
+  /// Creates default mutation options.
   const DefaultMutationOptions({
     this.networkMode = NetworkMode.online,
     this.gcDuration = const GcDuration(minutes: 5),

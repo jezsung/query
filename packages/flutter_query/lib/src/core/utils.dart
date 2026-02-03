@@ -44,6 +44,7 @@ extension FutureExt<T> on Future<T> {
   Future<void> suppress() => then((_) {}).catchError((_) {});
 }
 
+@internal
 extension ListExt<T> on List<T> {
   /// Append item to end, removing first item if exceeding [maxLength].
   List<T> appendBounded(T item, [int? maxLength]) {
@@ -72,6 +73,7 @@ extension ListExt<T> on List<T> {
 /// ```dart
 /// retry: retryNever
 /// ```
+@internal
 Duration? retryNever(int retryCount, Object? error) => null;
 
 /// Exponential backoff retry function.
@@ -82,6 +84,7 @@ Duration? retryNever(int retryCount, Object? error) => null;
 /// ```dart
 /// retry: retryExponentialBackoff
 /// ```
+@internal
 Duration? retryExponentialBackoff(int retryCount, Object? error) {
   if (retryCount < 0) {
     throw ArgumentError.value(retryCount, 'retryCount', 'must be non-negative');

@@ -9,6 +9,7 @@ import 'utils.dart';
 /// Shares the fields with [QueryFunctionContext] and adds pagination-specific
 /// fields for fetching pages of data.
 final class InfiniteQueryFunctionContext<TPageParam> {
+  /// Creates an infinite query function context.
   const InfiniteQueryFunctionContext({
     required this.queryKey,
     required this.client,

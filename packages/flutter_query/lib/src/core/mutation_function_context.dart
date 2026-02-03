@@ -7,6 +7,7 @@ import 'utils.dart';
 /// a mutation and its associated callbacks such as `onMutate`, `onSuccess`,
 /// `onError`, and `onSettled`.
 class MutationFunctionContext {
+  /// Creates a mutation function context.
   const MutationFunctionContext({
     required this.mutationKey,
     required this.client,

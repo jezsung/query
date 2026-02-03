@@ -1,11 +1,18 @@
 import 'dart:async';
 
+import 'package:meta/meta.dart';
+
 import 'default_mutation_options.dart';
 import 'mutation_function_context.dart';
 import 'network_mode.dart';
 import 'query_options.dart';
 
+/// Options for configuring a mutation.
+///
+/// Contains all configuration for executing a mutation, including the mutation
+/// function, lifecycle callbacks, and retry behavior.
 class MutationOptions<TData, TError, TVariables, TOnMutateResult> {
+  /// Creates mutation options.
   MutationOptions({
     required this.mutationFn,
     this.onMutate,
@@ -19,16 +26,35 @@ class MutationOptions<TData, TError, TVariables, TOnMutateResult> {
     this.meta,
   });
 
+  /// The function that performs the mutation.
   final MutateFn<TData, TVariables> mutationFn;
+
+  /// Callback invoked before the mutation function executes.
   final MutationOnMutate<TVariables, TOnMutateResult>? onMutate;
+
+  /// Callback invoked when the mutation succeeds.
   final MutationOnSuccess<TData, TVariables, TOnMutateResult>? onSuccess;
+
+  /// Callback invoked when the mutation fails.
   final MutationOnError<TError, TVariables, TOnMutateResult>? onError;
+
+  /// Callback invoked when the mutation completes, regardless of outcome.
   final MutationOnSettled<TData, TError, TVariables, TOnMutateResult>?
       onSettled;
+
+  /// Optional key to identify this mutation.
   final List<Object?>? mutationKey;
+
+  /// The network connectivity mode for this mutation.
   final NetworkMode? networkMode;
+
+  /// How long completed mutation data remains in cache.
   final GcDuration? gcDuration;
+
+  /// Retry behavior for failed mutations.
   final RetryResolver<TError>? retry;
+
+  /// Arbitrary metadata associated with this mutation.
   final Map<String, dynamic>? meta;
 
   @override
@@ -104,6 +130,7 @@ typedef MutationOnSettled<TData, TError, TVariables, TOnMutateResult>
   MutationFunctionContext context,
 );
 
+@internal
 extension MutationOptionsExt<TData, TError, TVariables, TOnMutateResult>
     on MutationOptions<TData, TError, TVariables, TOnMutateResult> {
   /// Merges these options with the given defaults.

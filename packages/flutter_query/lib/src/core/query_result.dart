@@ -1,3 +1,5 @@
+import 'package:meta/meta.dart';
+
 import 'query_state.dart';
 import 'utils.dart';
 
@@ -23,6 +25,7 @@ typedef Refetch<TData, TError> = Future<QueryResult<TData, TError>> Function({
 /// - [TData]: The type of data returned by the query.
 /// - [TError]: The type of error that may occur during fetching.
 class QueryResult<TData, TError> {
+  /// Creates a query result.
   const QueryResult({
     required this.status,
     required this.fetchStatus,
@@ -175,7 +178,7 @@ class QueryResult<TData, TError> {
       'isPlaceholderData: $isPlaceholderData)';
 }
 
-/// Extension methods for [QueryResult].
+@internal
 extension QueryResultExt<TData, TError> on QueryResult<TData, TError> {
   /// Returns a copy of this result with the given [placeholder] data.
   ///

@@ -93,7 +93,10 @@ class QueryClient {
 
   bool _isOnline = true;
 
-  @internal
+  /// Whether this client currently has network connectivity.
+  ///
+  /// Reflects the most recent value from the [connectivityChanges] stream
+  /// provided to the constructor. Defaults to `true` if no stream was provided.
   bool get isOnline => _isOnline;
 
   /// The default options applied to all new queries.

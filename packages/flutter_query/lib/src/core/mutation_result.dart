@@ -34,6 +34,7 @@ typedef Reset = void Function();
 /// - [TVariables]: The type of variables passed to the mutation function.
 /// - [TOnMutateResult]: The type of result returned by the onMutate callback.
 class MutationResult<TData, TError, TVariables, TOnMutateResult> {
+  /// Creates a mutation result.
   const MutationResult({
     required this.status,
     required this.data,

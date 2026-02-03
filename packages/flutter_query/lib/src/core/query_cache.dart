@@ -7,6 +7,7 @@ import 'query_key.dart';
 import 'query_state.dart';
 import 'subscribable.dart';
 
+@internal
 typedef QueryCacheListener = void Function(QueryCacheEvent event);
 
 @internal

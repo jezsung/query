@@ -6,6 +6,7 @@ import 'mutation_cache_event.dart';
 import 'mutation_state.dart';
 import 'subscribable.dart';
 
+@internal
 typedef MutationCacheListener = void Function(MutationCacheEvent event);
 
 @internal

@@ -1,3 +1,5 @@
+import 'package:meta/meta.dart';
+
 import 'default_query_options.dart';
 import 'network_mode.dart';
 import 'query_function_context.dart';
@@ -9,6 +11,7 @@ import 'utils.dart';
 /// Contains all configuration that affects the QueryObserver instance,
 /// including query identity, fetch behavior, and observer-specific settings.
 class QueryOptions<TData, TError> {
+  /// Creates query options.
   QueryOptions(
     List<Object?> queryKey,
     this.queryFn, {
@@ -28,21 +31,52 @@ class QueryOptions<TData, TError> {
     this.retryOnMount,
   }) : key = QueryKey(queryKey);
 
+  /// The key that uniquely identifies this query.
   final QueryKey key;
+
+  /// The function that fetches data for this query.
   final QueryFn<TData> queryFn;
+
+  /// Retry behavior for failed fetches.
   final RetryResolver<TError>? retry;
+
+  /// The network connectivity mode for this query.
   final NetworkMode? networkMode;
+
+  /// How long unused data remains in cache before garbage collection.
   final GcDuration? gcDuration;
+
+  /// Initial data to populate the cache before the first fetch.
   final TData? seed;
+
+  /// The timestamp when the seed data was last updated.
   final DateTime? seedUpdatedAt;
+
+  /// Arbitrary metadata associated with this query.
   final Map<String, dynamic>? meta;
+
+  /// Whether this query is enabled.
   final bool? enabled;
+
+  /// How long data is considered fresh before becoming stale.
   final StaleDuration? staleDuration;
+
+  /// Placeholder data shown while the query is loading.
   final TData? placeholder;
+
+  /// Whether to refetch when an observer mounts.
   final RefetchOnMount? refetchOnMount;
+
+  /// Whether to refetch when the app resumes from background.
   final RefetchOnResume? refetchOnResume;
+
+  /// Whether to refetch when network connectivity is restored.
   final RefetchOnReconnect? refetchOnReconnect;
+
+  /// Interval at which to automatically refetch.
   final Duration? refetchInterval;
+
+  /// Whether to retry a failed query when a new observer mounts.
   final bool? retryOnMount;
 
   @override
@@ -104,7 +138,9 @@ class QueryOptions<TData, TError> {
       'meta: $meta)';
 }
 
+/// Extension methods for [QueryOptions].
 extension QueryOptionsExt<TData, TError> on QueryOptions<TData, TError> {
+  /// Returns a copy of these options with values from [defaults] applied.
   QueryOptions<TData, TError> withDefaults(
     DefaultQueryOptions defaults,
   ) {
@@ -179,6 +215,7 @@ sealed class GcDuration {
   static const GcDuration infinity = GcDurationInfinity._();
 }
 
+@internal
 class GcDurationDuration extends Duration implements GcDuration {
   const GcDurationDuration._({
     super.days,
@@ -190,6 +227,7 @@ class GcDurationDuration extends Duration implements GcDuration {
   });
 }
 
+@internal
 class GcDurationInfinity implements GcDuration {
   const GcDurationInfinity._();
 
@@ -203,7 +241,7 @@ class GcDurationInfinity implements GcDuration {
   String toString() => 'GcDuration.infinity';
 }
 
-/// Extension to add comparison operators for GcDurationValue.
+@internal
 extension GcDurationComparision on GcDuration {
   /// Compares this GcDurationValue to another.
   ///
@@ -222,9 +260,16 @@ extension GcDurationComparision on GcDuration {
     };
   }
 
+  /// Whether this duration is less than [other].
   bool operator <(GcDuration other) => compareTo(other) < 0;
+
+  /// Whether this duration is less than or equal to [other].
   bool operator <=(GcDuration other) => compareTo(other) <= 0;
+
+  /// Whether this duration is greater than [other].
   bool operator >(GcDuration other) => compareTo(other) > 0;
+
+  /// Whether this duration is greater than or equal to [other].
   bool operator >=(GcDuration other) => compareTo(other) >= 0;
 }
 
@@ -279,6 +324,7 @@ sealed class StaleDuration {
   static const StaleDuration static = StaleDurationStatic._();
 }
 
+@internal
 class StaleDurationValue extends Duration implements StaleDuration {
   const StaleDurationValue._({
     super.days,
@@ -290,6 +336,7 @@ class StaleDurationValue extends Duration implements StaleDuration {
   });
 }
 
+@internal
 class StaleDurationInfinity implements StaleDuration {
   const StaleDurationInfinity._();
 
@@ -303,6 +350,7 @@ class StaleDurationInfinity implements StaleDuration {
   String toString() => 'StaleDuration.infinity';
 }
 
+@internal
 class StaleDurationStatic implements StaleDuration {
   const StaleDurationStatic._();
 

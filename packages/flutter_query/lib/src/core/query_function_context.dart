@@ -8,6 +8,7 @@ import 'utils.dart';
 /// Contains the query key, client reference, abort signal, and metadata
 /// needed to execute a query.
 final class QueryFunctionContext {
+  /// Creates a query function context.
   const QueryFunctionContext({
     required this.queryKey,
     required this.client,

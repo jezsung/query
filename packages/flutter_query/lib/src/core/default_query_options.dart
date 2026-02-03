@@ -18,6 +18,7 @@ import 'utils.dart';
 /// );
 /// ```
 class DefaultQueryOptions {
+  /// Creates default query options.
   const DefaultQueryOptions({
     this.enabled = true,
     this.networkMode = NetworkMode.online,

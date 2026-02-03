@@ -1,3 +1,5 @@
+import 'package:meta/meta.dart';
+
 import 'utils.dart';
 
 /// The execution status of a mutation.
@@ -15,7 +17,12 @@ enum MutationStatus {
   error,
 }
 
+/// The internal state of a mutation.
+///
+/// Contains all data and metadata for a mutation's current state, including
+/// the status, result data, error, and failure tracking.
 final class MutationState<TData, TError, TVariables, TOnMutateResult> {
+  /// Creates a mutation state.
   const MutationState({
     this.status = MutationStatus.idle,
     this.data,
@@ -28,14 +35,31 @@ final class MutationState<TData, TError, TVariables, TOnMutateResult> {
     this.isPaused = false,
   });
 
+  /// The current status of the mutation.
   final MutationStatus status;
+
+  /// The last successfully resolved data for this mutation.
   final TData? data;
+
+  /// The error thrown by the last failed mutation, if any.
   final TError? error;
+
+  /// The variables passed to the most recent mutation call.
   final TVariables? variables;
+
+  /// The result returned by the onMutate callback.
   final TOnMutateResult? onMutateResult;
+
+  /// The timestamp when the mutation was submitted.
   final DateTime? submittedAt;
+
+  /// The number of times the current mutation has failed.
   final int failureCount;
+
+  /// The error from the most recent failed mutation attempt.
   final TError? failureReason;
+
+  /// Whether the mutation is paused.
   final bool isPaused;
 
   @override
@@ -78,6 +102,7 @@ final class MutationState<TData, TError, TVariables, TOnMutateResult> {
       'isPaused: $isPaused)';
 }
 
+@internal
 extension MutationStateExt<TData, TError, TVariables, TOnMutateResult>
     on MutationState<TData, TError, TVariables, TOnMutateResult> {
   MutationState<TData, TError, TVariables, TOnMutateResult> copyWith({

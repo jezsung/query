@@ -1,3 +1,5 @@
+import 'package:meta/meta.dart';
+
 import 'utils.dart';
 
 /// The status of a query's data.
@@ -32,7 +34,12 @@ enum FetchStatus {
   idle,
 }
 
+/// The internal state of a query.
+///
+/// Contains all data and metadata for a query's current state, including
+/// the status, fetched data, error, and cache invalidation tracking.
 class QueryState<TData, TError> {
+  /// Creates a query state.
   const QueryState({
     this.status = QueryStatus.pending,
     this.fetchStatus = FetchStatus.idle,
@@ -48,19 +55,43 @@ class QueryState<TData, TError> {
     this.isActive = false,
   });
 
+  /// The current status of the query.
   final QueryStatus status;
+
+  /// The current fetch status of the query.
   final FetchStatus fetchStatus;
+
+  /// The last successfully resolved data for this query.
   final TData? data;
+
+  /// The timestamp when the data was last updated.
   final DateTime? dataUpdatedAt;
+
+  /// The number of times the data has been updated.
   final int dataUpdateCount;
+
+  /// The error thrown by the last failed fetch, if any.
   final TError? error;
+
+  /// The timestamp when the error was last updated.
   final DateTime? errorUpdatedAt;
+
+  /// The number of times the error has been updated.
   final int errorUpdateCount;
+
+  /// The number of times the current fetch has failed.
   final int failureCount;
+
+  /// The error from the most recent failed fetch attempt.
   final TError? failureReason;
+
+  /// Whether this query has been invalidated.
   final bool isInvalidated;
+
+  /// Whether this query has active observers.
   final bool isActive;
 
+  /// Whether the query has fetched at least once.
   bool get hasFetched => dataUpdateCount > 0 || errorUpdateCount > 0;
 
   @override
@@ -112,6 +143,7 @@ class QueryState<TData, TError> {
       'isActive: $isActive)';
 }
 
+@internal
 extension QueryStateExt<TData, TError> on QueryState<TData, TError> {
   QueryState<TData, TError> copyWith({
     QueryStatus? status,
