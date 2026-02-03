@@ -14,6 +14,7 @@ import 'query_options.dart';
 import 'retry_controller.dart';
 import 'utils.dart';
 
+@internal
 class Mutation<TData, TError, TVariables, TOnMutateResult>
     with
         Observable<MutationState<TData, TError, TVariables, TOnMutateResult>,

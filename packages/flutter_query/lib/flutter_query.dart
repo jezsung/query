@@ -4,7 +4,6 @@ export 'src/core/core.dart'
         QueryClient,
 
         // Query
-        Query,
         QueryState,
         QueryStatus,
         FetchStatus,
@@ -14,7 +13,6 @@ export 'src/core/core.dart'
         QueryFunctionContext,
 
         // Mutation
-        Mutation,
         MutationState,
         MutationStatus,
         MutationOptions,

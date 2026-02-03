@@ -17,6 +17,7 @@ import 'query_state.dart';
 import 'retry_controller.dart';
 import 'utils.dart';
 
+@internal
 class Query<TData, TError>
     with
         Observable<QueryState<TData, TError>, QueryObserver<TData, TError>>,

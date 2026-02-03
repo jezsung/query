@@ -51,7 +51,7 @@ This release contains breaking changes to improve API consistency and usability.
 
 - **BREAKING**: `QueryCache` and `MutationCache` are no longer part of the public API. The `cache` and `mutationCache` constructor parameters have been removed from `QueryClient`. The caches are now created and managed internally.
 
-- **BREAKING**: `QueryObserver` and `MutationObserver` are no longer part of the public API.
+- **BREAKING**: `Query`, `Mutation`, `QueryObserver`, and `MutationObserver` are no longer part of the public API.
 
 - **BREAKING**: Renamed `InfiniteQueryObserverOptions` to `InfiniteQueryOptions`.
 
