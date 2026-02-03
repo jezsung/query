@@ -1,6 +1,6 @@
 name: flutter_query
 description: Fetch, cache, and sync server data with automatic state management and background updates, inspired by TanStack Query.
-version: 0.5.1
+version: 0.6.0
 repository: https://github.com/jezsung/query/tree/main/packages/flutter_query
 documentation: https://flutterquery.com
 
