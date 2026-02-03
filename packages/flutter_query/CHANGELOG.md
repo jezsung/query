@@ -2,6 +2,21 @@
 
 This release contains breaking changes to improve API consistency and usability.
 
+- Added `useMutationState` hook that returns mutation states from the mutation cache. Useful for tracking mutation progress across your application.
+
+  ```dart
+  // Get all mutation states
+  final states = useMutationState();
+
+  // Filter by mutation key
+  final todoMutations = useMutationState(mutationKey: ['todos']);
+
+  // Filter with predicate (e.g., pending mutations)
+  final pending = useMutationState(
+    predicate: (key, state) => state.status == MutationStatus.pending,
+  );
+  ```
+
 - Added `networkMode` option to `useQuery`, `useInfiniteQuery`, and `useMutation` for controlling behavior based on network connectivity. Requires passing a `connectivityChanges` stream to `QueryClient`.
   - `NetworkMode.online` (default): Pauses when offline, resumes when online
   - `NetworkMode.always`: Never pauses, ignores network state
