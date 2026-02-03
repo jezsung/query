@@ -16,3 +16,14 @@
   --color-fd-primary: var(--brand-light);
   --color-fd-accent-foreground: var(--brand-light);
 }
+
+/* Move external link icons to the right side in sidebar */
+#nd-sidebar a[href^='http'] {
+  display: flex;
+  flex-direction: row;
+}
+
+#nd-sidebar a[href^='http'] > svg:first-child {
+  order: 1;
+  margin-left: auto;
+}

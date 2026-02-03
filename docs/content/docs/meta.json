@@ -12,11 +12,11 @@
     "concepts/03-staleness",
     "concepts/04-garbage-collection",
     "concepts/06-mutations",
-    "---Reference---",
-    "reference/use-query",
-    "reference/use-mutation",
-    "reference/use-infinite-query",
-    "reference/use-query-client",
-    "reference/query-client"
+    "---API Reference---",
+    "[ArrowUpRight][useQuery](https://pub.dev/documentation/flutter_query/latest/flutter_query/useQuery.html)",
+    "[ArrowUpRight][useMutation](https://pub.dev/documentation/flutter_query/latest/flutter_query/useMutation.html)",
+    "[ArrowUpRight][useInfiniteQuery](https://pub.dev/documentation/flutter_query/latest/flutter_query/useInfiniteQuery.html)",
+    "[ArrowUpRight][useQueryClient](https://pub.dev/documentation/flutter_query/latest/flutter_query/useQueryClient.html)",
+    "[ArrowUpRight][QueryClient](https://pub.dev/documentation/flutter_query/latest/flutter_query/QueryClient-class.html)"
   ]
 }
