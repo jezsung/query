@@ -1,3 +1,7 @@
+## Unreleased
+
+- Added `ensureQueryData` method to `QueryClient`. This method returns cached data if available (even if stale) or fetches it if missing. It also supports a `revalidateIfStale` option to trigger a background refetch if the cached data is stale.
+
 ## 0.6.0 (2025-02-03)
 
 This release contains breaking changes to improve API consistency and usability.

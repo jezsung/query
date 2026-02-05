@@ -799,222 +799,345 @@ void main() {
 
       expect(capturedData, 'data-2');
     }));
+  });
 
+  group('Method: ensureQueryData', () {
     test(
-        'SHOULD garbage collect query after gcDuration'
-        '', withFakeAsync((async) {
-      client.fetchQuery<String, Object>(
-        const ['key'],
-        (context) async {
-          await Future.delayed(const Duration(seconds: 1));
-          return 'data';
-        },
-        gcDuration: const GcDuration(minutes: 2),
-      );
-      async.elapse(const Duration(seconds: 1));
-
-      // Should exist just before gc duration
-      async.elapse(const Duration(minutes: 1, seconds: 59));
-      expect(cache.get(const ['key']), isNotNull);
-
-      // Should have been removed after gc duration
-      async.elapse(const Duration(seconds: 1));
-      expect(cache.get(const ['key']), isNull);
-    }));
-
-    test(
-        'SHOULD NOT retry by default'
-        '', withFakeAsync((async) {
-      var fetches = 0;
-      Object? capturedError;
-
-      client.fetchQuery<String, Exception>(
-        const ['key'],
-        (context) async {
-          await Future.delayed(const Duration(seconds: 1));
-          fetches++;
-          throw Exception('error');
-        },
-      ).then((_) {}, onError: (e) {
-        capturedError = e;
-      });
-      async.elapse(const Duration(seconds: 1));
-
-      expect(capturedError, isA<Exception>());
-      expect(fetches, 1);
-
-      // Wait long enough
-      async.elapse(const Duration(hours: 24));
-      // Should NOT have retried
-      expect(fetches, 1);
-    }));
-
-    test(
-        'SHOULD retry '
-        'WHEN retry != null', withFakeAsync((async) {
-      var fetches = 0;
-
-      client.fetchQuery<String, Exception>(
-        const ['key'],
-        (context) async {
-          await Future.delayed(const Duration(seconds: 1));
-          fetches++;
-          throw Exception();
-        },
-        retry: (retryCount, error) {
-          if (retryCount >= 3) return null;
-          return const Duration(seconds: 1);
-        },
-      ).ignore();
-
-      // Initial attempt
-      async.elapse(const Duration(seconds: 1));
-      expect(fetches, 1);
-
-      // Retry for 3 times with 1s delay
-      async.elapse(const Duration(seconds: 1 + 1));
-      expect(fetches, 2);
-      async.elapse(const Duration(seconds: 1 + 1));
-      expect(fetches, 3);
-      async.elapse(const Duration(seconds: 1 + 1));
-      expect(fetches, 4);
-    }));
-
-    test(
-        'SHOULD NOT fetch and return seed immediately '
-        'WHEN seed is not stale', withFakeAsync((async) {
-      var fetches = 0;
+        'SHOULD return cached data immediately '
+        'WHEN data exists in cache', withFakeAsync((async) {
       String? capturedData;
 
-      client.fetchQuery<String, Object>(
+      // Seed the cache
+      client.setQueryData<String, Object>(const ['key'], (_) => 'cached-data');
+
+      client.ensureQueryData<String, Object>(
         const ['key'],
         (context) async {
           await Future.delayed(const Duration(seconds: 1));
-          fetches++;
-          return 'data';
+          return 'fetched-data';
         },
-        staleDuration: StaleDuration.infinity,
-        seed: 'seed',
       ).then((result) => capturedData = result);
       async.flushMicrotasks();
 
-      expect(fetches, 0);
-      expect(capturedData, 'seed');
+      expect(capturedData, 'cached-data');
     }));
 
     test(
-        'SHOULD fetch and return fetched data '
-        'WHEN seed is stale', withFakeAsync((async) {
-      var fetches = 0;
+        'SHOULD fetch and return data '
+        'WHEN data does not exist in cache', withFakeAsync((async) {
       String? capturedData;
 
-      client.fetchQuery<String, Object>(
+      client.ensureQueryData<String, Object>(
         const ['key'],
         (context) async {
           await Future.delayed(const Duration(seconds: 1));
-          fetches++;
-          return 'data';
+          return 'fetched-data';
         },
-        staleDuration: StaleDuration.zero,
-        seed: 'seed',
       ).then((result) => capturedData = result);
       async.elapse(const Duration(seconds: 1));
 
-      expect(fetches, 1);
-      expect(capturedData, 'data');
+      expect(capturedData, 'fetched-data');
     }));
 
     test(
-        'SHOULD NOT fetch and return seed immediately '
-        'WHEN seed is not stale by seedUpdatedAt', withFakeAsync((async) {
-      var fetches = 0;
+        'SHOULD return cached data '
+        'WHEN data is stale', withFakeAsync((async) {
       String? capturedData;
 
-      client.fetchQuery<String, Object>(
+      // Seed the cache
+      client.setQueryData<String, Object>(const ['key'], (_) => 'cached-data');
+
+      // ensureQueryData should return stale data without refetching
+      client.ensureQueryData<String, Object>(
         const ['key'],
         (context) async {
           await Future.delayed(const Duration(seconds: 1));
-          fetches++;
-          return 'data';
+          return 'fetched-data';
         },
-        staleDuration: const StaleDuration(minutes: 5),
-        seed: 'seed',
-        seedUpdatedAt: clock.now(),
+        staleDuration: StaleDuration.zero, // Make data stale immediately
       ).then((result) => capturedData = result);
       async.flushMicrotasks();
 
-      expect(fetches, 0);
-      expect(capturedData, 'seed');
+      expect(capturedData, 'cached-data');
     }));
 
     test(
-        'SHOULD fetch and return fetched data '
-        'WHEN seed is stale by seedUpdatedAt', withFakeAsync((async) {
-      var fetches = 0;
+        'SHOULD refetch in background '
+        'WHEN revalidateIfStale is true and data is stale',
+        withFakeAsync((async) {
       String? capturedData;
+      var fetches = 0;
 
-      client.fetchQuery<String, Object>(
+      // Seed the cache with stale data (staleDuration: zero)
+      client.setQueryData<String, Object>(const ['key'], (_) => 'cached-data');
+
+      client.ensureQueryData<String, Object>(
         const ['key'],
         (context) async {
           await Future.delayed(const Duration(seconds: 1));
           fetches++;
-          return 'data';
+          return 'fetched-data';
         },
-        staleDuration: const StaleDuration(minutes: 5),
-        seed: 'seed',
-        seedUpdatedAt: clock.minutesAgo(10),
+        staleDuration: StaleDuration.zero, // Make data stale immediately
+        revalidateIfStale: true,
       ).then((result) => capturedData = result);
-      async.elapse(const Duration(seconds: 1));
 
+      // Should return cached data immediately
+      async.flushMicrotasks();
+      expect(capturedData, 'cached-data');
+      expect(fetches, 0);
+
+      // Should trigger background refetch
+      async.elapse(const Duration(seconds: 1));
       expect(fetches, 1);
-      expect(capturedData, 'data');
+      expect(client.getQueryData(const ['key']), 'fetched-data');
     }));
 
     test(
-        'SHOULD persist seed to cache'
-        '', withFakeAsync((async) {
-      client.fetchQuery<String, Object>(
+        'SHOULD NOT refetch in background '
+        'WHEN revalidateIfStale is true but data is fresh',
+        withFakeAsync((async) {
+      String? capturedData;
+      var fetches = 0;
+
+      // Seed the cache
+      client.setQueryData<String, Object>(const ['key'], (_) => 'cached-data');
+
+      client.ensureQueryData<String, Object>(
         const ['key'],
         (context) async {
           await Future.delayed(const Duration(seconds: 1));
-          return 'data';
+          fetches++;
+          return 'fetched-data';
         },
-        staleDuration: StaleDuration.infinity,
-        seed: 'seed',
-      );
+        staleDuration: StaleDuration.infinity, // Data is fresh
+        revalidateIfStale: true,
+      ).then((result) => capturedData = result);
+
+      // Should return cached data immediately
+      async.flushMicrotasks();
+      expect(capturedData, 'cached-data');
+
+      // Should NOT trigger background refetch
       async.elapse(const Duration(seconds: 1));
-
-      final query = cache.get<String, Object>(const ['key']);
-      expect(query, isNotNull);
-      expect(query!.state.data, 'seed');
-    }));
-
-    test(
-        'SHOULD return same future '
-        'WHEN another fetch is in progress', withFakeAsync((async) {
-      String? capturedResult1;
-      String? capturedResult2;
-
-      client.fetchQuery<String, Object>(
-        const ['key'],
-        (context) async {
-          await Future.delayed(const Duration(seconds: 1));
-          return 'data-1';
-        },
-      ).then((result) => capturedResult1 = result);
-      client.fetchQuery<String, Object>(
-        const ['key'],
-        (context) async {
-          await Future.delayed(const Duration(seconds: 1));
-          return 'data-2';
-        },
-      ).then((result) => capturedResult2 = result);
-      async.elapse(const Duration(seconds: 1));
-
-      expect(capturedResult1, 'data-1');
-      expect(capturedResult2, 'data-1');
+      expect(fetches, 0);
     }));
   });
+
+  test(
+      'SHOULD garbage collect query after gcDuration'
+      '', withFakeAsync((async) {
+    client.fetchQuery<String, Object>(
+      const ['key'],
+      (context) async {
+        await Future.delayed(const Duration(seconds: 1));
+        return 'data';
+      },
+      gcDuration: const GcDuration(minutes: 2),
+    );
+    async.elapse(const Duration(seconds: 1));
+
+    // Should exist just before gc duration
+    async.elapse(const Duration(minutes: 1, seconds: 59));
+    expect(cache.get(const ['key']), isNotNull);
+
+    // Should have been removed after gc duration
+    async.elapse(const Duration(seconds: 1));
+    expect(cache.get(const ['key']), isNull);
+  }));
+
+  test(
+      'SHOULD NOT retry by default'
+      '', withFakeAsync((async) {
+    var fetches = 0;
+    Object? capturedError;
+
+    client.fetchQuery<String, Exception>(
+      const ['key'],
+      (context) async {
+        await Future.delayed(const Duration(seconds: 1));
+        fetches++;
+        throw Exception('error');
+      },
+    ).then((_) {}, onError: (e) {
+      capturedError = e;
+    });
+    async.elapse(const Duration(seconds: 1));
+
+    expect(capturedError, isA<Exception>());
+    expect(fetches, 1);
+
+    // Wait long enough
+    async.elapse(const Duration(hours: 24));
+    // Should NOT have retried
+    expect(fetches, 1);
+  }));
+
+  test(
+      'SHOULD retry '
+      'WHEN retry != null', withFakeAsync((async) {
+    var fetches = 0;
+
+    client.fetchQuery<String, Exception>(
+      const ['key'],
+      (context) async {
+        await Future.delayed(const Duration(seconds: 1));
+        fetches++;
+        throw Exception();
+      },
+      retry: (retryCount, error) {
+        if (retryCount >= 3) return null;
+        return const Duration(seconds: 1);
+      },
+    ).ignore();
+
+    // Initial attempt
+    async.elapse(const Duration(seconds: 1));
+    expect(fetches, 1);
+
+    // Retry for 3 times with 1s delay
+    async.elapse(const Duration(seconds: 1 + 1));
+    expect(fetches, 2);
+    async.elapse(const Duration(seconds: 1 + 1));
+    expect(fetches, 3);
+    async.elapse(const Duration(seconds: 1 + 1));
+    expect(fetches, 4);
+  }));
+
+  test(
+      'SHOULD NOT fetch and return seed immediately '
+      'WHEN seed is not stale', withFakeAsync((async) {
+    var fetches = 0;
+    String? capturedData;
+
+    client.fetchQuery<String, Object>(
+      const ['key'],
+      (context) async {
+        await Future.delayed(const Duration(seconds: 1));
+        fetches++;
+        return 'data';
+      },
+      staleDuration: StaleDuration.infinity,
+      seed: 'seed',
+    ).then((result) => capturedData = result);
+    async.flushMicrotasks();
+
+    expect(fetches, 0);
+    expect(capturedData, 'seed');
+  }));
+
+  test(
+      'SHOULD fetch and return fetched data '
+      'WHEN seed is stale', withFakeAsync((async) {
+    var fetches = 0;
+    String? capturedData;
+
+    client.fetchQuery<String, Object>(
+      const ['key'],
+      (context) async {
+        await Future.delayed(const Duration(seconds: 1));
+        fetches++;
+        return 'data';
+      },
+      staleDuration: StaleDuration.zero,
+      seed: 'seed',
+    ).then((result) => capturedData = result);
+    async.elapse(const Duration(seconds: 1));
+
+    expect(fetches, 1);
+    expect(capturedData, 'data');
+  }));
+
+  test(
+      'SHOULD NOT fetch and return seed immediately '
+      'WHEN seed is not stale by seedUpdatedAt', withFakeAsync((async) {
+    var fetches = 0;
+    String? capturedData;
+
+    client.fetchQuery<String, Object>(
+      const ['key'],
+      (context) async {
+        await Future.delayed(const Duration(seconds: 1));
+        fetches++;
+        return 'data';
+      },
+      staleDuration: const StaleDuration(minutes: 5),
+      seed: 'seed',
+      seedUpdatedAt: clock.now(),
+    ).then((result) => capturedData = result);
+    async.flushMicrotasks();
+
+    expect(fetches, 0);
+    expect(capturedData, 'seed');
+  }));
+
+  test(
+      'SHOULD fetch and return fetched data '
+      'WHEN seed is stale by seedUpdatedAt', withFakeAsync((async) {
+    var fetches = 0;
+    String? capturedData;
+
+    client.fetchQuery<String, Object>(
+      const ['key'],
+      (context) async {
+        await Future.delayed(const Duration(seconds: 1));
+        fetches++;
+        return 'data';
+      },
+      staleDuration: const StaleDuration(minutes: 5),
+      seed: 'seed',
+      seedUpdatedAt: clock.minutesAgo(10),
+    ).then((result) => capturedData = result);
+    async.elapse(const Duration(seconds: 1));
+
+    expect(fetches, 1);
+    expect(capturedData, 'data');
+  }));
+
+  test(
+      'SHOULD persist seed to cache'
+      '', withFakeAsync((async) {
+    client.fetchQuery<String, Object>(
+      const ['key'],
+      (context) async {
+        await Future.delayed(const Duration(seconds: 1));
+        return 'data';
+      },
+      staleDuration: StaleDuration.infinity,
+      seed: 'seed',
+    );
+    async.elapse(const Duration(seconds: 1));
+
+    final query = cache.get<String, Object>(const ['key']);
+    expect(query, isNotNull);
+    expect(query!.state.data, 'seed');
+  }));
+
+  test(
+      'SHOULD return same future '
+      'WHEN another fetch is in progress', withFakeAsync((async) {
+    String? capturedResult1;
+    String? capturedResult2;
+
+    client.fetchQuery<String, Object>(
+      const ['key'],
+      (context) async {
+        await Future.delayed(const Duration(seconds: 1));
+        return 'data-1';
+      },
+    ).then((result) => capturedResult1 = result);
+    client.fetchQuery<String, Object>(
+      const ['key'],
+      (context) async {
+        await Future.delayed(const Duration(seconds: 1));
+        return 'data-2';
+      },
+    ).then((result) => capturedResult2 = result);
+    async.elapse(const Duration(seconds: 1));
+
+    expect(capturedResult1, 'data-1');
+    expect(capturedResult2, 'data-1');
+  }));
 
   group('Method: prefetchQuery', () {
     test(

@@ -211,6 +211,70 @@ class QueryClient {
     }
   }
 
+  /// Fetches a query and returns its data, guaranteeing that the data is available.
+  ///
+  /// If the query is already cached, the cached data is returned immediately,
+  /// regardless of whether it is stale or fresh. If the query is not cached,
+  /// it is fetched and returned.
+  ///
+  /// The [revalidateIfStale] parameter (defaults to `false`) controls whether
+  /// to trigger a background refetch if the cached data is stale. If `true`
+  /// and the data is stale, this method returns the stale data immediately
+  /// but initiates a background refetch to update the cache.
+  ///
+  /// This method is an asynchronous equivalent to `getQueryData` that also
+  /// handles fetching if necessary.
+  ///
+  /// See [fetchQuery] for parameter descriptions.
+  Future<TData> ensureQueryData<TData, TError>(
+    List<Object?> queryKey,
+    QueryFn<TData> queryFn, {
+    StaleDuration? staleDuration,
+    RetryResolver<TError>? retry,
+    GcDuration? gcDuration,
+    TData? seed,
+    DateTime? seedUpdatedAt,
+    Map<String, dynamic>? meta,
+    bool revalidateIfStale = false,
+  }) async {
+    final query = Query<TData, TError>.cached(
+      this,
+      queryKey,
+      gcDuration: gcDuration,
+      seed: seed,
+      seedUpdatedAt: seedUpdatedAt,
+    );
+
+    final cachedData = query.state.data;
+
+    if (cachedData != null) {
+      if (revalidateIfStale &&
+          query.shouldFetch(
+              staleDuration ?? defaultQueryOptions.staleDuration)) {
+        prefetchQuery<TData, TError>(
+          queryKey,
+          queryFn,
+          staleDuration: staleDuration,
+          retry: retry,
+          gcDuration: gcDuration,
+          meta: meta,
+        ).ignore();
+      }
+      return cachedData;
+    }
+
+    return fetchQuery<TData, TError>(
+      queryKey,
+      queryFn,
+      staleDuration: staleDuration,
+      retry: retry,
+      gcDuration: gcDuration,
+      seed: seed,
+      seedUpdatedAt: seedUpdatedAt,
+      meta: meta,
+    );
+  }
+
   /// The cached data for a query, or `null` if not found.
   ///
   /// The [queryKey] must exactly match a query in the cache. Use this for
