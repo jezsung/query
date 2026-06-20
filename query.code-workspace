@@ -1,14 +1,16 @@
 {
   "folders": [
     {
-      "path": ".",
+      "path": "."
     },
     {
-      "path": "packages/flutter_query",
+      "path": "packages/flutter_query"
     },
     {
-      "path": "docs",
-    },
+      "path": "docs"
+    }
   ],
-  "settings": {},
+  "settings": {
+    "dart.flutterSdkPath": ".fvm/versions/3.44.2"
+  }
 }
