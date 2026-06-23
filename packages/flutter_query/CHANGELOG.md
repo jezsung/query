@@ -1,3 +1,27 @@
+## 0.8.0 (2026-06-23)
+
+- Added an experimental, Dart-idiomatic query API, opt in via
+  `import 'package:flutter_query/experiments.dart';`. It exposes a `useQuery`
+  that returns a `QuerySnapshot`: a `sealed` hierarchy (`QueryPending`,
+  `QuerySuccess`, `QueryError`) supporting exhaustive `switch` matching, with
+  non-nullable `data`/`error` on the success/error variants and the activity
+  axis exposed via `isFetching`/`isPaused`/`isIdle`.
+
+  ```dart
+  import 'package:flutter_query/flutter_query.dart' hide useQuery;
+  import 'package:flutter_query/experiments.dart';
+
+  final snapshot = useQuery(['user', id], () => fetchUser(id));
+  final widget = switch (snapshot) {
+    QueryPending() => const CircularProgressIndicator(),
+    QuerySuccess(:final data) => Text(data.name),
+    QueryError(:final error) => Text('$error'),
+  };
+  ```
+
+  This API is annotated `@experimental` and may change in a future minor
+  release.
+
 ## 0.7.0 (2026-03-08)
 
 - Fixed crashes when multiple screens share the same query key ([#40](https://github.com/jezsung/query/issues/40)).
