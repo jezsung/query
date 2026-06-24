@@ -3534,4 +3534,90 @@ void main() {
       }));
     });
   });
+
+  group('Shared key', () {
+    // Regression test for https://github.com/jezsung/query/issues/40
+    testWidgets(
+        'SHOULD NOT throw markNeedsBuild error '
+        'WHEN navigating to screen that shares the same query key',
+        withCleanup((tester) async {
+      late InfiniteQueryResult<String, Object, int> screenAResult;
+
+      await tester.pumpWidget(
+        Column(
+          children: [
+            HookBuilder(
+              key: const Key('screen-a'),
+              builder: (context) {
+                screenAResult = useInfiniteQuery<String, Object, int>(
+                  ['branch', 'id-1'],
+                  (context) async {
+                    await Future.delayed(const Duration(seconds: 1));
+                    return 'data-a-${context.pageParam}';
+                  },
+                  initialPageParam: 0,
+                  nextPageParamBuilder: (data) => data.pageParams.last + 1,
+                  client: client,
+                );
+                return Container();
+              },
+            ),
+          ],
+        ),
+      );
+      await tester.pump(const Duration(seconds: 1));
+
+      expect(screenAResult.status, QueryStatus.success);
+      expect(screenAResult.data?.pages, ['data-a-0']);
+
+      late InfiniteQueryResult<String, Object, int> screenBResult;
+
+      // Add Screen B while keeping Screen A alive via Key.
+      // Without the fix, Screen B's onMount triggers _fetch() which
+      // notifies Screen A's observer, calling markNeedsBuild() during
+      // Screen B's build phase.
+      await tester.pumpWidget(
+        Column(
+          children: [
+            HookBuilder(
+              key: const Key('screen-a'),
+              builder: (context) {
+                screenAResult = useInfiniteQuery<String, Object, int>(
+                  ['branch', 'id-1'],
+                  (context) async {
+                    await Future.delayed(const Duration(seconds: 1));
+                    return 'data-a-${context.pageParam}';
+                  },
+                  initialPageParam: 0,
+                  nextPageParamBuilder: (data) => data.pageParams.last + 1,
+                  client: client,
+                );
+                return Container();
+              },
+            ),
+            HookBuilder(
+              key: const Key('screen-b'),
+              builder: (context) {
+                screenBResult = useInfiniteQuery<String, Object, int>(
+                  ['branch', 'id-1'],
+                  (context) async {
+                    await Future.delayed(const Duration(seconds: 1));
+                    return 'data-b-${context.pageParam}';
+                  },
+                  initialPageParam: 0,
+                  nextPageParamBuilder: (data) => data.pageParams.last + 1,
+                  client: client,
+                );
+                return Container();
+              },
+            ),
+          ],
+        ),
+      );
+      await tester.pump(const Duration(seconds: 1));
+
+      expect(screenAResult.status, QueryStatus.success);
+      expect(screenBResult.status, QueryStatus.success);
+    }));
+  });
 }
