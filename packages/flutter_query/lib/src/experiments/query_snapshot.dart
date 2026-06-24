@@ -6,14 +6,15 @@ import '../core/core.dart';
 ///
 /// Unlike [QueryResult], this is a `sealed` hierarchy: a `switch` over it is
 /// checked for exhaustiveness, `data` is non-nullable on [QuerySuccess], and
-/// `error` is non-nullable on [QueryError]. The activity axis (was
-/// `fetchStatus`) is exposed via [isFetching] / [isPaused] / [isIdle].
+/// `error` is non-nullable on [QueryError]. The activity axis is exposed via
+/// [fetchStatus], with [isFetching] / [isPaused] / [isIdle] as conveniences.
 ///
 /// This is an experimental API and may change in a future minor release.
 @experimental
 sealed class QuerySnapshot<TData, TError> {
   /// Creates a query snapshot.
   const QuerySnapshot({
+    required this.fetchStatus,
     required this.dataUpdatedAt,
     required this.dataUpdateCount,
     required this.errorUpdatedAt,
@@ -25,6 +26,9 @@ sealed class QuerySnapshot<TData, TError> {
     required this.isFetchedAfterMount,
     required this.refetch,
   });
+
+  /// The current network activity state of the query.
+  final FetchStatus fetchStatus;
 
   /// The timestamp when the data was last updated.
   final DateTime? dataUpdatedAt;
@@ -57,13 +61,13 @@ sealed class QuerySnapshot<TData, TError> {
   final Refetch<TData, TError> refetch;
 
   /// Whether a fetch is currently in progress.
-  bool get isFetching;
+  bool get isFetching => fetchStatus == FetchStatus.fetching;
 
   /// Whether the fetch is paused (typically offline).
-  bool get isPaused;
+  bool get isPaused => fetchStatus == FetchStatus.paused;
 
   /// Whether no fetch is in progress.
-  bool get isIdle => !isFetching && !isPaused;
+  bool get isIdle => fetchStatus == FetchStatus.idle;
 
   /// The last-known data, regardless of the current state.
   TData? get dataOrNull;
@@ -100,8 +104,7 @@ sealed class QuerySnapshot<TData, TError> {
 final class QueryPending<TData, TError> extends QuerySnapshot<TData, TError> {
   /// Creates a pending snapshot.
   const QueryPending({
-    required this.isFetching,
-    required this.isPaused,
+    required super.fetchStatus,
     required super.dataUpdatedAt,
     required super.dataUpdateCount,
     required super.errorUpdatedAt,
@@ -115,20 +118,13 @@ final class QueryPending<TData, TError> extends QuerySnapshot<TData, TError> {
   });
 
   @override
-  final bool isFetching;
-
-  @override
-  final bool isPaused;
-
-  @override
   TData? get dataOrNull => null;
 
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       other is QueryPending<TData, TError> &&
-          isFetching == other.isFetching &&
-          isPaused == other.isPaused &&
+          fetchStatus == other.fetchStatus &&
           dataUpdatedAt == other.dataUpdatedAt &&
           dataUpdateCount == other.dataUpdateCount &&
           errorUpdatedAt == other.errorUpdatedAt &&
@@ -142,8 +138,7 @@ final class QueryPending<TData, TError> extends QuerySnapshot<TData, TError> {
   @override
   int get hashCode => Object.hash(
         runtimeType,
-        isFetching,
-        isPaused,
+        fetchStatus,
         dataUpdatedAt,
         dataUpdateCount,
         errorUpdatedAt,
@@ -157,8 +152,7 @@ final class QueryPending<TData, TError> extends QuerySnapshot<TData, TError> {
 
   @override
   String toString() => 'QueryPending('
-      'isFetching: $isFetching, '
-      'isPaused: $isPaused, '
+      'fetchStatus: $fetchStatus, '
       'isStale: $isStale, '
       'isEnabled: $isEnabled)';
 }
@@ -172,8 +166,7 @@ final class QuerySuccess<TData, TError> extends QuerySnapshot<TData, TError> {
   const QuerySuccess({
     required this.data,
     required this.isPlaceholder,
-    required this.isFetching,
-    required this.isPaused,
+    required super.fetchStatus,
     required super.dataUpdatedAt,
     required super.dataUpdateCount,
     required super.errorUpdatedAt,
@@ -193,12 +186,6 @@ final class QuerySuccess<TData, TError> extends QuerySnapshot<TData, TError> {
   final bool isPlaceholder;
 
   @override
-  final bool isFetching;
-
-  @override
-  final bool isPaused;
-
-  @override
   TData? get dataOrNull => data;
 
   @override
@@ -207,8 +194,7 @@ final class QuerySuccess<TData, TError> extends QuerySnapshot<TData, TError> {
       other is QuerySuccess<TData, TError> &&
           deepEq.equals(data, other.data) &&
           isPlaceholder == other.isPlaceholder &&
-          isFetching == other.isFetching &&
-          isPaused == other.isPaused &&
+          fetchStatus == other.fetchStatus &&
           dataUpdatedAt == other.dataUpdatedAt &&
           dataUpdateCount == other.dataUpdateCount &&
           errorUpdatedAt == other.errorUpdatedAt &&
@@ -224,8 +210,7 @@ final class QuerySuccess<TData, TError> extends QuerySnapshot<TData, TError> {
         runtimeType,
         deepEq.hash(data),
         isPlaceholder,
-        isFetching,
-        isPaused,
+        fetchStatus,
         dataUpdatedAt,
         dataUpdateCount,
         errorUpdatedAt,
@@ -241,7 +226,7 @@ final class QuerySuccess<TData, TError> extends QuerySnapshot<TData, TError> {
   String toString() => 'QuerySuccess('
       'data: $data, '
       'isPlaceholder: $isPlaceholder, '
-      'isFetching: $isFetching, '
+      'fetchStatus: $fetchStatus, '
       'isStale: $isStale)';
 }
 
@@ -254,8 +239,7 @@ final class QueryError<TData, TError> extends QuerySnapshot<TData, TError> {
   const QueryError({
     required this.error,
     required this.data,
-    required this.isFetching,
-    required this.isPaused,
+    required super.fetchStatus,
     required super.dataUpdatedAt,
     required super.dataUpdateCount,
     required super.errorUpdatedAt,
@@ -275,12 +259,6 @@ final class QueryError<TData, TError> extends QuerySnapshot<TData, TError> {
   final TData? data;
 
   @override
-  final bool isFetching;
-
-  @override
-  final bool isPaused;
-
-  @override
   TData? get dataOrNull => data;
 
   @override
@@ -289,8 +267,7 @@ final class QueryError<TData, TError> extends QuerySnapshot<TData, TError> {
       other is QueryError<TData, TError> &&
           deepEq.equals(error, other.error) &&
           deepEq.equals(data, other.data) &&
-          isFetching == other.isFetching &&
-          isPaused == other.isPaused &&
+          fetchStatus == other.fetchStatus &&
           dataUpdatedAt == other.dataUpdatedAt &&
           dataUpdateCount == other.dataUpdateCount &&
           errorUpdatedAt == other.errorUpdatedAt &&
@@ -306,8 +283,7 @@ final class QueryError<TData, TError> extends QuerySnapshot<TData, TError> {
         runtimeType,
         deepEq.hash(error),
         deepEq.hash(data),
-        isFetching,
-        isPaused,
+        fetchStatus,
         dataUpdatedAt,
         dataUpdateCount,
         errorUpdatedAt,
@@ -323,7 +299,7 @@ final class QueryError<TData, TError> extends QuerySnapshot<TData, TError> {
   String toString() => 'QueryError('
       'error: $error, '
       'data: $data, '
-      'isFetching: $isFetching, '
+      'fetchStatus: $fetchStatus, '
       'isStale: $isStale)';
 }
 
@@ -332,14 +308,10 @@ final class QueryError<TData, TError> extends QuerySnapshot<TData, TError> {
 extension QueryResultSnapshot<TData, TError> on QueryResult<TData, TError> {
   /// Converts this result into a [QuerySnapshot].
   QuerySnapshot<TData, TError> toSnapshot() {
-    final fetching = fetchStatus == FetchStatus.fetching;
-    final paused = fetchStatus == FetchStatus.paused;
-
     switch (status) {
       case QueryStatus.pending:
         return QueryPending<TData, TError>(
-          isFetching: fetching,
-          isPaused: paused,
+          fetchStatus: fetchStatus,
           dataUpdatedAt: dataUpdatedAt,
           dataUpdateCount: dataUpdateCount,
           errorUpdatedAt: errorUpdatedAt,
@@ -355,8 +327,7 @@ extension QueryResultSnapshot<TData, TError> on QueryResult<TData, TError> {
         return QuerySuccess<TData, TError>(
           data: data as TData,
           isPlaceholder: isPlaceholderData,
-          isFetching: fetching,
-          isPaused: paused,
+          fetchStatus: fetchStatus,
           dataUpdatedAt: dataUpdatedAt,
           dataUpdateCount: dataUpdateCount,
           errorUpdatedAt: errorUpdatedAt,
@@ -372,8 +343,7 @@ extension QueryResultSnapshot<TData, TError> on QueryResult<TData, TError> {
         return QueryError<TData, TError>(
           error: error as TError,
           data: data,
-          isFetching: fetching,
-          isPaused: paused,
+          fetchStatus: fetchStatus,
           dataUpdatedAt: dataUpdatedAt,
           dataUpdateCount: dataUpdateCount,
           errorUpdatedAt: errorUpdatedAt,
