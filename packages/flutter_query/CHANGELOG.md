@@ -1,3 +1,48 @@
+## 0.9.0 (2026-06-24)
+
+- Added a `useQueryOptions` hook that accepts a pre-built `QueryOptions`
+  object, the object-first counterpart to `useQuery`. This lets a query
+  definition live in one place (e.g. a `todoQueryOptions(id)` factory),
+  separate from the widget that observes it. The `client` is passed
+  separately, since it is an environmental concern rather than part of the
+  query definition. `useQuery` is now implemented on top of it; its public
+  API and behavior are unchanged.
+
+  ```dart
+  QueryOptions<Todo, Object> todoQueryOptions(int id) => QueryOptions(
+    queryKey: ['todos', id],
+    queryFn: (context) => fetchTodo(id),
+  );
+
+  final result = useQueryOptions(todoQueryOptions(id));
+  ```
+
+- Expanded the experimental, pattern-matchable snapshot API (opt in via
+  `import 'package:flutter_query/experiments.dart';`) to cover mutations and
+  infinite queries alongside `useQuery`:
+
+  - `useMutation` now returns a `sealed` `MutationSnapshot` with four
+    variants matching `MutationStatus` (`MutationIdle`, `MutationPending`,
+    `MutationSuccess`, `MutationError`), exposing non-null `variables` on
+    every variant except idle.
+  - `useInfiniteQuery` now returns a `sealed` `InfiniteQuerySnapshot` with
+    `InfiniteQueryPending`, `InfiniteQuerySuccess`, and `InfiniteQueryError`
+    variants, with page-level fetch flags on the base class.
+
+  Because the experimental library reuses the canonical hook names, hide all
+  three when importing it alongside the main library:
+
+  ```dart
+  import 'package:flutter_query/flutter_query.dart'
+      hide useQuery, useMutation, useInfiniteQuery;
+  import 'package:flutter_query/experiments.dart';
+  ```
+
+  As part of this work, `QuerySnapshot` now exposes the activity axis via a
+  single `fetchStatus` enum, with `isFetching`/`isPaused`/`isIdle` retained
+  as derived conveniences. These types remain experimental and may change in
+  a future minor release.
+
 ## 0.8.0 (2026-06-23)
 
 - Added an experimental, Dart-idiomatic query API, opt in via
