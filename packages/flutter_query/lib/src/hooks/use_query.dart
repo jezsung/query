@@ -1,10 +1,5 @@
-import 'package:flutter/scheduler.dart';
-import 'package:flutter/widgets.dart';
-
-import 'package:flutter_hooks/flutter_hooks.dart';
-
 import '../core/core.dart';
-import 'use_query_client.dart';
+import 'use_query_options.dart';
 
 /// A hook for fetching, caching, and subscribing to async data.
 ///
@@ -104,92 +99,25 @@ QueryResult<TData, TError> useQuery<TData, TError>(
   Map<String, dynamic>? meta,
   QueryClient? client,
 }) {
-  final effectiveClient = useQueryClient(client);
-
-  // Create observer once per component instance
-  final observer = useMemoized(
-    () => QueryObserver<TData, TError>(
-      effectiveClient,
-      QueryOptions(
-        queryKey,
-        queryFn,
-        enabled: enabled,
-        staleDuration: staleDuration,
-        gcDuration: gcDuration,
-        meta: meta,
-        networkMode: networkMode,
-        placeholder: placeholder,
-        refetchInterval: refetchInterval,
-        refetchOnMount: refetchOnMount,
-        refetchOnResume: refetchOnResume,
-        refetchOnReconnect: refetchOnReconnect,
-        retry: retry,
-        retryOnMount: retryOnMount,
-        seed: seed,
-        seedUpdatedAt: seedUpdatedAt,
-      ),
+  return useQueryOptions(
+    QueryOptions(
+      queryKey,
+      queryFn,
+      enabled: enabled,
+      networkMode: networkMode,
+      staleDuration: staleDuration,
+      gcDuration: gcDuration,
+      placeholder: placeholder,
+      refetchOnMount: refetchOnMount,
+      refetchOnResume: refetchOnResume,
+      refetchOnReconnect: refetchOnReconnect,
+      refetchInterval: refetchInterval,
+      retry: retry,
+      retryOnMount: retryOnMount,
+      seed: seed,
+      seedUpdatedAt: seedUpdatedAt,
+      meta: meta,
     ),
-    [effectiveClient],
+    client: client,
   );
-
-  // Mount observer and cleanup on unmount
-  useEffect(() {
-    observer.onMount();
-    return observer.onUnmount;
-  }, [observer]);
-
-  // Handle app lifecycle resume events
-  useEffect(() {
-    final listener = AppLifecycleListener(onResume: observer.onResume);
-    return listener.dispose;
-  }, [observer]);
-
-  // Update options during render (before subscribing)
-  observer.options = QueryOptions(
-    queryKey,
-    queryFn,
-    enabled: enabled,
-    staleDuration: staleDuration,
-    gcDuration: gcDuration,
-    meta: meta,
-    networkMode: networkMode,
-    placeholder: placeholder,
-    refetchInterval: refetchInterval,
-    refetchOnMount: refetchOnMount,
-    refetchOnResume: refetchOnResume,
-    refetchOnReconnect: refetchOnReconnect,
-    retry: retry,
-    retryOnMount: retryOnMount,
-    seed: seed,
-    seedUpdatedAt: seedUpdatedAt,
-  );
-
-  // Subscribe to observer and trigger rebuilds when result changes
-  // Uses useState with useEffect subscription for synchronous updates
-  final result = useState(observer.result);
-
-  if (result.value != observer.result) {
-    result.value = observer.result;
-  }
-
-  useEffect(() {
-    final unsubscribe = observer.subscribe((newResult) {
-      // During the build phase, another widget sharing the same query key may
-      // trigger a state change. Setting result.value here would call
-      // markNeedsBuild on this element while a different element is building,
-      // which Flutter forbids. Deferring to a post-frame callback avoids the
-      // error while still delivering the update in the next frame.
-      if (SchedulerBinding.instance.schedulerPhase ==
-          SchedulerPhase.persistentCallbacks) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          result.value = newResult;
-        });
-      } else {
-        result.value = newResult;
-      }
-    });
-    return unsubscribe;
-  }, [observer]);
-
-  return result.value;
 }

@@ -1697,6 +1697,33 @@ void main() {
       final exception = tester.takeException();
       expect(exception, isA<FlutterError>());
     });
+
+    testWidgets('SHOULD share cache with useQueryOptions for the same key',
+        withCleanup((tester) async {
+      final hookResult = await buildHook(
+        () {
+          final a = useQuery(
+            const ['shared'],
+            (context) async => 'data',
+            client: client,
+          );
+          final b = useQueryOptions(
+            QueryOptions(
+              const ['shared'],
+              (context) async => 'data',
+            ),
+            client: client,
+          );
+          return (a, b);
+        },
+      );
+
+      await tester.pumpAndSettle();
+
+      expect(hookResult.current.$1.data, 'data');
+      expect(hookResult.current.$2.data, 'data');
+      expect(client.cache.getAll().length, 1);
+    }));
   });
 
   group('seed', () {
