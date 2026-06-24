@@ -10,7 +10,6 @@ import '../core/core.dart';
 /// [fetchStatus], with [isFetching] / [isPaused] / [isIdle] as conveniences.
 ///
 /// This is an experimental API and may change in a future minor release.
-@experimental
 sealed class QuerySnapshot<TData, TError> {
   /// Creates a query snapshot.
   const QuerySnapshot({
@@ -100,7 +99,6 @@ sealed class QuerySnapshot<TData, TError> {
 /// The query has no resolved data yet.
 ///
 /// This is an experimental API and may change in a future minor release.
-@experimental
 final class QueryPending<TData, TError> extends QuerySnapshot<TData, TError> {
   /// Creates a pending snapshot.
   const QueryPending({
@@ -160,7 +158,6 @@ final class QueryPending<TData, TError> extends QuerySnapshot<TData, TError> {
 /// The query has resolved data.
 ///
 /// This is an experimental API and may change in a future minor release.
-@experimental
 final class QuerySuccess<TData, TError> extends QuerySnapshot<TData, TError> {
   /// Creates a success snapshot.
   const QuerySuccess({
@@ -233,7 +230,6 @@ final class QuerySuccess<TData, TError> extends QuerySnapshot<TData, TError> {
 /// The query encountered an error.
 ///
 /// This is an experimental API and may change in a future minor release.
-@experimental
 final class QueryError<TData, TError> extends QuerySnapshot<TData, TError> {
   /// Creates an error snapshot.
   const QueryError({

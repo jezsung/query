@@ -1,5 +1,3 @@
-import 'package:meta/meta.dart';
-
 import '../core/core.dart';
 import '../hooks/use_query.dart' as core;
 import 'query_snapshot.dart';
@@ -15,7 +13,6 @@ import 'query_snapshot.dart';
 /// the meaning of every option.
 ///
 /// This is an experimental API and may change in a future minor release.
-@experimental
 QuerySnapshot<TData, TError> useQuery<TData, TError>(
   List<Object?> queryKey,
   QueryFn<TData> queryFn, {
