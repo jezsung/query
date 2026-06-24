@@ -115,3 +115,6 @@ mason-lock.json
 
 # FVM Version Cache
 .fvm/
+
+# Git worktrees
+.worktrees/
