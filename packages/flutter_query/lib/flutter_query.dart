@@ -56,9 +56,12 @@ export 'src/hooks/hooks.dart'
     show
         useQueryClient,
         useQuery,
+        useQueryOptions,
         useMutation,
+        useMutationOptions,
         useMutationState,
         useInfiniteQuery,
+        useInfiniteQueryOptions,
         useIsFetching,
         useIsMutating;
 

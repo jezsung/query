@@ -1,12 +1,14 @@
 ## 0.9.0 (2026-06-24)
 
-- Added a `useQueryOptions` hook that accepts a pre-built `QueryOptions`
-  object, the object-first counterpart to `useQuery`. This lets a query
+- Added object-first counterparts to the data-fetching hooks:
+  `useQueryOptions`, `useMutationOptions`, and `useInfiniteQueryOptions`.
+  Each accepts a pre-built options object (`QueryOptions`,
+  `MutationOptions`, `InfiniteQueryOptions`), letting a query or mutation
   definition live in one place (e.g. a `todoQueryOptions(id)` factory),
-  separate from the widget that observes it. The `client` is passed
-  separately, since it is an environmental concern rather than part of the
-  query definition. `useQuery` is now implemented on top of it; its public
-  API and behavior are unchanged.
+  separate from the widget that uses it. The `client` is passed separately,
+  since it is an environmental concern rather than part of the definition.
+  `useQuery`, `useMutation`, and `useInfiniteQuery` are now implemented on
+  top of these; their public APIs and behavior are unchanged.
 
   ```dart
   QueryOptions<Todo, Object> todoQueryOptions(int id) => QueryOptions(

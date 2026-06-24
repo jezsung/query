@@ -1,7 +1,5 @@
-import 'package:flutter_hooks/flutter_hooks.dart';
-
 import '../core/core.dart';
-import 'use_query_client.dart';
+import 'use_mutation_options.dart';
 
 /// A hook for performing create, update, and delete operations.
 ///
@@ -67,59 +65,19 @@ MutationResult<TData, TError, TVariables, TOnMutateResult>
   Map<String, dynamic>? meta,
   QueryClient? client,
 }) {
-  final effectiveClient = useQueryClient(client);
-
-  // Create observer once per component instance
-  final observer = useMemoized(
-    () => MutationObserver<TData, TError, TVariables, TOnMutateResult>(
-      effectiveClient,
-      MutationOptions<TData, TError, TVariables, TOnMutateResult>(
-        mutationFn: mutationFn,
-        mutationKey: mutationKey,
-        networkMode: networkMode,
-        meta: meta,
-        onMutate: onMutate,
-        onSuccess: onSuccess,
-        onError: onError,
-        onSettled: onSettled,
-        gcDuration: gcDuration,
-        retry: retry,
-      ),
+  return useMutationOptions(
+    MutationOptions<TData, TError, TVariables, TOnMutateResult>(
+      mutationFn: mutationFn,
+      mutationKey: mutationKey,
+      networkMode: networkMode,
+      meta: meta,
+      onMutate: onMutate,
+      onSuccess: onSuccess,
+      onError: onError,
+      onSettled: onSettled,
+      gcDuration: gcDuration,
+      retry: retry,
     ),
-    [effectiveClient],
+    client: client,
   );
-
-  // Mount observer and cleanup on unmount
-  useEffect(() {
-    observer.onMount();
-    return observer.onUnmount;
-  }, [observer]);
-
-  // Update options during render
-  observer.options =
-      MutationOptions<TData, TError, TVariables, TOnMutateResult>(
-    mutationFn: mutationFn,
-    mutationKey: mutationKey,
-    networkMode: networkMode,
-    meta: meta,
-    onMutate: onMutate,
-    onSuccess: onSuccess,
-    onError: onError,
-    onSettled: onSettled,
-    gcDuration: gcDuration,
-    retry: retry,
-  );
-
-  // Subscribe to observer and trigger rebuilds when result changes
-  // Uses useState with useEffect subscription for synchronous updates
-  final result = useState(observer.result);
-
-  useEffect(() {
-    final unsubscribe = observer.subscribe((newResult) {
-      result.value = newResult;
-    });
-    return unsubscribe;
-  }, [observer]);
-
-  return result.value;
 }

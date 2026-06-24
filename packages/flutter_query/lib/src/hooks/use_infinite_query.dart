@@ -1,9 +1,5 @@
-import 'package:flutter/widgets.dart';
-
-import 'package:flutter_hooks/flutter_hooks.dart';
-
 import '../core/core.dart';
-import 'use_query_client.dart';
+import 'use_infinite_query_options.dart';
 
 /// A hook for fetching and caching paginated data with automatic page
 /// accumulation.
@@ -123,84 +119,29 @@ InfiniteQueryResult<TData, TError, TPageParam>
   Map<String, dynamic>? meta,
   QueryClient? client,
 }) {
-  final effectiveClient = useQueryClient(client);
-
-  // Create observer once per component instance
-  final observer = useMemoized(
-    () => InfiniteQueryObserver<TData, TError, TPageParam>(
-      effectiveClient,
-      InfiniteQueryOptions(
-        queryKey,
-        queryFn,
-        initialPageParam: initialPageParam,
-        nextPageParamBuilder: nextPageParamBuilder,
-        prevPageParamBuilder: prevPageParamBuilder,
-        maxPages: maxPages,
-        enabled: enabled,
-        networkMode: networkMode,
-        staleDuration: staleDuration,
-        gcDuration: gcDuration,
-        placeholder: placeholder,
-        refetchOnMount: refetchOnMount,
-        refetchOnResume: refetchOnResume,
-        refetchOnReconnect: refetchOnReconnect,
-        refetchInterval: refetchInterval,
-        retry: retry,
-        retryOnMount: retryOnMount,
-        seed: seed,
-        seedUpdatedAt: seedUpdatedAt,
-        meta: meta,
-      ),
+  return useInfiniteQueryOptions(
+    InfiniteQueryOptions(
+      queryKey,
+      queryFn,
+      initialPageParam: initialPageParam,
+      nextPageParamBuilder: nextPageParamBuilder,
+      prevPageParamBuilder: prevPageParamBuilder,
+      maxPages: maxPages,
+      enabled: enabled,
+      networkMode: networkMode,
+      staleDuration: staleDuration,
+      gcDuration: gcDuration,
+      placeholder: placeholder,
+      refetchOnMount: refetchOnMount,
+      refetchOnResume: refetchOnResume,
+      refetchOnReconnect: refetchOnReconnect,
+      refetchInterval: refetchInterval,
+      retry: retry,
+      retryOnMount: retryOnMount,
+      seed: seed,
+      seedUpdatedAt: seedUpdatedAt,
+      meta: meta,
     ),
-    [effectiveClient],
+    client: client,
   );
-
-  // Mount observer and cleanup on unmount
-  useEffect(() {
-    observer.onMount();
-    return observer.onUnmount;
-  }, [observer]);
-
-  // Handle app lifecycle resume events
-  useEffect(() {
-    final listener = AppLifecycleListener(onResume: observer.onResume);
-    return listener.dispose;
-  }, [observer]);
-
-  // Update options during render (before subscribing)
-  observer.options = InfiniteQueryOptions(
-    queryKey,
-    queryFn,
-    initialPageParam: initialPageParam,
-    nextPageParamBuilder: nextPageParamBuilder,
-    prevPageParamBuilder: prevPageParamBuilder,
-    maxPages: maxPages,
-    enabled: enabled,
-    networkMode: networkMode,
-    staleDuration: staleDuration,
-    gcDuration: gcDuration,
-    placeholder: placeholder,
-    refetchOnMount: refetchOnMount,
-    refetchOnResume: refetchOnResume,
-    refetchOnReconnect: refetchOnReconnect,
-    refetchInterval: refetchInterval,
-    retry: retry,
-    retryOnMount: retryOnMount,
-    seed: seed,
-    seedUpdatedAt: seedUpdatedAt,
-    meta: meta,
-  );
-
-  // Subscribe to observer and trigger rebuilds when result changes
-  // Uses useState with useEffect subscription for synchronous updates
-  final result = useState(observer.result);
-
-  useEffect(() {
-    final unsubscribe = observer.subscribe((newResult) {
-      result.value = newResult;
-    });
-    return unsubscribe;
-  }, [observer]);
-
-  return result.value;
 }
