@@ -1,24 +1,5 @@
 ## 0.9.0 (2026-06-24)
 
-- Added object-first counterparts to the data-fetching hooks:
-  `useQueryOptions`, `useMutationOptions`, and `useInfiniteQueryOptions`.
-  Each accepts a pre-built options object (`QueryOptions`,
-  `MutationOptions`, `InfiniteQueryOptions`), letting a query or mutation
-  definition live in one place (e.g. a `todoQueryOptions(id)` factory),
-  separate from the widget that uses it. The `client` is passed separately,
-  since it is an environmental concern rather than part of the definition.
-  `useQuery`, `useMutation`, and `useInfiniteQuery` are now implemented on
-  top of these; their public APIs and behavior are unchanged.
-
-  ```dart
-  QueryOptions<Todo, Object> todoQueryOptions(int id) => QueryOptions(
-    queryKey: ['todos', id],
-    queryFn: (context) => fetchTodo(id),
-  );
-
-  final result = useQueryOptions(todoQueryOptions(id));
-  ```
-
 - Expanded the experimental, pattern-matchable snapshot API (opt in via
   `import 'package:flutter_query/experiments.dart';`) to cover mutations and
   infinite queries alongside `useQuery`:
@@ -31,11 +12,6 @@
     `InfiniteQueryPending`, `InfiniteQuerySuccess`, and `InfiniteQueryError`
     variants, with page-level fetch flags on the base class.
 
-  The experimental library also exposes object-first
-  `useQueryOptions`, `useMutationOptions`, and `useInfiniteQueryOptions`
-  counterparts that take a pre-built options object and return the same
-  snapshots.
-
   Because the experimental library reuses the canonical hook names, hide them
   when importing it alongside the main library:
 
@@ -43,11 +19,8 @@
   import 'package:flutter_query/flutter_query.dart'
       hide
           useQuery,
-          useQueryOptions,
           useMutation,
-          useMutationOptions,
-          useInfiniteQuery,
-          useInfiniteQueryOptions;
+          useInfiniteQuery;
   import 'package:flutter_query/experiments.dart';
   ```
 
