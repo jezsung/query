@@ -31,12 +31,23 @@
     `InfiniteQueryPending`, `InfiniteQuerySuccess`, and `InfiniteQueryError`
     variants, with page-level fetch flags on the base class.
 
-  Because the experimental library reuses the canonical hook names, hide all
-  three when importing it alongside the main library:
+  The experimental library also exposes object-first
+  `useQueryOptions`, `useMutationOptions`, and `useInfiniteQueryOptions`
+  counterparts that take a pre-built options object and return the same
+  snapshots.
+
+  Because the experimental library reuses the canonical hook names, hide them
+  when importing it alongside the main library:
 
   ```dart
   import 'package:flutter_query/flutter_query.dart'
-      hide useQuery, useMutation, useInfiniteQuery;
+      hide
+          useQuery,
+          useQueryOptions,
+          useMutation,
+          useMutationOptions,
+          useInfiniteQuery,
+          useInfiniteQueryOptions;
   import 'package:flutter_query/experiments.dart';
   ```
 
