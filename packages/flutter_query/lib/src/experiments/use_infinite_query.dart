@@ -37,6 +37,8 @@ InfiniteQuerySnapshot<TData, TError, TPageParam>
   InfiniteData<TData, TPageParam>? seed,
   DateTime? seedUpdatedAt,
   Map<String, dynamic>? meta,
+  ShouldRebuild<InfiniteQuerySnapshot<TData, TError, TPageParam>>?
+      shouldRebuild,
   QueryClient? client,
 }) {
   final result = core.useInfiniteQuery<TData, TError, TPageParam>(
@@ -60,6 +62,10 @@ InfiniteQuerySnapshot<TData, TError, TPageParam>
     seed: seed,
     seedUpdatedAt: seedUpdatedAt,
     meta: meta,
+    shouldRebuild: shouldRebuild == null
+        ? null
+        : (previous, next) =>
+            shouldRebuild(previous.toSnapshot(), next.toSnapshot()),
     client: client,
   );
 

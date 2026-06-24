@@ -47,6 +47,7 @@ export 'src/core/core.dart'
         RefetchOnResume,
         RefetchOnReconnect,
         RetryResolver,
+        ShouldRebuild,
 
         // Cancellation
         AbortSignal,

@@ -18,9 +18,17 @@ import 'query_snapshot.dart';
 /// release.
 QuerySnapshot<TData, TError> useQueryOptions<TData, TError>(
   QueryOptions<TData, TError> options, {
+  ShouldRebuild<QuerySnapshot<TData, TError>>? shouldRebuild,
   QueryClient? client,
 }) {
-  final result = core.useQueryOptions<TData, TError>(options, client: client);
+  final result = core.useQueryOptions<TData, TError>(
+    options,
+    shouldRebuild: shouldRebuild == null
+        ? null
+        : (previous, next) =>
+            shouldRebuild(previous.toSnapshot(), next.toSnapshot()),
+    client: client,
+  );
 
   return result.toSnapshot();
 }

@@ -1,9 +1,35 @@
+## 0.10.0 (2026-06-25)
+
+- Added an optional `shouldRebuild` parameter to `useQuery` and
+  `useInfiniteQuery`. It is a `bool Function(TResult previous, TResult next)` predicate that
+  decides, per result update, whether the observing widget rebuilds —
+  returning `true` to rebuild or `false` to suppress. When omitted, the
+  widget rebuilds on every change, exactly as before.
+
+  ```dart
+  // Rebuild only when the data changes; ignore background-fetch flips.
+  useQuery(
+    ['todos'],
+    fetchTodos,
+    shouldRebuild: (previous, next) => previous.data != next.data,
+  );
+  ```
+
+  `previous` is always the last _accepted_ result (the value the widget is
+  currently showing), so a suppressed update is invisible to later
+  comparisons. `(_, __) => false` subscribes and fetches without ever
+  rebuilding. The experimental variants type the predicate over
+  `QuerySnapshot` / `InfiniteQuerySnapshot`.
+
+  This is the type-safe, Flutter-idiomatic counterpart to TanStack Query's
+  `notifyOnChangeProps`, mirroring the `shouldRebuild` / `buildWhen`
+  predicates already established by `provider` and `flutter_bloc`.
+
 ## 0.9.0 (2026-06-24)
 
 - Expanded the experimental, pattern-matchable snapshot API (opt in via
   `import 'package:flutter_query/experiments.dart';`) to cover mutations and
   infinite queries alongside `useQuery`:
-
   - `useMutation` now returns a `sealed` `MutationSnapshot` with four
     variants matching `MutationStatus` (`MutationIdle`, `MutationPending`,
     `MutationSuccess`, `MutationError`), exposing non-null `variables` on

@@ -3706,4 +3706,182 @@ void main() {
       expect(screenBResult.status, QueryStatus.success);
     }));
   });
+
+  group('Params: shouldRebuild', () {
+    testWidgets('SHOULD rebuild on every change WHEN shouldRebuild is null',
+        withCleanup((tester) async {
+      var builds = 0;
+
+      await buildHook(() {
+        builds++;
+        return useQuery<String, Object>(
+          const ['key'],
+          (context) async => 'unused',
+          seed: 'first',
+          refetchOnMount: RefetchOnMount.never,
+          client: client,
+        );
+      });
+
+      expect(builds, 1);
+
+      client.setQueryData<String, Object>(const ['key'], (_) => 'second');
+      await tester.pump();
+
+      expect(builds, 2);
+    }));
+
+    testWidgets('SHOULD NOT rebuild WHEN shouldRebuild returns false',
+        withCleanup((tester) async {
+      final data = Object();
+      var builds = 0;
+
+      final hookResult = await buildHook(() {
+        builds++;
+        return useQuery(
+          const ['key'],
+          (context) async {
+            await Future.delayed(const Duration(seconds: 5));
+            return data;
+          },
+          shouldRebuild: (previous, next) => false,
+          client: client,
+        );
+      });
+
+      expect(builds, 1);
+      expect(hookResult.current.status, QueryStatus.pending);
+
+      await tester.pump(const Duration(seconds: 5));
+
+      // Success arrived but the predicate suppressed the rebuild, so the
+      // widget still shows the last accepted (seed) result.
+      expect(builds, 1);
+      expect(hookResult.current.status, QueryStatus.pending);
+    }));
+
+    testWidgets('SHOULD rebuild only WHEN a selected property changes',
+        withCleanup((tester) async {
+      var builds = 0;
+
+      final hookResult = await buildHook(() {
+        builds++;
+        return useQuery<String, Object>(
+          const ['key'],
+          (context) async => 'unused',
+          seed: 'first',
+          refetchOnMount: RefetchOnMount.never,
+          shouldRebuild: (previous, next) => previous.data != next.data,
+          client: client,
+        );
+      });
+
+      expect(builds, 1);
+      expect(hookResult.current.data, 'first');
+
+      // Same data -> data unchanged -> suppressed.
+      client.setQueryData<String, Object>(const ['key'], (_) => 'first');
+      await tester.pump();
+      expect(builds, 1);
+
+      // Changed data -> rebuild.
+      client.setQueryData<String, Object>(const ['key'], (_) => 'second');
+      await tester.pump();
+      expect(builds, 2);
+      expect(hookResult.current.data, 'second');
+    }));
+
+    testWidgets('SHOULD pass the last accepted result as previous',
+        withCleanup((tester) async {
+      final seenPrevious = <String?>[];
+
+      final hookResult = await buildHook(() {
+        return useQuery<String, Object>(
+          const ['key'],
+          (context) async => 'unused',
+          seed: 'first',
+          refetchOnMount: RefetchOnMount.never,
+          shouldRebuild: (previous, next) {
+            seenPrevious.add(previous.data);
+            return next.data != 'second';
+          },
+          client: client,
+        );
+      });
+
+      expect(hookResult.current.data, 'first');
+
+      // Emission 1: 'first' -> 'second' suppressed (next.data == 'second').
+      client.setQueryData<String, Object>(const ['key'], (_) => 'second');
+      await tester.pump();
+      expect(hookResult.current.data, 'first');
+
+      // Emission 2: 'second' -> 'third' accepted.
+      client.setQueryData<String, Object>(const ['key'], (_) => 'third');
+      await tester.pump();
+      expect(hookResult.current.data, 'third');
+
+      // The 2nd predicate call's `previous` must be the last ACCEPTED result
+      // ('first'), not the suppressed 'second'.
+      expect(seenPrevious, ['first', 'first']);
+    }));
+
+    testWidgets(
+        'SHOULD gate each hook independently '
+        'WHEN two hooks share a key with different shouldRebuild',
+        withCleanup((tester) async {
+      var buildsA = 0;
+      var buildsB = 0;
+      late QueryResult<String, Object> resultA;
+      late QueryResult<String, Object> resultB;
+
+      await tester.pumpWidget(Column(children: [
+        HookBuilder(builder: (context) {
+          buildsA++;
+          resultA = useQuery<String, Object>(
+            const ['key'],
+            (context) async => 'unused',
+            seed: 'first',
+            refetchOnMount: RefetchOnMount.never,
+            // Suppresses every update.
+            shouldRebuild: (previous, next) => false,
+            client: client,
+          );
+          return Container();
+        }),
+        HookBuilder(builder: (context) {
+          buildsB++;
+          resultB = useQuery<String, Object>(
+            const ['key'],
+            (context) async => 'unused',
+            seed: 'first',
+            refetchOnMount: RefetchOnMount.never,
+            // Rebuilds whenever the data changes.
+            shouldRebuild: (previous, next) => previous.data != next.data,
+            client: client,
+          );
+          return Container();
+        }),
+      ]));
+
+      // Both share the same key, so both start from the same accepted seed.
+      expect(buildsA, 1);
+      expect(buildsB, 1);
+      expect(resultA.data, 'first');
+      expect(resultB.data, 'first');
+
+      // A single shared-key update notifies both hooks' observers.
+      client.setQueryData<String, Object>(const ['key'], (_) => 'second');
+      await tester.pump();
+
+      // Hook A's predicate suppressed the rebuild: still on the seed.
+      expect(buildsA, 1);
+      expect(resultA.data, 'first');
+
+      // Hook B's predicate accepted the same update and rebuilt. Each hook
+      // applies its own predicate even though they observe the same query.
+      expect(buildsB, 2);
+      expect(resultB.data, 'second');
+    }));
+  });
 }

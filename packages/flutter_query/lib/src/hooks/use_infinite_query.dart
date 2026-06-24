@@ -88,6 +88,11 @@ import 'use_infinite_query_options.dart';
 ///   in the query function context. When multiple hooks share the same query
 ///   key, their [meta] maps are deep merged.
 ///
+/// - [shouldRebuild]: An optional predicate that decides, per update, whether
+///   the widget rebuilds. Receives the last accepted result and the incoming
+///   result; return `true` to rebuild or `false` to suppress. When omitted,
+///   the widget rebuilds on every change.
+///
 /// - [client]: The [QueryClient] to use. If provided, takes precedence over
 ///   the nearest [QueryClientProvider] ancestor.
 ///
@@ -117,6 +122,7 @@ InfiniteQueryResult<TData, TError, TPageParam>
   InfiniteData<TData, TPageParam>? seed,
   DateTime? seedUpdatedAt,
   Map<String, dynamic>? meta,
+  ShouldRebuild<InfiniteQueryResult<TData, TError, TPageParam>>? shouldRebuild,
   QueryClient? client,
 }) {
   return useInfiniteQueryOptions(
@@ -142,6 +148,7 @@ InfiniteQueryResult<TData, TError, TPageParam>
       seedUpdatedAt: seedUpdatedAt,
       meta: meta,
     ),
+    shouldRebuild: shouldRebuild,
     client: client,
   );
 }

@@ -30,6 +30,7 @@ QuerySnapshot<TData, TError> useQuery<TData, TError>(
   TData? seed,
   DateTime? seedUpdatedAt,
   Map<String, dynamic>? meta,
+  ShouldRebuild<QuerySnapshot<TData, TError>>? shouldRebuild,
   QueryClient? client,
 }) {
   final result = core.useQuery<TData, TError>(
@@ -49,6 +50,10 @@ QuerySnapshot<TData, TError> useQuery<TData, TError>(
     seed: seed,
     seedUpdatedAt: seedUpdatedAt,
     meta: meta,
+    shouldRebuild: shouldRebuild == null
+        ? null
+        : (previous, next) =>
+            shouldRebuild(previous.toSnapshot(), next.toSnapshot()),
     client: client,
   );
 

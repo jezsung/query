@@ -4,6 +4,7 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 
 import '../core/core.dart';
+import 'use_effect_event.dart';
 import 'use_query_client.dart';
 
 /// A hook for fetching, caching, and subscribing to async data from a
@@ -19,8 +20,12 @@ import 'use_query_client.dart';
 /// environmental concern, not part of the query definition carried by
 /// [options].
 ///
-/// Returns a [QueryResult] containing the current state of the query. The
-/// widget rebuilds automatically when the query state changes.
+/// The [shouldRebuild] callback, if provided, decides per update whether the
+/// observing widget rebuilds. It receives the last accepted result and the new
+/// result, and returns `true` to rebuild or `false` to suppress. When omitted,
+/// the widget rebuilds on every change.
+///
+/// Returns a [QueryResult] containing the current state of the query.
 ///
 /// See also:
 ///
@@ -28,6 +33,7 @@ import 'use_query_client.dart';
 /// - [QueryOptions] for the bundled definition this hook consumes
 QueryResult<TData, TError> useQueryOptions<TData, TError>(
   QueryOptions<TData, TError> options, {
+  ShouldRebuild<QueryResult<TData, TError>>? shouldRebuild,
   QueryClient? client,
 }) {
   final effectiveClient = useQueryClient(client);
@@ -53,10 +59,20 @@ QueryResult<TData, TError> useQueryOptions<TData, TError>(
   // Update options during render (before subscribing)
   observer.options = options;
 
-  // Subscribe to observer and trigger rebuilds when result changes
+  // Subscribe to observer and trigger rebuilds when the predicate accepts.
   final result = useState(observer.result);
 
-  if (result.value != observer.result) {
+  // Always-latest view of the predicate for use inside the subscribe effect,
+  // whose closure is captured once per [observer] change.
+  final accept = useEffectEvent<bool Function(QueryResult<TData, TError>)>(
+    (next) => shouldRebuild == null || shouldRebuild(result.value, next),
+  );
+
+  // In-build catch-up: a sibling observing the same key may have advanced the
+  // observer between builds. Adopt the newer result only if the predicate
+  // accepts it, so result.value always holds the last accepted result.
+  if (result.value != observer.result &&
+      (shouldRebuild == null || shouldRebuild(result.value, observer.result))) {
     result.value = observer.result;
   }
 
@@ -70,10 +86,14 @@ QueryResult<TData, TError> useQueryOptions<TData, TError>(
       if (SchedulerBinding.instance.schedulerPhase ==
           SchedulerPhase.persistentCallbacks) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
-          result.value = newResult;
+          if (accept.call(newResult)) {
+            result.value = newResult;
+          }
         });
       } else {
-        result.value = newResult;
+        if (accept.call(newResult)) {
+          result.value = newResult;
+        }
       }
     });
     return unsubscribe;

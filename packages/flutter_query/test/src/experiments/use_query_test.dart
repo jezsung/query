@@ -65,4 +65,40 @@ void main() {
     expect(snapshot.data, isNull);
     expect(snapshot.isLoadingError, isTrue);
   }));
+
+  testWidgets('SHOULD gate rebuilds with a snapshot-typed shouldRebuild',
+      withCleanup((tester) async {
+    var builds = 0;
+    QuerySnapshot<String, Object>? seenPrevious;
+    QuerySnapshot<String, Object>? seenNext;
+
+    final hookResult = await buildHook(() {
+      builds++;
+      return useQuery<String, Object>(
+        const ['key'],
+        (context) async {
+          await Future.delayed(const Duration(seconds: 5));
+          return 'data';
+        },
+        shouldRebuild: (previous, next) {
+          seenPrevious = previous;
+          seenNext = next;
+          return false;
+        },
+        client: client,
+      );
+    });
+
+    expect(builds, 1);
+    expect(hookResult.current, isA<QueryPending<String, Object>>());
+
+    await tester.pump(const Duration(seconds: 5));
+
+    // The success update was delivered to the predicate as snapshots, but
+    // suppressed — so no rebuild and the widget still shows pending.
+    expect(builds, 1);
+    expect(hookResult.current, isA<QueryPending<String, Object>>());
+    expect(seenPrevious, isA<QueryPending<String, Object>>());
+    expect(seenNext, isA<QuerySuccess<String, Object>>());
+  }));
 }

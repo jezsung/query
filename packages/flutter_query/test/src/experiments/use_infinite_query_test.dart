@@ -73,4 +73,40 @@ void main() {
     expect(snapshot.dataOrNull, isNull);
     expect(snapshot.isLoadingError, isTrue);
   }));
+
+  testWidgets('SHOULD gate rebuilds with a snapshot-typed shouldRebuild',
+      withCleanup((tester) async {
+    var builds = 0;
+    InfiniteQuerySnapshot<String, Object, int>? seenNext;
+
+    final hookResult = await buildHook(() {
+      builds++;
+      return useInfiniteQuery<String, Object, int>(
+        const ['feed'],
+        (context) async {
+          await Future.delayed(const Duration(seconds: 5));
+          return 'page-${context.pageParam}';
+        },
+        initialPageParam: 0,
+        nextPageParamBuilder: (data) => data.pageParams.last + 1,
+        shouldRebuild: (previous, next) {
+          seenNext = next;
+          return false;
+        },
+        client: client,
+      );
+    });
+
+    expect(builds, 1);
+    expect(
+        hookResult.current, isA<InfiniteQueryPending<String, Object, int>>());
+
+    await tester.pump(const Duration(seconds: 5));
+
+    // Success delivered to the predicate as a snapshot, but suppressed.
+    expect(builds, 1);
+    expect(
+        hookResult.current, isA<InfiniteQueryPending<String, Object, int>>());
+    expect(seenNext, isA<InfiniteQuerySuccess<String, Object, int>>());
+  }));
 }

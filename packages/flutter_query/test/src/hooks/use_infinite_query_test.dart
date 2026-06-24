@@ -3620,4 +3620,127 @@ void main() {
       expect(screenBResult.status, QueryStatus.success);
     }));
   });
+
+  group('Params: shouldRebuild', () {
+    testWidgets('SHOULD rebuild on success WHEN shouldRebuild is null',
+        withCleanup((tester) async {
+      var builds = 0;
+
+      await buildHook(() {
+        builds++;
+        return useInfiniteQuery<String, Object, int>(
+          const ['feed'],
+          (context) async {
+            await Future.delayed(const Duration(seconds: 1));
+            return 'page-${context.pageParam}';
+          },
+          initialPageParam: 0,
+          nextPageParamBuilder: (data) => data.pageParams.last + 1,
+          client: client,
+        );
+      });
+
+      expect(builds, 1);
+
+      await tester.pump(const Duration(seconds: 1));
+
+      // Pending -> success rebuilds by default.
+      expect(builds, 2);
+    }));
+
+    testWidgets('SHOULD NOT rebuild WHEN shouldRebuild returns false',
+        withCleanup((tester) async {
+      var builds = 0;
+
+      final hookResult = await buildHook(() {
+        builds++;
+        return useInfiniteQuery<String, Object, int>(
+          const ['feed'],
+          (context) async {
+            await Future.delayed(const Duration(seconds: 1));
+            return 'page-${context.pageParam}';
+          },
+          initialPageParam: 0,
+          nextPageParamBuilder: (data) => data.pageParams.last + 1,
+          shouldRebuild: (previous, next) => false,
+          client: client,
+        );
+      });
+
+      expect(builds, 1);
+      expect(hookResult.current.status, QueryStatus.pending);
+
+      await tester.pump(const Duration(seconds: 1));
+
+      // Success arrived but the predicate suppressed the rebuild.
+      expect(builds, 1);
+      expect(hookResult.current.status, QueryStatus.pending);
+    }));
+
+    testWidgets(
+        'SHOULD gate each hook independently '
+        'WHEN two hooks share a key with different shouldRebuild',
+        withCleanup((tester) async {
+      var buildsA = 0;
+      var buildsB = 0;
+      late InfiniteQueryResult<String, Object, int> resultA;
+      late InfiniteQueryResult<String, Object, int> resultB;
+
+      await tester.pumpWidget(Column(children: [
+        HookBuilder(builder: (context) {
+          buildsA++;
+          resultA = useInfiniteQuery<String, Object, int>(
+            const ['feed'],
+            (context) async {
+              await Future.delayed(const Duration(seconds: 1));
+              return 'page-${context.pageParam}';
+            },
+            initialPageParam: 0,
+            nextPageParamBuilder: (data) => data.pageParams.last + 1,
+            // Suppresses every update.
+            shouldRebuild: (previous, next) => false,
+            client: client,
+          );
+          return Container();
+        }),
+        HookBuilder(builder: (context) {
+          buildsB++;
+          resultB = useInfiniteQuery<String, Object, int>(
+            const ['feed'],
+            (context) async {
+              await Future.delayed(const Duration(seconds: 1));
+              return 'page-${context.pageParam}';
+            },
+            initialPageParam: 0,
+            nextPageParamBuilder: (data) => data.pageParams.last + 1,
+            // Rebuilds whenever the data changes.
+            shouldRebuild: (previous, next) => previous.data != next.data,
+            client: client,
+          );
+          return Container();
+        }),
+      ]));
+
+      // Both share the same key, so both start pending with no data.
+      expect(buildsA, 1);
+      expect(buildsB, 1);
+      expect(resultA.status, QueryStatus.pending);
+      expect(resultB.status, QueryStatus.pending);
+
+      // The single shared fetch completes, notifying both hooks' observers.
+      await tester.pump(const Duration(seconds: 1));
+
+      // Hook A's predicate suppressed the rebuild: still pending, no data.
+      expect(buildsA, 1);
+      expect(resultA.status, QueryStatus.pending);
+      expect(resultA.data, isNull);
+
+      // Hook B's predicate accepted the same update and rebuilt to success.
+      // Each hook applies its own predicate even though they observe the same
+      // query.
+      expect(buildsB, 2);
+      expect(resultB.status, QueryStatus.success);
+      expect(resultB.pages, ['page-0']);
+    }));
+  });
 }

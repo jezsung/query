@@ -20,10 +20,16 @@ import 'infinite_query_snapshot.dart';
 InfiniteQuerySnapshot<TData, TError, TPageParam>
     useInfiniteQueryOptions<TData, TError, TPageParam>(
   InfiniteQueryOptions<TData, TError, TPageParam> options, {
+  ShouldRebuild<InfiniteQuerySnapshot<TData, TError, TPageParam>>?
+      shouldRebuild,
   QueryClient? client,
 }) {
   final result = core.useInfiniteQueryOptions<TData, TError, TPageParam>(
     options,
+    shouldRebuild: shouldRebuild == null
+        ? null
+        : (previous, next) =>
+            shouldRebuild(previous.toSnapshot(), next.toSnapshot()),
     client: client,
   );
 

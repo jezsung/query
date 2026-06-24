@@ -72,6 +72,11 @@ import 'use_query_options.dart';
 ///   in the query function context. When multiple hooks share the same query
 ///   key, their [meta] maps are deep merged.
 ///
+/// - [shouldRebuild]: Decides per update whether the observing widget
+///   rebuilds. Receives the last accepted result and the new result; return
+///   `true` to rebuild or `false` to suppress. When omitted, the widget
+///   rebuilds on every change.
+///
 /// - [client]: The [QueryClient] to use. If provided, takes precedence over
 ///   the nearest [QueryClientProvider] ancestor.
 ///
@@ -97,6 +102,7 @@ QueryResult<TData, TError> useQuery<TData, TError>(
   TData? seed,
   DateTime? seedUpdatedAt,
   Map<String, dynamic>? meta,
+  ShouldRebuild<QueryResult<TData, TError>>? shouldRebuild,
   QueryClient? client,
 }) {
   return useQueryOptions(
@@ -118,6 +124,7 @@ QueryResult<TData, TError> useQuery<TData, TError>(
       seedUpdatedAt: seedUpdatedAt,
       meta: meta,
     ),
+    shouldRebuild: shouldRebuild,
     client: client,
   );
 }
