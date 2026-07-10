@@ -2,15 +2,14 @@ import 'package:meta/meta.dart';
 
 import 'mutation.dart';
 import 'mutation_options.dart';
-import 'mutation_result.dart';
+import 'mutation_snapshot.dart';
 import 'mutation_state.dart';
 import 'observable.dart';
 import 'query_client.dart';
 
 @internal
-typedef MutationResultListener<TData, TError, TVariables, TOnMutateResult>
-    = void Function(
-  MutationResult<TData, TError, TVariables, TOnMutateResult> result,
+typedef MutationSnapshotListener<TData, TError, TVariables> = void Function(
+  MutationSnapshot<TData, TError, TVariables> snapshot,
 );
 
 @internal
@@ -23,16 +22,16 @@ class MutationObserver<TData, TError, TVariables, TOnMutateResult>
 
   final QueryClient _client;
   MutationOptions<TData, TError, TVariables, TOnMutateResult> _options;
-  MutationResult<TData, TError, TVariables, TOnMutateResult>? _result;
+  MutationSnapshot<TData, TError, TVariables>? _result;
   Mutation<TData, TError, TVariables, TOnMutateResult>? _mutation;
 
-  final Set<MutationResultListener<TData, TError, TVariables, TOnMutateResult>>
-      _listeners = {};
+  final Set<MutationSnapshotListener<TData, TError, TVariables>> _listeners =
+      {};
 
   MutationOptions<TData, TError, TVariables, TOnMutateResult> get options =>
       _options;
 
-  MutationResult<TData, TError, TVariables, TOnMutateResult> get result {
+  MutationSnapshot<TData, TError, TVariables> get result {
     if (_result == null) {
       throw StateError(
         'Cannot access result before MutationObserver is mounted. '
@@ -50,7 +49,7 @@ class MutationObserver<TData, TError, TVariables, TOnMutateResult>
   }
 
   set result(
-    MutationResult<TData, TError, TVariables, TOnMutateResult> newResult,
+    MutationSnapshot<TData, TError, TVariables> newResult,
   ) {
     if (newResult == _result) {
       return;
@@ -122,27 +121,67 @@ class MutationObserver<TData, TError, TVariables, TOnMutateResult>
   }
 
   void Function() subscribe(
-    MutationResultListener<TData, TError, TVariables, TOnMutateResult> listener,
+    MutationSnapshotListener<TData, TError, TVariables> listener,
   ) {
     _listeners.add(listener);
     return () => _listeners.remove(listener);
   }
 
-  MutationResult<TData, TError, TVariables, TOnMutateResult> _buildResult([
+  MutationSnapshot<TData, TError, TVariables> _buildResult([
     MutationState<TData, TError, TVariables, TOnMutateResult>? state,
   ]) {
-    return MutationResult<TData, TError, TVariables, TOnMutateResult>(
-      status: state?.status ?? MutationStatus.idle,
-      data: state?.data,
-      error: state?.error,
-      variables: state?.variables,
-      submittedAt: state?.submittedAt,
-      failureCount: state?.failureCount ?? 0,
-      failureReason: state?.failureReason,
-      isPaused: state?.isPaused ?? false,
-      mutate: mutate,
-      mutateAsync: mutateAsync,
-      reset: reset,
-    );
+    final status = state?.status ?? MutationStatus.idle;
+    final submittedAt = state?.submittedAt;
+    final failureCount = state?.failureCount ?? 0;
+    final failureReason = state?.failureReason;
+    final isPaused = state?.isPaused ?? false;
+
+    switch (status) {
+      case MutationStatus.idle:
+        return MutationIdle<TData, TError, TVariables>(
+          submittedAt: submittedAt,
+          failureCount: failureCount,
+          failureReason: failureReason,
+          isPaused: isPaused,
+          mutate: mutate,
+          mutateAsync: mutateAsync,
+          reset: reset,
+        );
+      case MutationStatus.pending:
+        return MutationPending<TData, TError, TVariables>(
+          variables: state!.variables as TVariables,
+          submittedAt: submittedAt,
+          failureCount: failureCount,
+          failureReason: failureReason,
+          isPaused: isPaused,
+          mutate: mutate,
+          mutateAsync: mutateAsync,
+          reset: reset,
+        );
+      case MutationStatus.success:
+        return MutationSuccess<TData, TError, TVariables>(
+          data: state!.data as TData,
+          variables: state.variables as TVariables,
+          submittedAt: submittedAt,
+          failureCount: failureCount,
+          failureReason: failureReason,
+          isPaused: isPaused,
+          mutate: mutate,
+          mutateAsync: mutateAsync,
+          reset: reset,
+        );
+      case MutationStatus.error:
+        return MutationError<TData, TError, TVariables>(
+          error: state!.error as TError,
+          variables: state.variables as TVariables,
+          submittedAt: submittedAt,
+          failureCount: failureCount,
+          failureReason: failureReason,
+          isPaused: isPaused,
+          mutate: mutate,
+          mutateAsync: mutateAsync,
+          reset: reset,
+        );
+    }
   }
 }

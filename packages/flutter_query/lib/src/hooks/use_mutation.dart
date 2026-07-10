@@ -4,14 +4,16 @@ import 'use_mutation_options.dart';
 /// A hook for performing create, update, and delete operations.
 ///
 /// Unlike [useQuery] which fetches data automatically, this hook returns a
-/// [MutationResult] with a `mutate` function that you call imperatively to
+/// [MutationSnapshot] with a `mutate` function that you call imperatively to
 /// trigger the mutation.
 ///
 /// The [mutationFn] performs the actual mutation. It receives the variables
 /// passed to `mutate` and a [MutationFunctionContext].
 ///
-/// Returns a [MutationResult] containing the mutation state and control
-/// methods. The widget rebuilds automatically when the mutation state changes.
+/// Returns a [MutationSnapshot] containing the mutation state and control
+/// methods: a `sealed` type supporting exhaustive pattern matching over
+/// [MutationIdle] / [MutationPending] / [MutationSuccess] / [MutationError].
+/// The widget rebuilds automatically when the mutation state changes.
 ///
 /// ## Options
 ///
@@ -51,7 +53,7 @@ import 'use_mutation_options.dart';
 ///
 /// - [useQuery] for fetching data
 /// - [useInfiniteQuery] for paginated data
-MutationResult<TData, TError, TVariables, TOnMutateResult>
+MutationSnapshot<TData, TError, TVariables>
     useMutation<TData, TError, TVariables, TOnMutateResult>(
   MutateFn<TData, TVariables> mutationFn, {
   MutationOnMutate<TVariables, TOnMutateResult>? onMutate,

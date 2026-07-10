@@ -16,14 +16,14 @@ import 'use_query_client.dart';
 /// environmental concern, not part of the mutation definition carried by
 /// [options].
 ///
-/// Returns a [MutationResult] containing the mutation state and control
+/// Returns a [MutationSnapshot] containing the mutation state and control
 /// methods. The widget rebuilds automatically when the mutation state changes.
 ///
 /// See also:
 ///
 /// - [useMutation] for the inline argument form
 /// - [MutationOptions] for the bundled definition this hook consumes
-MutationResult<TData, TError, TVariables, TOnMutateResult>
+MutationSnapshot<TData, TError, TVariables>
     useMutationOptions<TData, TError, TVariables, TOnMutateResult>(
   MutationOptions<TData, TError, TVariables, TOnMutateResult> options, {
   QueryClient? client,

@@ -42,17 +42,17 @@ void main() {
       ),
     );
 
-    expect(hook.current.status, QueryStatus.pending);
+    expect(hook.current.isPending, isTrue);
     expect(hook.current.fetchStatus, FetchStatus.fetching);
-    expect(hook.current.data, isNull);
+    expect(hook.current.dataOrNull, isNull);
     expect(hook.current.dataUpdatedAt, isNull);
     expect(hook.current.dataUpdateCount, 0);
 
     await tester.pump(const Duration(seconds: 1));
 
-    expect(hook.current.status, QueryStatus.success);
+    expect(hook.current.isSuccess, isTrue);
     expect(hook.current.fetchStatus, FetchStatus.idle);
-    expect(hook.current.data, InfiniteData(['page-0'], [0]));
+    expect(hook.current.dataOrNull, InfiniteData(['page-0'], [0]));
     expect(hook.current.dataUpdatedAt, clock.now());
     expect(hook.current.dataUpdateCount, 1);
   }));
@@ -75,17 +75,18 @@ void main() {
       ),
     );
 
-    expect(hook.current.status, QueryStatus.pending);
+    expect(hook.current.isPending, isTrue);
     expect(hook.current.fetchStatus, FetchStatus.fetching);
-    expect(hook.current.error, isNull);
+    expect(hook.current.isError, isFalse);
     expect(hook.current.errorUpdatedAt, isNull);
     expect(hook.current.errorUpdateCount, 0);
 
     await tester.pump(const Duration(seconds: 1));
 
-    expect(hook.current.status, QueryStatus.error);
+    expect(hook.current.isError, isTrue);
     expect(hook.current.fetchStatus, FetchStatus.idle);
-    expect(hook.current.error, same(expectedError));
+    expect((hook.current as InfiniteQueryError<String, Object, int>).error,
+        same(expectedError));
     expect(hook.current.errorUpdatedAt, clock.now());
     expect(hook.current.errorUpdateCount, 1);
   }));
@@ -94,8 +95,8 @@ void main() {
       'SHOULD fetch only once '
       'WHEN multiple hooks share same key', withCleanup((tester) async {
     var fetches = 0;
-    late InfiniteQueryResult<String, Object, int> result1;
-    late InfiniteQueryResult<String, Object, int> result2;
+    late InfiniteQuerySnapshot<String, Object, int> result1;
+    late InfiniteQuerySnapshot<String, Object, int> result2;
 
     await tester.pumpWidget(Column(children: [
       HookBuilder(
@@ -132,8 +133,8 @@ void main() {
       ),
     ]));
 
-    expect(result1.data, null);
-    expect(result2.data, null);
+    expect(result1.dataOrNull, null);
+    expect(result2.dataOrNull, null);
 
     await tester.pump(const Duration(seconds: 1));
 
@@ -145,8 +146,8 @@ void main() {
   testWidgets(
       'SHOULD fetch individually '
       'WHEN multiple hooks have different keys', withCleanup((tester) async {
-    late InfiniteQueryResult<String, Object, int> result1;
-    late InfiniteQueryResult<String, Object, int> result2;
+    late InfiniteQuerySnapshot<String, Object, int> result1;
+    late InfiniteQuerySnapshot<String, Object, int> result2;
 
     await tester.pumpWidget(Column(
       children: [
@@ -209,15 +210,15 @@ void main() {
       );
 
       await tester.pump(const Duration(seconds: 1));
-      expect(hook.current.status, QueryStatus.success);
+      expect(hook.current.isSuccess, isTrue);
       expect(hook.current.pages, ['[test1]-page-0']);
 
       await hook.rebuildWithProps(const ['test2']);
-      expect(hook.current.status, QueryStatus.pending);
+      expect(hook.current.isPending, isTrue);
       expect(hook.current.pages, []);
 
       await tester.pump(const Duration(seconds: 1));
-      expect(hook.current.status, QueryStatus.success);
+      expect(hook.current.isSuccess, isTrue);
       expect(hook.current.pages, ['[test2]-page-0']);
     }));
   });
@@ -985,7 +986,10 @@ void main() {
       );
 
       expect(hook.current.pages, ['page-ph']);
-      expect(hook.current.isPlaceholderData, isTrue);
+      expect(
+          (hook.current as InfiniteQuerySuccess<String, Object, int>)
+              .isPlaceholder,
+          isTrue);
       expect(hook.current.isSuccess, isTrue);
     }));
 
@@ -1027,12 +1031,18 @@ void main() {
       );
 
       expect(hook.current.pages, ['page-ph']);
-      expect(hook.current.isPlaceholderData, isTrue);
+      expect(
+          (hook.current as InfiniteQuerySuccess<String, Object, int>)
+              .isPlaceholder,
+          isTrue);
 
       await tester.pump(const Duration(seconds: 1));
 
       expect(hook.current.pages, ['page-0']);
-      expect(hook.current.isPlaceholderData, isFalse);
+      expect(
+          (hook.current as InfiniteQuerySuccess<String, Object, int>)
+              .isPlaceholder,
+          isFalse);
     }));
 
     testWidgets(
@@ -1056,7 +1066,7 @@ void main() {
       expect(hook1.current.pages, ['page-0']);
 
       // Second hook should use cached real data, not placeholder
-      late InfiniteQueryResult<String, Object, int> result2;
+      late InfiniteQuerySnapshot<String, Object, int> result2;
       await tester.pumpWidget(HookBuilder(
         builder: (context) {
           result2 = useInfiniteQuery<String, Object, int>(
@@ -1075,7 +1085,9 @@ void main() {
       ));
 
       expect(result2.pages, ['page-0']);
-      expect(result2.isPlaceholderData, isFalse);
+      expect(
+          (result2 as InfiniteQuerySuccess<String, Object, int>).isPlaceholder,
+          isFalse);
     }));
   });
 
@@ -1384,7 +1396,7 @@ void main() {
       connectivityController.add(true);
       await tester.pump(const Duration(seconds: 1));
 
-      expect(hook.current.data?.pages, ['page-0']);
+      expect(hook.current.dataOrNull?.pages, ['page-0']);
       expect(hook.current.isStale, isTrue);
       expect(fetches, 1);
 
@@ -1398,7 +1410,7 @@ void main() {
       await tester.pump(const Duration(seconds: 1));
 
       expect(hook.current.fetchStatus, FetchStatus.idle);
-      expect(hook.current.data?.pages, ['page-0']);
+      expect(hook.current.dataOrNull?.pages, ['page-0']);
       expect(fetches, 2);
     }));
 
@@ -1435,7 +1447,7 @@ void main() {
       connectivityController.add(true);
       await tester.pump(const Duration(seconds: 1));
 
-      expect(hook.current.data?.pages, ['page-0']);
+      expect(hook.current.dataOrNull?.pages, ['page-0']);
       expect(hook.current.isStale, isFalse);
       expect(fetches, 1);
 
@@ -1449,7 +1461,7 @@ void main() {
       await tester.pump(const Duration(seconds: 1));
 
       expect(hook.current.fetchStatus, FetchStatus.idle);
-      expect(hook.current.data?.pages, ['page-0']);
+      expect(hook.current.dataOrNull?.pages, ['page-0']);
       expect(fetches, 1);
     }));
 
@@ -1486,7 +1498,7 @@ void main() {
       connectivityController.add(true);
       await tester.pump(const Duration(seconds: 1));
 
-      expect(hook.current.data?.pages, ['page-0']);
+      expect(hook.current.dataOrNull?.pages, ['page-0']);
       expect(hook.current.isStale, isTrue);
       expect(fetches, 1);
 
@@ -1496,13 +1508,13 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(hook.current.fetchStatus, FetchStatus.idle);
-      expect(hook.current.data?.pages, ['page-0']);
+      expect(hook.current.dataOrNull?.pages, ['page-0']);
       expect(fetches, 1);
 
       await tester.pump(const Duration(seconds: 1));
 
       expect(hook.current.fetchStatus, FetchStatus.idle);
-      expect(hook.current.data?.pages, ['page-0']);
+      expect(hook.current.dataOrNull?.pages, ['page-0']);
       expect(fetches, 1);
     }));
 
@@ -1539,7 +1551,7 @@ void main() {
       connectivityController.add(true);
       await tester.pump(const Duration(seconds: 1));
 
-      expect(hook.current.data?.pages, ['page-0']);
+      expect(hook.current.dataOrNull?.pages, ['page-0']);
       expect(hook.current.isStale, isFalse);
       expect(fetches, 1);
 
@@ -1553,7 +1565,7 @@ void main() {
       await tester.pump(const Duration(seconds: 1));
 
       expect(hook.current.fetchStatus, FetchStatus.idle);
-      expect(hook.current.data?.pages, ['page-0']);
+      expect(hook.current.dataOrNull?.pages, ['page-0']);
       expect(fetches, 2);
     }));
 
@@ -1591,7 +1603,7 @@ void main() {
       connectivityController.add(true);
       await tester.pumpAndSettle(const Duration(seconds: 1));
 
-      expect(hook.current.data?.pages, ['page-0']);
+      expect(hook.current.dataOrNull?.pages, ['page-0']);
       expect(hook.current.isStale, isFalse);
       expect(fetches, 1);
 
@@ -1601,13 +1613,13 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(hook.current.fetchStatus, FetchStatus.idle);
-      expect(hook.current.data?.pages, ['page-0']);
+      expect(hook.current.dataOrNull?.pages, ['page-0']);
       expect(fetches, 1);
 
       await tester.pump(const Duration(seconds: 1));
 
       expect(hook.current.fetchStatus, FetchStatus.idle);
-      expect(hook.current.data?.pages, ['page-0']);
+      expect(hook.current.dataOrNull?.pages, ['page-0']);
       expect(fetches, 1);
     }));
   });
@@ -1899,7 +1911,7 @@ void main() {
       );
 
       expect(
-        hook.current.data,
+        hook.current.dataOrNull,
         const InfiniteData(['page-seed'], [0]),
       );
       expect(hook.current.dataUpdateCount, 0);
@@ -1947,8 +1959,11 @@ void main() {
         ),
       );
 
-      expect(hook.current.data!.pages, ['page-seed']);
-      expect(hook.current.isPlaceholderData, isFalse);
+      expect(hook.current.dataOrNull!.pages, ['page-seed']);
+      expect(
+          (hook.current as InfiniteQuerySuccess<String, Object, int>)
+              .isPlaceholder,
+          isFalse);
     }));
 
     testWidgets(
@@ -1969,11 +1984,11 @@ void main() {
         ),
       );
 
-      expect(hook.current.data!.pages, ['page-seed']);
+      expect(hook.current.dataOrNull!.pages, ['page-seed']);
 
       await tester.pump(const Duration(seconds: 1));
 
-      expect(hook.current.data!.pages, ['page-0']);
+      expect(hook.current.dataOrNull!.pages, ['page-0']);
     }));
   });
 
@@ -2159,13 +2174,14 @@ void main() {
       await act(hook.current.fetchNextPage);
 
       expect(hook.current.fetchStatus, FetchStatus.fetching);
-      expect(hook.current.data, InfiniteData(['page-0'], [0]));
+      expect(hook.current.dataOrNull, InfiniteData(['page-0'], [0]));
 
       await tester.pump(const Duration(seconds: 1));
 
-      expect(hook.current.status, QueryStatus.success);
+      expect(hook.current.isSuccess, isTrue);
       expect(hook.current.fetchStatus, FetchStatus.idle);
-      expect(hook.current.data, InfiniteData(['page-0', 'page-1'], [0, 1]));
+      expect(
+          hook.current.dataOrNull, InfiniteData(['page-0', 'page-1'], [0, 1]));
     }));
 
     testWidgets(
@@ -2195,13 +2211,14 @@ void main() {
       await act(hook.current.fetchNextPage);
 
       expect(hook.current.fetchStatus, FetchStatus.fetching);
-      expect(hook.current.error, isNull);
+      expect(hook.current.isError, isFalse);
 
       await tester.pump(const Duration(seconds: 1));
 
-      expect(hook.current.status, QueryStatus.error);
+      expect(hook.current.isError, isTrue);
       expect(hook.current.fetchStatus, FetchStatus.idle);
-      expect(hook.current.error, same(expectedError));
+      expect((hook.current as InfiniteQueryError<String, Object, int>).error,
+          same(expectedError));
     }));
 
     testWidgets(
@@ -2255,22 +2272,25 @@ void main() {
       );
 
       await tester.pump(const Duration(seconds: 1));
-      expect(hook.current.data, InfiniteData(['page-0'], [0]));
+      expect(hook.current.dataOrNull, InfiniteData(['page-0'], [0]));
 
       await act(hook.current.fetchNextPage);
       await tester.pump(const Duration(seconds: 1));
-      expect(hook.current.data, InfiniteData(['page-0', 'page-1'], [0, 1]));
+      expect(
+          hook.current.dataOrNull, InfiniteData(['page-0', 'page-1'], [0, 1]));
 
       await act(hook.current.fetchNextPage);
       await tester.pump(const Duration(seconds: 1));
-      expect(hook.current.data, InfiniteData(['page-1', 'page-2'], [1, 2]));
+      expect(
+          hook.current.dataOrNull, InfiniteData(['page-1', 'page-2'], [1, 2]));
     }));
 
     testWidgets(
         'SHOULD cancel in-progress fetch and start new one '
         'WHEN cancelRefetch == true', withCleanup((tester) async {
       var fetches = 0;
-      final fetchNextPageResults = <InfiniteQueryResult<String, Object, int>>[];
+      final fetchNextPageResults =
+          <InfiniteQuerySnapshot<String, Object, int>>[];
 
       final hook = await buildHook(
         () => useInfiniteQuery<String, Object, int>(
@@ -2316,7 +2336,8 @@ void main() {
         'SHOULD return existing promise '
         'WHEN cancelRefetch == false ', withCleanup((tester) async {
       var fetches = 0;
-      final fetchNextPageResults = <InfiniteQueryResult<String, Object, int>>[];
+      final fetchNextPageResults =
+          <InfiniteQuerySnapshot<String, Object, int>>[];
 
       final hook = await buildHook(
         () => useInfiniteQuery<String, Object, int>(
@@ -2378,7 +2399,7 @@ void main() {
       );
 
       // Initial fetch is in progress (no data yet)
-      expect(hook.current.data, isNull);
+      expect(hook.current.dataOrNull, isNull);
       expect(hook.current.isFetching, isTrue);
 
       // Try to fetch next page while initial fetch is in progress
@@ -2418,13 +2439,14 @@ void main() {
       await act(hook.current.fetchPreviousPage);
 
       expect(hook.current.fetchStatus, FetchStatus.fetching);
-      expect(hook.current.data, InfiniteData(['page-5'], [5]));
+      expect(hook.current.dataOrNull, InfiniteData(['page-5'], [5]));
 
       await tester.pump(const Duration(seconds: 1));
 
-      expect(hook.current.status, QueryStatus.success);
+      expect(hook.current.isSuccess, isTrue);
       expect(hook.current.fetchStatus, FetchStatus.idle);
-      expect(hook.current.data, InfiniteData(['page-4', 'page-5'], [4, 5]));
+      expect(
+          hook.current.dataOrNull, InfiniteData(['page-4', 'page-5'], [4, 5]));
     }));
 
     testWidgets(
@@ -2455,13 +2477,14 @@ void main() {
       await act(hook.current.fetchPreviousPage);
 
       expect(hook.current.fetchStatus, FetchStatus.fetching);
-      expect(hook.current.error, isNull);
+      expect(hook.current.isError, isFalse);
 
       await tester.pump(const Duration(seconds: 1));
 
-      expect(hook.current.status, QueryStatus.error);
+      expect(hook.current.isError, isTrue);
       expect(hook.current.fetchStatus, FetchStatus.idle);
-      expect(hook.current.error, same(expectedError));
+      expect((hook.current as InfiniteQueryError<String, Object, int>).error,
+          same(expectedError));
     }));
 
     testWidgets(
@@ -2515,15 +2538,17 @@ void main() {
       );
 
       await tester.pump(const Duration(seconds: 1));
-      expect(hook.current.data, InfiniteData(['page-5'], [5]));
+      expect(hook.current.dataOrNull, InfiniteData(['page-5'], [5]));
 
       await act(hook.current.fetchPreviousPage);
       await tester.pump(const Duration(seconds: 1));
-      expect(hook.current.data, InfiniteData(['page-4', 'page-5'], [4, 5]));
+      expect(
+          hook.current.dataOrNull, InfiniteData(['page-4', 'page-5'], [4, 5]));
 
       await act(hook.current.fetchPreviousPage);
       await tester.pump(const Duration(seconds: 1));
-      expect(hook.current.data, InfiniteData(['page-3', 'page-4'], [3, 4]));
+      expect(
+          hook.current.dataOrNull, InfiniteData(['page-3', 'page-4'], [3, 4]));
     }));
 
     testWidgets(
@@ -2531,7 +2556,7 @@ void main() {
         'WHEN cancelRefetch == true', withCleanup((tester) async {
       var fetches = 0;
       final fetchPreviousPageResults =
-          <InfiniteQueryResult<String, Object, int>>[];
+          <InfiniteQuerySnapshot<String, Object, int>>[];
 
       final hook = await buildHook(
         () => useInfiniteQuery<String, Object, int>(
@@ -2579,7 +2604,7 @@ void main() {
         'WHEN cancelRefetch == false ', withCleanup((tester) async {
       var fetches = 0;
       final fetchPreviousPageResults =
-          <InfiniteQueryResult<String, Object, int>>[];
+          <InfiniteQuerySnapshot<String, Object, int>>[];
 
       final hook = await buildHook(
         () => useInfiniteQuery<String, Object, int>(
@@ -2643,7 +2668,7 @@ void main() {
       );
 
       // Initial fetch is in progress (no data yet)
-      expect(hook.current.data, isNull);
+      expect(hook.current.dataOrNull, isNull);
       expect(hook.current.isFetching, isTrue);
 
       // Try to fetch next page while initial fetch is in progress
@@ -2678,7 +2703,7 @@ void main() {
         ),
       );
 
-      expect(hook1.current.data, isNull);
+      expect(hook1.current.dataOrNull, isNull);
       expect(hook1.current.hasNextPage, isFalse);
 
       // Case 2: After initial fetch failed
@@ -2697,7 +2722,7 @@ void main() {
 
       await tester.pump(const Duration(seconds: 1));
 
-      expect(hook2.current.data, isNull);
+      expect(hook2.current.dataOrNull, isNull);
       expect(hook2.current.hasNextPage, isFalse);
     }));
 
@@ -2719,7 +2744,7 @@ void main() {
 
       await tester.pump(const Duration(seconds: 1));
 
-      expect(hook.current.data, isNotNull);
+      expect(hook.current.dataOrNull, isNotNull);
       expect(hook.current.hasNextPage, isFalse);
     }));
 
@@ -2742,7 +2767,7 @@ void main() {
 
       await tester.pump(const Duration(seconds: 1));
 
-      expect(hook.current.data, isNotNull);
+      expect(hook.current.dataOrNull, isNotNull);
       expect(hook.current.hasNextPage, isTrue);
     }));
   });
@@ -2766,7 +2791,7 @@ void main() {
         ),
       );
 
-      expect(hook1.current.data, isNull);
+      expect(hook1.current.dataOrNull, isNull);
       expect(hook1.current.hasPreviousPage, isFalse);
 
       // Case 2: After initial fetch failed
@@ -2786,7 +2811,7 @@ void main() {
 
       await tester.pump(const Duration(seconds: 1));
 
-      expect(hook2.current.data, isNull);
+      expect(hook2.current.dataOrNull, isNull);
       expect(hook2.current.hasPreviousPage, isFalse);
     }));
 
@@ -2810,7 +2835,7 @@ void main() {
 
       await tester.pump(const Duration(seconds: 1));
 
-      expect(hook.current.data, isNotNull);
+      expect(hook.current.dataOrNull, isNotNull);
       expect(hook.current.hasPreviousPage, isFalse);
     }));
 
@@ -2833,7 +2858,7 @@ void main() {
 
       await tester.pump(const Duration(seconds: 1));
 
-      expect(hook.current.data, isNotNull);
+      expect(hook.current.dataOrNull, isNotNull);
       expect(hook.current.hasPreviousPage, isFalse);
     }));
 
@@ -2857,7 +2882,7 @@ void main() {
 
       await tester.pump(const Duration(seconds: 1));
 
-      expect(hook.current.data, isNotNull);
+      expect(hook.current.dataOrNull, isNotNull);
       expect(hook.current.hasPreviousPage, isTrue);
     }));
   });
@@ -3117,7 +3142,7 @@ void main() {
       await tester.pump(const Duration(seconds: 1));
       expect(fetches, 2);
       expect(
-        hook.current.data,
+        hook.current.dataOrNull,
         InfiniteData(['page-0:fetches-1', 'page-1:fetches-2'], [0, 1]),
       );
 
@@ -3135,7 +3160,7 @@ void main() {
       expect(fetches, 4);
       expect(hook.current.isFetching, isFalse);
       expect(
-        hook.current.data,
+        hook.current.dataOrNull,
         InfiniteData(['page-0:fetches-3', 'page-1:fetches-4'], [0, 1]),
       );
     }));
@@ -3183,8 +3208,8 @@ void main() {
         expect(hook.current.isPaused, isFalse);
 
         await tester.pump(const Duration(seconds: 1));
-        expect(hook.current.status, QueryStatus.success);
-        expect(hook.current.data?.pages, ['page-0']);
+        expect(hook.current.isSuccess, isTrue);
+        expect(hook.current.dataOrNull?.pages, ['page-0']);
       }));
 
       testWidgets(
@@ -3223,8 +3248,8 @@ void main() {
         expect(hook.current.isPaused, isFalse);
 
         await tester.pump(const Duration(seconds: 1));
-        expect(hook.current.status, QueryStatus.success);
-        expect(hook.current.data?.pages, ['page-0']);
+        expect(hook.current.isSuccess, isTrue);
+        expect(hook.current.dataOrNull?.pages, ['page-0']);
       }));
 
       testWidgets(
@@ -3276,7 +3301,7 @@ void main() {
         expect(queryFnCount, 3);
         await tester.pump(const Duration(seconds: 1));
         expect(queryFnCount, 4);
-        expect(hook.current.status, QueryStatus.error);
+        expect(hook.current.isError, isTrue);
       }));
     });
 
@@ -3307,8 +3332,8 @@ void main() {
         expect(hook.current.isPaused, isFalse);
 
         await tester.pump(const Duration(seconds: 1));
-        expect(hook.current.status, QueryStatus.success);
-        expect(hook.current.data?.pages, ['page-0']);
+        expect(hook.current.isSuccess, isTrue);
+        expect(hook.current.dataOrNull?.pages, ['page-0']);
       }));
 
       testWidgets(
@@ -3335,8 +3360,8 @@ void main() {
         expect(hook.current.isPaused, isFalse);
 
         await tester.pump(const Duration(seconds: 1));
-        expect(hook.current.status, QueryStatus.success);
-        expect(hook.current.data?.pages, ['page-0']);
+        expect(hook.current.isSuccess, isTrue);
+        expect(hook.current.dataOrNull?.pages, ['page-0']);
       }));
 
       testWidgets(
@@ -3370,8 +3395,8 @@ void main() {
         expect(hook.current.isPaused, isFalse);
 
         await tester.pump(const Duration(seconds: 1));
-        expect(hook.current.status, QueryStatus.success);
-        expect(hook.current.data?.pages, ['page-0']);
+        expect(hook.current.isSuccess, isTrue);
+        expect(hook.current.dataOrNull?.pages, ['page-0']);
       }));
 
       testWidgets(
@@ -3418,7 +3443,7 @@ void main() {
         expect(queryFnCount, 3);
         await tester.pump(const Duration(seconds: 1));
         expect(queryFnCount, 4);
-        expect(hook.current.status, QueryStatus.error);
+        expect(hook.current.isError, isTrue);
       }));
     });
 
@@ -3449,8 +3474,8 @@ void main() {
         expect(hook.current.isPaused, isFalse);
 
         await tester.pump(const Duration(seconds: 1));
-        expect(hook.current.status, QueryStatus.success);
-        expect(hook.current.data?.pages, ['page-0']);
+        expect(hook.current.isSuccess, isTrue);
+        expect(hook.current.dataOrNull?.pages, ['page-0']);
       }));
 
       testWidgets(
@@ -3477,8 +3502,8 @@ void main() {
         expect(hook.current.isPaused, isFalse);
 
         await tester.pump(const Duration(seconds: 1));
-        expect(hook.current.status, QueryStatus.success);
-        expect(hook.current.data?.pages, ['page-0']);
+        expect(hook.current.isSuccess, isTrue);
+        expect(hook.current.dataOrNull?.pages, ['page-0']);
       }));
 
       testWidgets(
@@ -3530,7 +3555,7 @@ void main() {
         expect(queryFnCount, 3);
         await tester.pump(const Duration(seconds: 1));
         expect(queryFnCount, 4);
-        expect(hook.current.status, QueryStatus.error);
+        expect(hook.current.isError, isTrue);
       }));
     });
   });
@@ -3541,7 +3566,7 @@ void main() {
         'SHOULD NOT throw markNeedsBuild error '
         'WHEN navigating to screen that shares the same query key',
         withCleanup((tester) async {
-      late InfiniteQueryResult<String, Object, int> screenAResult;
+      late InfiniteQuerySnapshot<String, Object, int> screenAResult;
 
       await tester.pumpWidget(
         Column(
@@ -3567,10 +3592,10 @@ void main() {
       );
       await tester.pump(const Duration(seconds: 1));
 
-      expect(screenAResult.status, QueryStatus.success);
-      expect(screenAResult.data?.pages, ['data-a-0']);
+      expect(screenAResult.isSuccess, isTrue);
+      expect(screenAResult.dataOrNull?.pages, ['data-a-0']);
 
-      late InfiniteQueryResult<String, Object, int> screenBResult;
+      late InfiniteQuerySnapshot<String, Object, int> screenBResult;
 
       // Add Screen B while keeping Screen A alive via Key.
       // Without the fix, Screen B's onMount triggers _fetch() which
@@ -3616,8 +3641,8 @@ void main() {
       );
       await tester.pump(const Duration(seconds: 1));
 
-      expect(screenAResult.status, QueryStatus.success);
-      expect(screenBResult.status, QueryStatus.success);
+      expect(screenAResult.isSuccess, isTrue);
+      expect(screenBResult.isSuccess, isTrue);
     }));
   });
 
@@ -3668,13 +3693,13 @@ void main() {
       });
 
       expect(builds, 1);
-      expect(hookResult.current.status, QueryStatus.pending);
+      expect(hookResult.current.isPending, isTrue);
 
       await tester.pump(const Duration(seconds: 1));
 
       // Success arrived but the predicate suppressed the rebuild.
       expect(builds, 1);
-      expect(hookResult.current.status, QueryStatus.pending);
+      expect(hookResult.current.isPending, isTrue);
     }));
 
     testWidgets(
@@ -3683,8 +3708,8 @@ void main() {
         withCleanup((tester) async {
       var buildsA = 0;
       var buildsB = 0;
-      late InfiniteQueryResult<String, Object, int> resultA;
-      late InfiniteQueryResult<String, Object, int> resultB;
+      late InfiniteQuerySnapshot<String, Object, int> resultA;
+      late InfiniteQuerySnapshot<String, Object, int> resultB;
 
       await tester.pumpWidget(Column(children: [
         HookBuilder(builder: (context) {
@@ -3714,7 +3739,8 @@ void main() {
             initialPageParam: 0,
             nextPageParamBuilder: (data) => data.pageParams.last + 1,
             // Rebuilds whenever the data changes.
-            shouldRebuild: (previous, next) => previous.data != next.data,
+            shouldRebuild: (previous, next) =>
+                previous.dataOrNull != next.dataOrNull,
             client: client,
           );
           return Container();
@@ -3724,22 +3750,22 @@ void main() {
       // Both share the same key, so both start pending with no data.
       expect(buildsA, 1);
       expect(buildsB, 1);
-      expect(resultA.status, QueryStatus.pending);
-      expect(resultB.status, QueryStatus.pending);
+      expect(resultA.isPending, isTrue);
+      expect(resultB.isPending, isTrue);
 
       // The single shared fetch completes, notifying both hooks' observers.
       await tester.pump(const Duration(seconds: 1));
 
       // Hook A's predicate suppressed the rebuild: still pending, no data.
       expect(buildsA, 1);
-      expect(resultA.status, QueryStatus.pending);
-      expect(resultA.data, isNull);
+      expect(resultA.isPending, isTrue);
+      expect(resultA.dataOrNull, isNull);
 
       // Hook B's predicate accepted the same update and rebuilt to success.
       // Each hook applies its own predicate even though they observe the same
       // query.
       expect(buildsB, 2);
-      expect(resultB.status, QueryStatus.success);
+      expect(resultB.isSuccess, isTrue);
       expect(resultB.pages, ['page-0']);
     }));
   });

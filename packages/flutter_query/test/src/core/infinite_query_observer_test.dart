@@ -36,18 +36,18 @@ void main() {
     )..onMount();
     addTearDown(observer.onUnmount);
 
-    expect(observer.result.status, QueryStatus.pending);
+    expect(observer.result, isA<InfiniteQueryPending<String, Object, int>>());
     expect(observer.result.fetchStatus, FetchStatus.fetching);
-    expect(observer.result.data, isNull);
+    expect(observer.result.dataOrNull, isNull);
     expect(observer.result.dataUpdatedAt, isNull);
     expect(observer.result.dataUpdateCount, 0);
 
     async.elapse(const Duration(seconds: 1));
 
-    expect(observer.result.status, QueryStatus.success);
+    expect(observer.result, isA<InfiniteQuerySuccess<String, Object, int>>());
     expect(observer.result.fetchStatus, FetchStatus.idle);
     expect(
-      observer.result.data,
+      observer.result.dataOrNull,
       InfiniteData(['page-0'], [0]),
     );
     expect(observer.result.dataUpdatedAt, clock.now());
@@ -73,17 +73,21 @@ void main() {
     )..onMount();
     addTearDown(observer.onUnmount);
 
-    expect(observer.result.status, QueryStatus.pending);
+    expect(observer.result, isA<InfiniteQueryPending<String, Object, int>>());
     expect(observer.result.fetchStatus, FetchStatus.fetching);
-    expect(observer.result.error, isNull);
+    expect(
+        observer.result, isNot(isA<InfiniteQueryError<String, Object, int>>()));
     expect(observer.result.errorUpdatedAt, isNull);
     expect(observer.result.errorUpdateCount, 0);
 
     async.elapse(const Duration(seconds: 1));
 
-    expect(observer.result.status, QueryStatus.error);
+    expect(observer.result, isA<InfiniteQueryError<String, Object, int>>());
     expect(observer.result.fetchStatus, FetchStatus.idle);
-    expect(observer.result.error, same(expectedError));
+    expect(
+      (observer.result as InfiniteQueryError<String, Object, int>).error,
+      same(expectedError),
+    );
     expect(observer.result.errorUpdatedAt, clock.now());
     expect(observer.result.errorUpdateCount, 1);
   }));
@@ -110,10 +114,10 @@ void main() {
 
       observer.fetchNextPage();
 
-      expect(observer.result.status, QueryStatus.success);
+      expect(observer.result, isA<InfiniteQuerySuccess<String, Object, int>>());
       expect(observer.result.fetchStatus, FetchStatus.fetching);
       expect(
-        observer.result.data,
+        observer.result.dataOrNull,
         InfiniteData(['page-0'], [0]),
       );
       expect(observer.result.dataUpdatedAt, clock.now());
@@ -121,10 +125,10 @@ void main() {
 
       async.elapse(const Duration(seconds: 1));
 
-      expect(observer.result.status, QueryStatus.success);
+      expect(observer.result, isA<InfiniteQuerySuccess<String, Object, int>>());
       expect(observer.result.fetchStatus, FetchStatus.idle);
       expect(
-        observer.result.data,
+        observer.result.dataOrNull,
         InfiniteData(['page-0', 'page-1'], [0, 1]),
       );
       expect(observer.result.dataUpdatedAt, clock.now());
@@ -158,29 +162,33 @@ void main() {
 
       observer.fetchNextPage();
 
-      expect(observer.result.status, QueryStatus.success);
+      expect(observer.result, isA<InfiniteQuerySuccess<String, Object, int>>());
       expect(observer.result.fetchStatus, FetchStatus.fetching);
       expect(
-        observer.result.data,
+        observer.result.dataOrNull,
         InfiniteData(['page-0'], [0]),
       );
       expect(observer.result.dataUpdatedAt, clock.now());
       expect(observer.result.dataUpdateCount, 1);
-      expect(observer.result.error, isNull);
+      expect(observer.result,
+          isNot(isA<InfiniteQueryError<String, Object, int>>()));
       expect(observer.result.errorUpdatedAt, isNull);
       expect(observer.result.errorUpdateCount, 0);
 
       async.elapse(const Duration(seconds: 1));
 
-      expect(observer.result.status, QueryStatus.error);
+      expect(observer.result, isA<InfiniteQueryError<String, Object, int>>());
       expect(observer.result.fetchStatus, FetchStatus.idle);
       expect(
-        observer.result.data,
+        observer.result.dataOrNull,
         InfiniteData(['page-0'], [0]),
       );
       expect(observer.result.dataUpdatedAt, clock.secondsAgo(1));
       expect(observer.result.dataUpdateCount, 1);
-      expect(observer.result.error, same(expectedError));
+      expect(
+        (observer.result as InfiniteQueryError<String, Object, int>).error,
+        same(expectedError),
+      );
       expect(observer.result.errorUpdatedAt, clock.now());
       expect(observer.result.errorUpdateCount, 1);
     }));
@@ -237,14 +245,14 @@ void main() {
 
       async.elapse(const Duration(seconds: 1));
       expect(
-        observer.result.data,
+        observer.result.dataOrNull,
         InfiniteData(['page-0'], [0]),
       );
 
       observer.fetchNextPage();
       async.elapse(const Duration(seconds: 1));
       expect(
-        observer.result.data,
+        observer.result.dataOrNull,
         InfiniteData(['page-0', 'page-1'], [0, 1]),
       );
 
@@ -252,7 +260,7 @@ void main() {
       async.elapse(const Duration(seconds: 1));
       // Should still have 2 pages, first page dropped
       expect(
-        observer.result.data,
+        observer.result.dataOrNull,
         InfiniteData(['page-1', 'page-2'], [1, 2]),
       );
     }));
@@ -345,10 +353,10 @@ void main() {
 
       observer.fetchPreviousPage();
 
-      expect(observer.result.status, QueryStatus.success);
+      expect(observer.result, isA<InfiniteQuerySuccess<String, Object, int>>());
       expect(observer.result.fetchStatus, FetchStatus.fetching);
       expect(
-        observer.result.data,
+        observer.result.dataOrNull,
         InfiniteData(['page-5'], [5]),
       );
       expect(observer.result.dataUpdatedAt, clock.now());
@@ -356,10 +364,10 @@ void main() {
 
       async.elapse(const Duration(seconds: 1));
 
-      expect(observer.result.status, QueryStatus.success);
+      expect(observer.result, isA<InfiniteQuerySuccess<String, Object, int>>());
       expect(observer.result.fetchStatus, FetchStatus.idle);
       expect(
-        observer.result.data,
+        observer.result.dataOrNull,
         InfiniteData(['page-4', 'page-5'], [4, 5]),
       );
       expect(observer.result.dataUpdatedAt, clock.now());
@@ -394,29 +402,33 @@ void main() {
 
       observer.fetchPreviousPage();
 
-      expect(observer.result.status, QueryStatus.success);
+      expect(observer.result, isA<InfiniteQuerySuccess<String, Object, int>>());
       expect(observer.result.fetchStatus, FetchStatus.fetching);
       expect(
-        observer.result.data,
+        observer.result.dataOrNull,
         InfiniteData(['page-5'], [5]),
       );
       expect(observer.result.dataUpdatedAt, clock.now());
       expect(observer.result.dataUpdateCount, 1);
-      expect(observer.result.error, isNull);
+      expect(observer.result,
+          isNot(isA<InfiniteQueryError<String, Object, int>>()));
       expect(observer.result.errorUpdatedAt, isNull);
       expect(observer.result.errorUpdateCount, 0);
 
       async.elapse(const Duration(seconds: 1));
 
-      expect(observer.result.status, QueryStatus.error);
+      expect(observer.result, isA<InfiniteQueryError<String, Object, int>>());
       expect(observer.result.fetchStatus, FetchStatus.idle);
       expect(
-        observer.result.data,
+        observer.result.dataOrNull,
         InfiniteData(['page-5'], [5]),
       );
       expect(observer.result.dataUpdatedAt, clock.secondsAgo(1));
       expect(observer.result.dataUpdateCount, 1);
-      expect(observer.result.error, same(expectedError));
+      expect(
+        (observer.result as InfiniteQueryError<String, Object, int>).error,
+        same(expectedError),
+      );
       expect(observer.result.errorUpdatedAt, clock.now());
       expect(observer.result.errorUpdateCount, 1);
     }));
@@ -475,14 +487,14 @@ void main() {
 
       async.elapse(const Duration(seconds: 1));
       expect(
-        observer.result.data,
+        observer.result.dataOrNull,
         InfiniteData(['page-5'], [5]),
       );
 
       observer.fetchPreviousPage();
       async.elapse(const Duration(seconds: 1));
       expect(
-        observer.result.data,
+        observer.result.dataOrNull,
         InfiniteData(['page-4', 'page-5'], [4, 5]),
       );
 
@@ -490,7 +502,7 @@ void main() {
       async.elapse(const Duration(seconds: 1));
       // Should still have 2 pages, last page dropped
       expect(
-        observer.result.data,
+        observer.result.dataOrNull,
         InfiniteData(['page-3', 'page-4'], [3, 4]),
       );
     }));
@@ -590,7 +602,7 @@ void main() {
       async.elapse(const Duration(seconds: 1));
       expect(fetches, 2);
       expect(
-        observer.result.data,
+        observer.result.dataOrNull,
         InfiniteData(
           ['page-0:fetches-1', 'page-1:fetches-2'],
           [0, 1],
@@ -605,7 +617,7 @@ void main() {
       expect(fetches, 3);
       expect(observer.result.isFetching, isTrue);
       expect(
-        observer.result.data,
+        observer.result.dataOrNull,
         InfiniteData(
           ['page-0:fetches-1', 'page-1:fetches-2'],
           [0, 1],
@@ -618,7 +630,7 @@ void main() {
       expect(fetches, 4);
       expect(observer.result.isFetching, isFalse);
       expect(
-        observer.result.data,
+        observer.result.dataOrNull,
         InfiniteData(
           ['page-0:fetches-3', 'page-1:fetches-4'],
           [0, 1],
@@ -854,7 +866,7 @@ void main() {
     test(
         'SHOULD notify listeners '
         'WHEN result changes', withFakeAsync((async) {
-      final capturedResults = <InfiniteQueryResult<String, Object, int>>[];
+      final capturedResults = <InfiniteQuerySnapshot<String, Object, int>>[];
 
       final observer = InfiniteQueryObserver<String, Object, int>(
         client,
@@ -1719,7 +1731,11 @@ void main() {
       addTearDown(observer.onUnmount);
 
       expect(observer.result.pages, ['page-ph']);
-      expect(observer.result.isPlaceholderData, isTrue);
+      expect(
+        (observer.result as InfiniteQuerySuccess<String, Object, int>)
+            .isPlaceholder,
+        isTrue,
+      );
       expect(observer.result.isSuccess, isTrue);
     }));
 
@@ -1763,12 +1779,20 @@ void main() {
       addTearDown(observer.onUnmount);
 
       expect(observer.result.pages, ['page-ph']);
-      expect(observer.result.isPlaceholderData, isTrue);
+      expect(
+        (observer.result as InfiniteQuerySuccess<String, Object, int>)
+            .isPlaceholder,
+        isTrue,
+      );
 
       async.elapse(const Duration(seconds: 1));
 
       expect(observer.result.pages, ['page-0']);
-      expect(observer.result.isPlaceholderData, isFalse);
+      expect(
+        (observer.result as InfiniteQuerySuccess<String, Object, int>)
+            .isPlaceholder,
+        isFalse,
+      );
     }));
 
     test(
@@ -1796,7 +1820,11 @@ void main() {
       addTearDown(observer2.onUnmount);
 
       expect(observer2.result.pages, ['page-0']);
-      expect(observer2.result.isPlaceholderData, isFalse);
+      expect(
+        (observer2.result as InfiniteQuerySuccess<String, Object, int>)
+            .isPlaceholder,
+        isFalse,
+      );
     }));
 
     test(
@@ -1832,9 +1860,16 @@ void main() {
       addTearDown(observer2.onUnmount);
 
       expect(observer1.result.pages, ['page-ph']);
-      expect(observer1.result.isPlaceholderData, isTrue);
+      expect(
+        (observer1.result as InfiniteQuerySuccess<String, Object, int>)
+            .isPlaceholder,
+        isTrue,
+      );
       expect(observer2.result.pages, []);
-      expect(observer2.result.isPlaceholderData, isFalse);
+      expect(
+        observer2.result,
+        isNot(isA<InfiniteQuerySuccess<String, Object, int>>()),
+      );
     }));
   });
 
@@ -2537,7 +2572,7 @@ void main() {
       addTearDown(observer.onUnmount);
 
       expect(
-        observer.result.data,
+        observer.result.dataOrNull,
         const InfiniteData(['page-seed'], [0]),
       );
       expect(observer.result.dataUpdateCount, 0);
@@ -2587,8 +2622,12 @@ void main() {
       )..onMount();
       addTearDown(observer.onUnmount);
 
-      expect(observer.result.data!.pages, ['page-seed']);
-      expect(observer.result.isPlaceholderData, isFalse);
+      expect(observer.result.dataOrNull!.pages, ['page-seed']);
+      expect(
+        (observer.result as InfiniteQuerySuccess<String, Object, int>)
+            .isPlaceholder,
+        isFalse,
+      );
     }));
 
     test(
@@ -2610,11 +2649,11 @@ void main() {
       )..onMount();
       addTearDown(observer.onUnmount);
 
-      expect(observer.result.data!.pages, ['page-seed']);
+      expect(observer.result.dataOrNull!.pages, ['page-seed']);
 
       async.elapse(const Duration(seconds: 1));
 
-      expect(observer.result.data!.pages, ['page-0']);
+      expect(observer.result.dataOrNull!.pages, ['page-0']);
     }));
   });
 
@@ -2815,7 +2854,7 @@ void main() {
     }));
   });
 
-  group('InfiniteQueryResult.failureCount', () {
+  group('InfiniteQuerySnapshot.failureCount', () {
     test(
         'SHOULD increment on each retry '
         '', withFakeAsync((async) {
@@ -2944,7 +2983,7 @@ void main() {
     }));
   });
 
-  group('InfiniteQueryResult.isFetchedAfterMount', () {
+  group('InfiniteQuerySnapshot.isFetchedAfterMount', () {
     test(
         'SHOULD return true '
         'WHEN data has been fetched at least once', withFakeAsync((async) {
@@ -2994,7 +3033,7 @@ void main() {
     }));
   });
 
-  group('InfiniteQueryResult.isRefetching', () {
+  group('InfiniteQuerySnapshot.isRefetching', () {
     test(
         'SHOULD return true '
         'WHEN refetching', withFakeAsync((async) {
@@ -3113,7 +3152,7 @@ void main() {
     }));
   });
 
-  group('InfiniteQueryResult.hasNextPage', () {
+  group('InfiniteQuerySnapshot.hasNextPage', () {
     test(
         'SHOULD return false '
         'WHEN data is null', withFakeAsync((async) {
@@ -3132,7 +3171,7 @@ void main() {
       )..onMount();
       addTearDown(observer1.onUnmount);
 
-      expect(observer1.result.data, isNull);
+      expect(observer1.result.dataOrNull, isNull);
       expect(observer1.result.hasNextPage, isFalse);
 
       // Case 2: After initial fetch failed
@@ -3151,7 +3190,7 @@ void main() {
       addTearDown(observer2.onUnmount);
       async.elapse(const Duration(seconds: 1));
 
-      expect(observer2.result.data, isNull);
+      expect(observer2.result.dataOrNull, isNull);
       expect(observer2.result.hasNextPage, isFalse);
     }));
 
@@ -3174,7 +3213,7 @@ void main() {
 
       async.elapse(const Duration(seconds: 1));
 
-      expect(observer.result.data, isNotNull);
+      expect(observer.result.dataOrNull, isNotNull);
       expect(observer.result.hasNextPage, isFalse);
     }));
 
@@ -3197,7 +3236,7 @@ void main() {
 
       async.elapse(const Duration(seconds: 1));
 
-      expect(observer.result.data, isNotNull);
+      expect(observer.result.dataOrNull, isNotNull);
       expect(observer.result.hasNextPage, isTrue);
     }));
 
@@ -3235,7 +3274,7 @@ void main() {
     }));
   });
 
-  group('InfiniteQueryResult.hasPreviousPage', () {
+  group('InfiniteQuerySnapshot.hasPreviousPage', () {
     test(
         'SHOULD return false '
         'WHEN data is null', withFakeAsync((async) {
@@ -3255,7 +3294,7 @@ void main() {
       )..onMount();
       addTearDown(observer1.onUnmount);
 
-      expect(observer1.result.data, isNull);
+      expect(observer1.result.dataOrNull, isNull);
       expect(observer1.result.hasPreviousPage, isFalse);
 
       // Case 2: After initial fetch failed
@@ -3276,7 +3315,7 @@ void main() {
 
       async.elapse(const Duration(seconds: 1));
 
-      expect(observer2.result.data, isNull);
+      expect(observer2.result.dataOrNull, isNull);
       expect(observer2.result.hasPreviousPage, isFalse);
     }));
 
@@ -3300,7 +3339,7 @@ void main() {
 
       async.elapse(const Duration(seconds: 1));
 
-      expect(observer.result.data, isNotNull);
+      expect(observer.result.dataOrNull, isNotNull);
       expect(observer.result.hasPreviousPage, isFalse);
     }));
 
@@ -3324,7 +3363,7 @@ void main() {
 
       async.elapse(const Duration(seconds: 1));
 
-      expect(observer.result.data, isNotNull);
+      expect(observer.result.dataOrNull, isNotNull);
       expect(observer.result.hasPreviousPage, isFalse);
     }));
 
@@ -3348,7 +3387,7 @@ void main() {
 
       async.elapse(const Duration(seconds: 1));
 
-      expect(observer.result.data, isNotNull);
+      expect(observer.result.dataOrNull, isNotNull);
       expect(observer.result.hasPreviousPage, isTrue);
     }));
 
@@ -3387,7 +3426,7 @@ void main() {
     }));
   });
 
-  group('InfiniteQueryResult.isFetchingNextPage', () {
+  group('InfiniteQuerySnapshot.isFetchingNextPage', () {
     test(
         'SHOULD return false '
         'WHEN not fetching', withFakeAsync((async) {
@@ -3510,7 +3549,7 @@ void main() {
     }));
   });
 
-  group('InfiniteQueryResult.isFetchingPreviousPage', () {
+  group('InfiniteQuerySnapshot.isFetchingPreviousPage', () {
     test(
         'SHOULD return false '
         'WHEN not fetching', withFakeAsync((async) {

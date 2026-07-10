@@ -1,21 +1,58 @@
-import 'package:meta/meta.dart';
+import 'query_observer.dart';
+import 'query_state.dart';
+import 'utils.dart';
 
-import '../core/core.dart';
+/// Signature for a function that refetches all pages of an infinite query.
+///
+/// Returns a [Future] that completes with the updated [InfiniteQuerySnapshot].
+///
+/// If [cancelRefetch] is true, cancels any in-flight refetch before starting
+/// a new one. If [throwOnError] is true, the returned future rejects on error
+/// instead of returning an error snapshot.
+typedef InfiniteRefetch<TData, TError, TPageParam>
+    = Future<InfiniteQuerySnapshot<TData, TError, TPageParam>> Function({
+  bool cancelRefetch,
+  bool throwOnError,
+});
+
+/// Signature for a function that fetches the next page of an infinite query.
+///
+/// Returns a [Future] that completes with the updated [InfiniteQuerySnapshot].
+///
+/// If [cancelRefetch] is true, cancels any in-flight fetch before starting
+/// a new one. If [throwOnError] is true, the returned future rejects on error
+/// instead of returning an error snapshot.
+typedef FetchNextPage<TData, TError, TPageParam>
+    = Future<InfiniteQuerySnapshot<TData, TError, TPageParam>> Function({
+  bool cancelRefetch,
+  bool throwOnError,
+});
+
+/// Signature for a function that fetches the previous page of an infinite
+/// query.
+///
+/// Returns a [Future] that completes with the updated [InfiniteQuerySnapshot].
+///
+/// If [cancelRefetch] is true, cancels any in-flight fetch before starting
+/// a new one. If [throwOnError] is true, the returned future rejects on error
+/// instead of returning an error snapshot.
+typedef FetchPreviousPage<TData, TError, TPageParam>
+    = Future<InfiniteQuerySnapshot<TData, TError, TPageParam>> Function({
+  bool cancelRefetch,
+  bool throwOnError,
+});
 
 /// A Dart-idiomatic, exhaustively matchable snapshot of an infinite query.
 ///
-/// Unlike [InfiniteQueryResult], this is a `sealed` hierarchy: a `switch` over
-/// it is checked for exhaustiveness, `data` is non-nullable on
-/// [InfiniteQuerySuccess], and `error` is non-nullable on [InfiniteQueryError].
-/// The activity axis is exposed via [fetchStatus], with [isFetching] /
-/// [isPaused] / [isIdle] as conveniences.
+/// This is a `sealed` hierarchy, so a `switch` over it is checked for
+/// exhaustiveness: `data` is non-nullable on [InfiniteQuerySuccess] and `error`
+/// is non-nullable on [InfiniteQueryError]. The activity axis is exposed via
+/// [fetchStatus], with [isFetching] / [isPaused] / [isIdle] as conveniences.
 ///
 /// The three variants mirror [QueryStatus]. A failed next/previous page fetch
-/// keeps the overall status [QuerySuccess]-equivalent, so it is surfaced via
-/// the [isFetchNextPageError] / [isFetchPreviousPageError] flags rather than as
-/// a separate variant.
-///
-/// This is an experimental API and may change in a future minor release.
+/// keeps the overall status success-equivalent, so it is surfaced via the
+/// [isFetchNextPageError] / [isFetchPreviousPageError] flags rather than as a
+/// separate variant.
 sealed class InfiniteQuerySnapshot<TData, TError, TPageParam> {
   /// Creates an infinite query snapshot.
   const InfiniteQuerySnapshot({
@@ -145,8 +182,6 @@ sealed class InfiniteQuerySnapshot<TData, TError, TPageParam> {
 }
 
 /// The infinite query has no resolved data yet.
-///
-/// This is an experimental API and may change in a future minor release.
 final class InfiniteQueryPending<TData, TError, TPageParam>
     extends InfiniteQuerySnapshot<TData, TError, TPageParam> {
   /// Creates a pending snapshot.
@@ -225,8 +260,6 @@ final class InfiniteQueryPending<TData, TError, TPageParam>
 }
 
 /// The infinite query has resolved data.
-///
-/// This is an experimental API and may change in a future minor release.
 final class InfiniteQuerySuccess<TData, TError, TPageParam>
     extends InfiniteQuerySnapshot<TData, TError, TPageParam> {
   /// Creates a success snapshot.
@@ -318,8 +351,6 @@ final class InfiniteQuerySuccess<TData, TError, TPageParam>
 }
 
 /// The infinite query encountered an error.
-///
-/// This is an experimental API and may change in a future minor release.
 final class InfiniteQueryError<TData, TError, TPageParam>
     extends InfiniteQuerySnapshot<TData, TError, TPageParam> {
   /// Creates an error snapshot.
@@ -409,86 +440,4 @@ final class InfiniteQueryError<TData, TError, TPageParam>
       'pages: ${data?.pages.length}, '
       'fetchStatus: $fetchStatus, '
       'isStale: $isStale)';
-}
-
-/// Maps an [InfiniteQueryResult] into the sealed [InfiniteQuerySnapshot]
-/// hierarchy.
-@internal
-extension InfiniteQueryResultSnapshot<TData, TError, TPageParam>
-    on InfiniteQueryResult<TData, TError, TPageParam> {
-  /// Converts this result into an [InfiniteQuerySnapshot].
-  InfiniteQuerySnapshot<TData, TError, TPageParam> toSnapshot() {
-    switch (status) {
-      case QueryStatus.pending:
-        return InfiniteQueryPending<TData, TError, TPageParam>(
-          fetchStatus: fetchStatus,
-          dataUpdatedAt: dataUpdatedAt,
-          dataUpdateCount: dataUpdateCount,
-          errorUpdatedAt: errorUpdatedAt,
-          errorUpdateCount: errorUpdateCount,
-          failureCount: failureCount,
-          failureReason: failureReason,
-          isEnabled: isEnabled,
-          isStale: isStale,
-          isFetchedAfterMount: isFetchedAfterMount,
-          refetch: refetch,
-          fetchNextPage: fetchNextPage,
-          fetchPreviousPage: fetchPreviousPage,
-          hasNextPage: hasNextPage,
-          hasPreviousPage: hasPreviousPage,
-          isFetchingNextPage: isFetchingNextPage,
-          isFetchingPreviousPage: isFetchingPreviousPage,
-          isFetchNextPageError: isFetchNextPageError,
-          isFetchPreviousPageError: isFetchPreviousPageError,
-        );
-      case QueryStatus.success:
-        return InfiniteQuerySuccess<TData, TError, TPageParam>(
-          data: data as InfiniteData<TData, TPageParam>,
-          isPlaceholder: isPlaceholderData,
-          fetchStatus: fetchStatus,
-          dataUpdatedAt: dataUpdatedAt,
-          dataUpdateCount: dataUpdateCount,
-          errorUpdatedAt: errorUpdatedAt,
-          errorUpdateCount: errorUpdateCount,
-          failureCount: failureCount,
-          failureReason: failureReason,
-          isEnabled: isEnabled,
-          isStale: isStale,
-          isFetchedAfterMount: isFetchedAfterMount,
-          refetch: refetch,
-          fetchNextPage: fetchNextPage,
-          fetchPreviousPage: fetchPreviousPage,
-          hasNextPage: hasNextPage,
-          hasPreviousPage: hasPreviousPage,
-          isFetchingNextPage: isFetchingNextPage,
-          isFetchingPreviousPage: isFetchingPreviousPage,
-          isFetchNextPageError: isFetchNextPageError,
-          isFetchPreviousPageError: isFetchPreviousPageError,
-        );
-      case QueryStatus.error:
-        return InfiniteQueryError<TData, TError, TPageParam>(
-          error: error as TError,
-          data: data,
-          fetchStatus: fetchStatus,
-          dataUpdatedAt: dataUpdatedAt,
-          dataUpdateCount: dataUpdateCount,
-          errorUpdatedAt: errorUpdatedAt,
-          errorUpdateCount: errorUpdateCount,
-          failureCount: failureCount,
-          failureReason: failureReason,
-          isEnabled: isEnabled,
-          isStale: isStale,
-          isFetchedAfterMount: isFetchedAfterMount,
-          refetch: refetch,
-          fetchNextPage: fetchNextPage,
-          fetchPreviousPage: fetchPreviousPage,
-          hasNextPage: hasNextPage,
-          hasPreviousPage: hasPreviousPage,
-          isFetchingNextPage: isFetchingNextPage,
-          isFetchingPreviousPage: isFetchingPreviousPage,
-          isFetchNextPageError: isFetchNextPageError,
-          isFetchPreviousPageError: isFetchPreviousPageError,
-        );
-    }
-  }
 }

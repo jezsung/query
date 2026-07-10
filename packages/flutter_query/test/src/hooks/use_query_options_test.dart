@@ -34,13 +34,13 @@ void main() {
       ),
     );
 
-    expect(hookResult.current.status, QueryStatus.pending);
-    expect(hookResult.current.data, null);
+    expect(hookResult.current.isPending, isTrue);
+    expect(hookResult.current.dataOrNull, null);
 
     await tester.pump(const Duration(seconds: 5));
 
-    expect(hookResult.current.status, QueryStatus.success);
-    expect(hookResult.current.data, same(data));
+    expect(hookResult.current.isSuccess, isTrue);
+    expect(hookResult.current.dataOrNull, same(data));
   }));
 
   testWidgets('SHOULD surface errors from supplied options',
@@ -63,8 +63,11 @@ void main() {
 
     await tester.pump(const Duration(seconds: 5));
 
-    expect(hookResult.current.status, QueryStatus.error);
-    expect(hookResult.current.error, same(error));
+    expect(hookResult.current, isA<QueryError<String, Object>>());
+    expect(
+      (hookResult.current as QueryError<String, Object>).error,
+      same(error),
+    );
   }));
 
   testWidgets('SHOULD react to a changed query key across rebuilds',
@@ -81,11 +84,11 @@ void main() {
     );
 
     await tester.pumpAndSettle();
-    expect(hookResult.current.data, 'data-1');
+    expect(hookResult.current.dataOrNull, 'data-1');
 
     await hookResult.rebuildWithProps(2);
     await tester.pumpAndSettle();
-    expect(hookResult.current.data, 'data-2');
+    expect(hookResult.current.dataOrNull, 'data-2');
   }));
 
   testWidgets('SHOULD prioritize explicit client over provider',

@@ -53,7 +53,7 @@ void main() {
         'WHEN result changes', withFakeAsync((async) {
       final observer = MutationObserver(client, createOptions());
       var calls = 0;
-      MutationResult? capturedResult;
+      MutationSnapshot? capturedResult;
 
       observer.subscribe((result) {
         calls++;
@@ -134,7 +134,7 @@ void main() {
 
       observer.mutate('');
 
-      expect(observer.result.status, MutationStatus.pending);
+      expect(observer.result, isA<MutationPending<String, Object, String>>());
       expect(observer.result.submittedAt, clock.now());
       expect(observer.result.isPending, isTrue);
     }));
@@ -153,8 +153,8 @@ void main() {
 
       async.flushMicrotasks();
 
-      expect(observer.result.status, MutationStatus.success);
-      expect(observer.result.data, equals('success'));
+      expect(observer.result, isA<MutationSuccess<String, Object, String>>());
+      expect(observer.result.dataOrNull, equals('success'));
       expect(observer.result.isSuccess, isTrue);
     }));
 
@@ -173,15 +173,18 @@ void main() {
 
       async.flushMicrotasks();
 
-      expect(observer.result.status, MutationStatus.error);
-      expect(observer.result.error, same(error));
+      expect(observer.result, isA<MutationError<String, Object, String>>());
+      expect(
+        (observer.result as MutationError<String, Object, String>).error,
+        same(error),
+      );
       expect(observer.result.failureCount, 1);
       expect(observer.result.failureReason, same(error));
       expect(observer.result.isError, isTrue);
     }));
 
     test(
-        'SHOULD pass in variables to mutationFn and MutationResult'
+        'SHOULD pass in variables to mutationFn and MutationSnapshot'
         '', withFakeAsync((async) {
       String? capturedVariables;
       final observer = MutationObserver(
@@ -195,12 +198,12 @@ void main() {
       observer.mutate('variables');
 
       expect(capturedVariables, 'variables');
-      expect(observer.result.variables, 'variables');
+      expect(observer.result.variablesOrNull, 'variables');
 
       async.flushMicrotasks();
 
       expect(capturedVariables, 'variables');
-      expect(observer.result.variables, 'variables');
+      expect(observer.result.variablesOrNull, 'variables');
     }));
 
     test(
@@ -256,8 +259,8 @@ void main() {
       observer.mutate('second');
       async.flushMicrotasks();
 
-      expect(observer.result.data, equals('second'));
-      expect(observer.result.variables, equals('second'));
+      expect(observer.result.dataOrNull, equals('second'));
+      expect(observer.result.variablesOrNull, equals('second'));
     }));
 
     test(
@@ -292,7 +295,7 @@ void main() {
       async.flushMicrotasks();
 
       expect(observer.result.isSuccess, isTrue);
-      expect(observer.result.data, equals('second result'));
+      expect(observer.result.dataOrNull, equals('second result'));
     }));
 
     test(
@@ -334,9 +337,9 @@ void main() {
 
       observer.reset();
 
-      expect(observer.result.status, MutationStatus.idle);
-      expect(observer.result.data, isNull);
-      expect(observer.result.variables, isNull);
+      expect(observer.result, isA<MutationIdle<String, Object, String>>());
+      expect(observer.result.dataOrNull, isNull);
+      expect(observer.result.variablesOrNull, isNull);
       expect(observer.result.submittedAt, isNull);
       expect(observer.result.isIdle, isTrue);
     }));
@@ -349,7 +352,7 @@ void main() {
         createOptions(mutationFn: (v, c) async => 'success'),
       );
       var calls = 0;
-      MutationResult? capturedResult;
+      MutationSnapshot? capturedResult;
 
       observer.subscribe((result) {
         calls++;
@@ -384,7 +387,7 @@ void main() {
       async.flushMicrotasks();
 
       expect(observer.result.isSuccess, isTrue);
-      expect(observer.result.data, equals('second'));
+      expect(observer.result.dataOrNull, equals('second'));
     }));
 
     test(
@@ -548,11 +551,7 @@ void main() {
       // Initial state
       expect(
         observer.result,
-        MutationResult<String, Object, String, String>(
-          status: MutationStatus.idle,
-          data: null,
-          error: null,
-          variables: null,
+        MutationIdle<String, Object, String>(
           submittedAt: null,
           failureCount: 0,
           failureReason: null,
@@ -568,10 +567,7 @@ void main() {
       // Pending state
       expect(
         observer.result,
-        MutationResult<String, Object, String, String>(
-          status: MutationStatus.pending,
-          data: null,
-          error: null,
+        MutationPending<String, Object, String>(
           variables: 'variables',
           submittedAt: clock.now(),
           failureCount: 0,
@@ -588,10 +584,8 @@ void main() {
       // Pending state
       expect(
         observer.result,
-        MutationResult<String, Object, String, String>(
-          status: MutationStatus.success,
+        MutationSuccess<String, Object, String>(
           data: 'success',
-          error: null,
           variables: 'variables',
           submittedAt: clock.now().subtract(const Duration(seconds: 3)),
           failureCount: 0,
@@ -686,7 +680,10 @@ void main() {
       async.elapse(const Duration(seconds: 1));
 
       expect(observer.result.isError, isTrue);
-      expect(observer.result.error, isA<Exception>());
+      expect(
+        (observer.result as MutationError<String, Object, String>).error,
+        isA<Exception>(),
+      );
       expect(mutationFnCalls, 0);
 
       async.elapse(const Duration(seconds: 3));
@@ -1362,7 +1359,7 @@ void main() {
       async.elapse(const Duration(seconds: 1));
       expect(calls, 3);
       expect(observer.result.isSuccess, isTrue);
-      expect(observer.result.data, 'success');
+      expect(observer.result.dataOrNull, 'success');
       // failureCount and failureReason are reset on success
       expect(observer.result.failureCount, 0);
       expect(observer.result.failureReason, isNull);

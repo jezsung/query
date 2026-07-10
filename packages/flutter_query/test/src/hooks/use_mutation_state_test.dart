@@ -566,7 +566,7 @@ void main() {
   testWidgets(
       'SHOULD update when mutation is removed'
       '', withCleanup((tester) async {
-    late MutationResult<String, dynamic, String, dynamic> result;
+    late MutationSnapshot<String, dynamic, String> result;
     late List<MutationState> states;
 
     await tester.pumpWidget(Column(children: [

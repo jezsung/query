@@ -39,11 +39,11 @@ void main() {
     );
 
     var result = hookResult.current;
-    expect(result.status, QueryStatus.pending);
+    expect(result.isPending, isTrue);
     expect(result.fetchStatus, FetchStatus.fetching);
-    expect(result.data, null);
+    expect(result.dataOrNull, null);
     expect(result.dataUpdatedAt, null);
-    expect(result.error, null);
+    expect(result.isError, isFalse);
     expect(result.errorUpdatedAt, null);
     expect(result.errorUpdateCount, 0);
     expect(result.failureCount, 0);
@@ -54,11 +54,11 @@ void main() {
     await tester.pump(const Duration(seconds: 5));
 
     result = hookResult.current;
-    expect(result.status, QueryStatus.success);
+    expect(result.isSuccess, isTrue);
     expect(result.fetchStatus, FetchStatus.idle);
-    expect(result.data, same(data));
+    expect(result.dataOrNull, same(data));
     expect(result.dataUpdatedAt, startedAt.add(const Duration(seconds: 5)));
-    expect(result.error, null);
+    expect(result.isError, isFalse);
     expect(result.errorUpdatedAt, null);
     expect(result.errorUpdateCount, 0);
     expect(result.failureCount, 0);
@@ -84,11 +84,11 @@ void main() {
     );
 
     var result = hookResult.current;
-    expect(result.status, QueryStatus.pending);
+    expect(result.isPending, isTrue);
     expect(result.fetchStatus, FetchStatus.fetching);
-    expect(result.data, null);
+    expect(result.dataOrNull, null);
     expect(result.dataUpdatedAt, null);
-    expect(result.error, null);
+    expect(result.isError, isFalse);
     expect(result.errorUpdatedAt, null);
     expect(result.errorUpdateCount, 0);
     expect(result.failureCount, 0);
@@ -99,11 +99,11 @@ void main() {
     await tester.pump(const Duration(seconds: 5));
 
     result = hookResult.current;
-    expect(result.status, QueryStatus.error);
+    expect(result.isError, isTrue);
     expect(result.fetchStatus, FetchStatus.idle);
-    expect(result.data, null);
+    expect(result.dataOrNull, null);
     expect(result.dataUpdatedAt, null);
-    expect(result.error, same(error));
+    expect((result as QueryError<String, Object>).error, same(error));
     expect(result.errorUpdatedAt, startedAt.add(const Duration(seconds: 5)));
     expect(result.errorUpdateCount, 1);
     expect(result.failureCount, 1);
@@ -147,23 +147,23 @@ void main() {
     );
 
     var result = hookResult.current;
-    expect(result.status, QueryStatus.pending);
+    expect(result.isPending, isTrue);
     expect(result.fetchStatus, FetchStatus.fetching);
-    expect(result.data, null);
+    expect(result.dataOrNull, null);
 
     await tester.pump();
 
     result = hookResult.current;
-    expect(result.status, QueryStatus.success);
+    expect(result.isSuccess, isTrue);
     expect(result.fetchStatus, FetchStatus.idle);
-    expect(result.data, same(data));
+    expect(result.dataOrNull, same(data));
   }));
 
   testWidgets('SHOULD fetch only once WHEN multiple hooks share same key',
       withCleanup((tester) async {
     var fetchCount = 0;
-    late QueryResult<String, Object> result1;
-    late QueryResult<String, Object> result2;
+    late QuerySnapshot<String, Object> result1;
+    late QuerySnapshot<String, Object> result2;
 
     await tester.pumpWidget(Column(children: [
       HookBuilder(
@@ -188,13 +188,13 @@ void main() {
       ),
     ]));
 
-    expect(result1.data, null);
-    expect(result2.data, null);
+    expect(result1.dataOrNull, null);
+    expect(result2.dataOrNull, null);
 
     await tester.pumpAndSettle();
 
-    expect(result1.data, 'data-1');
-    expect(result2.data, 'data-1');
+    expect(result1.dataOrNull, 'data-1');
+    expect(result2.dataOrNull, 'data-1');
   }));
 
   testWidgets('SHOULD fetch fresh WHEN queryKey changes',
@@ -208,19 +208,19 @@ void main() {
       initialProps: const ['key1'],
     );
 
-    expect(hookResult.current.data, null);
+    expect(hookResult.current.dataOrNull, null);
 
     await tester.pumpAndSettle();
 
-    expect(hookResult.current.data, 'data-[key1]');
+    expect(hookResult.current.dataOrNull, 'data-[key1]');
 
     await hookResult.rebuildWithProps(const ['key2']);
 
-    expect(hookResult.current.data, null);
+    expect(hookResult.current.dataOrNull, null);
 
     await tester.pumpAndSettle();
 
-    expect(hookResult.current.data, 'data-[key2]');
+    expect(hookResult.current.dataOrNull, 'data-[key2]');
   }));
 
   testWidgets('SHOULD clean up observers on unmount',
@@ -246,8 +246,8 @@ void main() {
 
   testWidgets('SHOULD distinguish between different query keys',
       withCleanup((tester) async {
-    late QueryResult<String, Object> result1;
-    late QueryResult<String, Object> result2;
+    late QuerySnapshot<String, Object> result1;
+    late QuerySnapshot<String, Object> result2;
 
     await tester.pumpWidget(Column(
       children: [
@@ -272,8 +272,8 @@ void main() {
 
     await tester.pumpAndSettle();
 
-    expect(result1.data, 'data1');
-    expect(result2.data, 'data2');
+    expect(result1.dataOrNull, 'data1');
+    expect(result2.dataOrNull, 'data2');
   }));
 
   group('enabled', () {
@@ -292,8 +292,8 @@ void main() {
       await tester.pump(const Duration(seconds: 2));
       await tester.pumpAndSettle();
 
-      expect(hookResult.current.status, QueryStatus.pending);
-      expect(hookResult.current.data, null);
+      expect(hookResult.current.isPending, isTrue);
+      expect(hookResult.current.dataOrNull, null);
     }));
 
     testWidgets('SHOULD fetch WHEN enabled changes from false to true',
@@ -312,8 +312,8 @@ void main() {
       await tester.pump(const Duration(seconds: 2));
       await tester.pumpAndSettle();
 
-      expect(hookResult.current.status, QueryStatus.pending);
-      expect(hookResult.current.data, null);
+      expect(hookResult.current.isPending, isTrue);
+      expect(hookResult.current.dataOrNull, null);
 
       await hookResult.rebuildWithProps(true);
 
@@ -321,8 +321,8 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      expect(hookResult.current.status, QueryStatus.success);
-      expect(hookResult.current.data, 'data');
+      expect(hookResult.current.isSuccess, isTrue);
+      expect(hookResult.current.dataOrNull, 'data');
     }));
   });
 
@@ -502,7 +502,7 @@ void main() {
       // Should NOT have triggered a fetch
       final result = hookResult.current;
       expect(result.fetchStatus, FetchStatus.idle);
-      expect(result.data, 'initial'); // Still has old data
+      expect(result.dataOrNull, 'initial'); // Still has old data
       expect(result.isStale, false); // Data is fresh
     }));
 
@@ -520,7 +520,7 @@ void main() {
       // Wait for initial fetch to complete
       await tester.pumpAndSettle();
 
-      expect(hookResult.current.data, 'data');
+      expect(hookResult.current.dataOrNull, 'data');
       expect(hookResult.current.isStale, false);
 
       // Wait for long enough time
@@ -553,7 +553,7 @@ void main() {
 
       // Should NOT trigger refetch
       expect(hookResult.current.fetchStatus, FetchStatus.idle);
-      expect(hookResult.current.data, 'data');
+      expect(hookResult.current.dataOrNull, 'data');
       expect(hookResult.current.isStale, false);
     }));
 
@@ -585,7 +585,7 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      expect(hookResult.current.data, 'data');
+      expect(hookResult.current.dataOrNull, 'data');
       expect(hookResult.current.isStale, false);
     }));
 
@@ -604,7 +604,7 @@ void main() {
       // Wait for initial fetch to complete
       await tester.pumpAndSettle();
 
-      expect(hookResult.current.data, 'data');
+      expect(hookResult.current.dataOrNull, 'data');
       expect(hookResult.current.isStale, false);
 
       // Wait for long enough time
@@ -637,7 +637,7 @@ void main() {
 
       // Should NOT trigger refetch
       expect(hookResult.current.fetchStatus, FetchStatus.idle);
-      expect(hookResult.current.data, 'data');
+      expect(hookResult.current.dataOrNull, 'data');
       expect(hookResult.current.isStale, false);
     }));
 
@@ -669,7 +669,7 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      expect(hookResult.current.data, 'data');
+      expect(hookResult.current.dataOrNull, 'data');
       expect(hookResult.current.isStale, false);
     }));
 
@@ -888,7 +888,7 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      expect(hookResult.current.data, 'data');
+      expect(hookResult.current.dataOrNull, 'data');
     }));
 
     testWidgets(
@@ -962,7 +962,7 @@ void main() {
       // Wait for initial fetch to complete
       await tester.pump(const Duration(seconds: 5));
 
-      expect(hookResult.current.data, 'data-1');
+      expect(hookResult.current.dataOrNull, 'data-1');
       expect(hookResult.current.isStale, isTrue);
 
       tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
@@ -973,7 +973,7 @@ void main() {
       await tester.pump(const Duration(seconds: 5));
 
       expect(hookResult.current.fetchStatus, FetchStatus.idle);
-      expect(hookResult.current.data, 'data-2');
+      expect(hookResult.current.dataOrNull, 'data-2');
     }));
 
     testWidgets('SHOULD NOT refetch WHEN data is fresh',
@@ -995,7 +995,7 @@ void main() {
       // Wait for initial fetch to complete
       await tester.pump(const Duration(seconds: 5));
 
-      expect(hookResult.current.data, 'data-1');
+      expect(hookResult.current.dataOrNull, 'data-1');
       expect(hookResult.current.isStale, isFalse);
 
       tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
@@ -1006,7 +1006,7 @@ void main() {
       await tester.pump(const Duration(seconds: 5));
 
       expect(hookResult.current.fetchStatus, FetchStatus.idle);
-      expect(hookResult.current.data, 'data-1');
+      expect(hookResult.current.dataOrNull, 'data-1');
     }));
 
     testWidgets('SHOULD refetch WHEN data is stale (with synchronous queryFn)',
@@ -1025,7 +1025,7 @@ void main() {
       // Wait for initial fetch to complete
       await tester.pump();
 
-      expect(hookResult.current.data, 'data-1');
+      expect(hookResult.current.dataOrNull, 'data-1');
       expect(hookResult.current.isStale, isTrue);
 
       tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
@@ -1034,7 +1034,7 @@ void main() {
       // With synchronous queryFn (no actual async operations), the fetch completes
       // immediately in the same synchronous execution, so we only observe the final state
       expect(hookResult.current.fetchStatus, FetchStatus.idle);
-      expect(hookResult.current.data, 'data-2');
+      expect(hookResult.current.dataOrNull, 'data-2');
     }));
 
     testWidgets(
@@ -1054,7 +1054,7 @@ void main() {
       // Wait for initial fetch to complete
       await tester.pump();
 
-      expect(hookResult.current.data, 'data-1');
+      expect(hookResult.current.dataOrNull, 'data-1');
       expect(hookResult.current.isStale, isFalse);
 
       tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
@@ -1063,7 +1063,7 @@ void main() {
       // With synchronous queryFn (no actual async operations), the fetch completes
       // immediately in the same synchronous execution, so we only observe the final state
       expect(hookResult.current.fetchStatus, FetchStatus.idle);
-      expect(hookResult.current.data, 'data-1');
+      expect(hookResult.current.dataOrNull, 'data-1');
     }));
   });
 
@@ -1087,19 +1087,19 @@ void main() {
       // Wait for initial fetch to complete
       await tester.pump(const Duration(seconds: 5));
 
-      expect(hookResult.current.data, 'data-1');
+      expect(hookResult.current.dataOrNull, 'data-1');
       expect(hookResult.current.isStale, isTrue);
 
       tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
       await tester.pump();
 
       expect(hookResult.current.fetchStatus, FetchStatus.idle);
-      expect(hookResult.current.data, 'data-1');
+      expect(hookResult.current.dataOrNull, 'data-1');
 
       await tester.pump(const Duration(seconds: 5));
 
       expect(hookResult.current.fetchStatus, FetchStatus.idle);
-      expect(hookResult.current.data, 'data-1');
+      expect(hookResult.current.dataOrNull, 'data-1');
     }));
 
     testWidgets(
@@ -1127,9 +1127,9 @@ void main() {
       await tester.pump(const Duration(seconds: 5));
 
       // Should be in error state with no data
-      expect(hookResult.current.status, QueryStatus.error);
+      expect(hookResult.current.isError, isTrue);
       expect(hookResult.current.fetchStatus, FetchStatus.idle);
-      expect(hookResult.current.data, isNull);
+      expect(hookResult.current.dataOrNull, isNull);
       expect(fetchCount, 1);
 
       // Trigger resume
@@ -1169,7 +1169,7 @@ void main() {
       // Wait for initial fetch to complete
       await tester.pump(const Duration(seconds: 5));
 
-      expect(hookResult.current.data, 'data-1');
+      expect(hookResult.current.dataOrNull, 'data-1');
       expect(hookResult.current.isStale, isFalse);
 
       tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
@@ -1180,7 +1180,7 @@ void main() {
       await tester.pump(const Duration(seconds: 5));
 
       expect(hookResult.current.fetchStatus, FetchStatus.idle);
-      expect(hookResult.current.data, 'data-2');
+      expect(hookResult.current.dataOrNull, 'data-2');
     }));
     testWidgets('SHOULD NOT refetch on mount WHEN staleDuration is static',
         withCleanup((tester) async {
@@ -1202,19 +1202,19 @@ void main() {
       // Wait for initial fetch to complete
       await tester.pump(const Duration(seconds: 5));
 
-      expect(hookResult.current.data, 'data-1');
+      expect(hookResult.current.dataOrNull, 'data-1');
       expect(hookResult.current.isStale, isFalse);
 
       tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
       await tester.pump();
 
       expect(hookResult.current.fetchStatus, FetchStatus.idle);
-      expect(hookResult.current.data, 'data-1');
+      expect(hookResult.current.dataOrNull, 'data-1');
 
       await tester.pump(const Duration(seconds: 5));
 
       expect(hookResult.current.fetchStatus, FetchStatus.idle);
-      expect(hookResult.current.data, 'data-1');
+      expect(hookResult.current.dataOrNull, 'data-1');
     }));
   });
 
@@ -1249,7 +1249,7 @@ void main() {
       connectivityController.add(true);
       await tester.pump(const Duration(seconds: 1));
 
-      expect(hook.current.data, 'data-1');
+      expect(hook.current.dataOrNull, 'data-1');
       expect(hook.current.isStale, isTrue);
 
       // Go offline then back online - should trigger reconnect
@@ -1262,7 +1262,7 @@ void main() {
       await tester.pump(const Duration(seconds: 1));
 
       expect(hook.current.fetchStatus, FetchStatus.idle);
-      expect(hook.current.data, 'data-2');
+      expect(hook.current.dataOrNull, 'data-2');
     }));
 
     testWidgets(
@@ -1295,7 +1295,7 @@ void main() {
       connectivityController.add(true);
       await tester.pump(const Duration(seconds: 1));
 
-      expect(hook.current.data, 'data-1');
+      expect(hook.current.dataOrNull, 'data-1');
       expect(hook.current.isStale, isFalse);
 
       // Go offline and go back online - should not trigger reconnect
@@ -1308,7 +1308,7 @@ void main() {
       await tester.pump(const Duration(seconds: 1));
 
       expect(hook.current.fetchStatus, FetchStatus.idle);
-      expect(hook.current.data, 'data-1');
+      expect(hook.current.dataOrNull, 'data-1');
     }));
 
     testWidgets(
@@ -1341,7 +1341,7 @@ void main() {
       connectivityController.add(true);
       await tester.pump(const Duration(seconds: 1));
 
-      expect(hook.current.data, 'data-1');
+      expect(hook.current.dataOrNull, 'data-1');
       expect(hook.current.isStale, isTrue);
 
       // Go offline and go back online - should NOT trigger reconnect since never
@@ -1350,12 +1350,12 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(hook.current.fetchStatus, FetchStatus.idle);
-      expect(hook.current.data, 'data-1');
+      expect(hook.current.dataOrNull, 'data-1');
 
       await tester.pump(const Duration(seconds: 1));
 
       expect(hook.current.fetchStatus, FetchStatus.idle);
-      expect(hook.current.data, 'data-1');
+      expect(hook.current.dataOrNull, 'data-1');
     }));
 
     testWidgets(
@@ -1389,7 +1389,7 @@ void main() {
       connectivityController.add(true);
       await tester.pump(const Duration(seconds: 1));
 
-      expect(hook.current.data, 'data-1');
+      expect(hook.current.dataOrNull, 'data-1');
       expect(hook.current.isStale, isFalse);
 
       // Go offline and go back online - should trigger reconnect even when fresh
@@ -1402,7 +1402,7 @@ void main() {
       await tester.pump(const Duration(seconds: 1));
 
       expect(hook.current.fetchStatus, FetchStatus.idle);
-      expect(hook.current.data, 'data-2');
+      expect(hook.current.dataOrNull, 'data-2');
     }));
 
     testWidgets(
@@ -1437,7 +1437,7 @@ void main() {
       connectivityController.add(true);
       await tester.pumpAndSettle(const Duration(seconds: 1));
 
-      expect(hook.current.data, 'data-1');
+      expect(hook.current.dataOrNull, 'data-1');
       expect(hook.current.isStale, isFalse);
 
       // Go offline and go back online - should NOT trigger reconnect since static
@@ -1446,12 +1446,12 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(hook.current.fetchStatus, FetchStatus.idle);
-      expect(hook.current.data, 'data-1');
+      expect(hook.current.dataOrNull, 'data-1');
 
       await tester.pump(const Duration(seconds: 1));
 
       expect(hook.current.fetchStatus, FetchStatus.idle);
-      expect(hook.current.data, 'data-1');
+      expect(hook.current.dataOrNull, 'data-1');
     }));
   });
 
@@ -1653,7 +1653,7 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      expect(hookResult.current.data, equals('data'));
+      expect(hookResult.current.dataOrNull, equals('data'));
     }));
 
     testWidgets('SHOULD prioritize queryClient over QueryClientProvider',
@@ -1720,8 +1720,8 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      expect(hookResult.current.$1.data, 'data');
-      expect(hookResult.current.$2.data, 'data');
+      expect(hookResult.current.$1.dataOrNull, 'data');
+      expect(hookResult.current.$2.dataOrNull, 'data');
       expect(client.cache.getAll().length, 1);
     }));
   });
@@ -1739,8 +1739,8 @@ void main() {
       );
 
       final result = hookResult.current;
-      expect(result.status, QueryStatus.success);
-      expect(result.data, 'initial-data');
+      expect(result.isSuccess, isTrue);
+      expect(result.dataOrNull, 'initial-data');
     }));
 
     testWidgets('SHOULD refetch WHEN seed is stale',
@@ -1756,7 +1756,7 @@ void main() {
       );
 
       // Should have initial data
-      expect(hookResult.current.data, 'initial-data');
+      expect(hookResult.current.dataOrNull, 'initial-data');
       // Should be fetching because data is stale
       expect(hookResult.current.fetchStatus, FetchStatus.fetching);
       expect(hookResult.current.isStale, true);
@@ -1764,7 +1764,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Should now have fetched data
-      expect(hookResult.current.data, 'data');
+      expect(hookResult.current.dataOrNull, 'data');
     }));
 
     testWidgets('SHOULD NOT refetch WHEN seed is fresh',
@@ -1787,7 +1787,7 @@ void main() {
 
       // Should still have initial data (no fetch occurred)
       expect(hookResult.current.fetchStatus, FetchStatus.idle);
-      expect(hookResult.current.data, 'initial-data');
+      expect(hookResult.current.dataOrNull, 'initial-data');
       expect(hookResult.current.isStale, false);
     }));
 
@@ -1807,9 +1807,9 @@ void main() {
       );
 
       // Query should be pending with no data
-      expect(hookResult1.current.status, QueryStatus.pending);
+      expect(hookResult1.current.isPending, isTrue);
       expect(hookResult1.current.fetchStatus, FetchStatus.fetching);
-      expect(hookResult1.current.data, null);
+      expect(hookResult1.current.dataOrNull, null);
 
       // Unmount the first hook
       await hookResult1.unmount();
@@ -1825,8 +1825,8 @@ void main() {
       );
 
       // Should now have initialData
-      expect(hookResult2.current.status, QueryStatus.success);
-      expect(hookResult2.current.data, 'initial-data');
+      expect(hookResult2.current.isSuccess, isTrue);
+      expect(hookResult2.current.dataOrNull, 'initial-data');
 
       // Wait for pending timer created by Future.delayed
       await tester.binding.delayed(const Duration(minutes: 1));
@@ -1915,7 +1915,7 @@ void main() {
 
       // Initially has initial data
       expect(hookResult.current.fetchStatus, FetchStatus.idle);
-      expect(hookResult.current.data, 'initial-data');
+      expect(hookResult.current.dataOrNull, 'initial-data');
 
       // Unmount
       await hookResult.unmount();
@@ -1932,7 +1932,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Should have new data
-      expect(hookResult.current.data, 'data');
+      expect(hookResult.current.dataOrNull, 'data');
     }));
   });
 
@@ -1948,10 +1948,10 @@ void main() {
       );
 
       var result = hookResult.current;
-      expect(result.status, QueryStatus.success);
+      expect(result.isSuccess, isTrue);
       expect(result.fetchStatus, FetchStatus.fetching);
-      expect(result.data, 'placeholder');
-      expect(result.isPlaceholderData, true);
+      expect(result.dataOrNull, 'placeholder');
+      expect((result as QuerySuccess<String, dynamic>).isPlaceholder, true);
     }));
 
     testWidgets('SHOULD replace placeholder data once fetch completes',
@@ -1966,14 +1966,14 @@ void main() {
       );
 
       var result = hookResult.current;
-      expect(result.data, 'placeholder');
-      expect(result.isPlaceholderData, true);
+      expect(result.dataOrNull, 'placeholder');
+      expect((result as QuerySuccess<String, dynamic>).isPlaceholder, true);
 
       await tester.pump();
 
       result = hookResult.current;
-      expect(result.data, 'data');
-      expect(result.isPlaceholderData, false);
+      expect(result.dataOrNull, 'data');
+      expect((result as QuerySuccess<String, dynamic>).isPlaceholder, false);
     }));
 
     testWidgets('SHOULD show placeholder data WHEN enabled is false',
@@ -1989,11 +1989,11 @@ void main() {
       );
 
       var result = hookResult.current;
-      expect(result.status, QueryStatus.success);
+      expect(result.isSuccess, isTrue);
       expect(result.fetchStatus, FetchStatus.idle);
-      expect(result.data, 'placeholder');
+      expect(result.dataOrNull, 'placeholder');
       expect(result.isEnabled, false);
-      expect(result.isPlaceholderData, true);
+      expect((result as QuerySuccess<String, dynamic>).isPlaceholder, true);
     }));
 
     testWidgets('SHOULD NOT show placeholder WHEN query already has data',
@@ -2012,8 +2012,8 @@ void main() {
       );
 
       final result = hookResult.current;
-      expect(result.data, 'data-cached');
-      expect(result.isPlaceholderData, false);
+      expect(result.dataOrNull, 'data-cached');
+      expect((result as QuerySuccess<String, Object>).isPlaceholder, false);
     }));
 
     testWidgets('SHOULD NOT show placeholder data WHEN seed is provided',
@@ -2029,10 +2029,10 @@ void main() {
       );
 
       var result = hookResult.current;
-      expect(result.status, QueryStatus.success);
+      expect(result.isSuccess, isTrue);
       expect(result.fetchStatus, FetchStatus.fetching);
-      expect(result.data, 'initial');
-      expect(result.isPlaceholderData, false);
+      expect(result.dataOrNull, 'initial');
+      expect((result as QuerySuccess<String, dynamic>).isPlaceholder, false);
     }));
 
     testWidgets('SHOULD NOT persist placeholder data to cache',
@@ -2047,8 +2047,8 @@ void main() {
       );
 
       var result = hookResult.current;
-      expect(result.data, 'placeholder');
-      expect(result.isPlaceholderData, true);
+      expect(result.dataOrNull, 'placeholder');
+      expect((result as QuerySuccess<String, dynamic>).isPlaceholder, true);
 
       final query = client.cache.get(const ['key'])!;
       expect(query.state.data, isNot('placeholder'));
@@ -2071,14 +2071,14 @@ void main() {
       );
 
       var result = hookResult.current;
-      expect(result.data, 'placeholder-1');
-      expect(result.isPlaceholderData, true);
+      expect(result.dataOrNull, 'placeholder-1');
+      expect((result as QuerySuccess<String, dynamic>).isPlaceholder, true);
 
       await hookResult.rebuildWithProps('placeholder-2');
 
       result = hookResult.current;
-      expect(result.data, 'placeholder-2');
-      expect(result.isPlaceholderData, true);
+      expect(result.dataOrNull, 'placeholder-2');
+      expect((result as QuerySuccess<String, dynamic>).isPlaceholder, true);
     }));
 
     // TODO(placeholderData): Re-enable when callback form is supported
@@ -2186,7 +2186,7 @@ void main() {
         expect(fetchAttempts, i);
 
         await tester.pump(const Duration(seconds: 3));
-        expect(hookResult.current.data, 'data-$i');
+        expect(hookResult.current.dataOrNull, 'data-$i');
         expect(
           hookResult.current.dataUpdatedAt,
           start.add(Duration(seconds: 10 * (i - 1) + 3)),
@@ -2216,7 +2216,7 @@ void main() {
       expect(fetchAttempts, 1);
 
       await tester.pump(const Duration(seconds: 3));
-      expect(hookResult.current.data, 'data-1');
+      expect(hookResult.current.dataOrNull, 'data-1');
       expect(
         hookResult.current.dataUpdatedAt,
         start.add(const Duration(seconds: 3)),
@@ -2312,7 +2312,7 @@ void main() {
 
     testWidgets('SHOULD refetch at interval WHEN data is fresh',
         withCleanup((tester) async {
-      late HookResult<QueryResult> hookResult;
+      late HookResult<QuerySnapshot> hookResult;
       for (final staleDuration in [
         StaleDuration(hours: 1),
         StaleDuration.infinity,
@@ -2526,8 +2526,8 @@ void main() {
 
       // Second retry succeeds
       await tester.pump(const Duration(seconds: 1));
-      expect(hook.current.status, QueryStatus.success);
-      expect(hook.current.data, 'data');
+      expect(hook.current.isSuccess, isTrue);
+      expect(hook.current.dataOrNull, 'data');
       // Should reset failureCount and failureReason on success
       expect(hook.current.failureCount, 0);
       expect(hook.current.failureReason, null);
@@ -2558,7 +2558,7 @@ void main() {
 
       // Initial attempt
       await tester.pump(Duration.zero);
-      expect(hook.current.status, QueryStatus.error);
+      expect(hook.current.isError, isTrue);
       expect(hook.current.failureCount, 1);
 
       // Remount hook and set maxRetries to 3
@@ -2567,7 +2567,7 @@ void main() {
 
       // First attempt since remount (not retry)
       await tester.pump(Duration.zero);
-      expect(hook.current.status, QueryStatus.error);
+      expect(hook.current.isError, isTrue);
       expect(hook.current.failureCount, 1);
 
       // Retry 3 times with fixed 1s delay
@@ -2596,12 +2596,12 @@ void main() {
 
       // Initial attempt
       await tester.pump(Duration.zero);
-      expect(hook.current.status, QueryStatus.pending);
+      expect(hook.current.isPending, isTrue);
       expect(hook.current.failureCount, 1);
 
       // Retry 1 time with fixed 1s delay
       await tester.pump(const Duration(seconds: 1));
-      expect(hook.current.status, QueryStatus.error);
+      expect(hook.current.isError, isTrue);
       expect(hook.current.failureCount, 2);
 
       // Remount hook
@@ -2611,13 +2611,13 @@ void main() {
       // First attempt since remount
       await tester.pump(Duration.zero);
       // Should keep previous result
-      expect(hook.current.status, QueryStatus.error);
+      expect(hook.current.isError, isTrue);
       expect(hook.current.failureCount, 2);
 
       // Wait 1s retry delay
       await tester.pump(const Duration(seconds: 1));
       // Should NOT have retried
-      expect(hook.current.status, QueryStatus.error);
+      expect(hook.current.isError, isTrue);
       expect(hook.current.failureCount, 2);
     }));
 
@@ -2856,7 +2856,7 @@ void main() {
       await tester.pump(const Duration(seconds: 1));
 
       expect(hook.current.fetchStatus, FetchStatus.idle);
-      expect(hook.current.data, 'data-1');
+      expect(hook.current.dataOrNull, 'data-1');
 
       // Call refetch using act to trigger state updates
       await act(() => hook.current.refetch());
@@ -2868,7 +2868,7 @@ void main() {
       await tester.pump(const Duration(seconds: 1));
 
       expect(hook.current.fetchStatus, FetchStatus.idle);
-      expect(hook.current.data, 'data-2');
+      expect(hook.current.dataOrNull, 'data-2');
     }));
 
     testWidgets(
@@ -2891,7 +2891,7 @@ void main() {
 
       // Wait for initial fetch to complete so we have data
       await tester.pump(const Duration(seconds: 5));
-      expect(hook.current.data, 'data-1');
+      expect(hook.current.dataOrNull, 'data-1');
       expect(fetches, 1);
 
       // Start a refetch
@@ -2907,7 +2907,7 @@ void main() {
 
       // New fetch should have started (the second fetch was cancelled)
       expect(hook.current.fetchStatus, FetchStatus.fetching);
-      expect(hook.current.data, 'data-1');
+      expect(hook.current.dataOrNull, 'data-1');
       expect(fetches, 3);
 
       // Wait for new fetch to complete
@@ -2915,7 +2915,7 @@ void main() {
 
       // Should have data from third fetch
       expect(hook.current.fetchStatus, FetchStatus.idle);
-      expect(hook.current.data, 'data-3');
+      expect(hook.current.dataOrNull, 'data-3');
     }));
 
     testWidgets(
@@ -2938,7 +2938,7 @@ void main() {
 
       // Wait for initial fetch to complete so we have data
       await tester.pump(const Duration(seconds: 5));
-      expect(hook.current.data, 'data-1');
+      expect(hook.current.dataOrNull, 'data-1');
       expect(fetches, 1);
 
       // Start a refetch
@@ -2959,7 +2959,7 @@ void main() {
       await tester.pump(const Duration(seconds: 3));
 
       // Should have data from second fetch
-      expect(hook.current.data, 'data-2');
+      expect(hook.current.dataOrNull, 'data-2');
       expect(fetches, 2);
     }));
 
@@ -2983,8 +2983,9 @@ void main() {
 
       // Wait for initial fetch to fail
       await tester.pump(const Duration(seconds: 3));
-      expect(hook.current.status, QueryStatus.error);
-      expect(hook.current.error, isA<Exception>());
+      expect(hook.current.isError, isTrue);
+      expect(
+          (hook.current as QueryError<String, Object>).error, isA<Exception>());
       expect(fetches, 1);
 
       // Call refetch using act - should NOT throw
@@ -3025,8 +3026,9 @@ void main() {
 
       // Wait for initial fetch to fail
       await tester.pump(const Duration(seconds: 3));
-      expect(hook.current.status, QueryStatus.error);
-      expect(hook.current.error, same(thrownError));
+      expect(hook.current.isError, isTrue);
+      expect((hook.current as QueryError<String, Object>).error,
+          same(thrownError));
       expect(fetches, 1);
 
       Object? caughtError;
@@ -3047,7 +3049,7 @@ void main() {
     }));
 
     testWidgets(
-        'SHOULD return updated QueryResult'
+        'SHOULD return updated QuerySnapshot'
         '', withCleanup((tester) async {
       var fetches = 0;
 
@@ -3066,10 +3068,10 @@ void main() {
 
       // Wait for initial fetch to complete
       await tester.pump(const Duration(seconds: 3));
-      expect(hook.current.data, 'data-1');
+      expect(hook.current.dataOrNull, 'data-1');
 
       // Call refetch and capture returned result
-      late final QueryResult result;
+      late final QuerySnapshot result;
 
       await act(() async {
         result = await hook.current.refetch();
@@ -3078,7 +3080,7 @@ void main() {
       // Wait for refetch to complete
       await tester.pump(const Duration(seconds: 3));
       // Should return updated data
-      expect(result.data, 'data-2');
+      expect(result.dataOrNull, 'data-2');
     }));
   });
 
@@ -3127,7 +3129,7 @@ void main() {
       await tester.pump(const Duration(seconds: 1));
 
       // True after fetch (even though it failed)
-      expect(hook.current.status, QueryStatus.error);
+      expect(hook.current.isError, isTrue);
       expect(hook.current.isFetchedAfterMount, true);
     }));
 
@@ -3147,7 +3149,7 @@ void main() {
 
       // Wait for first fetch to complete
       await tester.pump(const Duration(seconds: 1));
-      expect(hook1.current.data, 'cached-data');
+      expect(hook1.current.dataOrNull, 'cached-data');
       expect(hook1.current.isFetchedAfterMount, true);
 
       // Unmount first widget
@@ -3169,7 +3171,7 @@ void main() {
 
       // Should have cached data immediately but isFetchedAfterMount is false
       // because the data was cached before this observer mounted
-      expect(hook2.current.data, 'cached-data');
+      expect(hook2.current.dataOrNull, 'cached-data');
       expect(hook2.current.isFetchedAfterMount, false);
     }));
 
@@ -3294,8 +3296,8 @@ void main() {
         expect(hook.current.isPaused, isFalse);
 
         await tester.pump(const Duration(seconds: 1));
-        expect(hook.current.status, QueryStatus.success);
-        expect(hook.current.data, 'data');
+        expect(hook.current.isSuccess, isTrue);
+        expect(hook.current.dataOrNull, 'data');
       }));
 
       testWidgets(
@@ -3332,8 +3334,8 @@ void main() {
         expect(hook.current.isPaused, isFalse);
 
         await tester.pump(const Duration(seconds: 1));
-        expect(hook.current.status, QueryStatus.success);
-        expect(hook.current.data, 'data');
+        expect(hook.current.isSuccess, isTrue);
+        expect(hook.current.dataOrNull, 'data');
       }));
 
       testWidgets(
@@ -3383,7 +3385,7 @@ void main() {
         expect(queryFnCount, 3);
         await tester.pump(const Duration(seconds: 1));
         expect(queryFnCount, 4);
-        expect(hook.current.status, QueryStatus.error);
+        expect(hook.current.isError, isTrue);
       }));
     });
 
@@ -3412,8 +3414,8 @@ void main() {
         expect(hook.current.isPaused, isFalse);
 
         await tester.pump(const Duration(seconds: 1));
-        expect(hook.current.status, QueryStatus.success);
-        expect(hook.current.data, 'data');
+        expect(hook.current.isSuccess, isTrue);
+        expect(hook.current.dataOrNull, 'data');
       }));
 
       testWidgets(
@@ -3438,8 +3440,8 @@ void main() {
         expect(hook.current.isPaused, isFalse);
 
         await tester.pump(const Duration(seconds: 1));
-        expect(hook.current.status, QueryStatus.success);
-        expect(hook.current.data, 'data');
+        expect(hook.current.isSuccess, isTrue);
+        expect(hook.current.dataOrNull, 'data');
       }));
 
       testWidgets(
@@ -3471,8 +3473,8 @@ void main() {
         expect(hook.current.isPaused, isFalse);
 
         await tester.pump(const Duration(seconds: 1));
-        expect(hook.current.status, QueryStatus.success);
-        expect(hook.current.data, 'data');
+        expect(hook.current.isSuccess, isTrue);
+        expect(hook.current.dataOrNull, 'data');
       }));
 
       testWidgets(
@@ -3517,7 +3519,7 @@ void main() {
         expect(queryFnCount, 3);
         await tester.pump(const Duration(seconds: 1));
         expect(queryFnCount, 4);
-        expect(hook.current.status, QueryStatus.error);
+        expect(hook.current.isError, isTrue);
       }));
     });
 
@@ -3546,8 +3548,8 @@ void main() {
         expect(hook.current.isPaused, isFalse);
 
         await tester.pump(const Duration(seconds: 1));
-        expect(hook.current.status, QueryStatus.success);
-        expect(hook.current.data, 'data');
+        expect(hook.current.isSuccess, isTrue);
+        expect(hook.current.dataOrNull, 'data');
       }));
 
       testWidgets(
@@ -3572,8 +3574,8 @@ void main() {
         expect(hook.current.isPaused, isFalse);
 
         await tester.pump(const Duration(seconds: 1));
-        expect(hook.current.status, QueryStatus.success);
-        expect(hook.current.data, 'data');
+        expect(hook.current.isSuccess, isTrue);
+        expect(hook.current.dataOrNull, 'data');
       }));
 
       testWidgets(
@@ -3622,7 +3624,7 @@ void main() {
         expect(queryFnCount, 3);
         await tester.pump(const Duration(seconds: 1));
         expect(queryFnCount, 4);
-        expect(hook.current.status, QueryStatus.error);
+        expect(hook.current.isError, isTrue);
       }));
     });
   });
@@ -3633,7 +3635,7 @@ void main() {
         'SHOULD NOT throw markNeedsBuild error '
         'WHEN navigating to screen that shares the same query key',
         withCleanup((tester) async {
-      late QueryResult<String, Object> screenAResult;
+      late QuerySnapshot<String, Object> screenAResult;
 
       await tester.pumpWidget(
         Column(
@@ -3657,10 +3659,10 @@ void main() {
       );
       await tester.pump(const Duration(seconds: 1));
 
-      expect(screenAResult.status, QueryStatus.success);
-      expect(screenAResult.data, 'data-a');
+      expect(screenAResult.isSuccess, isTrue);
+      expect(screenAResult.dataOrNull, 'data-a');
 
-      late QueryResult<String, Object> screenBResult;
+      late QuerySnapshot<String, Object> screenBResult;
 
       // Add Screen B while keeping Screen A alive via Key.
       // Without the fix, Screen B's onMount triggers _fetch() which
@@ -3702,8 +3704,8 @@ void main() {
       );
       await tester.pump(const Duration(seconds: 1));
 
-      expect(screenAResult.status, QueryStatus.success);
-      expect(screenBResult.status, QueryStatus.success);
+      expect(screenAResult.isSuccess, isTrue);
+      expect(screenBResult.isSuccess, isTrue);
     }));
   });
 
@@ -3750,14 +3752,14 @@ void main() {
       });
 
       expect(builds, 1);
-      expect(hookResult.current.status, QueryStatus.pending);
+      expect(hookResult.current.isPending, isTrue);
 
       await tester.pump(const Duration(seconds: 5));
 
       // Success arrived but the predicate suppressed the rebuild, so the
       // widget still shows the last accepted (seed) result.
       expect(builds, 1);
-      expect(hookResult.current.status, QueryStatus.pending);
+      expect(hookResult.current.isPending, isTrue);
     }));
 
     testWidgets('SHOULD rebuild only WHEN a selected property changes',
@@ -3771,13 +3773,14 @@ void main() {
           (context) async => 'unused',
           seed: 'first',
           refetchOnMount: RefetchOnMount.never,
-          shouldRebuild: (previous, next) => previous.data != next.data,
+          shouldRebuild: (previous, next) =>
+              previous.dataOrNull != next.dataOrNull,
           client: client,
         );
       });
 
       expect(builds, 1);
-      expect(hookResult.current.data, 'first');
+      expect(hookResult.current.dataOrNull, 'first');
 
       // Same data -> data unchanged -> suppressed.
       client.setQueryData<String, Object>(const ['key'], (_) => 'first');
@@ -3788,7 +3791,7 @@ void main() {
       client.setQueryData<String, Object>(const ['key'], (_) => 'second');
       await tester.pump();
       expect(builds, 2);
-      expect(hookResult.current.data, 'second');
+      expect(hookResult.current.dataOrNull, 'second');
     }));
 
     testWidgets('SHOULD pass the last accepted result as previous',
@@ -3802,24 +3805,24 @@ void main() {
           seed: 'first',
           refetchOnMount: RefetchOnMount.never,
           shouldRebuild: (previous, next) {
-            seenPrevious.add(previous.data);
-            return next.data != 'second';
+            seenPrevious.add(previous.dataOrNull);
+            return next.dataOrNull != 'second';
           },
           client: client,
         );
       });
 
-      expect(hookResult.current.data, 'first');
+      expect(hookResult.current.dataOrNull, 'first');
 
       // Emission 1: 'first' -> 'second' suppressed (next.data == 'second').
       client.setQueryData<String, Object>(const ['key'], (_) => 'second');
       await tester.pump();
-      expect(hookResult.current.data, 'first');
+      expect(hookResult.current.dataOrNull, 'first');
 
       // Emission 2: 'second' -> 'third' accepted.
       client.setQueryData<String, Object>(const ['key'], (_) => 'third');
       await tester.pump();
-      expect(hookResult.current.data, 'third');
+      expect(hookResult.current.dataOrNull, 'third');
 
       // The 2nd predicate call's `previous` must be the last ACCEPTED result
       // ('first'), not the suppressed 'second'.
@@ -3832,8 +3835,8 @@ void main() {
         withCleanup((tester) async {
       var buildsA = 0;
       var buildsB = 0;
-      late QueryResult<String, Object> resultA;
-      late QueryResult<String, Object> resultB;
+      late QuerySnapshot<String, Object> resultA;
+      late QuerySnapshot<String, Object> resultB;
 
       await tester.pumpWidget(Column(children: [
         HookBuilder(builder: (context) {
@@ -3857,7 +3860,8 @@ void main() {
             seed: 'first',
             refetchOnMount: RefetchOnMount.never,
             // Rebuilds whenever the data changes.
-            shouldRebuild: (previous, next) => previous.data != next.data,
+            shouldRebuild: (previous, next) =>
+                previous.dataOrNull != next.dataOrNull,
             client: client,
           );
           return Container();
@@ -3867,8 +3871,8 @@ void main() {
       // Both share the same key, so both start from the same accepted seed.
       expect(buildsA, 1);
       expect(buildsB, 1);
-      expect(resultA.data, 'first');
-      expect(resultB.data, 'first');
+      expect(resultA.dataOrNull, 'first');
+      expect(resultB.dataOrNull, 'first');
 
       // A single shared-key update notifies both hooks' observers.
       client.setQueryData<String, Object>(const ['key'], (_) => 'second');
@@ -3876,12 +3880,12 @@ void main() {
 
       // Hook A's predicate suppressed the rebuild: still on the seed.
       expect(buildsA, 1);
-      expect(resultA.data, 'first');
+      expect(resultA.dataOrNull, 'first');
 
       // Hook B's predicate accepted the same update and rebuilt. Each hook
       // applies its own predicate even though they observe the same query.
       expect(buildsB, 2);
-      expect(resultB.data, 'second');
+      expect(resultB.dataOrNull, 'second');
     }));
   });
 }

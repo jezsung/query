@@ -13,9 +13,10 @@ import 'use_query_options.dart';
 /// The [queryFn] fetches the data when the query needs to execute. It receives
 /// a [QueryFunctionContext] with the query key and other metadata.
 ///
-/// Returns a [QueryResult] containing the current state of the query, including
-/// data, error, and status flags. The widget rebuilds automatically when the
-/// query state changes.
+/// Returns a [QuerySnapshot] containing the current state of the query: a
+/// `sealed` type supporting exhaustive pattern matching over
+/// [QueryPending] / [QuerySuccess] / [QueryError]. The widget rebuilds
+/// automatically when the query state changes.
 ///
 /// ## Options
 ///
@@ -85,7 +86,7 @@ import 'use_query_options.dart';
 /// - [useInfiniteQuery] for paginated data
 /// - [useMutation] for create, update, and delete operations
 /// - [QueryClient.prefetchQuery] for prefetching data before it's needed
-QueryResult<TData, TError> useQuery<TData, TError>(
+QuerySnapshot<TData, TError> useQuery<TData, TError>(
   List<Object?> queryKey,
   QueryFn<TData> queryFn, {
   bool? enabled,
@@ -102,7 +103,7 @@ QueryResult<TData, TError> useQuery<TData, TError>(
   TData? seed,
   DateTime? seedUpdatedAt,
   Map<String, dynamic>? meta,
-  ShouldRebuild<QueryResult<TData, TError>>? shouldRebuild,
+  ShouldRebuild<QuerySnapshot<TData, TError>>? shouldRebuild,
   QueryClient? client,
 }) {
   return useQueryOptions(

@@ -15,8 +15,10 @@ import 'use_infinite_query_options.dart';
 /// [InfiniteQueryFunctionContext] containing the [pageParam] for the page to
 /// fetch.
 ///
-/// Returns an [InfiniteQueryResult] containing the accumulated pages,
-/// pagination state, and methods to fetch more pages. The widget rebuilds
+/// Returns an [InfiniteQuerySnapshot] containing the accumulated pages,
+/// pagination state, and methods to fetch more pages: a `sealed` type
+/// supporting exhaustive pattern matching over [InfiniteQueryPending] /
+/// [InfiniteQuerySuccess] / [InfiniteQueryError]. The widget rebuilds
 /// automatically when the query state changes.
 ///
 /// ## Options
@@ -100,7 +102,7 @@ import 'use_infinite_query_options.dart';
 ///
 /// - [useQuery] for non-paginated data
 /// - [useMutation] for create, update, and delete operations
-InfiniteQueryResult<TData, TError, TPageParam>
+InfiniteQuerySnapshot<TData, TError, TPageParam>
     useInfiniteQuery<TData, TError, TPageParam>(
   List<Object?> queryKey,
   InfiniteQueryFn<TData, TPageParam> queryFn, {
@@ -122,7 +124,8 @@ InfiniteQueryResult<TData, TError, TPageParam>
   InfiniteData<TData, TPageParam>? seed,
   DateTime? seedUpdatedAt,
   Map<String, dynamic>? meta,
-  ShouldRebuild<InfiniteQueryResult<TData, TError, TPageParam>>? shouldRebuild,
+  ShouldRebuild<InfiniteQuerySnapshot<TData, TError, TPageParam>>?
+      shouldRebuild,
   QueryClient? client,
 }) {
   return useInfiniteQueryOptions(

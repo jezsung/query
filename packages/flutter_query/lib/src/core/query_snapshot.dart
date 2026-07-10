@@ -1,15 +1,24 @@
-import 'package:meta/meta.dart';
+import 'query_state.dart';
+import 'utils.dart';
 
-import '../core/core.dart';
+/// Signature for a function that refetches the query data.
+///
+/// Returns a [Future] that completes with the updated [QuerySnapshot].
+///
+/// If [cancelRefetch] is true, cancels any in-flight refetch before starting
+/// a new one. If [throwOnError] is true, the returned future rejects on error
+/// instead of returning an error snapshot.
+typedef Refetch<TData, TError> = Future<QuerySnapshot<TData, TError>> Function({
+  bool cancelRefetch,
+  bool throwOnError,
+});
 
 /// A Dart-idiomatic, exhaustively matchable snapshot of a query's state.
 ///
-/// Unlike [QueryResult], this is a `sealed` hierarchy: a `switch` over it is
-/// checked for exhaustiveness, `data` is non-nullable on [QuerySuccess], and
-/// `error` is non-nullable on [QueryError]. The activity axis is exposed via
+/// This is a `sealed` hierarchy, so a `switch` over it is checked for
+/// exhaustiveness: `data` is non-nullable on [QuerySuccess] and `error` is
+/// non-nullable on [QueryError]. The activity axis is exposed via
 /// [fetchStatus], with [isFetching] / [isPaused] / [isIdle] as conveniences.
-///
-/// This is an experimental API and may change in a future minor release.
 sealed class QuerySnapshot<TData, TError> {
   /// Creates a query snapshot.
   const QuerySnapshot({
@@ -97,8 +106,6 @@ sealed class QuerySnapshot<TData, TError> {
 }
 
 /// The query has no resolved data yet.
-///
-/// This is an experimental API and may change in a future minor release.
 final class QueryPending<TData, TError> extends QuerySnapshot<TData, TError> {
   /// Creates a pending snapshot.
   const QueryPending({
@@ -156,8 +163,6 @@ final class QueryPending<TData, TError> extends QuerySnapshot<TData, TError> {
 }
 
 /// The query has resolved data.
-///
-/// This is an experimental API and may change in a future minor release.
 final class QuerySuccess<TData, TError> extends QuerySnapshot<TData, TError> {
   /// Creates a success snapshot.
   const QuerySuccess({
@@ -228,8 +233,6 @@ final class QuerySuccess<TData, TError> extends QuerySnapshot<TData, TError> {
 }
 
 /// The query encountered an error.
-///
-/// This is an experimental API and may change in a future minor release.
 final class QueryError<TData, TError> extends QuerySnapshot<TData, TError> {
   /// Creates an error snapshot.
   const QueryError({
@@ -297,60 +300,4 @@ final class QueryError<TData, TError> extends QuerySnapshot<TData, TError> {
       'data: $data, '
       'fetchStatus: $fetchStatus, '
       'isStale: $isStale)';
-}
-
-/// Maps a [QueryResult] into the sealed [QuerySnapshot] hierarchy.
-@internal
-extension QueryResultSnapshot<TData, TError> on QueryResult<TData, TError> {
-  /// Converts this result into a [QuerySnapshot].
-  QuerySnapshot<TData, TError> toSnapshot() {
-    switch (status) {
-      case QueryStatus.pending:
-        return QueryPending<TData, TError>(
-          fetchStatus: fetchStatus,
-          dataUpdatedAt: dataUpdatedAt,
-          dataUpdateCount: dataUpdateCount,
-          errorUpdatedAt: errorUpdatedAt,
-          errorUpdateCount: errorUpdateCount,
-          failureCount: failureCount,
-          failureReason: failureReason,
-          isEnabled: isEnabled,
-          isStale: isStale,
-          isFetchedAfterMount: isFetchedAfterMount,
-          refetch: refetch,
-        );
-      case QueryStatus.success:
-        return QuerySuccess<TData, TError>(
-          data: data as TData,
-          isPlaceholder: isPlaceholderData,
-          fetchStatus: fetchStatus,
-          dataUpdatedAt: dataUpdatedAt,
-          dataUpdateCount: dataUpdateCount,
-          errorUpdatedAt: errorUpdatedAt,
-          errorUpdateCount: errorUpdateCount,
-          failureCount: failureCount,
-          failureReason: failureReason,
-          isEnabled: isEnabled,
-          isStale: isStale,
-          isFetchedAfterMount: isFetchedAfterMount,
-          refetch: refetch,
-        );
-      case QueryStatus.error:
-        return QueryError<TData, TError>(
-          error: error as TError,
-          data: data,
-          fetchStatus: fetchStatus,
-          dataUpdatedAt: dataUpdatedAt,
-          dataUpdateCount: dataUpdateCount,
-          errorUpdatedAt: errorUpdatedAt,
-          errorUpdateCount: errorUpdateCount,
-          failureCount: failureCount,
-          failureReason: failureReason,
-          isEnabled: isEnabled,
-          isStale: isStale,
-          isFetchedAfterMount: isFetchedAfterMount,
-          refetch: refetch,
-        );
-    }
-  }
 }

@@ -1557,7 +1557,7 @@ void main() {
     test(
         'SHOULD notify observers'
         '', withFakeAsync((async) {
-      final capturedResults = <QueryResult<String, Object>>[];
+      final capturedResults = <QuerySnapshot<String, Object>>[];
 
       final observer = QueryObserver<String, Object>(
         client,
@@ -1581,7 +1581,7 @@ void main() {
       );
 
       expect(capturedResults.length, 1);
-      expect(capturedResults.last.data, 'data');
+      expect(capturedResults.last.dataOrNull, 'data');
     }));
   });
 
@@ -2512,7 +2512,7 @@ void main() {
     test(
         'SHOULD notify observers'
         '', withFakeAsync((async) {
-      final capturedResults = <QueryResult<String, Object>>[];
+      final capturedResults = <QuerySnapshot<String, Object>>[];
 
       final observer = QueryObserver<String, Object>(
         client,

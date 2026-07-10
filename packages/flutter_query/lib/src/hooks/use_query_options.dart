@@ -25,15 +25,15 @@ import 'use_query_client.dart';
 /// result, and returns `true` to rebuild or `false` to suppress. When omitted,
 /// the widget rebuilds on every change.
 ///
-/// Returns a [QueryResult] containing the current state of the query.
+/// Returns a [QuerySnapshot] containing the current state of the query.
 ///
 /// See also:
 ///
 /// - [useQuery] for the inline key/function form
 /// - [QueryOptions] for the bundled definition this hook consumes
-QueryResult<TData, TError> useQueryOptions<TData, TError>(
+QuerySnapshot<TData, TError> useQueryOptions<TData, TError>(
   QueryOptions<TData, TError> options, {
-  ShouldRebuild<QueryResult<TData, TError>>? shouldRebuild,
+  ShouldRebuild<QuerySnapshot<TData, TError>>? shouldRebuild,
   QueryClient? client,
 }) {
   final effectiveClient = useQueryClient(client);
@@ -64,7 +64,7 @@ QueryResult<TData, TError> useQueryOptions<TData, TError>(
 
   // Always-latest view of the predicate for use inside the subscribe effect,
   // whose closure is captured once per [observer] change.
-  final accept = useEffectEvent<bool Function(QueryResult<TData, TError>)>(
+  final accept = useEffectEvent<bool Function(QuerySnapshot<TData, TError>)>(
     (next) => shouldRebuild == null || shouldRebuild(result.value, next),
   );
 

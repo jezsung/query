@@ -55,12 +55,12 @@ void main() {
 
         hook.current.mutate(null);
         await tester.pump();
-        expect(hook.current.status, MutationStatus.pending);
+        expect(hook.current.isPending, isTrue);
         expect(hook.current.isPaused, isFalse);
 
         await tester.pump(const Duration(seconds: 1));
-        expect(hook.current.status, MutationStatus.success);
-        expect(hook.current.data, 'data');
+        expect(hook.current.isSuccess, isTrue);
+        expect(hook.current.dataOrNull, 'data');
       }));
 
       testWidgets(
@@ -82,24 +82,24 @@ void main() {
 
         hook.current.mutate(null);
         await tester.pump();
-        expect(hook.current.status, MutationStatus.pending);
+        expect(hook.current.isPending, isTrue);
         expect(hook.current.isPaused, isTrue);
 
         // Should be kept paused
         await tester.pump(const Duration(days: 365));
-        expect(hook.current.status, MutationStatus.pending);
+        expect(hook.current.isPending, isTrue);
         expect(hook.current.isPaused, isTrue);
 
         // Go online
         connectivityController.add(true);
         await tester.pump();
         await tester.pump();
-        expect(hook.current.status, MutationStatus.pending);
+        expect(hook.current.isPending, isTrue);
         expect(hook.current.isPaused, isFalse);
 
         await tester.pump(const Duration(seconds: 1));
-        expect(hook.current.status, MutationStatus.success);
-        expect(hook.current.data, 'data');
+        expect(hook.current.isSuccess, isTrue);
+        expect(hook.current.dataOrNull, 'data');
       }));
 
       testWidgets(
@@ -150,7 +150,7 @@ void main() {
         expect(mutateFnCount, 3);
         await tester.pump(const Duration(seconds: 1));
         expect(mutateFnCount, 4);
-        expect(hook.current.status, MutationStatus.error);
+        expect(hook.current.isError, isTrue);
       }));
     });
 
@@ -176,12 +176,12 @@ void main() {
 
         hook.current.mutate(null);
         await tester.pump();
-        expect(hook.current.status, MutationStatus.pending);
+        expect(hook.current.isPending, isTrue);
         expect(hook.current.isPaused, isFalse);
 
         await tester.pump(const Duration(seconds: 1));
-        expect(hook.current.status, MutationStatus.success);
-        expect(hook.current.data, 'data');
+        expect(hook.current.isSuccess, isTrue);
+        expect(hook.current.dataOrNull, 'data');
       }));
 
       testWidgets(
@@ -200,16 +200,16 @@ void main() {
             client: client,
           ),
         );
-        expect(hook.current.status, MutationStatus.idle);
+        expect(hook.current.isIdle, isTrue);
 
         hook.current.mutate(null);
         await tester.pump();
-        expect(hook.current.status, MutationStatus.pending);
+        expect(hook.current.isPending, isTrue);
         expect(hook.current.isPaused, isFalse);
 
         await tester.pump(const Duration(seconds: 1));
-        expect(hook.current.status, MutationStatus.success);
-        expect(hook.current.data, 'data');
+        expect(hook.current.isSuccess, isTrue);
+        expect(hook.current.dataOrNull, 'data');
       }));
 
       testWidgets(
@@ -231,19 +231,19 @@ void main() {
 
         hook.current.mutate(null);
         await tester.pump();
-        expect(hook.current.status, MutationStatus.pending);
+        expect(hook.current.isPending, isTrue);
         expect(hook.current.isPaused, isFalse);
 
         // Go offline
         connectivityController.add(false);
         await tester.pump();
         await tester.pump();
-        expect(hook.current.status, MutationStatus.pending);
+        expect(hook.current.isPending, isTrue);
         expect(hook.current.isPaused, isFalse);
 
         await tester.pump(const Duration(seconds: 1));
-        expect(hook.current.status, MutationStatus.success);
-        expect(hook.current.data, 'data');
+        expect(hook.current.isSuccess, isTrue);
+        expect(hook.current.dataOrNull, 'data');
       }));
 
       testWidgets(
@@ -289,7 +289,7 @@ void main() {
         expect(mutateFnCount, 3);
         await tester.pump(const Duration(seconds: 1));
         expect(mutateFnCount, 4);
-        expect(hook.current.status, MutationStatus.error);
+        expect(hook.current.isError, isTrue);
       }));
     });
 
@@ -315,12 +315,12 @@ void main() {
 
         hook.current.mutate(null);
         await tester.pump();
-        expect(hook.current.status, MutationStatus.pending);
+        expect(hook.current.isPending, isTrue);
         expect(hook.current.isPaused, isFalse);
 
         await tester.pump(const Duration(seconds: 1));
-        expect(hook.current.status, MutationStatus.success);
-        expect(hook.current.data, 'data');
+        expect(hook.current.isSuccess, isTrue);
+        expect(hook.current.dataOrNull, 'data');
       }));
 
       testWidgets(
@@ -339,16 +339,16 @@ void main() {
             client: client,
           ),
         );
-        expect(hook.current.status, MutationStatus.idle);
+        expect(hook.current.isIdle, isTrue);
 
         hook.current.mutate(null);
         await tester.pump();
-        expect(hook.current.status, MutationStatus.pending);
+        expect(hook.current.isPending, isTrue);
         expect(hook.current.isPaused, isFalse);
 
         await tester.pump(const Duration(seconds: 1));
-        expect(hook.current.status, MutationStatus.success);
-        expect(hook.current.data, 'data');
+        expect(hook.current.isSuccess, isTrue);
+        expect(hook.current.dataOrNull, 'data');
       }));
 
       testWidgets(
@@ -397,7 +397,7 @@ void main() {
         expect(mutateFnCount, 3);
         await tester.pump(const Duration(seconds: 1));
         expect(mutateFnCount, 4);
-        expect(hook.current.status, MutationStatus.error);
+        expect(hook.current.isError, isTrue);
       }));
     });
   });

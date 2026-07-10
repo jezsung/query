@@ -1,3 +1,42 @@
+## 0.11.0 (2026-07-09)
+
+- **Breaking:** Graduated the sealed snapshot API out of
+  `experiments.dart` and made it the main API. `useQuery`,
+  `useInfiniteQuery`, and `useMutation` (and their options-object
+  counterparts) now return the pattern-matchable `QuerySnapshot`,
+  `InfiniteQuerySnapshot`, and `MutationSnapshot` respectively, in place of
+  the flat `QueryResult` / `InfiniteQueryResult` / `MutationResult` classes,
+  which have been removed along with the `package:flutter_query/experiments.dart`
+  entry point.
+
+  ```dart
+  // Before:
+  import 'package:flutter_query/experiments.dart';
+  import 'package:flutter_query/flutter_query.dart'
+      hide useQuery, useMutation, useInfiniteQuery;
+
+  // After — a single import:
+  import 'package:flutter_query/flutter_query.dart';
+
+  final result = useQuery(['greeting'], fetchGreeting);
+  return switch (result) {
+    QuerySuccess(:final data) => Text(data),
+    QueryPending() => const Text('Loading...'),
+    QueryError(:final error) => Text('Error: $error'),
+  };
+  ```
+
+  A `switch` over a snapshot is checked for exhaustiveness, `data` is
+  non-nullable on the success variant, and `error` is non-nullable on the
+  error variant.
+
+  Migrating from the flat API: read last-known data via `dataOrNull` (instead
+  of `data`); replace `status == QueryStatus.success` with `isSuccess` (and
+  likewise `isPending` / `isError`); read a definite `error` by matching the
+  `QueryError` variant. Placeholder data now presents as a `QuerySuccess` with
+  `isPlaceholder: true`. `refetch()` / `fetchNextPage()` /
+  `fetchPreviousPage()` now complete with the corresponding snapshot type.
+
 ## 0.10.0 (2026-06-25)
 
 - Added an optional `shouldRebuild` parameter to `useQuery` and

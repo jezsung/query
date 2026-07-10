@@ -7,20 +7,20 @@ import 'package:meta/meta.dart';
 
 import 'infinite_query_function_context.dart';
 import 'infinite_query_options.dart';
-import 'infinite_query_result.dart';
+import 'infinite_query_snapshot.dart';
 import 'observable.dart';
 import 'query.dart';
 import 'query_client.dart';
 import 'query_options.dart';
-import 'query_result.dart';
+import 'query_snapshot.dart';
 import 'query_state.dart';
 import 'utils.dart';
 
 part 'infinite_query_observer.dart';
 
 @internal
-typedef QueryResultListener<TData, TError> = void Function(
-  QueryResult<TData, TError> result,
+typedef QuerySnapshotListener<TData, TError> = void Function(
+  QuerySnapshot<TData, TError> snapshot,
 );
 
 @internal
@@ -32,25 +32,25 @@ class QueryObserver<TData, TError> with Observer<QueryState<TData, TError>> {
 
   final QueryClient _client;
   QueryOptions<TData, TError> _options;
-  QueryResult<TData, TError>? _result;
+  QuerySnapshot<TData, TError>? _result;
   late Query<TData, TError> _query;
   late int _initialDataUpdateCount;
   late int _initialErrorUpdateCount;
 
   Timer? _refetchIntervalTimer;
 
-  final Set<QueryResultListener<TData, TError>> _listeners = {};
+  final Set<QuerySnapshotListener<TData, TError>> _listeners = {};
 
   QueryOptions<TData, TError> get options => _options;
 
-  QueryResult<TData, TError> get result {
+  QuerySnapshot<TData, TError> get result {
     if (_result == null) {
       throw StateError(
         'Cannot access result before QueryObserver is mounted. '
         'Call onMount() first.',
       );
     }
-    return _result as QueryResult<TData, TError>;
+    return _result as QuerySnapshot<TData, TError>;
   }
 
   set options(QueryOptions<TData, TError> value) {
@@ -120,7 +120,7 @@ class QueryObserver<TData, TError> with Observer<QueryState<TData, TError>> {
     }
   }
 
-  set result(QueryResult<TData, TError> newResult) {
+  set result(QuerySnapshot<TData, TError> newResult) {
     if (newResult != _result) {
       _result = newResult;
       for (final listener in _listeners) {
@@ -182,7 +182,7 @@ class QueryObserver<TData, TError> with Observer<QueryState<TData, TError>> {
   ///
   /// [throwOnError] - If true, rethrows any error that occurs during the fetch.
   /// If false (default), errors are swallowed and captured in query state.
-  Future<QueryResult<TData, TError>> refetch({
+  Future<QuerySnapshot<TData, TError>> refetch({
     bool cancelRefetch = true,
     bool throwOnError = false,
   }) async {
@@ -195,7 +195,7 @@ class QueryObserver<TData, TError> with Observer<QueryState<TData, TError>> {
     return _buildResult(_options, _query.state);
   }
 
-  void Function() subscribe(QueryResultListener<TData, TError> listener) {
+  void Function() subscribe(QuerySnapshotListener<TData, TError> listener) {
     _listeners.add(listener);
     return () => _listeners.remove(listener);
   }
@@ -352,32 +352,86 @@ class QueryObserver<TData, TError> with Observer<QueryState<TData, TError>> {
     }
   }
 
-  QueryResult<TData, TError> _buildResult(
+  QuerySnapshot<TData, TError> _buildResult(
     QueryOptions<TData, TError> options,
     QueryState<TData, TError> state, {
     bool optimistic = false,
   }) {
-    final result = QueryResult<TData, TError>(
-      status: state.status,
-      fetchStatus: optimistic && _shouldFetchOnMount(options, state)
-          ? FetchStatus.fetching
-          : state.fetchStatus,
-      data: state.data,
-      dataUpdatedAt: state.dataUpdatedAt,
-      dataUpdateCount: state.dataUpdateCount,
-      error: state.error,
-      errorUpdatedAt: state.errorUpdatedAt,
-      errorUpdateCount: state.errorUpdateCount,
-      isEnabled: options.enabled ?? true,
-      isStale: (options.enabled ?? true) &&
-          _query.shouldFetch(options.staleDuration ?? StaleDuration.zero),
-      isFetchedAfterMount: state.dataUpdateCount > _initialDataUpdateCount ||
-          state.errorUpdateCount > _initialErrorUpdateCount,
-      isPlaceholderData: false,
-      failureCount: state.failureCount,
-      failureReason: state.failureReason,
-      refetch: refetch,
-    );
-    return result.withPlaceholder(options.placeholder);
+    final fetchStatus = optimistic && _shouldFetchOnMount(options, state)
+        ? FetchStatus.fetching
+        : state.fetchStatus;
+    final isEnabled = options.enabled ?? true;
+    final isStale = isEnabled &&
+        _query.shouldFetch(options.staleDuration ?? StaleDuration.zero);
+    final isFetchedAfterMount =
+        state.dataUpdateCount > _initialDataUpdateCount ||
+            state.errorUpdateCount > _initialErrorUpdateCount;
+
+    switch (state.status) {
+      case QueryStatus.pending:
+        final placeholder = options.placeholder;
+        if (placeholder != null && state.data == null) {
+          return QuerySuccess<TData, TError>(
+            data: placeholder,
+            isPlaceholder: true,
+            fetchStatus: fetchStatus,
+            dataUpdatedAt: state.dataUpdatedAt,
+            dataUpdateCount: state.dataUpdateCount,
+            errorUpdatedAt: state.errorUpdatedAt,
+            errorUpdateCount: state.errorUpdateCount,
+            failureCount: state.failureCount,
+            failureReason: state.failureReason,
+            isEnabled: isEnabled,
+            isStale: isStale,
+            isFetchedAfterMount: isFetchedAfterMount,
+            refetch: refetch,
+          );
+        }
+        return QueryPending<TData, TError>(
+          fetchStatus: fetchStatus,
+          dataUpdatedAt: state.dataUpdatedAt,
+          dataUpdateCount: state.dataUpdateCount,
+          errorUpdatedAt: state.errorUpdatedAt,
+          errorUpdateCount: state.errorUpdateCount,
+          failureCount: state.failureCount,
+          failureReason: state.failureReason,
+          isEnabled: isEnabled,
+          isStale: isStale,
+          isFetchedAfterMount: isFetchedAfterMount,
+          refetch: refetch,
+        );
+      case QueryStatus.success:
+        return QuerySuccess<TData, TError>(
+          data: state.data as TData,
+          isPlaceholder: false,
+          fetchStatus: fetchStatus,
+          dataUpdatedAt: state.dataUpdatedAt,
+          dataUpdateCount: state.dataUpdateCount,
+          errorUpdatedAt: state.errorUpdatedAt,
+          errorUpdateCount: state.errorUpdateCount,
+          failureCount: state.failureCount,
+          failureReason: state.failureReason,
+          isEnabled: isEnabled,
+          isStale: isStale,
+          isFetchedAfterMount: isFetchedAfterMount,
+          refetch: refetch,
+        );
+      case QueryStatus.error:
+        return QueryError<TData, TError>(
+          error: state.error as TError,
+          data: state.data,
+          fetchStatus: fetchStatus,
+          dataUpdatedAt: state.dataUpdatedAt,
+          dataUpdateCount: state.dataUpdateCount,
+          errorUpdatedAt: state.errorUpdatedAt,
+          errorUpdateCount: state.errorUpdateCount,
+          failureCount: state.failureCount,
+          failureReason: state.failureReason,
+          isEnabled: isEnabled,
+          isStale: isStale,
+          isFetchedAfterMount: isFetchedAfterMount,
+          refetch: refetch,
+        );
+    }
   }
 }

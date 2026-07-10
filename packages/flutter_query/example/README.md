@@ -21,12 +21,12 @@ final result = useQuery<String, Exception>(
 );
 ```
 
-Handle states using pattern matching on `QueryResult`:
+Handle states using pattern matching on the sealed `QuerySnapshot`:
 
 ```dart
 switch (result) {
-  QueryResult(:final data?) => Text(data),
-  QueryResult(isPending: true) => const Text('Loading...'),
-  QueryResult(:final error) => Text('Error: $error'),
+  QuerySuccess(:final data) => Text(data),
+  QueryPending() => const Text('Loading...'),
+  QueryError(:final error) => Text('Error: $error'),
 }
 ```

@@ -27,9 +27,9 @@ class Example extends HookWidget {
       appBar: AppBar(title: const Text('Flutter Query Example')),
       body: Center(
         child: switch (result) {
-          QueryResult(:final data?) => Text(data),
-          QueryResult(isPending: true) => const Text('Loading...'),
-          QueryResult(:final error) => Text('Error: $error'),
+          QuerySuccess(:final data) => Text(data),
+          QueryPending() => const Text('Loading...'),
+          QueryError(:final error) => Text('Error: $error'),
         },
       ),
     );

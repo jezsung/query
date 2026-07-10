@@ -1,20 +1,36 @@
-import 'package:meta/meta.dart';
+import 'mutation_state.dart';
+import 'utils.dart';
 
-import '../core/core.dart';
+/// Signature for a synchronous fire-and-forget mutation function.
+///
+/// This function executes the mutation but returns immediately without waiting
+/// for completion. It does not throw errors; handle errors via callbacks or
+/// by checking the [MutationSnapshot] state.
+///
+/// Use [MutateAsync] to await the result or catch errors directly.
+typedef Mutate<TVariables> = void Function(TVariables variables);
+
+/// Signature for an asynchronous mutation function that returns a result.
+///
+/// Returns a [Future] that completes with the mutation data on success.
+/// Throws an error if the mutation fails, which can be caught with try/catch
+/// or `.catchError()`.
+typedef MutateAsync<TData, TVariables> = Future<TData> Function(
+  TVariables variables,
+);
+
+/// Signature for a function that resets the mutation to its initial state.
+typedef Reset = void Function();
 
 /// A Dart-idiomatic, exhaustively matchable snapshot of a mutation's state.
 ///
-/// Unlike [MutationResult], this is a `sealed` hierarchy: a `switch` over it is
-/// checked for exhaustiveness, `data` is non-nullable on [MutationSuccess],
-/// `error` is non-nullable on [MutationError], and `variables` is non-nullable
-/// on every variant except [MutationIdle].
+/// This is a `sealed` hierarchy, so a `switch` over it is checked for
+/// exhaustiveness: `data` is non-nullable on [MutationSuccess], `error` is
+/// non-nullable on [MutationError], and `variables` is non-nullable on every
+/// variant except [MutationIdle].
 ///
 /// The four variants mirror [MutationStatus]: [MutationIdle] (never invoked),
-/// [MutationPending], [MutationSuccess], and [MutationError]. The
-/// `TOnMutateResult` type parameter carried by [MutationResult] is internal and
-/// never surfaced, so it is dropped here.
-///
-/// This is an experimental API and may change in a future minor release.
+/// [MutationPending], [MutationSuccess], and [MutationError].
 sealed class MutationSnapshot<TData, TError, TVariables> {
   /// Creates a mutation snapshot.
   const MutationSnapshot({
@@ -68,8 +84,6 @@ sealed class MutationSnapshot<TData, TError, TVariables> {
 }
 
 /// The mutation has not been invoked yet.
-///
-/// This is an experimental API and may change in a future minor release.
 final class MutationIdle<TData, TError, TVariables>
     extends MutationSnapshot<TData, TError, TVariables> {
   /// Creates an idle snapshot.
@@ -112,8 +126,6 @@ final class MutationIdle<TData, TError, TVariables>
 }
 
 /// The mutation is currently executing.
-///
-/// This is an experimental API and may change in a future minor release.
 final class MutationPending<TData, TError, TVariables>
     extends MutationSnapshot<TData, TError, TVariables> {
   /// Creates a pending snapshot.
@@ -164,8 +176,6 @@ final class MutationPending<TData, TError, TVariables>
 }
 
 /// The mutation completed successfully.
-///
-/// This is an experimental API and may change in a future minor release.
 final class MutationSuccess<TData, TError, TVariables>
     extends MutationSnapshot<TData, TError, TVariables> {
   /// Creates a success snapshot.
@@ -222,8 +232,6 @@ final class MutationSuccess<TData, TError, TVariables>
 }
 
 /// The mutation encountered an error.
-///
-/// This is an experimental API and may change in a future minor release.
 final class MutationError<TData, TError, TVariables>
     extends MutationSnapshot<TData, TError, TVariables> {
   /// Creates an error snapshot.
@@ -277,60 +285,4 @@ final class MutationError<TData, TError, TVariables>
   String toString() => 'MutationError('
       'error: $error, '
       'variables: $variables)';
-}
-
-/// Maps a [MutationResult] into the sealed [MutationSnapshot] hierarchy.
-@internal
-extension MutationResultSnapshot<TData, TError, TVariables, TOnMutateResult>
-    on MutationResult<TData, TError, TVariables, TOnMutateResult> {
-  /// Converts this result into a [MutationSnapshot].
-  MutationSnapshot<TData, TError, TVariables> toSnapshot() {
-    switch (status) {
-      case MutationStatus.idle:
-        return MutationIdle<TData, TError, TVariables>(
-          submittedAt: submittedAt,
-          failureCount: failureCount,
-          failureReason: failureReason,
-          isPaused: isPaused,
-          mutate: mutate,
-          mutateAsync: mutateAsync,
-          reset: reset,
-        );
-      case MutationStatus.pending:
-        return MutationPending<TData, TError, TVariables>(
-          variables: variables as TVariables,
-          submittedAt: submittedAt,
-          failureCount: failureCount,
-          failureReason: failureReason,
-          isPaused: isPaused,
-          mutate: mutate,
-          mutateAsync: mutateAsync,
-          reset: reset,
-        );
-      case MutationStatus.success:
-        return MutationSuccess<TData, TError, TVariables>(
-          data: data as TData,
-          variables: variables as TVariables,
-          submittedAt: submittedAt,
-          failureCount: failureCount,
-          failureReason: failureReason,
-          isPaused: isPaused,
-          mutate: mutate,
-          mutateAsync: mutateAsync,
-          reset: reset,
-        );
-      case MutationStatus.error:
-        return MutationError<TData, TError, TVariables>(
-          error: error as TError,
-          variables: variables as TVariables,
-          submittedAt: submittedAt,
-          failureCount: failureCount,
-          failureReason: failureReason,
-          isPaused: isPaused,
-          mutate: mutate,
-          mutateAsync: mutateAsync,
-          reset: reset,
-        );
-    }
-  }
 }

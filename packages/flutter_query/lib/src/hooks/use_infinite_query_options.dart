@@ -26,17 +26,18 @@ import 'use_query_client.dart';
 /// result, and returns `true` to rebuild or `false` to suppress. When omitted,
 /// the widget rebuilds on every change.
 ///
-/// Returns an [InfiniteQueryResult] containing the accumulated pages,
+/// Returns an [InfiniteQuerySnapshot] containing the accumulated pages,
 /// pagination state, and methods to fetch more pages.
 ///
 /// See also:
 ///
 /// - [useInfiniteQuery] for the inline key/function form
 /// - [InfiniteQueryOptions] for the bundled definition this hook consumes
-InfiniteQueryResult<TData, TError, TPageParam>
+InfiniteQuerySnapshot<TData, TError, TPageParam>
     useInfiniteQueryOptions<TData, TError, TPageParam>(
   InfiniteQueryOptions<TData, TError, TPageParam> options, {
-  ShouldRebuild<InfiniteQueryResult<TData, TError, TPageParam>>? shouldRebuild,
+  ShouldRebuild<InfiniteQuerySnapshot<TData, TError, TPageParam>>?
+      shouldRebuild,
   QueryClient? client,
 }) {
   final effectiveClient = useQueryClient(client);
@@ -71,7 +72,7 @@ InfiniteQueryResult<TData, TError, TPageParam>
   // Always-latest view of the predicate for use inside the subscribe effect,
   // whose closure is captured once per [observer] change.
   final accept = useEffectEvent<
-      bool Function(InfiniteQueryResult<TData, TError, TPageParam>)>(
+      bool Function(InfiniteQuerySnapshot<TData, TError, TPageParam>)>(
     (next) => shouldRebuild == null || shouldRebuild(result.value, next),
   );
 

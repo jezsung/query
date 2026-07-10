@@ -47,10 +47,11 @@ enum FetchDirection {
   backward,
 }
 
-/// Callback type for infinite query result change listeners.
+/// Callback type for infinite query snapshot change listeners.
 @internal
-typedef InfiniteResultChangeListener<TData, TError, TPageParam> = void Function(
-  InfiniteQueryResult<TData, TError, TPageParam> result,
+typedef InfiniteSnapshotChangeListener<TData, TError, TPageParam> = void
+    Function(
+  InfiniteQuerySnapshot<TData, TError, TPageParam> snapshot,
 );
 
 @internal
@@ -71,9 +72,9 @@ class InfiniteQueryObserver<TData, TError, TPageParam> {
   late final QueryObserver<InfiniteData<TData, TPageParam>, TError> _inner;
   FetchDirection? _fetchDirection;
 
-  InfiniteQueryResult<TData, TError, TPageParam> get result {
-    final queryResult = _inner.result;
-    final data = queryResult.data;
+  InfiniteQuerySnapshot<TData, TError, TPageParam> get result {
+    final inner = _inner.result;
+    final data = inner.dataOrNull;
 
     final hasNextPage = data != null &&
         data.pages.isNotEmpty &&
@@ -82,35 +83,93 @@ class InfiniteQueryObserver<TData, TError, TPageParam> {
         data.pages.isNotEmpty &&
         _options.buildPrevPageParam(data) != null;
 
-    return InfiniteQueryResult<TData, TError, TPageParam>(
-      status: queryResult.status,
-      fetchStatus: queryResult.fetchStatus,
-      data: queryResult.data,
-      dataUpdatedAt: queryResult.dataUpdatedAt,
-      dataUpdateCount: queryResult.dataUpdateCount,
-      error: queryResult.error,
-      errorUpdatedAt: queryResult.errorUpdatedAt,
-      errorUpdateCount: queryResult.errorUpdateCount,
-      failureCount: queryResult.failureCount,
-      failureReason: queryResult.failureReason,
-      isEnabled: queryResult.isEnabled,
-      isStale: queryResult.isStale,
-      isFetchedAfterMount: queryResult.isFetchedAfterMount,
-      isPlaceholderData: queryResult.isPlaceholderData,
-      refetch: refetch,
-      fetchNextPage: fetchNextPage,
-      fetchPreviousPage: fetchPreviousPage,
-      hasNextPage: hasNextPage,
-      hasPreviousPage: hasPrevPage,
-      isFetchingNextPage:
-          queryResult.isFetching && _fetchDirection == FetchDirection.forward,
-      isFetchingPreviousPage:
-          queryResult.isFetching && _fetchDirection == FetchDirection.backward,
-      isFetchNextPageError: queryResult.status == QueryStatus.error &&
-          _fetchDirection == FetchDirection.forward,
-      isFetchPreviousPageError: queryResult.status == QueryStatus.error &&
-          _fetchDirection == FetchDirection.forward,
-    );
+    final isFetchingNextPage =
+        inner.isFetching && _fetchDirection == FetchDirection.forward;
+    final isFetchingPreviousPage =
+        inner.isFetching && _fetchDirection == FetchDirection.backward;
+    final isFetchNextPageError =
+        inner.isError && _fetchDirection == FetchDirection.forward;
+    final isFetchPreviousPageError =
+        inner.isError && _fetchDirection == FetchDirection.forward;
+
+    switch (inner) {
+      case QueryPending<InfiniteData<TData, TPageParam>, TError>():
+        return InfiniteQueryPending<TData, TError, TPageParam>(
+          fetchStatus: inner.fetchStatus,
+          dataUpdatedAt: inner.dataUpdatedAt,
+          dataUpdateCount: inner.dataUpdateCount,
+          errorUpdatedAt: inner.errorUpdatedAt,
+          errorUpdateCount: inner.errorUpdateCount,
+          failureCount: inner.failureCount,
+          failureReason: inner.failureReason,
+          isEnabled: inner.isEnabled,
+          isStale: inner.isStale,
+          isFetchedAfterMount: inner.isFetchedAfterMount,
+          refetch: refetch,
+          fetchNextPage: fetchNextPage,
+          fetchPreviousPage: fetchPreviousPage,
+          hasNextPage: hasNextPage,
+          hasPreviousPage: hasPrevPage,
+          isFetchingNextPage: isFetchingNextPage,
+          isFetchingPreviousPage: isFetchingPreviousPage,
+          isFetchNextPageError: isFetchNextPageError,
+          isFetchPreviousPageError: isFetchPreviousPageError,
+        );
+      case QuerySuccess<InfiniteData<TData, TPageParam>, TError>(
+          data: final successData,
+          :final isPlaceholder,
+        ):
+        return InfiniteQuerySuccess<TData, TError, TPageParam>(
+          data: successData,
+          isPlaceholder: isPlaceholder,
+          fetchStatus: inner.fetchStatus,
+          dataUpdatedAt: inner.dataUpdatedAt,
+          dataUpdateCount: inner.dataUpdateCount,
+          errorUpdatedAt: inner.errorUpdatedAt,
+          errorUpdateCount: inner.errorUpdateCount,
+          failureCount: inner.failureCount,
+          failureReason: inner.failureReason,
+          isEnabled: inner.isEnabled,
+          isStale: inner.isStale,
+          isFetchedAfterMount: inner.isFetchedAfterMount,
+          refetch: refetch,
+          fetchNextPage: fetchNextPage,
+          fetchPreviousPage: fetchPreviousPage,
+          hasNextPage: hasNextPage,
+          hasPreviousPage: hasPrevPage,
+          isFetchingNextPage: isFetchingNextPage,
+          isFetchingPreviousPage: isFetchingPreviousPage,
+          isFetchNextPageError: isFetchNextPageError,
+          isFetchPreviousPageError: isFetchPreviousPageError,
+        );
+      case QueryError<InfiniteData<TData, TPageParam>, TError>(
+          error: final errorValue,
+          data: final errorData,
+        ):
+        return InfiniteQueryError<TData, TError, TPageParam>(
+          error: errorValue,
+          data: errorData,
+          fetchStatus: inner.fetchStatus,
+          dataUpdatedAt: inner.dataUpdatedAt,
+          dataUpdateCount: inner.dataUpdateCount,
+          errorUpdatedAt: inner.errorUpdatedAt,
+          errorUpdateCount: inner.errorUpdateCount,
+          failureCount: inner.failureCount,
+          failureReason: inner.failureReason,
+          isEnabled: inner.isEnabled,
+          isStale: inner.isStale,
+          isFetchedAfterMount: inner.isFetchedAfterMount,
+          refetch: refetch,
+          fetchNextPage: fetchNextPage,
+          fetchPreviousPage: fetchPreviousPage,
+          hasNextPage: hasNextPage,
+          hasPreviousPage: hasPrevPage,
+          isFetchingNextPage: isFetchingNextPage,
+          isFetchingPreviousPage: isFetchingPreviousPage,
+          isFetchNextPageError: isFetchNextPageError,
+          isFetchPreviousPageError: isFetchPreviousPageError,
+        );
+    }
   }
 
   QueryOptions<InfiniteData<TData, TPageParam>, TError>
@@ -215,7 +274,7 @@ class InfiniteQueryObserver<TData, TError, TPageParam> {
   /// Fetch the next page of data.
   ///
   /// Uses [nextPageParamBuilder] to determine the page parameter for the next page.
-  Future<InfiniteQueryResult<TData, TError, TPageParam>> fetchNextPage({
+  Future<InfiniteQuerySnapshot<TData, TError, TPageParam>> fetchNextPage({
     bool cancelRefetch = true,
     bool throwOnError = false,
   }) async {
@@ -233,7 +292,7 @@ class InfiniteQueryObserver<TData, TError, TPageParam> {
   /// Fetch the previous page of data.
   ///
   /// Uses [prevPageParamBuilder] to determine the page parameter for the previous page.
-  Future<InfiniteQueryResult<TData, TError, TPageParam>> fetchPreviousPage({
+  Future<InfiniteQuerySnapshot<TData, TError, TPageParam>> fetchPreviousPage({
     bool cancelRefetch = true,
     bool throwOnError = false,
   }) async {
@@ -249,7 +308,7 @@ class InfiniteQueryObserver<TData, TError, TPageParam> {
   }
 
   /// Manually refetch all pages.
-  Future<InfiniteQueryResult<TData, TError, TPageParam>> refetch({
+  Future<InfiniteQuerySnapshot<TData, TError, TPageParam>> refetch({
     bool cancelRefetch = true,
     bool throwOnError = false,
   }) async {
@@ -271,10 +330,10 @@ class InfiniteQueryObserver<TData, TError, TPageParam> {
   void onUnmount() => _inner.onUnmount();
 
   void Function() subscribe(
-    InfiniteResultChangeListener<TData, TError, TPageParam> listener,
+    InfiniteSnapshotChangeListener<TData, TError, TPageParam> listener,
   ) {
     void adapterListener(
-      QueryResult<InfiniteData<TData, TPageParam>, TError> _,
+      QuerySnapshot<InfiniteData<TData, TPageParam>, TError> _,
     ) {
       listener(result);
     }
