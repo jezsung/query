@@ -47,8 +47,8 @@ class Query<TData, TError>
     QueryClient client,
     List<Object?> queryKey, {
     GcDuration? gcDuration,
-    TData? seed,
-    DateTime? seedUpdatedAt,
+    Seed<TData>? seed,
+    SeedUpdatedAt? seedUpdatedAt,
   }) {
     var query = client.cache.get<TData, TError>(queryKey);
     if (query == null) {
@@ -57,8 +57,23 @@ class Query<TData, TError>
       query.scheduleGc(gcDuration ?? client.defaultQueryOptions.gcDuration);
     }
 
-    if (seed != null) {
-      query.setSeed(seed, seedUpdatedAt);
+    // Seeds are applied only while the query has no data, matching
+    // TanStack Query's initialData semantics: data already in the cache
+    // is never overwritten by a seed.
+    if (seed != null && query.state.dataUpdatedAt == null) {
+      final resolvedSeed = switch (seed) {
+        SeedValue<TData>(:final value) => value,
+        SeedLazy<TData>(:final resolve) => resolve(),
+      };
+
+      if (resolvedSeed != null) {
+        final resolvedUpdatedAt = switch (seedUpdatedAt) {
+          SeedUpdatedAtValue(:final value) => value,
+          SeedUpdatedAtLazy(:final resolve) => resolve(),
+          null => null,
+        };
+        query.setSeed(resolvedSeed, resolvedUpdatedAt);
+      }
     }
 
     return query;
@@ -98,19 +113,6 @@ class Query<TData, TError>
   }
 
   void setSeed(TData seed, [DateTime? updatedAt]) {
-    final data = _currentState.data;
-    final dataUpdatedAt = _currentState.dataUpdatedAt;
-
-    if (data == seed && dataUpdatedAt != null) {
-      return;
-    }
-
-    if (updatedAt != null &&
-        dataUpdatedAt != null &&
-        updatedAt.isBefore(dataUpdatedAt)) {
-      return;
-    }
-
     state = _initialState = QueryState<TData, TError>(
       status: QueryStatus.success,
       fetchStatus: FetchStatus.idle,

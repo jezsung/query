@@ -1,4 +1,41 @@
-## 0.11.0 (2026-07-09)
+## 0.11.0 (2026-07-12)
+
+- **Breaking:** The `seed` and `seedUpdatedAt` options on `useQuery`,
+  `useInfiniteQuery`, `QueryOptions`, `InfiniteQueryOptions`, and the
+  `QueryClient` fetch/prefetch/ensure methods now take the sealed types
+  `Seed<TData>` and `SeedUpdatedAt`, which add a lazy callback form
+  alongside the plain value form (mirroring TanStack Query's `initialData`
+  and `initialDataUpdatedAt`).
+
+  Seed application now also matches TanStack Query's semantics: a seed
+  (either form) is applied only while the query has no data yet.
+  Previously, a seed could overwrite data already in the cache — including
+  fetched data — when the seed value differed or carried a newer
+  `seedUpdatedAt`; now cached data is never overwritten by a seed.
+
+  ```dart
+  // Before:
+  useQuery(['user'], fetchUser, seed: cachedUser);
+
+  // After:
+  useQuery(['user'], fetchUser, seed: Seed.value(cachedUser));
+
+  // Or lazily — invoked only when the query has no data yet; returning
+  // null skips seeding:
+  useQuery(
+    ['user', id],
+    fetchUser,
+    seed: Seed.lazy(() => client
+        .getQueryData<List<User>>(['users'])
+        ?.firstWhereOrNull((user) => user.id == id)),
+    seedUpdatedAt: SeedUpdatedAt.lazy(
+      () => client.getQueryState(['users'])?.dataUpdatedAt,
+    ),
+  );
+  ```
+
+  On Dart 3.12+ the constructors work with dot shorthand:
+  `seed: .value(cachedUser)` / `seed: .lazy(() => ...)`.
 
 - **Breaking:** Graduated the sealed snapshot API out of
   `experiments.dart` and made it the main API. `useQuery`,

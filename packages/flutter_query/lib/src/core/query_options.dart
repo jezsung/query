@@ -71,10 +71,10 @@ class QueryOptions<TData, TError> {
   final bool? retryOnMount;
 
   /// Initial data to populate the cache before the first fetch.
-  final TData? seed;
+  final Seed<TData>? seed;
 
   /// The timestamp when the seed data was last updated.
-  final DateTime? seedUpdatedAt;
+  final SeedUpdatedAt? seedUpdatedAt;
 
   /// Arbitrary metadata associated with this query.
   final Map<String, dynamic>? meta;
@@ -100,7 +100,7 @@ class QueryOptions<TData, TError> {
           refetchInterval == other.refetchInterval &&
           identical(retry, other.retry) &&
           retryOnMount == other.retryOnMount &&
-          deepEq.equals(seed, other.seed) &&
+          seed == other.seed &&
           seedUpdatedAt == other.seedUpdatedAt &&
           deepEq.equals(meta, other.meta);
 
@@ -119,7 +119,7 @@ class QueryOptions<TData, TError> {
         refetchInterval,
         identityHashCode(retry),
         retryOnMount,
-        deepEq.hash(seed),
+        seed,
         seedUpdatedAt,
         deepEq.hash(meta),
       );
@@ -445,6 +445,149 @@ enum RefetchOnReconnect {
   /// Queries will refetch when connectivity is restored, even if their data
   /// is still fresh. Useful for data that may have changed while offline.
   always,
+}
+
+/// Initial data to populate a query's cache before the first fetch.
+///
+/// Provide the data directly with [Seed.value], or lazily with [Seed.lazy]
+/// when producing it is expensive (e.g. reading another query's cache).
+///
+/// A seed is applied only while the query has no data yet; data already in
+/// the cache is never overwritten by a seed.
+///
+/// Class hierarchy:
+/// ```
+/// Seed (sealed)
+/// ├── SeedValue
+/// └── SeedLazy
+/// ```
+sealed class Seed<TData> {
+  /// Seeds the query cache with [value].
+  ///
+  /// Example:
+  /// ```dart
+  /// seed: Seed.value(user)
+  /// ```
+  const factory Seed.value(TData value) = SeedValue<TData>._;
+
+  /// Seeds the query cache with the value returned by [resolve].
+  ///
+  /// Because seeds only apply while the query has no data, the callback is
+  /// never invoked once the cache is populated, so expensive lookups are
+  /// skipped. Returning `null` means there is no seed after all; the
+  /// callback may run again on a later mount while the query is still
+  /// empty.
+  ///
+  /// Example:
+  /// ```dart
+  /// seed: Seed.lazy(() => client.getQueryData(['users'])?.firstOrNull)
+  /// ```
+  const factory Seed.lazy(TData? Function() resolve) = SeedLazy<TData>._;
+}
+
+@internal
+class SeedValue<TData> implements Seed<TData> {
+  const SeedValue._(this.value);
+
+  final TData value;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is SeedValue<TData> && deepEq.equals(value, other.value);
+
+  @override
+  int get hashCode => deepEq.hash(value);
+
+  @override
+  String toString() => 'Seed.value($value)';
+}
+
+@internal
+class SeedLazy<TData> implements Seed<TData> {
+  const SeedLazy._(this.resolve);
+
+  final TData? Function() resolve;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is SeedLazy<TData> && identical(resolve, other.resolve);
+
+  @override
+  int get hashCode => identityHashCode(resolve);
+
+  @override
+  String toString() => 'Seed.lazy($resolve)';
+}
+
+/// The timestamp when seed data was last updated, in either direct value or
+/// lazy callback form.
+///
+/// Used together with [Seed] to determine the staleness of seeded data.
+///
+/// Class hierarchy:
+/// ```
+/// SeedUpdatedAt (sealed)
+/// ├── SeedUpdatedAtValue
+/// └── SeedUpdatedAtLazy
+/// ```
+sealed class SeedUpdatedAt {
+  /// Uses [value] as the seed timestamp.
+  ///
+  /// Example:
+  /// ```dart
+  /// seedUpdatedAt: SeedUpdatedAt.value(user.fetchedAt)
+  /// ```
+  const factory SeedUpdatedAt.value(DateTime value) = SeedUpdatedAtValue._;
+
+  /// Uses the timestamp returned by [resolve].
+  ///
+  /// The callback is invoked only when seed data is actually applied.
+  /// Returning `null` falls back to the current time.
+  ///
+  /// Example:
+  /// ```dart
+  /// seedUpdatedAt: SeedUpdatedAt.lazy(() => cacheEntry?.updatedAt)
+  /// ```
+  const factory SeedUpdatedAt.lazy(DateTime? Function() resolve) =
+      SeedUpdatedAtLazy._;
+}
+
+@internal
+class SeedUpdatedAtValue implements SeedUpdatedAt {
+  const SeedUpdatedAtValue._(this.value);
+
+  final DateTime value;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is SeedUpdatedAtValue && value == other.value;
+
+  @override
+  int get hashCode => value.hashCode;
+
+  @override
+  String toString() => 'SeedUpdatedAt.value($value)';
+}
+
+@internal
+class SeedUpdatedAtLazy implements SeedUpdatedAt {
+  const SeedUpdatedAtLazy._(this.resolve);
+
+  final DateTime? Function() resolve;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is SeedUpdatedAtLazy && identical(resolve, other.resolve);
+
+  @override
+  int get hashCode => identityHashCode(resolve);
+
+  @override
+  String toString() => 'SeedUpdatedAt.lazy($resolve)';
 }
 
 /// A callback that determines whether to retry and how long to wait.

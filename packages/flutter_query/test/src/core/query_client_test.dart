@@ -1018,7 +1018,7 @@ void main() {
         return 'data';
       },
       staleDuration: StaleDuration.infinity,
-      seed: 'seed',
+      seed: const Seed.value('seed'),
     ).then((result) => capturedData = result);
     async.flushMicrotasks();
 
@@ -1040,7 +1040,7 @@ void main() {
         return 'data';
       },
       staleDuration: StaleDuration.zero,
-      seed: 'seed',
+      seed: const Seed.value('seed'),
     ).then((result) => capturedData = result);
     async.elapse(const Duration(seconds: 1));
 
@@ -1062,8 +1062,8 @@ void main() {
         return 'data';
       },
       staleDuration: const StaleDuration(minutes: 5),
-      seed: 'seed',
-      seedUpdatedAt: clock.now(),
+      seed: const Seed.value('seed'),
+      seedUpdatedAt: SeedUpdatedAt.value(clock.now()),
     ).then((result) => capturedData = result);
     async.flushMicrotasks();
 
@@ -1085,8 +1085,8 @@ void main() {
         return 'data';
       },
       staleDuration: const StaleDuration(minutes: 5),
-      seed: 'seed',
-      seedUpdatedAt: clock.minutesAgo(10),
+      seed: const Seed.value('seed'),
+      seedUpdatedAt: SeedUpdatedAt.value(clock.minutesAgo(10)),
     ).then((result) => capturedData = result);
     async.elapse(const Duration(seconds: 1));
 
@@ -1104,7 +1104,7 @@ void main() {
         return 'data';
       },
       staleDuration: StaleDuration.infinity,
-      seed: 'seed',
+      seed: const Seed.value('seed'),
     );
     async.elapse(const Duration(seconds: 1));
 
@@ -2266,7 +2266,7 @@ void main() {
           await Future.delayed(const Duration(seconds: 1));
           return 'data';
         },
-        seed: 'seed',
+        seed: const Seed.value('seed'),
       );
 
       async.elapse(const Duration(seconds: 1));
@@ -3421,7 +3421,7 @@ void main() {
         initialPageParam: 0,
         nextPageParamBuilder: (data) => data.pageParams.last + 1,
         staleDuration: StaleDuration.infinity,
-        seed: InfiniteData(['seed-0'], [0]),
+        seed: Seed.value(InfiniteData(['seed-0'], [0])),
       ).then((data) => capturedData = data);
       async.flushMicrotasks();
 
@@ -3445,7 +3445,7 @@ void main() {
         initialPageParam: 0,
         nextPageParamBuilder: (data) => data.pageParams.last + 1,
         staleDuration: StaleDuration.zero,
-        seed: InfiniteData(['seed-0'], [0]),
+        seed: Seed.value(InfiniteData(['seed-0'], [0])),
       ).then((data) => capturedData = data);
       async.elapse(const Duration(seconds: 1));
 
@@ -3469,8 +3469,8 @@ void main() {
         initialPageParam: 0,
         nextPageParamBuilder: (data) => data.pageParams.last + 1,
         staleDuration: const StaleDuration(minutes: 5),
-        seed: InfiniteData(['seed-0'], [0]),
-        seedUpdatedAt: clock.now(),
+        seed: Seed.value(InfiniteData(['seed-0'], [0])),
+        seedUpdatedAt: SeedUpdatedAt.value(clock.now()),
       ).then((data) => capturedData = data);
       async.flushMicrotasks();
 
@@ -3494,8 +3494,8 @@ void main() {
         initialPageParam: 0,
         nextPageParamBuilder: (data) => data.pageParams.last + 1,
         staleDuration: const StaleDuration(minutes: 5),
-        seed: InfiniteData(['seed-0'], [0]),
-        seedUpdatedAt: clock.minutesAgo(10),
+        seed: Seed.value(InfiniteData(['seed-0'], [0])),
+        seedUpdatedAt: SeedUpdatedAt.value(clock.minutesAgo(10)),
       ).then((data) => capturedData = data);
       async.elapse(const Duration(seconds: 1));
 

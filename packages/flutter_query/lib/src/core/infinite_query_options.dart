@@ -116,10 +116,10 @@ class InfiniteQueryOptions<TData, TError, TPageParam> {
   final bool? retryOnMount;
 
   /// Initial data to populate the cache before the first fetch.
-  final InfiniteData<TData, TPageParam>? seed;
+  final Seed<InfiniteData<TData, TPageParam>>? seed;
 
   /// The timestamp when the seed data was last updated.
-  final DateTime? seedUpdatedAt;
+  final SeedUpdatedAt? seedUpdatedAt;
 
   /// Arbitrary metadata associated with this query.
   final Map<String, dynamic>? meta;
@@ -149,7 +149,7 @@ class InfiniteQueryOptions<TData, TError, TPageParam> {
           refetchInterval == other.refetchInterval &&
           identical(retry, other.retry) &&
           retryOnMount == other.retryOnMount &&
-          deepEq.equals(seed, other.seed) &&
+          seed == other.seed &&
           seedUpdatedAt == other.seedUpdatedAt &&
           deepEq.equals(meta, other.meta);
 
@@ -172,7 +172,7 @@ class InfiniteQueryOptions<TData, TError, TPageParam> {
         refetchInterval,
         identityHashCode(retry),
         retryOnMount,
-        deepEq.hash(seed),
+        seed,
         seedUpdatedAt,
         deepEq.hash(meta),
       );

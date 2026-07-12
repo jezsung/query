@@ -81,10 +81,14 @@ import 'use_infinite_query_options.dart';
 ///   Defaults to `true`.
 ///
 /// - [seed]: Initial data to populate the cache before the first fetch. Unlike
-///   [placeholder], seed data is persisted to the cache.
+///   [placeholder], seed data is persisted to the cache. Provide the data
+///   directly with [Seed.value], or lazily with [Seed.lazy] — the callback
+///   may return `null` to skip seeding. A seed is applied only while the
+///   query has no data yet; cached data is never overwritten.
 ///
 /// - [seedUpdatedAt]: The timestamp when [seed] data was last updated. Used to
-///   determine staleness of seed data.
+///   determine staleness of seed data. Provide it directly with
+///   [SeedUpdatedAt.value], or lazily with [SeedUpdatedAt.lazy].
 ///
 /// - [meta]: A map of arbitrary metadata attached to this query, accessible
 ///   in the query function context. When multiple hooks share the same query
@@ -121,8 +125,8 @@ InfiniteQuerySnapshot<TData, TError, TPageParam>
   Duration? refetchInterval,
   RetryResolver<TError>? retry,
   bool? retryOnMount,
-  InfiniteData<TData, TPageParam>? seed,
-  DateTime? seedUpdatedAt,
+  Seed<InfiniteData<TData, TPageParam>>? seed,
+  SeedUpdatedAt? seedUpdatedAt,
   Map<String, dynamic>? meta,
   ShouldRebuild<InfiniteQuerySnapshot<TData, TError, TPageParam>>?
       shouldRebuild,

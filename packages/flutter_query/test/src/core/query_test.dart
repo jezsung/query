@@ -122,7 +122,7 @@ void main() {
       Query<String, Object>.cached(
         client,
         const ['key'],
-        seed: 'data-seed',
+        seed: const Seed.value('data-seed'),
       );
 
       final query = client.cache.get(const ['key'])!;
@@ -137,8 +137,8 @@ void main() {
       Query<String, Object>.cached(
         client,
         const ['key'],
-        seed: 'data-seed',
-        seedUpdatedAt: clock.minutesAgo(15),
+        seed: const Seed.value('data-seed'),
+        seedUpdatedAt: SeedUpdatedAt.value(clock.minutesAgo(15)),
       );
 
       final query = client.cache.get(const ['key'])!;
@@ -153,13 +153,223 @@ void main() {
       Query<String, Object>.cached(
         client,
         const ['key'],
-        seedUpdatedAt: clock.minutesAgo(15),
+        seedUpdatedAt: SeedUpdatedAt.value(clock.minutesAgo(15)),
       );
 
       final query = client.cache.get(const ['key'])!;
       expect(query.state.data, isNull);
       expect(query.state.dataUpdatedAt, isNull);
       expect(query.state.dataUpdateCount, 0);
+    }));
+
+    test(
+        'SHOULD invoke lazy seed and persist to cache '
+        'WHEN query has no data', withFakeAsync((async) {
+      var invocationCount = 0;
+
+      Query<String, Object>.cached(
+        client,
+        const ['key'],
+        seed: Seed.lazy(() {
+          invocationCount++;
+          return 'lazy-seed';
+        }),
+      );
+
+      final query = client.cache.get(const ['key'])!;
+      expect(invocationCount, 1);
+      expect(query.state.data, 'lazy-seed');
+      expect(query.state.dataUpdatedAt, clock.now());
+      expect(query.state.dataUpdateCount, 0);
+    }));
+
+    test(
+        'SHOULD NOT invoke lazy seed '
+        'WHEN query already has data', withFakeAsync((async) {
+      var invocationCount = 0;
+
+      Query<String, Object>.cached(client, const ['key']).setData('data');
+
+      Query<String, Object>.cached(
+        client,
+        const ['key'],
+        seed: Seed.lazy(() {
+          invocationCount++;
+          return 'lazy-seed';
+        }),
+      );
+
+      final query = client.cache.get(const ['key'])!;
+      expect(invocationCount, 0);
+      expect(query.state.data, 'data');
+    }));
+
+    test(
+        'SHOULD apply seed '
+        'WHEN query exists without data', withFakeAsync((async) {
+      Query<String, Object>.cached(client, const ['key']);
+
+      Query<String, Object>.cached(
+        client,
+        const ['key'],
+        seed: const Seed.value('data-seed'),
+      );
+
+      final query = client.cache.get(const ['key'])!;
+      expect(query.state.status, QueryStatus.success);
+      expect(query.state.data, 'data-seed');
+    }));
+
+    test(
+        'SHOULD NOT apply seed '
+        'WHEN query already has data', withFakeAsync((async) {
+      Query<String, Object>.cached(client, const ['key']).setData('data');
+
+      Query<String, Object>.cached(
+        client,
+        const ['key'],
+        seed: const Seed.value('data-seed'),
+      );
+
+      final query = client.cache.get(const ['key'])!;
+      expect(query.state.data, 'data');
+      expect(query.state.dataUpdateCount, 1);
+    }));
+
+    test(
+        'SHOULD NOT apply seed '
+        'WHEN seedUpdatedAt is newer than existing data',
+        withFakeAsync((async) {
+      Query<String, Object>.cached(client, const ['key']).setData(
+        'data',
+        updatedAt: clock.minutesAgo(5),
+      );
+
+      Query<String, Object>.cached(
+        client,
+        const ['key'],
+        seed: const Seed.value('data-seed'),
+        seedUpdatedAt: SeedUpdatedAt.value(clock.now()),
+      );
+
+      final query = client.cache.get(const ['key'])!;
+      expect(query.state.data, 'data');
+    }));
+
+    test(
+        'SHOULD NOT refresh dataUpdatedAt '
+        'WHEN remounting with an equal but not identical seed',
+        withFakeAsync((async) {
+      final seededAt = clock.now();
+
+      Query<List<String>, Object>.cached(
+        client,
+        const ['key'],
+        // ignore: prefer_const_constructors
+        seed: Seed.value(['a', 'b']),
+      );
+
+      async.elapse(const Duration(minutes: 5));
+
+      Query<List<String>, Object>.cached(
+        client,
+        const ['key'],
+        // ignore: prefer_const_constructors
+        seed: Seed.value(['a', 'b']),
+      );
+
+      final query = client.cache.get(const ['key'])!;
+      expect(query.state.dataUpdatedAt, seededAt);
+    }));
+
+    test(
+        'SHOULD NOT persist anything to cache '
+        'WHEN lazy seed returns null', withFakeAsync((async) {
+      var invocationCount = 0;
+
+      String? resolveSeed() {
+        invocationCount++;
+        return null;
+      }
+
+      Query<String, Object>.cached(
+        client,
+        const ['key'],
+        seed: Seed.lazy(resolveSeed),
+      );
+
+      final query = client.cache.get(const ['key'])!;
+      expect(invocationCount, 1);
+      expect(query.state.data, isNull);
+      expect(query.state.dataUpdatedAt, isNull);
+
+      // The query is still empty, so a later mount invokes the callback again.
+      Query<String, Object>.cached(
+        client,
+        const ['key'],
+        seed: Seed.lazy(resolveSeed),
+      );
+
+      expect(invocationCount, 2);
+    }));
+
+    test(
+        'SHOULD invoke lazy seedUpdatedAt '
+        'WHEN seed is applied', withFakeAsync((async) {
+      Query<String, Object>.cached(
+        client,
+        const ['key'],
+        seed: const Seed.value('data-seed'),
+        seedUpdatedAt: SeedUpdatedAt.lazy(() => clock.minutesAgo(15)),
+      );
+
+      final query = client.cache.get(const ['key'])!;
+      expect(query.state.data, 'data-seed');
+      expect(query.state.dataUpdatedAt, clock.minutesAgo(15));
+    }));
+
+    test(
+        'SHOULD use current time '
+        'WHEN lazy seedUpdatedAt returns null', withFakeAsync((async) {
+      Query<String, Object>.cached(
+        client,
+        const ['key'],
+        seed: const Seed.value('data-seed'),
+        seedUpdatedAt: SeedUpdatedAt.lazy(() => null),
+      );
+
+      final query = client.cache.get(const ['key'])!;
+      expect(query.state.data, 'data-seed');
+      expect(query.state.dataUpdatedAt, clock.now());
+    }));
+
+    test(
+        'SHOULD NOT invoke lazy seedUpdatedAt '
+        'WHEN no seed is applied', withFakeAsync((async) {
+      var invocationCount = 0;
+
+      Query<String, Object>.cached(
+        client,
+        const ['key'],
+        seedUpdatedAt: SeedUpdatedAt.lazy(() {
+          invocationCount++;
+          return clock.minutesAgo(15);
+        }),
+      );
+
+      expect(invocationCount, 0);
+
+      Query<String, Object>.cached(
+        client,
+        const ['key'],
+        seed: Seed.lazy(() => null),
+        seedUpdatedAt: SeedUpdatedAt.lazy(() {
+          invocationCount++;
+          return clock.minutesAgo(15);
+        }),
+      );
+
+      expect(invocationCount, 0);
     }));
   });
 

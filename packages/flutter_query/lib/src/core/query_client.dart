@@ -173,8 +173,8 @@ class QueryClient {
     StaleDuration? staleDuration,
     RetryResolver<TError>? retry,
     GcDuration? gcDuration,
-    TData? seed,
-    DateTime? seedUpdatedAt,
+    Seed<TData>? seed,
+    SeedUpdatedAt? seedUpdatedAt,
     Map<String, dynamic>? meta,
   }) async {
     final query = Query<TData, TError>.cached(
@@ -210,8 +210,8 @@ class QueryClient {
     StaleDuration? staleDuration,
     RetryResolver<TError>? retry,
     GcDuration? gcDuration,
-    TData? seed,
-    DateTime? seedUpdatedAt,
+    Seed<TData>? seed,
+    SeedUpdatedAt? seedUpdatedAt,
     Map<String, dynamic>? meta,
   }) async {
     try {
@@ -251,8 +251,8 @@ class QueryClient {
     StaleDuration? staleDuration,
     RetryResolver<TError>? retry,
     GcDuration? gcDuration,
-    TData? seed,
-    DateTime? seedUpdatedAt,
+    Seed<TData>? seed,
+    SeedUpdatedAt? seedUpdatedAt,
     Map<String, dynamic>? meta,
     bool revalidateIfStale = false,
   }) async {
@@ -513,8 +513,8 @@ class QueryClient {
     StaleDuration? staleDuration,
     RetryResolver<TError>? retry,
     GcDuration? gcDuration,
-    InfiniteData<TData, TPageParam>? seed,
-    DateTime? seedUpdatedAt,
+    Seed<InfiniteData<TData, TPageParam>>? seed,
+    SeedUpdatedAt? seedUpdatedAt,
     Map<String, dynamic>? meta,
   }) async {
     // Create wrapped queryFn that handles page accumulation
@@ -614,8 +614,8 @@ class QueryClient {
     StaleDuration? staleDuration,
     RetryResolver<TError>? retry,
     GcDuration? gcDuration,
-    InfiniteData<TData, TPageParam>? seed,
-    DateTime? seedUpdatedAt,
+    Seed<InfiniteData<TData, TPageParam>>? seed,
+    SeedUpdatedAt? seedUpdatedAt,
     Map<String, dynamic>? meta,
   }) async {
     try {

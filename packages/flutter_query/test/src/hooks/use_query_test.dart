@@ -1733,7 +1733,7 @@ void main() {
         () => useQuery(
           const ['key'],
           (context) async => 'data',
-          seed: 'initial-data',
+          seed: const Seed.value('initial-data'),
           client: client,
         ),
       );
@@ -1749,7 +1749,7 @@ void main() {
         () => useQuery(
           const ['key'],
           (context) async => 'data',
-          seed: 'initial-data',
+          seed: const Seed.value('initial-data'),
           staleDuration: const StaleDuration(),
           client: client,
         ),
@@ -1773,7 +1773,7 @@ void main() {
         () => useQuery(
           const ['key'],
           (context) async => 'data',
-          seed: 'initial-data',
+          seed: const Seed.value('initial-data'),
           staleDuration: const StaleDuration(minutes: 5),
           client: client,
         ),
@@ -1792,7 +1792,7 @@ void main() {
     }));
 
     testWidgets(
-        'SHOULD update initialData WHEN Query exists without data and observer is created with seed',
+        'SHOULD apply seed WHEN Query exists without data and observer is created with seed',
         withCleanup((tester) async {
       // First, create a query without data by starting a slow fetch
       final hookResult1 = await buildHook(
@@ -1819,7 +1819,7 @@ void main() {
         () => useQuery(
           const ['key'],
           (context) async => 'data-2',
-          seed: 'initial-data',
+          seed: const Seed.value('initial-data'),
           client: client,
         ),
       );
@@ -1831,6 +1831,106 @@ void main() {
       // Wait for pending timer created by Future.delayed
       await tester.binding.delayed(const Duration(minutes: 1));
     }));
+
+    testWidgets('SHOULD NOT apply seed WHEN query already has data',
+        withCleanup((tester) async {
+      // First, populate the cache with fetched data
+      final hookResult1 = await buildHook(
+        () => useQuery(
+          const ['key'],
+          (context) async => 'data-1',
+          staleDuration: const StaleDuration(minutes: 5),
+          client: client,
+        ),
+      );
+
+      await tester.pumpAndSettle();
+      expect(hookResult1.current.dataOrNull, 'data-1');
+
+      await hookResult1.unmount();
+
+      // Now mount a new observer with a seed for the same key
+      final hookResult2 = await buildHook(
+        () => useQuery(
+          const ['key'],
+          (context) async => 'data-2',
+          seed: const Seed.value('initial-data'),
+          staleDuration: const StaleDuration(minutes: 5),
+          client: client,
+        ),
+      );
+
+      // The fetched data is kept; the seed is ignored
+      expect(hookResult2.current.dataOrNull, 'data-1');
+
+      await tester.pumpAndSettle();
+      expect(hookResult2.current.dataOrNull, 'data-1');
+    }));
+
+    testWidgets(
+        'SHOULD NOT apply seed WHEN seedUpdatedAt is newer than existing data',
+        withCleanup((tester) async {
+      // First, populate the cache with fetched data
+      final hookResult1 = await buildHook(
+        () => useQuery(
+          const ['key'],
+          (context) async => 'data-1',
+          staleDuration: const StaleDuration(minutes: 5),
+          client: client,
+        ),
+      );
+
+      await tester.pumpAndSettle();
+      expect(hookResult1.current.dataOrNull, 'data-1');
+
+      await hookResult1.unmount();
+      await tester.binding.delayed(const Duration(minutes: 1));
+
+      // Mount a new observer whose seed timestamp is newer than the
+      // fetched data's timestamp
+      final hookResult2 = await buildHook(
+        () => useQuery(
+          const ['key'],
+          (context) async => 'data-2',
+          seed: const Seed.value('initial-data'),
+          seedUpdatedAt: SeedUpdatedAt.value(clock.now()),
+          staleDuration: const StaleDuration(minutes: 5),
+          client: client,
+        ),
+      );
+
+      // The fetched data is kept; the seed is ignored
+      expect(hookResult2.current.dataOrNull, 'data-1');
+    }));
+
+    testWidgets(
+        'SHOULD NOT refresh dataUpdatedAt WHEN remounting with an equal but not identical seed',
+        withCleanup((tester) async {
+      final hookResult = await buildHook(
+        () => useQuery(
+          const ['key'],
+          (context) async => ['data'],
+          // A new (non-const) list on every build: deeply equal to the
+          // previous seed, but never identical to it.
+          // ignore: prefer_const_constructors
+          seed: Seed.value(['a', 'b']),
+          staleDuration: const StaleDuration(minutes: 30),
+          gcDuration: GcDuration.infinity,
+          client: client,
+        ),
+      );
+
+      final seededAt = clock.now();
+      expect(hookResult.current.dataOrNull, ['a', 'b']);
+      expect(hookResult.current.dataUpdatedAt, seededAt);
+
+      await hookResult.unmount();
+      await tester.binding.delayed(const Duration(minutes: 5));
+      await hookResult.rebuild();
+
+      // The seed is not re-applied, so the timestamp is not refreshed
+      expect(hookResult.current.dataUpdatedAt, seededAt);
+    }));
   });
 
   group('seedUpdatedAt', () {
@@ -1840,7 +1940,7 @@ void main() {
         () => useQuery(
           const ['key'],
           (context) async => 'data',
-          seed: 'initial-data',
+          seed: const Seed.value('initial-data'),
           client: client,
         ),
       );
@@ -1856,8 +1956,8 @@ void main() {
         () => useQuery(
           const ['key'],
           (context) async => 'data',
-          seed: 'initial-data',
-          seedUpdatedAt: specificTime,
+          seed: const Seed.value('initial-data'),
+          seedUpdatedAt: SeedUpdatedAt.value(specificTime),
           client: client,
         ),
       );
@@ -1872,8 +1972,8 @@ void main() {
         () => useQuery(
           const ['key', 1],
           (context) async => 'data',
-          seed: 'initial-data',
-          seedUpdatedAt: clock.minutesAgo(10),
+          seed: const Seed.value('initial-data'),
+          seedUpdatedAt: SeedUpdatedAt.value(clock.minutesAgo(10)),
           staleDuration: const StaleDuration(minutes: 5),
           client: client,
         ),
@@ -1887,8 +1987,8 @@ void main() {
         () => useQuery(
           const ['key', 2],
           (context) async => 'data',
-          seed: 'initial-data',
-          seedUpdatedAt: clock.minutesAgo(10),
+          seed: const Seed.value('initial-data'),
+          seedUpdatedAt: SeedUpdatedAt.value(clock.minutesAgo(10)),
           staleDuration: const StaleDuration(minutes: 15),
           client: client,
         ),
@@ -1905,8 +2005,8 @@ void main() {
         () => useQuery(
           const ['key'],
           (context) async => 'data',
-          seed: 'initial-data',
-          seedUpdatedAt: clock.minutesAgo(5),
+          seed: const Seed.value('initial-data'),
+          seedUpdatedAt: SeedUpdatedAt.value(clock.minutesAgo(5)),
           staleDuration: const StaleDuration(minutes: 10),
           gcDuration: GcDuration.infinity,
           client: client,
@@ -2022,7 +2122,7 @@ void main() {
         () => useQuery(
           const ['key'],
           (context) async => 'data',
-          seed: 'initial',
+          seed: const Seed.value('initial'),
           placeholder: 'placeholder',
           client: client,
         ),
@@ -3719,7 +3819,7 @@ void main() {
         return useQuery<String, Object>(
           const ['key'],
           (context) async => 'unused',
-          seed: 'first',
+          seed: const Seed.value('first'),
           refetchOnMount: RefetchOnMount.never,
           client: client,
         );
@@ -3771,7 +3871,7 @@ void main() {
         return useQuery<String, Object>(
           const ['key'],
           (context) async => 'unused',
-          seed: 'first',
+          seed: const Seed.value('first'),
           refetchOnMount: RefetchOnMount.never,
           shouldRebuild: (previous, next) =>
               previous.dataOrNull != next.dataOrNull,
@@ -3802,7 +3902,7 @@ void main() {
         return useQuery<String, Object>(
           const ['key'],
           (context) async => 'unused',
-          seed: 'first',
+          seed: const Seed.value('first'),
           refetchOnMount: RefetchOnMount.never,
           shouldRebuild: (previous, next) {
             seenPrevious.add(previous.dataOrNull);
@@ -3844,7 +3944,7 @@ void main() {
           resultA = useQuery<String, Object>(
             const ['key'],
             (context) async => 'unused',
-            seed: 'first',
+            seed: const Seed.value('first'),
             refetchOnMount: RefetchOnMount.never,
             // Suppresses every update.
             shouldRebuild: (previous, next) => false,
@@ -3857,7 +3957,7 @@ void main() {
           resultB = useQuery<String, Object>(
             const ['key'],
             (context) async => 'unused',
-            seed: 'first',
+            seed: const Seed.value('first'),
             refetchOnMount: RefetchOnMount.never,
             // Rebuilds whenever the data changes.
             shouldRebuild: (previous, next) =>

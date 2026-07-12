@@ -2566,7 +2566,7 @@ void main() {
           },
           initialPageParam: 0,
           nextPageParamBuilder: (data) => data.pageParams.last + 1,
-          seed: const InfiniteData(['page-seed'], [0]),
+          seed: const Seed.value(InfiniteData(['page-seed'], [0])),
         ),
       )..onMount();
       addTearDown(observer.onUnmount);
@@ -2592,7 +2592,7 @@ void main() {
           },
           initialPageParam: 0,
           nextPageParamBuilder: (data) => data.pageParams.last + 1,
-          seed: const InfiniteData(['page-seed'], [0]),
+          seed: const Seed.value(InfiniteData(['page-seed'], [0])),
         ),
       )..onMount();
       addTearDown(observer.onUnmount);
@@ -2617,7 +2617,7 @@ void main() {
           initialPageParam: 0,
           nextPageParamBuilder: (data) => data.pageParams.last + 1,
           placeholder: const InfiniteData(['page-ph'], [0]),
-          seed: const InfiniteData(['page-seed'], [0]),
+          seed: const Seed.value(InfiniteData(['page-seed'], [0])),
         ),
       )..onMount();
       addTearDown(observer.onUnmount);
@@ -2643,7 +2643,7 @@ void main() {
           },
           initialPageParam: 0,
           nextPageParamBuilder: (data) => data.pageParams.last + 1,
-          seed: const InfiniteData(['page-seed'], [0]),
+          seed: const Seed.value(InfiniteData(['page-seed'], [0])),
           staleDuration: StaleDuration.zero,
         ),
       )..onMount();
@@ -2671,7 +2671,7 @@ void main() {
           },
           initialPageParam: 0,
           nextPageParamBuilder: (data) => data.pageParams.last + 1,
-          seed: const InfiniteData(['page-seed'], [0]),
+          seed: const Seed.value(InfiniteData(['page-seed'], [0])),
         ),
       )..onMount();
       addTearDown(observer.onUnmount);
@@ -2693,8 +2693,8 @@ void main() {
           },
           initialPageParam: 0,
           nextPageParamBuilder: (data) => data.pageParams.last + 1,
-          seed: const InfiniteData(['page-seed'], [0]),
-          seedUpdatedAt: clock.minutesAgo(10),
+          seed: const Seed.value(InfiniteData(['page-seed'], [0])),
+          seedUpdatedAt: SeedUpdatedAt.value(clock.minutesAgo(10)),
           staleDuration: const StaleDuration(minutes: 5),
         ),
       )..onMount();
@@ -2716,8 +2716,8 @@ void main() {
           },
           initialPageParam: 0,
           nextPageParamBuilder: (data) => data.pageParams.last + 1,
-          seed: const InfiniteData(['page-seed'], [0]),
-          seedUpdatedAt: clock.minutesAgo(2),
+          seed: const Seed.value(InfiniteData(['page-seed'], [0])),
+          seedUpdatedAt: SeedUpdatedAt.value(clock.minutesAgo(2)),
           staleDuration: const StaleDuration(minutes: 5),
         ),
       )..onMount();
@@ -2737,8 +2737,8 @@ void main() {
         },
         initialPageParam: 0,
         nextPageParamBuilder: (data) => data.pageParams.last + 1,
-        seed: const InfiniteData(['page-seed'], [0]),
-        seedUpdatedAt: clock.minutesFromNow(60),
+        seed: const Seed.value(InfiniteData(['page-seed'], [0])),
+        seedUpdatedAt: SeedUpdatedAt.value(clock.minutesFromNow(60)),
         staleDuration: const StaleDuration(minutes: 5),
       );
 
