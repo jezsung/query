@@ -40,6 +40,8 @@ InfiniteQuerySnapshot<TData, TError, TPageParam>
       shouldRebuild,
   QueryClient? client,
 }) {
+  final context = useContext();
+
   final effectiveClient = useQueryClient(client);
 
   // Create observer once per component instance
@@ -94,6 +96,11 @@ InfiniteQuerySnapshot<TData, TError, TPageParam>
       if (SchedulerBinding.instance.schedulerPhase ==
           SchedulerPhase.persistentCallbacks) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
+          // This element may have unmounted between scheduling and now (e.g. a
+          // subscribed widget scrolled out of a list), disposing [result].
+          // Writing to it then throws, so bail.
+          if (!context.mounted) return;
+
           if (accept.call(newResult)) {
             result.value = newResult;
           }

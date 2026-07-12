@@ -3807,6 +3807,59 @@ void main() {
       expect(screenAResult.isSuccess, isTrue);
       expect(screenBResult.isSuccess, isTrue);
     }));
+
+    // Regression test for the disposed-notifier race: a widget subscribed to a
+    // shared key can be removed in the same frame a sibling advances the query
+    // during build. The build-phase notification schedules a post-frame write,
+    // but the widget unmounts before the frame fires, disposing its result
+    // notifier — so the deferred write must bail instead of throwing
+    // "used after being disposed".
+    testWidgets(
+        'SHOULD NOT write to a disposed result '
+        'WHEN a subscribed widget is removed in the same frame a shared-key '
+        'sibling mounts', withCleanup((tester) async {
+      // Frame 0: Screen A subscribes and settles with data.
+      await tester.pumpWidget(HookBuilder(
+        key: const Key('screen-a'),
+        builder: (context) {
+          useQuery(
+            ['branch', 'id-1'],
+            (context) async {
+              await Future.delayed(const Duration(seconds: 1));
+              return 'data-a';
+            },
+            client: client,
+          );
+          return const SizedBox();
+        },
+      ));
+      await tester.pump(const Duration(seconds: 1));
+
+      // Frame 1: swap Screen A out for Screen B (same key). B's onMount
+      // triggers _fetch(), which notifies A's still-attached observer during
+      // B's build phase and schedules a post-frame write. A unmounts this same
+      // frame, disposing its result notifier.
+      await tester.pumpWidget(HookBuilder(
+        key: const Key('screen-b'),
+        builder: (context) {
+          useQuery(
+            ['branch', 'id-1'],
+            (context) async {
+              await Future.delayed(const Duration(seconds: 1));
+              return 'data-b';
+            },
+            client: client,
+          );
+          return const SizedBox();
+        },
+      ));
+      // Flush the scheduled post-frame callback; it must not throw.
+      await tester.pump();
+
+      expect(tester.takeException(), isNull);
+
+      await tester.pump(const Duration(seconds: 1));
+    }));
   });
 
   group('Params: shouldRebuild', () {

@@ -74,6 +74,13 @@
   `isPlaceholder: true`. `refetch()` / `fetchNextPage()` /
   `fetchPreviousPage()` now complete with the corresponding snapshot type.
 
+- Fixed a "`ValueNotifier` used after being disposed" crash when a widget
+  observing a query unmounted between a build-phase update and the deferred
+  post-frame callback that delivers it — for example, scrolling a list whose
+  items share a query key. The deferred write now bails when the observing
+  element is no longer mounted. Affects `useQuery`, `useInfiniteQuery`, and
+  their `useQueryOptions` / `useInfiniteQueryOptions` forms.
+
 ## 0.10.0 (2026-06-25)
 
 - Added an optional `shouldRebuild` parameter to `useQuery` and
