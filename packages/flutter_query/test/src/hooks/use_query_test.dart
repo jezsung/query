@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Placeholder;
 
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:flutter_hooks_test/flutter_hooks_test.dart';
@@ -2042,7 +2042,7 @@ void main() {
         () => useQuery(
           const ['key'],
           (context) async => 'data',
-          placeholder: 'placeholder',
+          placeholder: const Placeholder.value('placeholder'),
           client: client,
         ),
       );
@@ -2060,7 +2060,7 @@ void main() {
         () => useQuery(
           const ['key'],
           (context) async => 'data',
-          placeholder: 'placeholder',
+          placeholder: const Placeholder.value('placeholder'),
           client: client,
         ),
       );
@@ -2082,7 +2082,7 @@ void main() {
         () => useQuery(
           const ['key'],
           (context) async => 'data',
-          placeholder: 'placeholder',
+          placeholder: const Placeholder.value('placeholder'),
           enabled: false,
           client: client,
         ),
@@ -2105,7 +2105,7 @@ void main() {
         () => useQuery<String, Object>(
           const ['key'],
           (context) async => 'data',
-          placeholder: 'placeholder',
+          placeholder: const Placeholder.value('placeholder'),
           staleDuration: StaleDuration.infinity,
           client: client,
         ),
@@ -2123,7 +2123,7 @@ void main() {
           const ['key'],
           (context) async => 'data',
           seed: const Seed.value('initial'),
-          placeholder: 'placeholder',
+          placeholder: const Placeholder.value('placeholder'),
           client: client,
         ),
       );
@@ -2141,7 +2141,7 @@ void main() {
         () => useQuery(
           const ['key'],
           (context) async => 'data',
-          placeholder: 'placeholder',
+          placeholder: const Placeholder.value('placeholder'),
           client: client,
         ),
       );
@@ -2164,7 +2164,7 @@ void main() {
             await Future.delayed(const Duration(seconds: 5));
             return 'data';
           },
-          placeholder: placeholder,
+          placeholder: Placeholder.value(placeholder),
           client: client,
         ),
         initialProps: 'placeholder-1',
@@ -2181,80 +2181,134 @@ void main() {
       expect((result as QuerySuccess<String, dynamic>).isPlaceholder, true);
     }));
 
-    // TODO(placeholderData): Re-enable when callback form is supported
-    // testWidgets('SHOULD show old data as placeholder WHEN query key changes',
-    //     withCleanup((tester) async {
-    //   final hookResult = await buildHookWithProps(
-    //     (key) => useQuery(
-    //       key,
-    //       (context) async => 'data-1',
-    //       placeholder: PlaceholderData.resolveWith(
-    //         (previousValue, _) => previousValue,
-    //       ),
-    //       client: client,
-    //     ),
-    //     initialProps: const ['todos', 1],
-    //   );
+    testWidgets('SHOULD show old data as placeholder WHEN query key changes',
+        withCleanup((tester) async {
+      final hookResult = await buildHookWithProps(
+        (key) => useQuery<String, dynamic>(
+          key,
+          (context) async => 'data-1',
+          placeholder: Placeholder.lazy((previous) => previous),
+          client: client,
+        ),
+        initialProps: const ['todos', 1],
+      );
 
-    //   await tester.pumpAndSettle();
+      await tester.pumpAndSettle();
 
-    //   expect(hookResult.current.data, 'data-1');
-    //   expect(hookResult.current.isPlaceholderData, false);
+      var result = hookResult.current;
+      expect(result.dataOrNull, 'data-1');
+      expect((result as QuerySuccess<String, dynamic>).isPlaceholder, false);
 
-    //   await hookResult.rebuildWithProps(const ['todos', 2]);
+      await hookResult.rebuildWithProps(const ['todos', 2]);
 
-    //   expect(hookResult.current.data, 'data-1');
-    //   expect(hookResult.current.isPlaceholderData, true);
-    // }));
+      result = hookResult.current;
+      expect(result.dataOrNull, 'data-1');
+      expect((result as QuerySuccess<String, dynamic>).isPlaceholder, true);
+    }));
 
-    // TODO(placeholderData): Re-enable when callback form is supported
-    // testWidgets(
-    //     'SHOULD pass previousValue and previousQuery to PlaceholderData.resolveWith',
-    //     withCleanup((tester) async {
-    //   dynamic capturedValue;
-    //   dynamic capturedQuery;
+    testWidgets('SHOULD pass previous data to the Placeholder.lazy callback',
+        withCleanup((tester) async {
+      String? capturedData;
 
-    //   final hookResult = await buildHookWithProps(
-    //     (key) => useQuery<String, Object>(
-    //       key,
-    //       (context) async {
-    //         await Future.delayed(const Duration(seconds: 5));
-    //         return 'data';
-    //       },
-    //       placeholder: PlaceholderData.resolveWith(
-    //         (previousValue, previousQuery) {
-    //           capturedValue = previousValue;
-    //           capturedQuery = previousQuery;
-    //           return 'placeholder';
-    //         },
-    //       ),
-    //       client: client,
-    //     ),
-    //     initialProps: const ['key-1'],
-    //   );
+      final hookResult = await buildHookWithProps(
+        (key) => useQuery<String, Object>(
+          key,
+          (context) async {
+            await Future.delayed(const Duration(seconds: 5));
+            return 'data';
+          },
+          placeholder: Placeholder.lazy((previous) {
+            capturedData = previous;
+            return 'placeholder';
+          }),
+          client: client,
+        ),
+        initialProps: const ['key-1'],
+      );
 
-    //   var result = hookResult.current;
-    //   expect(result.data, 'placeholder');
-    //   expect(result.isPlaceholderData, isTrue);
-    //   expect(capturedValue, isNull);
-    //   expect(capturedQuery, isNull);
+      var result = hookResult.current;
+      expect(result.dataOrNull, 'placeholder');
+      expect((result as QuerySuccess<String, Object>).isPlaceholder, isTrue);
+      expect(capturedData, isNull);
 
-    //   await tester.pump(const Duration(seconds: 5));
+      await tester.pump(const Duration(seconds: 5));
 
-    //   result = hookResult.current;
-    //   expect(result.data, 'data');
-    //   expect(result.isPlaceholderData, isFalse);
-    //   expect(capturedValue, isNull);
-    //   expect(capturedQuery, isNull);
+      result = hookResult.current;
+      expect(result.dataOrNull, 'data');
+      expect((result as QuerySuccess<String, Object>).isPlaceholder, isFalse);
 
-    //   await hookResult.rebuildWithProps(const ['key-2']);
+      await hookResult.rebuildWithProps(const ['key-2']);
 
-    //   result = hookResult.current;
-    //   expect(result.data, 'placeholder');
-    //   expect(result.isPlaceholderData, isTrue);
-    //   expect(capturedValue, 'data');
-    //   expect(capturedQuery, isNotNull);
-    // }));
+      result = hookResult.current;
+      expect(result.dataOrNull, 'placeholder');
+      expect((result as QuerySuccess<String, Object>).isPlaceholder, isTrue);
+      expect(capturedData, 'data');
+    }));
+
+    testWidgets(
+        'SHOULD show old data as placeholder WHEN query key changes '
+        'WITH Placeholder.keepPrevious', withCleanup((tester) async {
+      final hookResult = await buildHookWithProps(
+        (key) => useQuery(
+          key,
+          (context) async => 'data-1',
+          placeholder: Placeholder.keepPrevious,
+          client: client,
+        ),
+        initialProps: const ['todos', 1],
+      );
+
+      await tester.pumpAndSettle();
+
+      var result = hookResult.current;
+      expect(result.dataOrNull, 'data-1');
+      expect((result as QuerySuccess<String, dynamic>).isPlaceholder, false);
+
+      await hookResult.rebuildWithProps(const ['todos', 2]);
+
+      result = hookResult.current;
+      expect(result.dataOrNull, 'data-1');
+      expect((result as QuerySuccess<String, dynamic>).isPlaceholder, true);
+    }));
+
+    testWidgets(
+        'SHOULD stay pending WHEN Placeholder.keepPrevious has no '
+        'previous data', withCleanup((tester) async {
+      final hookResult = await buildHook(
+        () => useQuery<String, Object>(
+          const ['key'],
+          (context) async => 'data',
+          placeholder: Placeholder.keepPrevious,
+          client: client,
+        ),
+      );
+
+      expect(hookResult.current.isPending, isTrue);
+
+      await tester.pumpAndSettle();
+
+      expect(hookResult.current.dataOrNull, 'data');
+    }));
+
+    testWidgets('SHOULD stay pending WHEN Placeholder.lazy returns null',
+        withCleanup((tester) async {
+      final hookResult = await buildHook(
+        () => useQuery<String, Object>(
+          const ['key'],
+          (context) async => 'data',
+          placeholder: Placeholder.lazy((previous) => null),
+          client: client,
+        ),
+      );
+
+      final result = hookResult.current;
+      expect(result.isPending, isTrue);
+      expect(result.dataOrNull, isNull);
+
+      await tester.pumpAndSettle();
+
+      expect(hookResult.current.dataOrNull, 'data');
+    }));
   });
 
   group('refetchInterval', () {

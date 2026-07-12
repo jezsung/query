@@ -33,6 +33,8 @@ class QueryObserver<TData, TError> with Observer<QueryState<TData, TError>> {
   final QueryClient _client;
   QueryOptions<TData, TError> _options;
   QuerySnapshot<TData, TError>? _result;
+  QueryOptions<TData, TError>? _resultOptions;
+  TData? _lastDefinedData;
   late Query<TData, TError> _query;
   late int _initialDataUpdateCount;
   late int _initialErrorUpdateCount;
@@ -367,12 +369,18 @@ class QueryObserver<TData, TError> with Observer<QueryState<TData, TError>> {
         state.dataUpdateCount > _initialDataUpdateCount ||
             state.errorUpdateCount > _initialErrorUpdateCount;
 
+    final placeholderData = _resolvePlaceholder(options, state);
+
+    _resultOptions = options;
+    if (state.data != null) {
+      _lastDefinedData = state.data;
+    }
+
     switch (state.status) {
       case QueryStatus.pending:
-        final placeholder = options.placeholder;
-        if (placeholder != null && state.data == null) {
+        if (placeholderData != null) {
           return QuerySuccess<TData, TError>(
-            data: placeholder,
+            data: placeholderData,
             isPlaceholder: true,
             fetchStatus: fetchStatus,
             dataUpdatedAt: state.dataUpdatedAt,
@@ -433,5 +441,32 @@ class QueryObserver<TData, TError> with Observer<QueryState<TData, TError>> {
           refetch: refetch,
         );
     }
+  }
+
+  TData? _resolvePlaceholder(
+    QueryOptions<TData, TError> options,
+    QueryState<TData, TError> state,
+  ) {
+    final placeholder = options.placeholder;
+    if (placeholder == null ||
+        state.status != QueryStatus.pending ||
+        state.data != null) {
+      return null;
+    }
+
+    // Memoize: while the placeholder option is unchanged, keep showing the
+    // previously resolved data instead of re-invoking a lazy callback.
+    final prevResult = _result;
+    if (prevResult is QuerySuccess<TData, TError> &&
+        prevResult.isPlaceholder &&
+        placeholder == _resultOptions?.placeholder) {
+      return prevResult.data;
+    }
+
+    return switch (placeholder) {
+      PlaceholderValue<TData>(:final value) => value,
+      PlaceholderLazy<TData>(:final resolve) => resolve(_lastDefinedData),
+      PlaceholderKeepPrevious() => _lastDefinedData,
+    };
   }
 }

@@ -50,7 +50,7 @@ class QueryOptions<TData, TError> {
   final GcDuration? gcDuration;
 
   /// Placeholder data shown while the query is loading.
-  final TData? placeholder;
+  final Placeholder<TData>? placeholder;
 
   /// Whether to refetch when an observer mounts.
   final RefetchOnMount? refetchOnMount;
@@ -93,7 +93,7 @@ class QueryOptions<TData, TError> {
           networkMode == other.networkMode &&
           staleDuration == other.staleDuration &&
           gcDuration == other.gcDuration &&
-          deepEq.equals(placeholder, other.placeholder) &&
+          placeholder == other.placeholder &&
           refetchOnMount == other.refetchOnMount &&
           refetchOnResume == other.refetchOnResume &&
           refetchOnReconnect == other.refetchOnReconnect &&
@@ -112,7 +112,7 @@ class QueryOptions<TData, TError> {
         networkMode,
         staleDuration,
         gcDuration,
-        deepEq.hash(placeholder),
+        placeholder,
         refetchOnMount,
         refetchOnResume,
         refetchOnReconnect,
@@ -588,6 +588,108 @@ class SeedUpdatedAtLazy implements SeedUpdatedAt {
 
   @override
   String toString() => 'SeedUpdatedAt.lazy($resolve)';
+}
+
+/// Placeholder data shown while a query is pending and has no data, in
+/// either direct value or lazy callback form.
+///
+/// Unlike [Seed], placeholder data is never persisted to the cache; it is
+/// only surfaced through the observer result while the query has no real
+/// data yet.
+///
+/// Class hierarchy:
+/// ```
+/// Placeholder (sealed)
+/// ├── PlaceholderValue
+/// ├── PlaceholderLazy
+/// └── PlaceholderKeepPrevious
+/// ```
+sealed class Placeholder<TData> {
+  /// Shows [value] while the query is pending.
+  ///
+  /// Example:
+  /// ```dart
+  /// placeholder: Placeholder.value(User.anonymous())
+  /// ```
+  const factory Placeholder.value(TData value) = PlaceholderValue<TData>._;
+
+  /// Shows the value returned by [resolve] while the query is pending.
+  ///
+  /// The callback receives the data of the last query this observer had
+  /// data for, or `null` if there is none. This enables keeping the
+  /// previous query's data on screen while a new query key is fetching:
+  ///
+  /// ```dart
+  /// placeholder: Placeholder.lazy((previous) => previous)
+  /// ```
+  ///
+  /// Returning `null` means there is no placeholder and the query stays
+  /// pending.
+  const factory Placeholder.lazy(
+    TData? Function(TData? previous) resolve,
+  ) = PlaceholderLazy<TData>._;
+
+  /// Keeps the previous query's data while the query is pending.
+  ///
+  /// When the query key changes, the data of the previously watched query
+  /// stays on screen as placeholder data until the new query resolves.
+  /// Equivalent to `Placeholder.lazy((previous) => previous)`.
+  ///
+  /// Example:
+  /// ```dart
+  /// placeholder: Placeholder.keepPrevious
+  /// ```
+  static const Placeholder<Never> keepPrevious = PlaceholderKeepPrevious._();
+}
+
+@internal
+class PlaceholderValue<TData> implements Placeholder<TData> {
+  const PlaceholderValue._(this.value);
+
+  final TData value;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is PlaceholderValue<TData> && deepEq.equals(value, other.value);
+
+  @override
+  int get hashCode => deepEq.hash(value);
+
+  @override
+  String toString() => 'Placeholder.value($value)';
+}
+
+@internal
+class PlaceholderLazy<TData> implements Placeholder<TData> {
+  const PlaceholderLazy._(this.resolve);
+
+  final TData? Function(TData? previous) resolve;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is PlaceholderLazy<TData> && identical(resolve, other.resolve);
+
+  @override
+  int get hashCode => identityHashCode(resolve);
+
+  @override
+  String toString() => 'Placeholder.lazy($resolve)';
+}
+
+@internal
+class PlaceholderKeepPrevious implements Placeholder<Never> {
+  const PlaceholderKeepPrevious._();
+
+  @override
+  bool operator ==(Object other) => other is PlaceholderKeepPrevious;
+
+  @override
+  int get hashCode => 0;
+
+  @override
+  String toString() => 'Placeholder.keepPrevious';
 }
 
 /// A callback that determines whether to retry and how long to wait.

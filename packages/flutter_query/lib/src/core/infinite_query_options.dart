@@ -95,7 +95,7 @@ class InfiniteQueryOptions<TData, TError, TPageParam> {
   final GcDuration? gcDuration;
 
   /// Placeholder data shown while the query is loading.
-  final InfiniteData<TData, TPageParam>? placeholder;
+  final Placeholder<InfiniteData<TData, TPageParam>>? placeholder;
 
   /// Whether to refetch when an observer mounts.
   final RefetchOnMount? refetchOnMount;
@@ -142,7 +142,7 @@ class InfiniteQueryOptions<TData, TError, TPageParam> {
           networkMode == other.networkMode &&
           staleDuration == other.staleDuration &&
           gcDuration == other.gcDuration &&
-          deepEq.equals(placeholder, other.placeholder) &&
+          placeholder == other.placeholder &&
           refetchOnMount == other.refetchOnMount &&
           refetchOnResume == other.refetchOnResume &&
           refetchOnReconnect == other.refetchOnReconnect &&
@@ -165,7 +165,7 @@ class InfiniteQueryOptions<TData, TError, TPageParam> {
         networkMode,
         staleDuration,
         gcDuration,
-        deepEq.hash(placeholder),
+        placeholder,
         refetchOnMount,
         refetchOnResume,
         refetchOnReconnect,

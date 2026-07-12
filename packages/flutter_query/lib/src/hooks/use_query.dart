@@ -38,7 +38,11 @@ import 'use_query_options.dart';
 ///
 /// - [placeholder]: Data to display while the query is pending and has no
 ///   cached data. Unlike [seed], placeholder data is not persisted to the
-///   cache.
+///   cache. Provide the data directly with [Placeholder.value], or lazily
+///   with [Placeholder.lazy] — the callback receives the data of the last
+///   query this hook had data for (e.g. before the query key changed) and
+///   may return `null` to show no placeholder. Use [Placeholder.keepPrevious]
+///   to keep showing the previous query's data while a new query key loads.
 ///
 /// - [refetchOnMount]: Controls refetch behavior when this hook mounts. Can be
 ///   [RefetchOnMount.stale] (default), [RefetchOnMount.always], or
@@ -97,7 +101,7 @@ QuerySnapshot<TData, TError> useQuery<TData, TError>(
   NetworkMode? networkMode,
   StaleDuration? staleDuration,
   GcDuration? gcDuration,
-  TData? placeholder,
+  Placeholder<TData>? placeholder,
   RefetchOnMount? refetchOnMount,
   RefetchOnResume? refetchOnResume,
   RefetchOnReconnect? refetchOnReconnect,

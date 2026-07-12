@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Placeholder;
 
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:flutter_hooks_test/flutter_hooks_test.dart';
@@ -980,7 +980,7 @@ void main() {
           },
           initialPageParam: 0,
           nextPageParamBuilder: (data) => data.pageParams.last + 1,
-          placeholder: const InfiniteData(['page-ph'], [0]),
+          placeholder: const Placeholder.value(InfiniteData(['page-ph'], [0])),
           client: client,
         ),
       );
@@ -1005,7 +1005,7 @@ void main() {
           },
           initialPageParam: 0,
           nextPageParamBuilder: (data) => data.pageParams.last + 1,
-          placeholder: const InfiniteData(['page-ph'], [0]),
+          placeholder: const Placeholder.value(InfiniteData(['page-ph'], [0])),
           client: client,
         ),
       );
@@ -1025,7 +1025,7 @@ void main() {
           },
           initialPageParam: 0,
           nextPageParamBuilder: (data) => data.pageParams.last + 1,
-          placeholder: const InfiniteData(['page-ph'], [0]),
+          placeholder: const Placeholder.value(InfiniteData(['page-ph'], [0])),
           client: client,
         ),
       );
@@ -1077,7 +1077,8 @@ void main() {
             },
             initialPageParam: 0,
             nextPageParamBuilder: (data) => data.pageParams.last + 1,
-            placeholder: const InfiniteData(['page-ph'], [0]),
+            placeholder:
+                const Placeholder.value(InfiniteData(['page-ph'], [0])),
             client: client,
           );
           return Container();
@@ -1088,6 +1089,36 @@ void main() {
       expect(
           (result2 as InfiniteQuerySuccess<String, Object, int>).isPlaceholder,
           isFalse);
+    }));
+
+    testWidgets(
+        'SHOULD keep old pages as placeholder WHEN query key changes '
+        'WITH Placeholder.keepPrevious', withCleanup((tester) async {
+      final hook = await buildHookWithProps(
+        (key) => useInfiniteQuery<String, Object, int>(
+          key,
+          (context) async {
+            await Future.delayed(const Duration(seconds: 1));
+            return 'page-${context.pageParam}';
+          },
+          initialPageParam: 0,
+          nextPageParamBuilder: (data) => data.pageParams.last + 1,
+          placeholder: Placeholder.keepPrevious,
+          client: client,
+        ),
+        initialProps: const ['test', 1],
+      );
+
+      await tester.pump(const Duration(seconds: 1));
+      expect(hook.current.pages, ['page-0']);
+
+      await hook.rebuildWithProps(const ['test', 2]);
+
+      expect(hook.current.pages, ['page-0']);
+      expect(
+          (hook.current as InfiniteQuerySuccess<String, Object, int>)
+              .isPlaceholder,
+          isTrue);
     }));
   });
 
@@ -1953,7 +1984,7 @@ void main() {
           },
           initialPageParam: 0,
           nextPageParamBuilder: (data) => data.pageParams.last + 1,
-          placeholder: const InfiniteData(['page-ph'], [0]),
+          placeholder: const Placeholder.value(InfiniteData(['page-ph'], [0])),
           seed: const Seed.value(InfiniteData(['page-seed'], [0])),
           client: client,
         ),

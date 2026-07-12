@@ -4,11 +4,10 @@
   `useInfiniteQuery`, `QueryOptions`, `InfiniteQueryOptions`, and the
   `QueryClient` fetch/prefetch/ensure methods now take the sealed types
   `Seed<TData>` and `SeedUpdatedAt`, which add a lazy callback form
-  alongside the plain value form (mirroring TanStack Query's `initialData`
-  and `initialDataUpdatedAt`).
+  alongside the plain value form.
 
-  Seed application now also matches TanStack Query's semantics: a seed
-  (either form) is applied only while the query has no data yet.
+  Seed application semantics have also changed: a seed (either form) is
+  applied only while the query has no data yet.
   Previously, a seed could overwrite data already in the cache — including
   fetched data — when the seed value differed or carried a newer
   `seedUpdatedAt`; now cached data is never overwritten by a seed.
@@ -36,6 +35,44 @@
 
   On Dart 3.12+ the constructors work with dot shorthand:
   `seed: .value(cachedUser)` / `seed: .lazy(() => ...)`.
+
+- **Breaking:** The `placeholder` option on `useQuery`, `useInfiniteQuery`,
+  `QueryOptions`, and `InfiniteQueryOptions` now takes the sealed type
+  `Placeholder<TData>`, which adds a lazy callback form alongside the plain
+  value form.
+
+  ```dart
+  // Before:
+  useQuery(['user'], fetchUser, placeholder: User.anonymous());
+
+  // After:
+  useQuery(['user'], fetchUser, placeholder: Placeholder.value(User.anonymous()));
+
+  // Or lazily — the callback receives the data of the last query the hook
+  // had data for (e.g. before the query key changed); returning null shows
+  // no placeholder:
+  useQuery(
+    ['results', page],
+    fetchResults,
+    placeholder: Placeholder.lazy((previous) => previous),
+  );
+  ```
+
+  The keep-previous-data pattern shown above is also available as the
+  constant `Placeholder.keepPrevious`, which keeps the previous query key's
+  data on screen while the new query fetches:
+
+  ```dart
+  useQuery(['results', page], fetchResults, placeholder: Placeholder.keepPrevious);
+  ```
+
+  On Dart 3.12+ the constructors work with dot shorthand:
+  `placeholder: .value(user)` / `placeholder: .keepPrevious`.
+
+  Note: the name `Placeholder` collides with Flutter's `Placeholder` widget.
+  In files that use flutter_query's `Placeholder`, import Flutter with
+  `import 'package:flutter/material.dart' hide Placeholder;` (or refer to the
+  widget through an import prefix).
 
 - **Breaking:** Graduated the sealed snapshot API out of
   `experiments.dart` and made it the main API. `useQuery`,
@@ -104,9 +141,8 @@
   rebuilding. The experimental variants type the predicate over
   `QuerySnapshot` / `InfiniteQuerySnapshot`.
 
-  This is the type-safe, Flutter-idiomatic counterpart to TanStack Query's
-  `notifyOnChangeProps`, mirroring the `shouldRebuild` / `buildWhen`
-  predicates already established by `provider` and `flutter_bloc`.
+  This mirrors the `shouldRebuild` / `buildWhen` predicates already
+  established by `provider` and `flutter_bloc`.
 
 ## 0.9.0 (2026-06-24)
 

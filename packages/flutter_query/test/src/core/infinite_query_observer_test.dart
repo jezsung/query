@@ -1725,7 +1725,7 @@ void main() {
           },
           initialPageParam: 0,
           nextPageParamBuilder: (data) => data.pageParams.last + 1,
-          placeholder: const InfiniteData(['page-ph'], [0]),
+          placeholder: const Placeholder.value(InfiniteData(['page-ph'], [0])),
         ),
       )..onMount();
       addTearDown(observer.onUnmount);
@@ -1752,7 +1752,7 @@ void main() {
           },
           initialPageParam: 0,
           nextPageParamBuilder: (data) => data.pageParams.last + 1,
-          placeholder: const InfiniteData(['page-ph'], [0]),
+          placeholder: const Placeholder.value(InfiniteData(['page-ph'], [0])),
         ),
       )..onMount();
       addTearDown(observer.onUnmount);
@@ -1773,7 +1773,7 @@ void main() {
           },
           initialPageParam: 0,
           nextPageParamBuilder: (data) => data.pageParams.last + 1,
-          placeholder: const InfiniteData(['page-ph'], [0]),
+          placeholder: const Placeholder.value(InfiniteData(['page-ph'], [0])),
         ),
       )..onMount();
       addTearDown(observer.onUnmount);
@@ -1806,7 +1806,7 @@ void main() {
         },
         initialPageParam: 0,
         nextPageParamBuilder: (data) => data.pageParams.last + 1,
-        placeholder: const InfiniteData(['page-ph'], [0]),
+        placeholder: const Placeholder.value(InfiniteData(['page-ph'], [0])),
       );
 
       // First observer fetches real data
@@ -1840,7 +1840,7 @@ void main() {
           },
           initialPageParam: 0,
           nextPageParamBuilder: (data) => data.pageParams.last + 1,
-          placeholder: const InfiniteData(['page-ph'], [0]),
+          placeholder: const Placeholder.value(InfiniteData(['page-ph'], [0])),
         ),
       )..onMount();
       addTearDown(observer1.onUnmount);
@@ -2616,7 +2616,7 @@ void main() {
           },
           initialPageParam: 0,
           nextPageParamBuilder: (data) => data.pageParams.last + 1,
-          placeholder: const InfiniteData(['page-ph'], [0]),
+          placeholder: const Placeholder.value(InfiniteData(['page-ph'], [0])),
           seed: const Seed.value(InfiniteData(['page-seed'], [0])),
         ),
       )..onMount();
