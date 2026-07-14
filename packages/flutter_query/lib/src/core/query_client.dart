@@ -413,16 +413,9 @@ class QueryClient {
       }
     });
 
-    await Future.wait(queriesToRefetch.map((q) {
-      final observer = q.observers.first;
-      return q
-          .fetch(
-            observer.options.queryFn,
-            retry: observer.options.retry,
-            meta: observer.options.meta,
-          )
-          .suppress();
-    }));
+    await Future.wait(
+      queriesToRefetch.map((q) => q.refetch().suppress()),
+    );
   }
 
   /// Triggers an immediate refetch for matching queries.
@@ -462,16 +455,7 @@ class QueryClient {
             !q.isStatic &&
             q.state.fetchStatus != FetchStatus.paused);
 
-    await Future.wait(queries.map((q) {
-      final observer = q.observers.first;
-      return q
-          .fetch(
-            observer.options.queryFn,
-            retry: observer.options.retry,
-            meta: observer.options.meta,
-          )
-          .suppress();
-    }));
+    await Future.wait(queries.map((q) => q.refetch().suppress()));
   }
 
   /// Fetches an infinite query, returning cached data if fresh or new data if stale.
@@ -741,16 +725,9 @@ class QueryClient {
           q.state.fetchStatus != FetchStatus.paused,
     );
 
-    await Future.wait(queriesToRefetch.map((q) {
-      final observer = q.observers.first;
-      return q
-          .fetch(
-            observer.options.queryFn,
-            retry: observer.options.retry,
-            meta: observer.options.meta,
-          )
-          .suppress();
-    }));
+    await Future.wait(
+      queriesToRefetch.map((q) => q.refetch().suppress()),
+    );
   }
 
   /// Cancels in-progress fetches for matching queries.

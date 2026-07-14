@@ -2023,6 +2023,38 @@ void main() {
       query = cache.get(const ['key']);
       expect(query!.state.isInvalidated, isFalse);
     }));
+
+    test(
+        'SHOULD refetch '
+        'WHEN the observer has a typed retry resolver', withFakeAsync((async) {
+      var fetches = 0;
+
+      // Regression: the refetch reads the observer's options through an
+      // erased Query<dynamic, dynamic> cache handle, which used to throw for
+      // a non-null retry resolver with a non-dynamic TError.
+      final observer = QueryObserver<String, Object>(
+        client,
+        QueryOptions(
+          const ['key'],
+          (context) async {
+            await Future.delayed(const Duration(seconds: 1));
+            fetches++;
+            return 'data';
+          },
+          enabled: true,
+          retry: (retryCount, error) => null,
+        ),
+      )..onMount();
+      addTearDown(observer.onUnmount);
+
+      async.elapse(const Duration(seconds: 1));
+      expect(fetches, 1);
+
+      client.invalidateQueries(queryKey: const ['key']);
+
+      async.elapse(const Duration(seconds: 1));
+      expect(fetches, 2);
+    }));
   });
 
   group('Method: refetchQueries', () {
@@ -2230,6 +2262,38 @@ void main() {
 
       async.elapse(const Duration(seconds: 1));
       expect(fetches, 1);
+    }));
+
+    test(
+        'SHOULD refetch '
+        'WHEN the observer has a typed retry resolver', withFakeAsync((async) {
+      var fetches = 0;
+
+      // Regression: the refetch reads the observer's options through an
+      // erased Query<dynamic, dynamic> cache handle, which used to throw for
+      // a non-null retry resolver with a non-dynamic TError.
+      final observer = QueryObserver<String, Object>(
+        client,
+        QueryOptions(
+          const ['key'],
+          (context) async {
+            await Future.delayed(const Duration(seconds: 1));
+            fetches++;
+            return 'data';
+          },
+          enabled: true,
+          retry: (retryCount, error) => null,
+        ),
+      )..onMount();
+      addTearDown(observer.onUnmount);
+
+      async.elapse(const Duration(seconds: 1));
+      expect(fetches, 1);
+
+      client.refetchQueries(queryKey: const ['key']);
+
+      async.elapse(const Duration(seconds: 1));
+      expect(fetches, 2);
     }));
   });
 
@@ -2579,6 +2643,38 @@ void main() {
         cache.get<String, Object>(const ['key'])!.state.fetchStatus,
         FetchStatus.idle,
       );
+    }));
+
+    test(
+        'SHOULD refetch after reset '
+        'WHEN the observer has a typed retry resolver', withFakeAsync((async) {
+      var fetches = 0;
+
+      // Regression: the refetch reads the observer's options through an
+      // erased Query<dynamic, dynamic> cache handle, which used to throw for
+      // a non-null retry resolver with a non-dynamic TError.
+      final observer = QueryObserver<String, Object>(
+        client,
+        QueryOptions(
+          const ['key'],
+          (context) async {
+            await Future.delayed(const Duration(seconds: 1));
+            fetches++;
+            return 'data';
+          },
+          enabled: true,
+          retry: (retryCount, error) => null,
+        ),
+      )..onMount();
+      addTearDown(observer.onUnmount);
+
+      async.elapse(const Duration(seconds: 1));
+      expect(fetches, 1);
+
+      client.resetQueries(queryKey: const ['key']);
+
+      async.elapse(const Duration(seconds: 1));
+      expect(fetches, 2);
     }));
   });
 

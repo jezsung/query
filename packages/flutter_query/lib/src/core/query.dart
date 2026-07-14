@@ -145,6 +145,25 @@ class Query<TData, TError>
     return data;
   }
 
+  /// Refetches this query using its first observer's options. Must only be
+  /// called while the query has at least one observer.
+  ///
+  /// Call this instead of forwarding `observer.options` to [fetch] from an
+  /// erased `Query<dynamic, dynamic>` handle (as returned by
+  /// `QueryCache.findAll`): `TError` occurs contravariantly in
+  /// [RetryResolver], so reading `options.retry` through the erased view
+  /// throws a runtime type error whenever `TError` is not `dynamic`. Inside
+  /// this method the observer is bound to the query's actual type arguments,
+  /// making the read sound.
+  Future<TData> refetch() {
+    final observer = observers.first;
+    return fetch(
+      observer.options.queryFn,
+      retry: observer.options.retry,
+      meta: observer.options.meta,
+    );
+  }
+
   Future<TData> fetch(
     QueryFn<TData> queryFn, {
     NetworkMode? networkMode,

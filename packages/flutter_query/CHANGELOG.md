@@ -1,3 +1,10 @@
+## 0.11.1 (2026-07-14)
+
+- **Fix:** `invalidateQueries`, `refetchQueries`, and `resetQueries` threw a
+  runtime type error (`type '(int, TError) => Duration?' is not a subtype of
+  type '((int, dynamic) => Duration?)?'`) when refetching a query whose
+  observer had a `retry` resolver with a non-`dynamic` `TError`.
+
 ## 0.11.0 (2026-07-12)
 
 - **Breaking:** The `seed` and `seedUpdatedAt` options on `useQuery`,
