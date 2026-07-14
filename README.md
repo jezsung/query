@@ -64,5 +64,3 @@ Before version 1.0.0, MINOR version increments may include breaking changes.
 ## Support
 
 If you find Flutter Query useful, consider giving it a ⭐ to help others discover it!
-
-[![Star History Chart](https://api.star-history.com/svg?repos=jezsung/query&type=Date)](https://star-history.com/#jezsung/query&Date)
